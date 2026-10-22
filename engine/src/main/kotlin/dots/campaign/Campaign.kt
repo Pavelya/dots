@@ -7,11 +7,20 @@ import dots.ai.AiConfig
  * (and with `dots-cli bench levels`), not by reading the numbers.
  */
 object Campaign {
-    private fun empty(size: Int) = List(size) { ".".repeat(size) }.joinToString("\n")
+    /** An empty square board with the standard cross opening in the middle. */
+    private fun crossStart(size: Int): String {
+        val rows = List(size) { CharArray(size) { '.' } }
+        val c = (size - 2) / 2
+        rows[c][c] = 'R'
+        rows[c + 1][c + 1] = 'R'
+        rows[c][c + 1] = 'B'
+        rows[c + 1][c] = 'B'
+        return rows.joinToString("\n") { String(it) }
+    }
 
     val levels: List<Level> = listOf(
-        Level(1, "Warm-up", empty(8), dotsPerPlayer = 10, ai = AiConfig.EASY),
-        Level(2, "Open Field", empty(10), dotsPerPlayer = 14, ai = AiConfig.EASY),
+        Level(1, "Warm-up", crossStart(8), dotsPerPlayer = 10, ai = AiConfig.EASY),
+        Level(2, "Open Field", crossStart(10), dotsPerPlayer = 14, ai = AiConfig.EASY),
         Level(
             3, "Scout",
             """

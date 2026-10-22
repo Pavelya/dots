@@ -1,19 +1,25 @@
 package dots.engine
 
 /**
- * A position in the dots game. Instances are immutable from the outside: [play] and [pass] return
- * new states, so search code and undo/replay need no bookkeeping.
+ * A position in the dots game. Instances are immutable from the outside: [play], [pass], [stop] and
+ * [finish] return new states, so search code and undo/replay need no bookkeeping.
  *
- * Rules as implemented (see README for the open questions):
- *  - Players alternate placing one dot on an empty, playable intersection.
- *  - A player's dots connect orthogonally and diagonally. When they form a closed ring around at
- *    least one live enemy dot, every enemy dot inside is captured and scores for the ringer.
- *  - Everything inside a capturing ring is out of play: no more moves there, captured dots no
- *    longer count as part of any chain.
- *  - A ring around only empty cells or the ringer's own dots captures nothing and the inside stays
- *    playable, but an enemy dot placed inside it is captured immediately.
- *  - Dots on the border of the board can never be enclosed.
- *  - Optionally each player has a fixed budget of dots to place (short sessions suit mobile).
+ * Rules follow the Wikipedia article "Dots (paper-and-pencil game)":
+ *  - Players alternate placing one dot on an empty intersection.
+ *  - Dots of one colour form a chain through orthogonal and diagonal neighbours. If a newly placed
+ *    dot completes a closed chain around at least one live enemy dot, the area inside is
+ *    surrounded: the enemy dots in it score for the surrounding player (own dots do not), and the
+ *    whole area is out of play from then on.
+ *  - A closed chain around no enemy dot captures nothing and leaves the area playable. An enemy
+ *    dot dropped into such an area stays alive until the owner closes a new chain around it.
+ *  - Groups of dots touching the border can never be enclosed ("grounded").
+ *  - A player may [stop] on their turn: their opponent then moves freely to capture what is left
+ *    and ends the game with [finish].
+ *
+ * Deliberate additions and choices:
+ *  - Optional dot budget per player, for short mobile sessions and puzzle levels.
+ *  - When one dot closes several chains the wiki lets players choose; this engine captures every
+ *    newly enclosed area that holds an enemy dot.
  */
 class GameState private constructor(
     val width: Int,
@@ -28,6 +34,8 @@ class GameState private constructor(
     toMove: Player,
     passesInRow: Int,
     moveCount: Int,
+    cleaner: Player?,
+    finished: Boolean,
 ) {
     var toMove: Player = toMove
         private set
@@ -36,7 +44,22 @@ class GameState private constructor(
     var moveCount: Int = moveCount
         private set
 
-    val isOver: Boolean get() = passesInRow >= 2 || (!canMove(Player.RED) && !canMove(Player.BLUE))
+    /** After a [stop], the player who may now move freely to capture what is left. */
+    var cleaner: Player? = cleaner
+        private set
+    private var finished: Boolean = finished
+
+    val isCleanup: Boolean get() = cleaner != null
+
+    /** The player who declared their dots grounded, if any. */
+    val stopper: Player? get() = cleaner?.opponent
+
+    val isOver: Boolean
+        get() = when {
+            finished -> true
+            isCleanup -> playableCells == 0
+            else -> passesInRow >= 2 || (!canMove(Player.RED) && !canMove(Player.BLUE))
+        }
 
     /** The player with more captured dots once the game is over; null for a draw or an unfinished game. */
     val winner: Player?
@@ -67,24 +90,31 @@ class GameState private constructor(
 
     fun isCaptured(pos: Pos): Boolean = isCaptured(pos.x, pos.y)
 
-    /** True for cells inside a capturing ring: no further moves there. */
+    /** True for cells inside a capturing chain: no further moves there. */
     fun isDead(x: Int, y: Int): Boolean = dead[y * width + x]
 
     fun isDead(pos: Pos): Boolean = isDead(pos.x, pos.y)
 
     fun isLegal(x: Int, y: Int): Boolean =
-        !isOver && dotsLeft[toMove.ordinal] != 0 && inBounds(x, y) &&
+        !isOver && (isCleanup || dotsLeft[toMove.ordinal] != 0) && inBounds(x, y) &&
             owner[y * width + x] == EMPTY && !dead[y * width + x]
 
     fun isLegal(pos: Pos): Boolean = isLegal(pos.x, pos.y)
 
     fun legalMoves(): List<Pos> {
-        if (isOver || dotsLeft[toMove.ordinal] == 0) return emptyList()
+        if (isOver || (!isCleanup && dotsLeft[toMove.ordinal] == 0)) return emptyList()
         val moves = ArrayList<Pos>()
         for (i in owner.indices) {
             if (owner[i] == EMPTY && !dead[i]) moves += Pos(i % width, i / width)
         }
         return moves
+    }
+
+    fun apply(action: Action): MoveResult = when (action) {
+        is Action.Place -> play(action.pos)
+        Action.Pass -> MoveResult(pass(), emptyList())
+        Action.Stop -> MoveResult(stop(), emptyList())
+        Action.Finish -> MoveResult(finish(), emptyList())
     }
 
     fun play(pos: Pos): MoveResult {
@@ -94,11 +124,32 @@ class GameState private constructor(
 
     /** Skips the turn. Two passes in a row end the game. */
     fun pass(): GameState {
-        check(!isOver) { "The game is over" }
+        check(!isOver && !isCleanup) { "Cannot pass now" }
         val next = copy()
         next.passesInRow++
         val other = toMove.opponent
         next.toMove = if (next.canMove(other)) other else toMove
+        return next
+    }
+
+    /**
+     * The player to move declares all the dots they want to keep grounded. From now on only their
+     * opponent moves, with no dot limit, until they call [finish].
+     */
+    fun stop(): GameState {
+        check(!isOver && !isCleanup) { "Cannot stop now" }
+        val next = copy()
+        next.cleaner = toMove.opponent
+        next.toMove = toMove.opponent
+        next.passesInRow = 0
+        return next
+    }
+
+    /** The collecting player is done; the game ends and the captured-dot counts decide it. */
+    fun finish(): GameState {
+        check(isCleanup && !isOver) { "Nothing to finish" }
+        val next = copy()
+        next.finished = true
         return next
     }
 
@@ -124,53 +175,144 @@ class GameState private constructor(
 
     private fun copy() = GameState(
         width, height, owner.clone(), captured.clone(), dead.clone(), scores.clone(),
-        liveDots.clone(), dotsLeft.clone(), playableCells, toMove, passesInRow, moveCount,
+        liveDots.clone(), dotsLeft.clone(), playableCells, toMove, passesInRow, moveCount, cleaner, finished,
     )
 
     private fun applyMove(pos: Pos): MoveResult {
         val mover = toMove
-        owner[pos.y * width + pos.x] = mover.code
+        val index = pos.y * width + pos.x
+        owner[index] = mover.code
         liveDots[mover.ordinal]++
         playableCells--
-        if (dotsLeft[mover.ordinal] > 0) dotsLeft[mover.ordinal]--
+        if (!isCleanup && dotsLeft[mover.ordinal] > 0) dotsLeft[mover.ordinal]--
 
         val captures = ArrayList<Capture>(0)
-        resolveCaptures(mover, captures)
-        // A dot dropped into an enemy ring that was already closed is lost on the spot.
-        resolveCaptures(mover.opponent, captures)
+        captureFrom(index, mover, captures)
 
         moveCount++
         passesInRow = 0
-        val other = mover.opponent
-        toMove = if (canMove(other) || !canMove(mover)) other else mover
+        if (!isCleanup) {
+            val other = mover.opponent
+            toMove = if (canMove(other) || !canMove(mover)) other else mover
+        }
         return MoveResult(this, captures)
     }
 
     private fun isWall(i: Int, code: Byte): Boolean = owner[i] == code && !captured[i]
 
     /**
-     * Finds every region enclosed by [player]'s standing dots that holds a live enemy dot and
-     * captures it.
+     * Captures what the dot just placed at [placed] has closed off.
      *
-     * Walls are [player]'s uncaptured dots. A flood fill from the border through the remaining
-     * cells (moving orthogonally, so a diagonal chain of walls is tight) marks everything that is
-     * not enclosed; each leftover orthogonally-connected group of non-wall cells is one enclosure.
+     * Walls are [player]'s uncaptured dots. Before the dot was placed, all of its non-wall
+     * orthogonal neighbours were in one connected area. Placing it may split that area into
+     * pieces, and each piece cut off by the new wall is bounded by a closed chain through the
+     * new dot. Orthogonal flooding is right here: a diagonal join of walls is tight.
+     *
+     * If the old area reached the border, the pieces that no longer touch it are enclosed. If it
+     * was already enclosed (an empty chain from earlier), every piece after a real split is.
+     * Enclosed pieces holding a live enemy dot are captured; the rest stay playable.
      */
-    private fun resolveCaptures(player: Player, out: MutableList<Capture>) {
+    private fun captureFrom(placed: Int, player: Player, out: MutableList<Capture>) {
         val enemy = player.opponent
         if (liveDots[player.ordinal] < MIN_RING_DOTS || liveDots[enemy.ordinal] == 0) return
 
         val wall = player.code
         val n = width * height
+        val seen = BooleanArray(n)
+        val buffer = IntArray(n)
+        val starts = IntArray(4)
+        val ends = IntArray(4)
+        val touchesBorder = BooleanArray(4)
+        var pieces = 0
+        var used = 0
+
+        val px = placed % width
+        val py = placed / width
+        for (d in 0 until 4) {
+            val nx = px + DX[d]
+            val ny = py + DY[d]
+            if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue
+            val first = ny * width + nx
+            if (seen[first] || isWall(first, wall)) continue
+
+            val start = used
+            buffer[used++] = first
+            seen[first] = true
+            var head = start
+            var border = false
+            while (head < used) {
+                val i = buffer[head++]
+                val x = i % width
+                val y = i / width
+                if (x == 0 || y == 0 || x == width - 1 || y == height - 1) border = true
+                for (e in 0 until 4) {
+                    val mx = x + DX[e]
+                    val my = y + DY[e]
+                    if (mx < 0 || my < 0 || mx >= width || my >= height) continue
+                    val j = my * width + mx
+                    if (!seen[j] && !isWall(j, wall)) {
+                        seen[j] = true
+                        buffer[used++] = j
+                    }
+                }
+            }
+            starts[pieces] = start
+            ends[pieces] = used
+            touchesBorder[pieces] = border
+            pieces++
+        }
+
+        val placedOnBorder = px == 0 || py == 0 || px == width - 1 || py == height - 1
+        val areaReachedBorder = placedOnBorder || (0 until pieces).any { touchesBorder[it] }
+        for (k in 0 until pieces) {
+            val enclosed = if (areaReachedBorder) !touchesBorder[k] else pieces >= 2
+            if (!enclosed) continue
+            var holdsEnemy = false
+            for (m in starts[k] until ends[k]) {
+                val i = buffer[m]
+                if (owner[i] == enemy.code && !captured[i]) {
+                    holdsEnemy = true
+                    break
+                }
+            }
+            if (holdsEnemy) claim(buffer, starts[k], ends[k], player, out)
+        }
+    }
+
+    private fun claim(cells: IntArray, from: Int, to: Int, by: Player, out: MutableList<Capture>) {
+        val enemy = by.opponent
+        val dots = ArrayList<Pos>()
+        val region = ArrayList<Pos>(to - from)
+        for (k in from until to) {
+            val i = cells[k]
+            val pos = Pos(i % width, i / width)
+            region += pos
+            if (owner[i] == enemy.code && !captured[i]) {
+                captured[i] = true
+                liveDots[enemy.ordinal]--
+                dots += pos
+            }
+            if (!dead[i]) {
+                dead[i] = true
+                if (owner[i] == EMPTY) playableCells--
+            }
+        }
+        scores[by.ordinal] += dots.size
+        out += Capture(by, dots, region)
+    }
+
+    /** True if [player]'s dots already enclose a live enemy dot; used to vet starting positions. */
+    private fun hasEnclosedEnemy(player: Player): Boolean {
+        val wall = player.code
+        val enemy = player.opponent.code
+        val n = width * height
         val outside = BooleanArray(n)
         val stack = IntArray(n)
         var top = 0
-
         for (i in 0 until n) {
             val x = i % width
             val y = i / width
-            val onBorder = x == 0 || y == 0 || x == width - 1 || y == height - 1
-            if (onBorder && !isWall(i, wall)) {
+            if ((x == 0 || y == 0 || x == width - 1 || y == height - 1) && !isWall(i, wall)) {
                 outside[i] = true
                 stack[top++] = i
             }
@@ -190,70 +332,21 @@ class GameState private constructor(
                 }
             }
         }
-
-        // The flood is done, so `stack` doubles as the queue for collecting enclosures.
-        val seen = BooleanArray(n)
-        for (start in 0 until n) {
-            if (outside[start] || seen[start] || isWall(start, wall)) continue
-            var head = 0
-            var tail = 0
-            stack[tail++] = start
-            seen[start] = true
-            var holdsEnemy = false
-            while (head < tail) {
-                val i = stack[head++]
-                if (owner[i] == enemy.code && !captured[i]) holdsEnemy = true
-                val x = i % width
-                val y = i / width
-                for (d in 0 until 4) {
-                    val nx = x + DX[d]
-                    val ny = y + DY[d]
-                    if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue
-                    val j = ny * width + nx
-                    if (!seen[j] && !isWall(j, wall)) {
-                        seen[j] = true
-                        stack[tail++] = j
-                    }
-                }
-            }
-            if (holdsEnemy) claim(stack, tail, player, out)
-        }
-    }
-
-    private fun claim(cells: IntArray, count: Int, by: Player, out: MutableList<Capture>) {
-        val enemy = by.opponent
-        val dots = ArrayList<Pos>()
-        val region = ArrayList<Pos>(count)
-        for (k in 0 until count) {
-            val i = cells[k]
-            val pos = Pos(i % width, i / width)
-            region += pos
-            if (owner[i] == enemy.code && !captured[i]) {
-                captured[i] = true
-                liveDots[enemy.ordinal]--
-                dots += pos
-            }
-            if (!dead[i]) {
-                dead[i] = true
-                if (owner[i] == EMPTY) playableCells--
-            }
-        }
-        scores[by.ordinal] += dots.size
-        out += Capture(by, dots, region)
+        return (0 until n).any { owner[it] == enemy && !captured[it] && !outside[it] }
     }
 
     companion object {
         private const val EMPTY: Byte = 0
 
-        /** The smallest ring that encloses a cell is the four-dot diamond. */
+        /** The smallest chain that encloses a cell is the four-dot diamond. */
         private const val MIN_RING_DOTS = 4
 
         private val DX = intArrayOf(-1, 1, 0, 0)
         private val DY = intArrayOf(0, 0, -1, 1)
 
         /**
-         * Starts a game. [dots] are placed up front (a head start) and do not count against
-         * [dotsPerPlayer]; they must not already enclose anything.
+         * Starts a game. [dots] are placed up front (an opening or a head start) and do not count
+         * against [dotsPerPlayer]; they must not already enclose an enemy dot.
          */
         fun start(
             width: Int,
@@ -268,7 +361,7 @@ class GameState private constructor(
             val budget = dotsPerPlayer ?: -1
             val state = GameState(
                 width, height, ByteArray(n), BooleanArray(n), BooleanArray(n), IntArray(2),
-                IntArray(2), intArrayOf(budget, budget), n, first, 0, 0,
+                IntArray(2), intArrayOf(budget, budget), n, first, 0, 0, null, false,
             )
             for ((pos, player) in dots) {
                 require(state.inBounds(pos.x, pos.y)) { "Starting dot $pos is off the board" }
@@ -278,10 +371,9 @@ class GameState private constructor(
                 state.liveDots[player.ordinal]++
                 state.playableCells--
             }
-            val captures = ArrayList<Capture>(0)
-            state.resolveCaptures(Player.RED, captures)
-            state.resolveCaptures(Player.BLUE, captures)
-            require(captures.isEmpty()) { "The starting position already contains a capture" }
+            require(!state.hasEnclosedEnemy(Player.RED) && !state.hasEnclosedEnemy(Player.BLUE)) {
+                "The starting position already encloses an enemy dot"
+            }
             if (!state.canMove(first) && state.canMove(first.opponent)) state.toMove = first.opponent
             return state
         }

@@ -9,8 +9,7 @@ object Match {
         var state = start
         while (!state.isOver) {
             val ai = if (state.toMove == Player.RED) red else blue
-            val move = ai.chooseMove(state)
-            state = if (move == null) state.pass() else state.play(move).state
+            state = state.apply(ai.choose(state)).state
         }
         return state
     }

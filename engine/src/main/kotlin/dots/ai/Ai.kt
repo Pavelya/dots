@@ -1,12 +1,12 @@
 package dots.ai
 
+import dots.engine.Action
 import dots.engine.GameState
-import dots.engine.Pos
 
 /** A computer opponent. */
 interface Ai {
-    /** The move for [GameState.toMove], or null to pass (also returned when the game is over). */
-    fun chooseMove(state: GameState): Pos?
+    /** What [GameState.toMove] should do now. Only call this while the game is not over. */
+    fun choose(state: GameState): Action
 }
 
 /**

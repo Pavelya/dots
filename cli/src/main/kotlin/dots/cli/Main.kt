@@ -5,30 +5,37 @@ import dots.ai.AiConfig
 import dots.ai.SearchAi
 import dots.campaign.Campaign
 import dots.campaign.Level
+import dots.engine.Action
 import dots.engine.GameState
 import dots.engine.MoveResult
+import dots.engine.Openings
 import dots.engine.Player
 import dots.engine.Pos
 import kotlin.system.exitProcess
 
 private const val USAGE = """Dots - terminal prototype
 
-  levels                      list the campaign levels
-  play [level]                play a campaign level against the computer (you are red, you move first)
-  pvp [width height dots]     two players on one keyboard (default 12 12 20)
-  bench tiers [games]         round-robin of the AI difficulty tiers
-  bench levels [games] [tier] a stand-in human (default NORMAL) plays every level
+  levels                                list the campaign levels
+  play [level]                          campaign level against the computer (you are red and move first)
+  vs [tier] [width height] [opening]    classic open-ended game against the computer
+  pvp [width height] [opening] [dots]   two players on one keyboard
+  bench tiers [games]                   round-robin of the AI difficulty tiers
+  bench levels [games] [tier]           a stand-in human (default NORMAL) plays every level
 
-Moves are a column letter and a row number, e.g. e5. Type "pass" or "quit" at any prompt."""
+  tier: easy, normal, hard, expert        opening: cross (default), double, crosses, empty
+
+Moves are a column letter and a row number, e.g. e5. Other commands:
+  stop   declare that all the dots you want to keep are grounded; the opponent may then capture
+         whatever is left with as many moves as they like
+  done   after your opponent has stopped: you have finished capturing, end the game
+  pass, quit"""
 
 fun main(args: Array<String>) {
     when (args.firstOrNull()) {
         "levels" -> listLevels()
         "play" -> playLevel(Campaign.level(args.getOrNull(1)?.toIntOrNull() ?: 1))
-        "pvp" -> {
-            val (w, h, d) = (1..3).map { args.getOrNull(it)?.toIntOrNull() }
-            pvp(w ?: 12, h ?: 12, d ?: 20)
-        }
+        "vs" -> versus(args.drop(1))
+        "pvp" -> pvp(args.drop(1))
         "bench" -> Bench.run(args.drop(1))
         else -> println(USAGE)
     }
@@ -53,10 +60,12 @@ internal val TIERS = linkedMapOf(
     "EXPERT" to AiConfig.EXPERT,
 )
 
-private sealed interface Command {
-    data class Move(val pos: Pos) : Command
-    data object Pass : Command
-    data object Quit : Command
+private fun openingDots(name: String, width: Int, height: Int): Map<Pos, Player> = when (name) {
+    "cross" -> Openings.cross(width, height)
+    "double" -> Openings.doubleCross(width, height)
+    "crosses" -> Openings.randomCrosses(width, height, 4)
+    "empty" -> emptyMap()
+    else -> exitWith("unknown opening '$name' (cross, double, crosses, empty)")
 }
 
 private fun playLevel(level: Level) {
@@ -72,13 +81,40 @@ private fun playLevel(level: Level) {
     )
 }
 
-private fun pvp(width: Int, height: Int, dots: Int) {
-    val end = loop(GameState.start(width, height, dots), mapOf(Player.RED to null, Player.BLUE to null)) ?: return
+private fun versus(args: List<String>) {
+    val tier = args.firstOrNull { it.toIntOrNull() == null && it.lowercase() in TIERS.keys.map(String::lowercase) } ?: "normal"
+    val opening = args.firstOrNull { it.toIntOrNull() == null && it.lowercase() !in TIERS.keys.map(String::lowercase) } ?: "cross"
+    val numbers = args.mapNotNull { it.toIntOrNull() }
+    val width = numbers.getOrNull(0) ?: 16
+    val height = numbers.getOrNull(1) ?: 14
+    val computer = SearchAi(TIERS.getValue(tier.uppercase()))
+    println("You are RED and move first against a ${tier.uppercase()} computer on ${width}x$height.")
+    val start = GameState.start(width, height, dots = openingDots(opening.lowercase(), width, height))
+    val end = loop(start, mapOf(Player.RED to null, Player.BLUE to computer)) ?: return
+    summarize(end)
+}
+
+private fun pvp(args: List<String>) {
+    val numbers = args.mapNotNull { it.toIntOrNull() }
+    val opening = args.firstOrNull { it.toIntOrNull() == null } ?: "cross"
+    val width = numbers.getOrNull(0) ?: 20
+    val height = numbers.getOrNull(1) ?: 16
+    val start = GameState.start(width, height, numbers.getOrNull(2), dots = openingDots(opening.lowercase(), width, height))
+    val end = loop(start, mapOf(Player.RED to null, Player.BLUE to null)) ?: return
+    summarize(end)
+}
+
+private fun summarize(end: GameState) {
     val winner = end.winner
     println(
         if (winner == null) "A draw at ${end.score(Player.RED)} each."
         else "$winner wins ${end.score(winner)} to ${end.score(winner.opponent)}.",
     )
+}
+
+private sealed interface Command {
+    data class Act(val action: Action) : Command
+    data object Quit : Command
 }
 
 /** Runs a game; a null entry in [seats] is a human at the keyboard. Returns null if the player quit. */
@@ -89,61 +125,56 @@ private fun loop(start: GameState, seats: Map<Player, Ai?>): GameState? {
         print(render(state, last))
         val mover = state.toMove
         val ai = seats.getValue(mover)
+        val action: Action
+        var thoughtMs: Long? = null
         if (ai == null) {
-            when (val command = ask(state)) {
+            action = when (val command = ask(state)) {
                 Command.Quit -> return null
-                Command.Pass -> {
-                    state = state.pass()
-                    println("$mover passes")
-                }
-                is Command.Move -> {
-                    val result = state.play(command.pos)
-                    announce(mover, command.pos, result)
-                    state = result.state
-                    last = command.pos
-                }
+                is Command.Act -> command.action
             }
         } else {
             val started = System.nanoTime()
-            val move = ai.chooseMove(state)
-            if (move == null) {
-                state = state.pass()
-                println("$mover passes")
-            } else {
-                val result = state.play(move)
-                println("($mover thought for ${(System.nanoTime() - started) / 1_000_000} ms)")
-                announce(mover, move, result)
-                state = result.state
-                last = move
-            }
+            action = ai.choose(state)
+            thoughtMs = (System.nanoTime() - started) / 1_000_000
         }
+        val result = state.apply(action)
+        if (thoughtMs != null) println("($mover thought for $thoughtMs ms)")
+        println(describe(mover, action, result))
+        state = result.state
+        if (action is Action.Place) last = action.pos
     }
     print(render(state, last))
     return state
 }
 
-private fun announce(mover: Player, pos: Pos, result: MoveResult) {
-    val captured = result.captures.sumOf { it.dots.size }
-    val who = result.captures.firstOrNull()?.by
-    val note = if (captured == 0) "" else ": ${who} captures $captured dot${if (captured == 1) "" else "s"}!"
-    println("$mover plays ${name(pos)}$note")
+private fun describe(mover: Player, action: Action, result: MoveResult): String = when (action) {
+    is Action.Place -> {
+        val captured = result.captures.sumOf { it.dots.size }
+        val note = if (captured == 0) "" else ": ${result.captures.first().by} captures $captured dot${if (captured == 1) "" else "s"}!"
+        "$mover plays ${name(action.pos)}$note"
+    }
+    Action.Pass -> "$mover passes"
+    Action.Stop -> "$mover declares its remaining dots grounded - ${mover.opponent} may now capture whatever it can"
+    Action.Finish -> "$mover is done capturing"
 }
 
 private fun name(pos: Pos) = "${'a' + pos.x}${pos.y + 1}"
 
 private fun ask(state: GameState): Command {
     while (true) {
-        print("${state.toMove}> ")
+        print("${state.toMove}${if (state.isCleanup) " (capturing, type done to finish)" else ""}> ")
         val line = readlnOrNull()?.trim()?.lowercase() ?: return Command.Quit
-        when {
-            line == "quit" || line == "q" -> return Command.Quit
-            line == "pass" || line == "p" -> return Command.Pass
+        when (line) {
+            "quit", "q" -> return Command.Quit
+            "pass", "p" -> if (state.isCleanup) println("Place dots, or type done.") else return Command.Act(Action.Pass)
+            "stop", "s" -> if (state.isCleanup) println("Place dots, or type done.") else return Command.Act(Action.Stop)
+            "done", "d" -> if (state.isCleanup) return Command.Act(Action.Finish) else println("done only applies after the opponent has stopped.")
             else -> {
                 val pos = parse(line, state)
                 when {
-                    pos == null -> println("Type a move like e5 (columns a-${'a' + state.width - 1}, rows 1-${state.height}).")
+                    pos == null -> println("Type a move like e5 (columns a-${'a' + state.width - 1}, rows 1-${state.height}), or stop / pass / quit.")
                     !state.isLegal(pos) -> println("${name(pos)} is not playable.")
-                    else -> return Command.Move(pos)
+                    else -> return Command.Act(Action.Place(pos))
                 }
             }
         }
@@ -187,6 +218,7 @@ private fun render(state: GameState, last: Pos?): String = buildString {
         "${paint(p.name, p)} ${state.score(p)} captured" + (state.dotsLeft(p)?.let { ", $it dots left" } ?: "")
     }
     append("\n    $left\n")
+    if (state.isCleanup) append("    ${state.stopper} has stopped: ${state.cleaner} is collecting\n")
     append("    (r/b = captured, ',' = out of play)\n\n")
 }
 

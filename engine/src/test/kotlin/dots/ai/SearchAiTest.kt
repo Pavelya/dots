@@ -1,11 +1,14 @@
 package dots.ai
 
+import dots.engine.Action
 import dots.engine.GameState
+import dots.engine.Openings
 import dots.engine.Player
 import dots.engine.Pos
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -91,5 +94,92 @@ class SearchAiTest {
         }
 
         assertEquals(game(), game())
+    }
+
+    private fun wonPosition(dotsPerPlayer: Int? = null): GameState {
+        val map = """
+            ..R...
+            .RBR..
+            ......
+            ......
+            ......
+            ......
+        """
+        return GameState.fromAscii(map, dotsPerPlayer).play(Pos(2, 2)).state.play(Pos(5, 5)).state
+    }
+
+    @Test
+    fun `declares its dots grounded once the game is decided`() {
+        val state = wonPosition()
+
+        assertEquals(1, state.score(Player.RED))
+        assertEquals(Action.Stop, SearchAi(AiConfig.HARD, Random(1)).choose(state))
+    }
+
+    @Test
+    fun `keeps playing while a win is not certain and when a dot budget ends the game anyway`() {
+        val fresh = GameState.start(6, 6)
+        assertTrue(SearchAi(AiConfig.HARD, Random(1)).choose(fresh) is Action.Place)
+
+        val budgeted = wonPosition(dotsPerPlayer = 5)
+        assertTrue(SearchAi(AiConfig.HARD, Random(1)).choose(budgeted) is Action.Place)
+    }
+
+    @Test
+    fun `collecting after a stop captures every exposed group and leaves grounded dots alone`() {
+        val stopped = GameState.fromAscii(
+            """
+            B........
+            .........
+            .........
+            .........
+            ....B....
+            .........
+            .........
+            .........
+            .........
+            """,
+            first = Player.BLUE,
+        ).stop()
+        val ai = SearchAi(AiConfig.EASY, Random(1))
+
+        var state = stopped
+        var steps = 0
+        while (!state.isOver) {
+            state = state.apply(ai.choose(state)).state
+            check(++steps < 100) { "collecting never finished" }
+        }
+
+        assertEquals(1, state.score(Player.RED))
+        assertEquals(Player.RED, state.winner)
+        assertFalse(state.isCaptured(0, 0), "a dot on the border cannot be captured")
+        assertTrue(state.isCaptured(4, 4))
+    }
+
+    @Test
+    fun `computers finish an open-ended game from a cross`() {
+        val start = GameState.start(7, 7, dots = Openings.cross(7, 7))
+        val end = Match.playOut(start, SearchAi(AiConfig.EASY, Random(1)), SearchAi(AiConfig.EASY, Random(2)))
+
+        assertTrue(end.isOver)
+    }
+
+    @Test
+    fun `collecting walls in each exposed dot with the fewest dots`() {
+        // From the cross, red stops at once. Blue's own cross dots already guard two sides of each
+        // red dot, so two more dots per red dot suffice: four moves for two captures.
+        val stopped = GameState.start(8, 8, dots = Openings.cross(8, 8)).stop()
+        val ai = SearchAi(AiConfig.EASY, Random(1))
+
+        var state = stopped
+        var steps = 0
+        while (!state.isOver) {
+            state = state.apply(ai.choose(state)).state
+            check(++steps < 100) { "collecting never finished" }
+        }
+
+        assertEquals(2, state.score(Player.BLUE))
+        assertEquals(4, state.moveCount)
+        assertEquals(Player.BLUE, state.winner)
     }
 }

@@ -20,8 +20,8 @@ data class Level(
     val human: Player get() = Player.RED
     val computer: Player get() = Player.BLUE
 
-    /** Dots the computer starts with. */
-    val headStart: Int get() = map.count { it == Player.BLUE.symbol }
+    /** How many more dots than the human the computer starts with. */
+    val headStart: Int get() = map.count { it == computer.symbol } - map.count { it == human.symbol }
 
     fun newGame(): GameState = GameState.fromAscii(map, dotsPerPlayer, first = human)
 }

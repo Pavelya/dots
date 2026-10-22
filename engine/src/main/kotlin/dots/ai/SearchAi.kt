@@ -1,6 +1,8 @@
 package dots.ai
 
+import dots.engine.Action
 import dots.engine.GameState
+import dots.engine.Grounding
 import dots.engine.Player
 import dots.engine.Pos
 import kotlin.math.abs
@@ -22,7 +24,27 @@ class SearchAi(
 
     private class Node(val pos: Pos, val state: GameState, val key: Int, val local: Int)
 
-    override fun chooseMove(state: GameState): Pos? {
+    override fun choose(state: GameState): Action {
+        if (state.isOver) return Action.Pass
+        if (state.isCleanup) return Cleanup.next(state)
+        if (shouldStop(state)) return Action.Stop
+        return chooseMove(state)?.let { Action.Place(it) } ?: Action.Pass
+    }
+
+    /**
+     * Declares the dots grounded once the game is already won: even if the opponent captured every
+     * dot of mine that is still exposed, they would not catch up. Not used with a dot budget,
+     * which ends the game by itself.
+     */
+    private fun shouldStop(state: GameState): Boolean {
+        val me = state.toMove
+        if (state.dotsLeft(me) != null) return false
+        val exposed = Grounding.ungrounded(state, me).sumOf { it.size }
+        return state.score(me) > state.score(me.opponent) + exposed
+    }
+
+    /** The best dot to place, ignoring stop/pass; null if nothing can be placed. */
+    fun chooseMove(state: GameState): Pos? {
         if (state.isOver) return null
         val me = state.toMove
         val candidates = candidates(state)
