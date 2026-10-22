@@ -31,8 +31,11 @@ internal object Cleanup {
         return best?.let { Action.Place(it.first()) } ?: Action.Finish
     }
 
-    /** The cells to build on to enclose [group], or null if it cannot be enclosed. */
-    private fun cheapestEnclosure(state: GameState, group: List<Pos>, cleaner: Player): List<Pos>? {
+    /**
+     * The cells to build on to enclose [group], or null if it cannot be enclosed. Slow but simple;
+     * [ThreatFinder] is the fast version used inside the search and is tested against this one.
+     */
+    internal fun cheapestEnclosure(state: GameState, group: List<Pos>, cleaner: Player): List<Pos>? {
         val width = state.width
         val height = state.height
         val n = width * height

@@ -19,6 +19,7 @@ private const val USAGE = """Dots - terminal prototype
   play [level]                          campaign level against the computer (you are red and move first)
   vs [tier] [width height] [opening]    classic open-ended game against the computer
   pvp [width height] [opening] [dots]   two players on one keyboard
+  watch [tierA] [tierB] [size] [dots]   two computers play each other (A is red)
   bench tiers [games]                   round-robin of the AI difficulty tiers
   bench levels [games] [tier]           a stand-in human (default NORMAL) plays every level
 
@@ -36,6 +37,7 @@ fun main(args: Array<String>) {
         "play" -> playLevel(Campaign.level(args.getOrNull(1)?.toIntOrNull() ?: 1))
         "vs" -> versus(args.drop(1))
         "pvp" -> pvp(args.drop(1))
+        "watch" -> watch(args.drop(1))
         "bench" -> Bench.run(args.drop(1))
         else -> println(USAGE)
     }
@@ -101,6 +103,18 @@ private fun pvp(args: List<String>) {
     val height = numbers.getOrNull(1) ?: 16
     val start = GameState.start(width, height, numbers.getOrNull(2), dots = openingDots(opening.lowercase(), width, height))
     val end = loop(start, mapOf(Player.RED to null, Player.BLUE to null)) ?: return
+    summarize(end)
+}
+
+private fun watch(args: List<String>) {
+    val tiers = args.filter { it.toIntOrNull() == null }.map { it.uppercase() }
+    val numbers = args.mapNotNull { it.toIntOrNull() }
+    val size = numbers.getOrNull(0) ?: 8
+    val dots = numbers.getOrNull(1) ?: 20
+    val red = TIERS[tiers.getOrElse(0) { "HARD" }] ?: exitWith("unknown tier ${tiers[0]}")
+    val blue = TIERS[tiers.getOrElse(1) { "HARD" }] ?: exitWith("unknown tier ${tiers[1]}")
+    val start = GameState.start(size, size, dots, dots = Openings.cross(size, size))
+    val end = loop(start, mapOf(Player.RED to SearchAi(red), Player.BLUE to SearchAi(blue))) ?: return
     summarize(end)
 }
 

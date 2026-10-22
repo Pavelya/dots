@@ -13,9 +13,11 @@ import kotlin.random.Random
 /**
  * Alpha-beta search over captured dots, with a small "pressure" bonus for leaning on enemy dots.
  *
- * Every ply only looks at cells near existing dots, ranks them by what the move wins right away
- * and by a cheap neighbourhood heuristic, and searches the best few. That keeps deep levels fast
- * enough for a phone while still finding threats a few moves out.
+ * Every ply considers only a few promising moves. Which ones comes from threats ([ThreatFinder]):
+ * for every enemy group the computer could capture with a few more dots, the cells that wall it in
+ * are tried first, and so are the cells that would stop the opponent's own captures. The rest are
+ * the cells next to the most dots. That is what lets the search build toward a capture several
+ * moves out instead of waiting for one to appear. Not thread-safe.
  */
 class SearchAi(
     private val config: AiConfig = AiConfig.NORMAL,
@@ -23,6 +25,8 @@ class SearchAi(
 ) : Ai {
 
     private class Node(val pos: Pos, val state: GameState, val key: Int, val local: Int)
+
+    private val finder = ThreatFinder()
 
     override fun choose(state: GameState): Action {
         if (state.isOver) return Action.Pass
@@ -70,9 +74,9 @@ class SearchAi(
     }
 
     private fun search(state: GameState, me: Player, depth: Int, alpha: Int, beta: Int): Int {
-        if (depth == 0 || state.isOver) return evaluate(state, me)
+        if (depth == 0 || state.isOver) return evaluateLeaf(state, me)
         val nodes = expand(state, me, config.breadth)
-        if (nodes.isEmpty()) return evaluate(state, me)
+        if (nodes.isEmpty()) return evaluateLeaf(state, me)
 
         val maximizing = state.toMove == me
         var low = alpha
@@ -96,14 +100,75 @@ class SearchAi(
     private fun expand(state: GameState, me: Player, limit: Int): List<Node> {
         val mover = state.toMove
         val sign = if (mover == me) 1 else -1
-        return candidates(state)
+        val bonus = threatBonus(state, mover)
+        return movesToTry(state, bonus)
             .map { pos ->
                 val child = state.play(pos).state
-                val local = neighbourhood(state, pos, mover)
+                val local = neighbourhood(state, pos, mover) + (bonus?.get(pos.y * state.width + pos.x) ?: 0)
                 Node(pos, child, sign * evaluate(child, me) + local, local)
             }
             .sortedByDescending { it.key }
             .take(limit)
+    }
+
+    /**
+     * A bonus per cell for walling in an enemy group that is close to capture, or for getting in
+     * the way of the opponent doing the same; null when the tier does not look at threats.
+     */
+    private fun threatBonus(state: GameState, mover: Player): IntArray? {
+        if (config.attackReach == 0 && config.dangerReach == 0) return null
+        val bonus = IntArray(state.width * state.height)
+        for (threat in finder.find(state, mover.opponent, config.attackReach)) {
+            for (cell in threat.cells) bonus[cell] += weight(ATTACK, threat)
+        }
+        for (threat in finder.find(state, mover, config.dangerReach)) {
+            for (cell in threat.cells) bonus[cell] += weight(DANGER, threat)
+        }
+        return bonus
+    }
+
+    private fun weight(table: IntArray, threat: Threat): Int =
+        table[min(threat.cost, table.size - 1)] * min(threat.size, MAX_GROUP_WEIGHT)
+
+    /** Without threat guidance every cell near a dot; with it the threat cells plus the busiest few. */
+    private fun movesToTry(state: GameState, bonus: IntArray?): List<Pos> {
+        val near = candidates(state)
+        if (bonus == null) return near
+        val mover = state.toMove
+        val chosen = LinkedHashSet<Pos>()
+        near.sortedByDescending { neighbourhood(state, it, mover) }.take(config.breadth + EXTRA_NEIGHBOURS).forEach { chosen += it }
+        for (i in bonus.indices) {
+            if (bonus[i] <= 0) continue
+            val pos = Pos(i % state.width, i / state.width)
+            if (state.isLegal(pos)) chosen += pos
+        }
+        return chosen.toList()
+    }
+
+    /**
+     * The value of a position where the search stops.
+     *
+     * Besides captured dots, every group of either side is scored by how close it is to being
+     * walled in. A group one dot from capture is nearly lost if its enemy is to move, and a group
+     * two or three dots away is still a liability: without this a search cannot tell a safe
+     * position from one where a group is slowly being strangled, and searching deeper makes that
+     * blindness worse, not better. Tiers that do not look at threats use the cheaper
+     * [evaluate].
+     */
+    private fun evaluateLeaf(state: GameState, me: Player): Int {
+        if (config.attackReach == 0) return evaluate(state, me)
+        var value = (state.score(me) - state.score(me.opponent)) * SCORE_WEIGHT
+        if (state.isOver) return value
+        val meToMove = state.toMove == me
+        for (threat in finder.find(state, me.opponent, LEAF_REACH)) value += threatValue(threat, meToMove)
+        for (threat in finder.find(state, me, LEAF_REACH)) value -= threatValue(threat, !meToMove)
+        return value
+    }
+
+    /** What a group that costs the attacker [Threat.cost] more dots is worth to the attacker. */
+    private fun threatValue(threat: Threat, attackerToMove: Boolean): Int {
+        val table = if (attackerToMove) TEMPO else NO_TEMPO
+        return table[min(threat.cost, table.size - 1)] * threat.size
     }
 
     private fun evaluate(state: GameState, me: Player): Int =
@@ -185,9 +250,25 @@ class SearchAi(
 
         /** A captured dot outweighs any amount of pressure. */
         const val SCORE_WEIGHT = 10_000
+
+        const val LEAF_REACH = 3
+
+        /** Value per dot of a group that is [cost] dots from capture, when its attacker is to move... */
+        val TEMPO = intArrayOf(0, 9_000, 2_500, 800, 200)
+
+        /** ...and when the other side is to move and may yet defend. */
+        val NO_TEMPO = intArrayOf(0, 3_500, 1_500, 500, 150)
         const val NEAR_WEIGHT = 3
         const val FAR_WEIGHT = 1
         const val OWN_NEIGHBOUR = 3
         const val ENEMY_NEIGHBOUR = 2
+        const val EXTRA_NEIGHBOURS = 6
+        const val MAX_GROUP_WEIGHT = 3
+
+        /** Bonus by cost (dots still needed) for a cell that walls in an enemy group. */
+        val ATTACK = intArrayOf(0, 3000, 600, 120, 30)
+
+        /** The same for a cell that would stop the opponent walling in one of our groups. */
+        val DANGER = intArrayOf(0, 2500, 400, 80, 20)
     }
 }

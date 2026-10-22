@@ -31,6 +31,14 @@ class CampaignTest {
     }
 
     @Test
+    fun `the computer never gets weaker or the game shorter as the levels go on`() {
+        for ((easier, harder) in Campaign.levels.zipWithNext()) {
+            assertTrue(harder.ai.depth >= easier.ai.depth, "${harder.name} has a weaker computer than ${easier.name}")
+            assertTrue(harder.dotsPerPlayer >= easier.dotsPerPlayer, "${harder.name} is shorter than ${easier.name}")
+        }
+    }
+
+    @Test
     fun `the head start grows as the levels get harder`() {
         val headStarts = Campaign.levels.map { it.headStart }
 

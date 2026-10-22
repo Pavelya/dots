@@ -69,43 +69,72 @@ Implemented from the Wikipedia article
 
 ## Computer opponent
 
-`SearchAi` is an alpha-beta search over captured dots, plus a small "pressure" bonus for dots
-placed around enemy dots (without it the search is blind until a capture is one move away). Each
-ply only considers cells near existing dots and expands the best few by immediate gain and a
-neighbourhood heuristic. Difficulty is `AiConfig`: search depth, breadth, and a mistake rate for
-the easy tier. Campaign difficulty also comes from the head-start dots and the dot budget.
+`SearchAi` is an alpha-beta search over captured dots. What makes it play purposefully is a
+measure of **how many more dots until a group is captured**: the minimum vertex cut between the
+group and the border, found by `ThreatFinder` (a small max-flow on the grid, capped at a few dots
+so it is fast enough to run inside the search). It is used three ways:
+
+- **Which moves to try.** At every ply the cells that wall in a nearby enemy group, and the cells
+  that would stop the opponent doing the same to the computer's own groups, are searched first,
+  together with the cells next to the most dots. This is how it builds toward a capture several
+  moves ahead instead of waiting for one to appear.
+- **How to score where the search stops.** Every group of either side is valued by its distance
+  from capture and by whose turn it is: one dot away is nearly lost if its enemy is to move; two
+  or three away is a smaller liability. Before this, deeper search made the computer *worse*
+  (depth 5 lost 0-8 to depth 3), because a position where a group is slowly being strangled looked
+  the same as a safe one.
+- **Collecting** after the opponent stops (below).
+
+Tiers are `AiConfig`: search depth and breadth, how far ahead it looks for threats, and a mistake
+rate. EASY is deliberately blind to threats and plays a random nearby move a third of the time.
+Campaign difficulty also comes from the head-start dots and the dot budget.
 
 Endgame behaviour follows the grounding rule:
 
 - **Stopping.** In a game without a dot budget the computer declares its dots grounded only when
   the game is already decided: its lead exceeds the opponent's score plus every dot of its own
   that is still exposed.
-- **Collecting** (after the human stops). It finds, for each exposed enemy group, the fewest
-  cells that wall it in (a minimum vertex cut, via max-flow) and builds the cheapest one, until
-  nothing is left to take. Known gap: a group already inside the computer's own closed chain
-  would need a dividing wall, which the planner doesn't try.
+- **Collecting** (after the human stops). It builds the cheapest wall around each exposed enemy
+  group, using the same cut computed exactly by `Cleanup`, until nothing is left to take. Known
+  gap: a group already inside the computer's own closed chain would need a dividing wall, which
+  the planner doesn't try.
 
 ### How strong is it, and how hard are the levels?
 
-`cli bench tiers 10` (10×10, 16 dots each, W-L-D for the first-named tier):
+`cli bench tiers 20 10 24` (20 games per pair, 10×10 from a cross, 24 dots each; W-L-D for the
+first-named tier; a HARD move takes tens of milliseconds on a laptop; not yet measured on a phone):
 
 ```
-EASY   vs NORMAL   0-2-8     EASY   vs HARD    0-6-4     EASY   vs EXPERT  0-4-6
-NORMAL vs HARD     0-1-9     NORMAL vs EXPERT  0-0-10    HARD   vs EXPERT  0-1-9
+EASY   vs NORMAL   0-19- 1     EASY   vs HARD    1-19- 0     EASY   vs EXPERT  0-20- 0
+NORMAL vs HARD     0- 5-15     NORMAL vs EXPERT  0- 4-16     HARD   vs EXPERT  2- 3-15
 ```
 
-`cli bench levels 6 normal` (a NORMAL stand-in plays red on each level; W-L-D for the human):
+`cli bench levels 20 <tier>` (a stand-in player of that tier is red on each level; W-L-D for the
+stand-in, 20 games):
 
 ```
-1 Warm-up 5-0-1    2 Open Field 4-0-2   3 Scout 0-0-6      4 Outpost 0-0-6
-5 Rescue  0-1-5    6 Pincer     0-1-5   7 Siege 1-1-4      8 Grandmaster 2-0-4
+                     EASY stand-in    NORMAL stand-in
+1 Warm-up            9- 4- 7          14- 0- 6
+2 Open Field        11- 5- 4          16- 0- 4
+3 Scout              3- 5-12           5- 1-14
+4 Outpost            3-10- 7           5- 0-15
+5 Rescue             0-19- 1           1- 3-16
+6 Pincer             0-19- 1           0- 4-16
+7 Siege              0-17- 3           0- 3-17
+8 Grandmaster        0-20- 0           2-15- 3
 ```
 
-Read this cautiously. A stronger tier never lost to a weaker one, and HARD beats EASY clearly, but
-most games end 0-0: with this many dots on these boards neither side is forced into a capture. So
-NORMAL, HARD and EXPERT are **not yet shown to differ from each other**, and campaign levels 3-7
-don't yet produce decisive games against a stand-in player. Treat both the tiers and the level
-curve as placeholders until real people have played them.
+What this does and does not show:
+
+- There are three real strength levels, **EASY ≪ NORMAL < HARD**, and the campaign now gets steadily
+  harder for both a weak and a strong stand-in. (The first version of the AI drew almost every
+  game 0-0, so its levels could not be told apart.)
+- **EXPERT is not measurably stronger than HARD** (2-3-15) and takes about three times as long to
+  think, so the campaign does not use it. It is kept only for experiments with deeper search.
+- Strong players still draw a lot against the stronger computers: games between equals rarely
+  force a capture.
+- The stand-ins are computers, not people. Levels have not been played by anyone yet, so treat the
+  difficulty curve as a first draft.
 
 ## Next steps
 
@@ -115,7 +144,7 @@ curve as placeholders until real people have played them.
 - Interactive tutorial; themes and piece shapes as cosmetics.
 - Tune the campaign by playing it; add objectives beyond "more captures" and a daily puzzle.
 - Async online play, then ranked.
-- A stronger AI evaluation: the cut size used for collecting is also the natural "how many dots
-  until this group is captured" measure for a search heuristic.
-- Profile the deepest AI tier on a real phone; the capture check is a flood fill and can be made
-  incremental if needed.
+- Find out whether deeper search can be made to pay off (it does not yet beyond depth 3), and
+  profile HARD on a real phone; the capture check is a flood fill and can be made incremental
+  if needed.
+- Score levels by margin (stars) rather than just win/lose, since equal play often ends in a draw.

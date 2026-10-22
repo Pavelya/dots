@@ -5,6 +5,7 @@ import dots.ai.Match
 import dots.ai.SearchAi
 import dots.campaign.Campaign
 import dots.engine.GameState
+import dots.engine.Openings
 import dots.engine.Player
 import kotlin.random.Random
 
@@ -15,9 +16,13 @@ internal object Bench {
     fun run(args: List<String>) {
         val games = args.getOrNull(1)?.toIntOrNull() ?: DEFAULT_GAMES
         when (args.firstOrNull()) {
-            "tiers" -> tiers(games)
+            "tiers" -> tiers(games, args.getOrNull(2)?.toIntOrNull() ?: 10, args.getOrNull(3)?.toIntOrNull() ?: 16)
             "levels" -> levels(games, args.getOrNull(2)?.uppercase() ?: "NORMAL")
-            else -> exitWith("usage: bench tiers [games] | bench levels [games] [tier]")
+            "duel" -> duel(args.drop(1))
+            else -> exitWith(
+                "usage: bench tiers [games] [size] [dots each] | bench levels [games] [tier] |\n" +
+                    "       bench duel games size dots depthA breadthA attackA dangerA depthB breadthB attackB dangerB",
+            )
         }
     }
 
@@ -37,10 +42,10 @@ internal object Bench {
             .format(wins, losses, draws, if (games == 0) 0 else 100 * wins / games, if (games == 0) 0.0 else margin.toDouble() / games)
     }
 
-    /** Each pair plays [games] games on a 10x10 board, 16 dots each, swapping colours every game. */
-    private fun tiers(games: Int) {
+    /** Each pair plays [games] games from the cross opening on a [size] board, swapping colours every game. */
+    private fun tiers(games: Int, size: Int, dots: Int) {
         val names = TIERS.keys.toList()
-        println("Tier round robin, $games games per pair, 10x10, 16 dots each (W-L-D from the first tier's side)")
+        println("Tier round robin, $games games per pair, ${size}x$size from a cross, $dots dots each (W-L-D from the first tier's side)")
         for (i in names.indices) {
             for (j in i + 1 until names.size) {
                 val a = TIERS.getValue(names[i])
@@ -50,7 +55,7 @@ internal object Bench {
                 for (g in 0 until games) {
                     val aIsRed = g % 2 == 0
                     val end = Match.playOut(
-                        GameState.start(10, 10, 16),
+                        GameState.start(size, size, dots, dots = Openings.cross(size, size)),
                         SearchAi(if (aIsRed) a else b, Random(1000 + g)),
                         SearchAi(if (aIsRed) b else a, Random(2000 + g)),
                     )
@@ -60,6 +65,28 @@ internal object Bench {
                 println("%-7s vs %-7s %s  [%d s]".format(names[i], names[j], tally, (System.nanoTime() - started) / 1_000_000_000))
             }
         }
+    }
+
+    /** Two hand-made configurations play each other; for tuning. */
+    private fun duel(args: List<String>) {
+        val n = args.map { it.toIntOrNull() ?: exitWith("not a number: $it") }
+        if (n.size != 11) exitWith("duel needs 11 numbers, got ${n.size}")
+        val (games, size, dots) = n
+        val a = AiConfig(depth = n[3], breadth = n[4], attackReach = n[5], dangerReach = n[6])
+        val b = AiConfig(depth = n[7], breadth = n[8], attackReach = n[9], dangerReach = n[10])
+        val tally = Tally()
+        val started = System.nanoTime()
+        for (g in 0 until games) {
+            val aIsRed = g % 2 == 0
+            val end = Match.playOut(
+                GameState.start(size, size, dots, dots = Openings.cross(size, size)),
+                SearchAi(if (aIsRed) a else b, Random(1000 + g)),
+                SearchAi(if (aIsRed) b else a, Random(2000 + g)),
+            )
+            val aSide = if (aIsRed) Player.RED else Player.BLUE
+            tally.add(end.score(aSide), end.score(aSide.opponent))
+        }
+        println("A=$a\nB=$b\n$games games, ${size}x$size, $dots dots: A $tally  [${(System.nanoTime() - started) / 1_000_000_000} s]")
     }
 
     /** A stand-in human of the given tier plays each level as red against the level's own computer. */

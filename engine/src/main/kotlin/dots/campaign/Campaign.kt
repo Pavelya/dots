@@ -35,7 +35,7 @@ object Campaign {
             ..........
             ..........
             """,
-            dotsPerPlayer = 14, ai = AiConfig.NORMAL,
+            dotsPerPlayer = 14, ai = AiConfig.EASY,
         ),
         Level(
             4, "Outpost",
@@ -52,7 +52,7 @@ object Campaign {
             ...........
             ...........
             """,
-            dotsPerPlayer = 16, ai = AiConfig.NORMAL,
+            dotsPerPlayer = 16, ai = AiConfig.EASY,
         ),
         Level(
             5, "Rescue",
@@ -88,7 +88,7 @@ object Campaign {
             ............
             ............
             """,
-            dotsPerPlayer = 18, ai = AiConfig.HARD,
+            dotsPerPlayer = 18, ai = AiConfig.NORMAL,
         ),
         Level(
             7, "Siege",
@@ -127,7 +127,7 @@ object Campaign {
             ......B..B....
             ..............
             """,
-            dotsPerPlayer = 24, ai = AiConfig.EXPERT,
+            dotsPerPlayer = 24, ai = AiConfig.HARD,
         ),
     )
 
