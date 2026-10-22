@@ -1,0 +1,58 @@
+package dots.campaign
+
+import dots.ai.AiConfig
+import dots.ai.Match
+import dots.ai.SearchAi
+import dots.engine.Player
+import kotlin.random.Random
+import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+class CampaignTest {
+
+    @Test
+    fun `levels are numbered from one without gaps`() {
+        assertEquals((1..Campaign.levels.size).toList(), Campaign.levels.map { it.id })
+    }
+
+    @Test
+    fun `every level opens on a playable position with the human to move`() {
+        for (level in Campaign.levels) {
+            val game = level.newGame()
+
+            assertFalse(game.isOver, level.name)
+            assertEquals(Player.RED, game.toMove, level.name)
+            assertEquals(level.dotsPerPlayer, game.dotsLeft(Player.RED), level.name)
+            assertEquals(0, game.score(Player.RED) + game.score(Player.BLUE), level.name)
+            assertTrue(game.legalMoves().isNotEmpty(), level.name)
+        }
+    }
+
+    @Test
+    fun `the head start grows as the levels get harder`() {
+        val headStarts = Campaign.levels.map { it.headStart }
+
+        assertEquals(0, headStarts.first())
+        assertTrue(headStarts.last() > headStarts.first())
+    }
+
+    @Test
+    fun `every level can be played to the end`() {
+        for (level in Campaign.levels) {
+            val easy = AiConfig.EASY
+            val end = Match.playOut(level.newGame(), SearchAi(easy, Random(level.id)), SearchAi(easy, Random(level.id + 50)))
+
+            assertTrue(end.isOver, level.name)
+            assertEquals(level.dotsPerPlayer * 2, end.moveCount, level.name)
+        }
+    }
+
+    @Test
+    fun `asking for a missing level fails clearly`() {
+        val error = runCatching { Campaign.level(99) }.exceptionOrNull()
+
+        assertTrue(error is NoSuchElementException)
+    }
+}
