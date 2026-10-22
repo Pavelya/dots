@@ -11,25 +11,39 @@ campaign, and a terminal front end to play it. The Android UI is not started yet
 | Module   | What it is |
 |----------|------------|
 | `engine` | Pure Kotlin/JVM library (JVM 17 bytecode, stdlib only): rules, AI, campaign data. Meant to be imported by an Android module. |
-| `cli`    | Terminal game and AI benchmark, built on `engine`. |
+| `cli`    | Terminal game and AI benchmarks, built on `engine`. |
 
 Packages in `engine`: `dots.engine` (rules, openings, grounding), `dots.ai` (computer opponent),
 `dots.campaign` (levels).
 
 ## Run it
 
+Needs a JDK 17 or newer; the Gradle wrapper downloads everything else.
+
 ```sh
 ./gradlew test                      # engine tests
-./gradlew :cli:installDist          # build the terminal game
-cli/build/install/cli/bin/cli levels
+./gradlew :cli:installDist          # build the terminal game (on Windows: gradlew.bat, cli.bat)
+cli/build/install/cli/bin/cli levels                 # list the campaign levels
 cli/build/install/cli/bin/cli play 3                 # campaign level 3, you are red and move first
 cli/build/install/cli/bin/cli vs normal 16 14 cross  # classic open-ended game against the computer
-cli/build/install/cli/bin/cli pvp 20 16 double       # two players, one keyboard
-cli/build/install/cli/bin/cli bench tiers 10         # do harder AI tiers really win?
-cli/build/install/cli/bin/cli bench levels 10        # how does a stand-in human fare on each level?
+cli/build/install/cli/bin/cli pvp 39 32              # two players, one keyboard, traditional size
+cli/build/install/cli/bin/cli watch hard normal      # two computers play each other
 ```
 
-Moves are a column letter and a row number (`e5`). `stop`, `done`, `pass` and `quit` also work.
+Run the game from a real terminal: `./gradlew :cli:run` does not pass keyboard input through.
+
+Moves are a column and a row: `e5`, or `ab12` on boards wider than 26 columns (after `z` come
+`aa`, `ab`, ...). Other commands: `stop` (declare your dots grounded, see the rules), `done`
+(finish collecting after your opponent stopped), `pass`, `quit`. Captured dots show as `r`/`b`,
+cells out of play as `,`.
+
+Benchmarks (computer against computer; see "How strong is it" below):
+
+```sh
+cli/build/install/cli/bin/cli bench tiers 40 10 24      # every tier against every other: games, board size, dots each
+cli/build/install/cli/bin/cli bench levels 20 normal    # a stand-in plays each level: a tier, or "border"
+cli/build/install/cli/bin/cli bench duel                # two custom configurations; prints its arguments
+```
 
 ## Rules
 
@@ -45,7 +59,7 @@ Implemented from the Wikipedia article
 3. **No empty captures.** A chain around no enemy dot captures nothing, and the inside stays
    playable. An enemy dot dropped into such an area is not lost on the spot: it lives until the
    owner closes a *new* chain around it with a newly placed dot. Meanwhile it can be used to
-   complete the intruder's own chain. (My first version captured it immediately; that was wrong.)
+   complete the intruder's own chain.
 4. **Grounding.** A group of dots touching the border can never be surrounded. On their turn, a
    player may **stop**, saying "all the dots I want to keep are grounded". Their opponent then
    moves as often as they like to capture what is left, and ends the game with **done**. Whoever
@@ -67,6 +81,16 @@ Implemented from the Wikipedia article
 - **Not implemented:** the *kropki na dwie kratki* variant (lines of length two and knight-move
   links), more than two players, and restricting early moves to the centre.
 
+## Campaign
+
+Eight levels (`Campaign`) against the computer, with a dot budget each. Difficulty comes from the
+computer's tier, its head start (dots already on the board) and the board size.
+
+- **Only a win passes a level** (`Level.isPassed`); a draw is not enough.
+- **Every level starts the human with dots in the middle.** Otherwise placing every dot on the
+  border would be a safe way never to lose, which is exactly the forced draw the article warns
+  about. A border-only stand-in now loses every level (`bench levels 20 border`).
+
 ## Computer opponent
 
 `SearchAi` is an alpha-beta search over captured dots. What makes it play purposefully is a
@@ -80,14 +104,12 @@ so it is fast enough to run inside the search). It is used three ways:
   moves ahead instead of waiting for one to appear.
 - **How to score where the search stops.** Every group of either side is valued by its distance
   from capture and by whose turn it is: one dot away is nearly lost if its enemy is to move; two
-  or three away is a smaller liability. Before this, deeper search made the computer *worse*
-  (depth 5 lost 0-8 to depth 3), because a position where a group is slowly being strangled looked
-  the same as a safe one.
+  or three away is a smaller liability. Without this a slowly strangled group looks the same as a
+  safe one, and deeper search played worse, not better.
 - **Collecting** after the opponent stops (below).
 
 Tiers are `AiConfig`: search depth and breadth, how far ahead it looks for threats, and a mistake
 rate. EASY is deliberately blind to threats and plays a random nearby move a third of the time.
-Campaign difficulty also comes from the head-start dots and the dot budget.
 
 Endgame behaviour follows the grounding rule:
 
@@ -101,40 +123,49 @@ Endgame behaviour follows the grounding rule:
 
 ### How strong is it, and how hard are the levels?
 
-`cli bench tiers 20 10 24` (20 games per pair, 10×10 from a cross, 24 dots each; W-L-D for the
-first-named tier; a HARD move takes tens of milliseconds on a laptop; not yet measured on a phone):
+**Tiers.** `cli bench tiers 40 10 24`: 40 games per pairing on 10×10 from a cross, 24 dots each.
+Games are played in pairs with the same random seeds and the sides swapped, so luck cancels out.
+W-L-D is for the first-named tier; *p* is a two-sided sign test on the decisive games (below
+about 0.05 the difference is unlikely to be chance).
 
 ```
-EASY   vs NORMAL   0-19- 1     EASY   vs HARD    1-19- 0     EASY   vs EXPERT  0-20- 0
-NORMAL vs HARD     0- 5-15     NORMAL vs EXPERT  0- 4-16     HARD   vs EXPERT  2- 3-15
+EASY   vs NORMAL   0-36- 4  p=0.000      NORMAL vs HARD     1- 8-31  p=0.039
+EASY   vs HARD     1-39- 0  p=0.000      NORMAL vs EXPERT   0- 8-32  p=0.008
+EASY   vs EXPERT   0-40- 0  p=0.000      HARD   vs EXPERT   4- 5-31  p=1.000
 ```
 
-`cli bench levels 20 <tier>` (a stand-in player of that tier is red on each level; W-L-D for the
-stand-in, 20 games):
+So there are three strength levels, **EASY ≪ NORMAL < HARD**. **EXPERT is no stronger than HARD**
+and thinks about three times as long, so the campaign does not use it; it is kept for experiments
+with deeper search. Most games between the stronger tiers are still draws: equals rarely force a
+capture. Two identical configurations come out exactly even by construction.
+
+**Levels.** `cli bench levels 20 <stand-in>`: a stand-in plays red on each level, 20 games;
+W-L-D for the stand-in. EASY stands for a weak player, NORMAL for a strong one, border for
+someone who only plays on the border.
 
 ```
-                     EASY stand-in    NORMAL stand-in
-1 Warm-up            9- 4- 7          14- 0- 6
-2 Open Field        11- 5- 4          16- 0- 4
-3 Scout              3- 5-12           5- 1-14
-4 Outpost            3-10- 7           5- 0-15
-5 Rescue             0-19- 1           1- 3-16
-6 Pincer             0-19- 1           0- 4-16
-7 Siege              0-17- 3           0- 3-17
-8 Grandmaster        0-20- 0           2-15- 3
+                     EASY stand-in    NORMAL stand-in    border-only
+1 Warm-up            9- 4- 7          14- 0- 6           0-19- 1
+2 Open Field        11- 5- 4          16- 0- 4           0-20- 0
+3 Scout              8- 8- 4           8- 1-11           0-19- 1
+4 Outpost            0-20- 0           3- 2-15           0-20- 0
+5 Rescue             0-19- 1           1- 3-16           0-20- 0
+6 Pincer             0-20- 0           1- 9-10           0-19- 1
+7 Siege              0-17- 3           0- 3-17           0-14- 6
+8 Grandmaster        0-20- 0           2-15- 3           0-20- 0
 ```
 
-What this does and does not show:
+Difficulty rises for both stand-ins, but not smoothly for a weak player: level 4 is a wall,
+because that is where the computer starts looking at threats. The stand-ins are computers, not
+people, and nobody has played the levels yet, so treat the curve as a first draft.
 
-- There are three real strength levels, **EASY ≪ NORMAL < HARD**, and the campaign now gets steadily
-  harder for both a weak and a strong stand-in. (The first version of the AI drew almost every
-  game 0-0, so its levels could not be told apart.)
-- **EXPERT is not measurably stronger than HARD** (2-3-15) and takes about three times as long to
-  think, so the campaign does not use it. It is kept only for experiments with deeper search.
-- Strong players still draw a lot against the stronger computers: games between equals rarely
-  force a capture.
-- The stand-ins are computers, not people. Levels have not been played by anyone yet, so treat the
-  difficulty curve as a first draft.
+**Speed.** On a laptop, a HARD move on a 14×14 board takes about 40 ms (EXPERT about 130 ms).
+Not yet measured on a phone.
+
+## Status and checks
+
+- GitHub Actions runs `./gradlew test` on every push and pull request (`.github/workflows`).
+- Not yet verified: using `engine` from an actual Android project, and speed on a real phone.
 
 ## Next steps
 
@@ -142,7 +173,8 @@ What this does and does not show:
   precise-placement aid for fingers, capture animations (`MoveResult.captures` carries the dots
   and the region for exactly that), highlighting grounded dots (`Grounding`).
 - Interactive tutorial; themes and piece shapes as cosmetics.
-- Tune the campaign by playing it; add objectives beyond "more captures" and a daily puzzle.
+- Play-test the campaign with people, smooth the step at level 4, add objectives beyond "more
+  captures" and a daily puzzle.
 - Async online play, then ranked.
 - Find out whether deeper search can be made to pay off (it does not yet beyond depth 3), and
   profile HARD on a real phone; the capture check is a flood fill and can be made incremental

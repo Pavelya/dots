@@ -24,4 +24,7 @@ data class Level(
     val headStart: Int get() = map.count { it == computer.symbol } - map.count { it == human.symbol }
 
     fun newGame(): GameState = GameState.fromAscii(map, dotsPerPlayer, first = human)
+
+    /** A level is passed only by winning: a draw (for instance 0-0) is not enough. */
+    fun isPassed(end: GameState): Boolean = end.isOver && end.winner == human
 }

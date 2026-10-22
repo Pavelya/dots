@@ -3,7 +3,10 @@ package dots.campaign
 import dots.ai.AiConfig
 import dots.ai.Match
 import dots.ai.SearchAi
+import dots.engine.GameState
+import dots.engine.Grounding
 import dots.engine.Player
+import dots.engine.Pos
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,6 +58,35 @@ class CampaignTest {
             assertTrue(end.isOver, level.name)
             assertEquals(level.dotsPerPlayer * 2, end.moveCount, level.name)
         }
+    }
+
+    @Test
+    fun `every level gives the human dots that can be captured`() {
+        // Otherwise playing only on the border would be a safe way to never lose.
+        for (level in Campaign.levels) {
+            assertTrue(Grounding.ungrounded(level.newGame(), level.human).isNotEmpty(), level.name)
+        }
+    }
+
+    @Test
+    fun `only a win passes a level`() {
+        val level = Campaign.levels.first()
+        val drawn = level.newGame().stop().finish()
+        assertTrue(drawn.isOver)
+        assertFalse(level.isPassed(drawn), "a 0-0 draw")
+        assertFalse(level.isPassed(level.newGame()), "an unfinished game")
+
+        val won = GameState.fromAscii(
+            """
+            .....
+            ..R..
+            .RBR.
+            .....
+            .....
+            """,
+            dotsPerPlayer = 1,
+        ).play(Pos(2, 3)).state.play(Pos(0, 0)).state
+        assertTrue(level.isPassed(won))
     }
 
     @Test

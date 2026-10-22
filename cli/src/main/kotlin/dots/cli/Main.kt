@@ -18,12 +18,14 @@ private const val USAGE = """Dots - terminal prototype
   levels                                list the campaign levels
   play [level]                          campaign level against the computer (you are red and move first)
   vs [tier] [width height] [opening]    classic open-ended game against the computer
-  pvp [width height] [opening] [dots]   two players on one keyboard
+  pvp [width height] [opening] [dots]   two players on one keyboard (traditional size: 39 32)
   watch [tierA] [tierB] [size] [dots]   two computers play each other (A is red)
-  bench tiers [games]                   round-robin of the AI difficulty tiers
-  bench levels [games] [tier]           a stand-in human (default NORMAL) plays every level
+  bench tiers [games] [size] [dots]     round-robin of the AI difficulty tiers
+  bench levels [games] [stand-in]       a stand-in player (a tier, or border) plays every level
+  bench duel ...                        two custom configurations play each other (run it for help)
 
   tier: easy, normal, hard, expert        opening: cross (default), double, crosses, empty
+  boards are 3 to 99 in each direction; columns after z are aa, ab, ...
 
 Moves are a column letter and a row number, e.g. e5. Other commands:
   stop   declare that all the dots you want to keep are grounded; the opponent may then capture
@@ -34,7 +36,7 @@ Moves are a column letter and a row number, e.g. e5. Other commands:
 fun main(args: Array<String>) {
     when (args.firstOrNull()) {
         "levels" -> listLevels()
-        "play" -> playLevel(Campaign.level(args.getOrNull(1)?.toIntOrNull() ?: 1))
+        "play" -> playLevel(levelFrom(args.getOrNull(1)))
         "vs" -> versus(args.drop(1))
         "pvp" -> pvp(args.drop(1))
         "watch" -> watch(args.drop(1))
@@ -51,6 +53,17 @@ private fun listLevels() {
                 .format(level.id, level.name, size, size, level.dotsPerPlayer, level.headStart, tierName(level.ai)),
         )
     }
+}
+
+private fun levelFrom(arg: String?): Level {
+    if (arg == null) return Campaign.levels.first()
+    val id = arg.toIntOrNull()
+    return Campaign.levels.firstOrNull { it.id == id }
+        ?: exitWith("No level '$arg': choose 1 to ${Campaign.levels.size} (see: cli levels)")
+}
+
+private fun checkSize(width: Int, height: Int) {
+    if (width !in 3..99 || height !in 3..99) exitWith("Boards are 3 to 99 in each direction, not ${width}x$height")
 }
 
 private fun tierName(config: AiConfig): String = TIERS.entries.firstOrNull { it.value == config }?.key ?: "custom"
@@ -76,9 +89,9 @@ private fun playLevel(level: Level) {
     val end = loop(level.newGame(), mapOf(level.human to null, level.computer to computer)) ?: return
     println(
         when (end.winner) {
-            level.human -> "You win ${end.score(level.human)} to ${end.score(level.computer)}!"
-            level.computer -> "The computer wins ${end.score(level.computer)} to ${end.score(level.human)}."
-            else -> "A draw at ${end.score(level.human)} each."
+            level.human -> "You win ${end.score(level.human)} to ${end.score(level.computer)} - level passed!"
+            level.computer -> "The computer wins ${end.score(level.computer)} to ${end.score(level.human)}. Try again."
+            else -> "A draw at ${end.score(level.human)} each - not enough: you need more captures than the computer."
         },
     )
 }
@@ -89,6 +102,7 @@ private fun versus(args: List<String>) {
     val numbers = args.mapNotNull { it.toIntOrNull() }
     val width = numbers.getOrNull(0) ?: 16
     val height = numbers.getOrNull(1) ?: 14
+    checkSize(width, height)
     val computer = SearchAi(TIERS.getValue(tier.uppercase()))
     println("You are RED and move first against a ${tier.uppercase()} computer on ${width}x$height.")
     val start = GameState.start(width, height, dots = openingDots(opening.lowercase(), width, height))
@@ -101,6 +115,7 @@ private fun pvp(args: List<String>) {
     val opening = args.firstOrNull { it.toIntOrNull() == null } ?: "cross"
     val width = numbers.getOrNull(0) ?: 20
     val height = numbers.getOrNull(1) ?: 16
+    checkSize(width, height)
     val start = GameState.start(width, height, numbers.getOrNull(2), dots = openingDots(opening.lowercase(), width, height))
     val end = loop(start, mapOf(Player.RED to null, Player.BLUE to null)) ?: return
     summarize(end)
@@ -111,6 +126,7 @@ private fun watch(args: List<String>) {
     val numbers = args.mapNotNull { it.toIntOrNull() }
     val size = numbers.getOrNull(0) ?: 8
     val dots = numbers.getOrNull(1) ?: 20
+    checkSize(size, size)
     val red = TIERS[tiers.getOrElse(0) { "HARD" }] ?: exitWith("unknown tier ${tiers[0]}")
     val blue = TIERS[tiers.getOrElse(1) { "HARD" }] ?: exitWith("unknown tier ${tiers[1]}")
     val start = GameState.start(size, size, dots, dots = Openings.cross(size, size))
@@ -172,7 +188,12 @@ private fun describe(mover: Player, action: Action, result: MoveResult): String 
     Action.Finish -> "$mover is done capturing"
 }
 
-private fun name(pos: Pos) = "${'a' + pos.x}${pos.y + 1}"
+private fun name(pos: Pos) = "${column(pos.x)}${pos.y + 1}"
+
+/** Column names like a spreadsheet: a..z, then aa, ab, ... */
+private fun column(x: Int): String = if (x < 26) "${'a' + x}" else "${'a' + (x / 26 - 1)}${'a' + x % 26}"
+
+private fun columnIndex(name: String): Int = if (name.length == 1) name[0] - 'a' else (name[0] - 'a' + 1) * 26 + (name[1] - 'a')
 
 private fun ask(state: GameState): Command {
     while (true) {
@@ -186,7 +207,7 @@ private fun ask(state: GameState): Command {
             else -> {
                 val pos = parse(line, state)
                 when {
-                    pos == null -> println("Type a move like e5 (columns a-${'a' + state.width - 1}, rows 1-${state.height}), or stop / pass / quit.")
+                    pos == null -> println("Type a move like e5 (columns a-${column(state.width - 1)}, rows 1-${state.height}), or stop / pass / quit.")
                     !state.isLegal(pos) -> println("${name(pos)} is not playable.")
                     else -> return Command.Act(Action.Place(pos))
                 }
@@ -196,8 +217,8 @@ private fun ask(state: GameState): Command {
 }
 
 private fun parse(text: String, state: GameState): Pos? {
-    val match = Regex("([a-z])\\s*(\\d{1,2})").matchEntire(text) ?: return null
-    val x = match.groupValues[1][0] - 'a'
+    val match = Regex("([a-z]{1,2})\\s*(\\d{1,2})").matchEntire(text) ?: return null
+    val x = columnIndex(match.groupValues[1])
     val y = match.groupValues[2].toInt() - 1
     return Pos(x, y).takeIf { state.inBounds(x, y) }
 }
@@ -212,19 +233,20 @@ private fun paint(text: String, player: Player?, dim: Boolean = false, highlight
 }
 
 private fun render(state: GameState, last: Pos?): String = buildString {
+    val cell = if (state.width > 26) 3 else 2
     append("\n    ")
-    for (x in 0 until state.width) append('a' + x).append(' ')
+    for (x in 0 until state.width) append(column(x).padEnd(cell))
     append('\n')
     for (y in 0 until state.height) {
         append("%2d  ".format(y + 1))
         for (x in 0 until state.width) {
             val owner = state.ownerAt(x, y)
-            val cell = when {
+            val symbol = when {
                 owner == null -> if (state.isDead(x, y)) "," else "."
                 state.isCaptured(x, y) -> paint(owner.symbol.lowercase(), owner, dim = true)
                 else -> paint(owner.symbol.toString(), owner, highlight = Pos(x, y) == last)
             }
-            append(cell).append(' ')
+            append(symbol).append(" ".repeat(cell - 1))
         }
         append('\n')
     }

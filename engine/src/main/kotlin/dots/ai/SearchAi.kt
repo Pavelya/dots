@@ -11,7 +11,9 @@ import kotlin.math.min
 import kotlin.random.Random
 
 /**
- * Alpha-beta search over captured dots, with a small "pressure" bonus for leaning on enemy dots.
+ * Alpha-beta search over captured dots. Tiers that look at threats score the positions where the
+ * search stops by how close every group is to capture ([evaluateLeaf]); EASY uses a cheap
+ * "pressure" count of dots placed around enemy dots instead.
  *
  * Every ply considers only a few promising moves. Which ones comes from threats ([ThreatFinder]):
  * for every enemy group the computer could capture with a few more dots, the cells that wall it in
