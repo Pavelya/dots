@@ -94,9 +94,9 @@ P-01 ─┬─ P-02 ───────────────┐
 
 | Task | Status |
 |---|---|
-| P-01 Approve the charter | Waiting for owner |
-| P-02 Engine additions | Not started |
-| P-03 App skeleton and CI | Not started |
+| P-01 Approve the charter | Done 2026-11-04 |
+| P-02 Engine additions | In progress |
+| P-03 App skeleton and CI | In progress |
 | P-04 Board view and placement | Not started |
 | P-05 Playing a game | Not started |
 | P-06 Threat highlight | Not started |

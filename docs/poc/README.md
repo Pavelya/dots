@@ -1,6 +1,6 @@
 # Dots POC: charter
 
-**Status:** draft, waiting for the owner's approval (task P-01).
+**Status:** approved by the owner on 2026-11-04 (task P-01), with decisions D-POC-1 to 3 as proposed below.
 **One question:** do people enjoy the core game on a phone, enough to keep playing without being asked?
 
 Everything else (themes, figures, animations, sound, campaign, online play, store release) is
@@ -62,9 +62,9 @@ English, Play Store release.
 - The test build is shared as an APK file, not through the Play Store (decision D-POC-2 below).
 - No personal data leaves the phone unless the tester shares their log file themselves.
 
-## Decisions needed from the owner before building
+## Decisions (approved 2026-11-04)
 
-| ID | Decision | Proposal |
+| ID | Decision | Approved |
 |---|---|---|
 | D-POC-1 | App ID (permanent if the app is ever published) | `io.github.pavelya.dots` |
 | D-POC-2 | How testers install it | APK attached to a GitHub Release; Android asks testers to allow the install once |
