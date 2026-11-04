@@ -8,6 +8,7 @@ import dots.campaign.Level
 import dots.engine.Action
 import dots.engine.GameState
 import dots.engine.MoveResult
+import dots.engine.Notation
 import dots.engine.Openings
 import dots.engine.Player
 import dots.engine.Pos
@@ -189,12 +190,9 @@ private fun describe(mover: Player, action: Action, result: MoveResult): String 
     Action.Finish -> "$mover is done capturing"
 }
 
-private fun name(pos: Pos) = "${column(pos.x)}${pos.y + 1}"
+private fun name(pos: Pos) = Notation.name(pos)
 
-/** Column names like a spreadsheet: a..z, then aa, ab, ... */
-private fun column(x: Int): String = if (x < 26) "${'a' + x}" else "${'a' + (x / 26 - 1)}${'a' + x % 26}"
-
-private fun columnIndex(name: String): Int = if (name.length == 1) name[0] - 'a' else (name[0] - 'a' + 1) * 26 + (name[1] - 'a')
+private fun column(x: Int) = Notation.column(x)
 
 private fun ask(state: GameState): Command {
     while (true) {
@@ -217,12 +215,7 @@ private fun ask(state: GameState): Command {
     }
 }
 
-private fun parse(text: String, state: GameState): Pos? {
-    val match = Regex("([a-z]{1,2})\\s*(\\d{1,2})").matchEntire(text) ?: return null
-    val x = columnIndex(match.groupValues[1])
-    val y = match.groupValues[2].toInt() - 1
-    return Pos(x, y).takeIf { state.inBounds(x, y) }
-}
+private fun parse(text: String, state: GameState): Pos? = Notation.parse(text)?.takeIf { state.inBounds(it.x, it.y) }
 
 private val color = System.console() != null && System.getenv("NO_COLOR") == null
 

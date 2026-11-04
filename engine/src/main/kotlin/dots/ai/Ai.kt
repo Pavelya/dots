@@ -21,6 +21,8 @@ interface Ai {
  *   more dots and tries those cells first; 0 turns it off.
  * @param dangerReach the same for its own groups the opponent could capture: it considers
  *   blocking those cells first.
+ * @param timeLimitMillis if set, the computer answers within about this many milliseconds,
+ *   searching as deep as time allows up to [depth]; null searches to [depth] however long it takes.
  */
 data class AiConfig(
     val depth: Int,
@@ -29,6 +31,7 @@ data class AiConfig(
     val reach: Int = 2,
     val attackReach: Int = 0,
     val dangerReach: Int = 0,
+    val timeLimitMillis: Long? = null,
 ) {
     init {
         require(depth >= 1) { "depth must be at least 1" }
@@ -36,6 +39,7 @@ data class AiConfig(
         require(mistakeRate in 0.0..1.0) { "mistakeRate must be a probability" }
         require(reach >= 1) { "reach must be at least 1" }
         require(attackReach >= 0 && dangerReach >= 0) { "threat reach must not be negative" }
+        require(timeLimitMillis == null || timeLimitMillis > 0) { "timeLimitMillis must be positive" }
     }
 
     companion object {

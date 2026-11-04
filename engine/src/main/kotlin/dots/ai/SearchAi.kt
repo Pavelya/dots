@@ -9,6 +9,8 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.TimeSource
 
 /**
  * Alpha-beta search over captured dots. Tiers that look at threats score the positions where the
@@ -30,11 +32,24 @@ class SearchAi(
 
     private val finder = ThreatFinder()
 
-    override fun choose(state: GameState): Action {
+    /** Set while a search runs: true once it must give up (time is up or it was cancelled). */
+    private var mustStop: () -> Boolean = { false }
+
+    /** Thrown inside the search to abandon it; never leaves this class. */
+    private class Abandoned : RuntimeException(null, null, false, false)
+
+    override fun choose(state: GameState): Action = choose(state) { false }
+
+    /**
+     * As [choose], but gives up as soon as [isCancelled] returns true (for example when the
+     * player leaves the game screen). A cancelled call still returns a legal action, which the
+     * caller is expected to throw away.
+     */
+    fun choose(state: GameState, isCancelled: () -> Boolean): Action {
         if (state.isOver) return Action.Pass
         if (state.isCleanup) return Cleanup.next(state)
         if (shouldStop(state)) return Action.Stop
-        return chooseMove(state)?.let { Action.Place(it) } ?: Action.Pass
+        return chooseMove(state, isCancelled)?.let { Action.Place(it) } ?: Action.Pass
     }
 
     /**
@@ -49,20 +64,55 @@ class SearchAi(
         return state.score(me) > state.score(me.opponent) + exposed
     }
 
-    /** The best dot to place, ignoring stop/pass; null if nothing can be placed. */
-    fun chooseMove(state: GameState): Pos? {
+    /**
+     * The best dot to place, ignoring stop/pass; null if nothing can be placed.
+     *
+     * Without [AiConfig.timeLimitMillis] it searches to the full depth. With it, it searches one
+     * ply deeper at a time (iterative deepening) and returns the best move of the deepest search
+     * that finished in time; one ply always finishes, so there is always an answer.
+     */
+    fun chooseMove(state: GameState, isCancelled: () -> Boolean = { false }): Pos? {
         if (state.isOver) return null
-        val me = state.toMove
         val candidates = candidates(state)
         if (candidates.isEmpty()) return null
         if (config.mistakeRate > 0 && random.nextDouble() < config.mistakeRate) {
             return candidates[random.nextInt(candidates.size)]
         }
 
+        val limit = config.timeLimitMillis
+        if (limit == null) {
+            mustStop = isCancelled
+            return try {
+                bestMove(state, config.depth)
+            } catch (_: Abandoned) {
+                candidates.first()
+            } finally {
+                mustStop = { false }
+            }
+        }
+
+        val deadline = TimeSource.Monotonic.markNow() + limit.milliseconds
+        var best = bestMove(state, 1)
+        mustStop = { isCancelled() || deadline.hasPassedNow() }
+        try {
+            for (depth in 2..config.depth) {
+                if (mustStop()) break
+                best = bestMove(state, depth)
+            }
+        } catch (_: Abandoned) {
+            // keep the best move of the last search that finished
+        } finally {
+            mustStop = { false }
+        }
+        return best
+    }
+
+    private fun bestMove(state: GameState, depth: Int): Pos {
+        val me = state.toMove
         var bestValue = Int.MIN_VALUE
         val best = ArrayList<Pos>()
         for (node in expand(state, me, config.breadth * 2)) {
-            val value = search(node.state, me, config.depth - 1, -INF, INF) + node.local
+            val value = search(node.state, me, depth - 1, -INF, INF) + node.local
             when {
                 value > bestValue -> {
                     bestValue = value
@@ -76,6 +126,7 @@ class SearchAi(
     }
 
     private fun search(state: GameState, me: Player, depth: Int, alpha: Int, beta: Int): Int {
+        if (mustStop()) throw Abandoned()
         if (depth == 0 || state.isOver) return evaluateLeaf(state, me)
         val nodes = expand(state, me, config.breadth)
         if (nodes.isEmpty()) return evaluateLeaf(state, me)
