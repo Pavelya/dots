@@ -21,8 +21,9 @@ internal object Bench {
             "tiers" -> tiers(games, args.getOrNull(2)?.toIntOrNull() ?: 10, args.getOrNull(3)?.toIntOrNull() ?: 16)
             "levels" -> levels(games, args.getOrNull(2)?.uppercase() ?: "NORMAL")
             "duel" -> duel(args.drop(1))
+            "variants" -> Variants.run(games)
             else -> exitWith(
-                "usage: bench tiers [games] [size] [dots each] | bench levels [games] [tier] |\n" +
+                "usage: bench tiers [games] [size] [dots each] | bench levels [games] [tier] | bench variants [games] |\n" +
                     "       bench duel games size dots depthA breadthA attackA dangerA depthB breadthB attackB dangerB",
             )
         }

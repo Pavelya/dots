@@ -23,6 +23,7 @@ private const val USAGE = """Dots - terminal prototype
   bench tiers [games] [size] [dots]     round-robin of the AI difficulty tiers
   bench levels [games] [stand-in]       a stand-in player (a tier, or border) plays every level
   bench duel ...                        two custom configurations play each other (run it for help)
+  bench variants [games]                how much happens in each game format (draws, captures, ...)
 
   tier: easy, normal, hard, expert        opening: cross (default), double, crosses, empty
   boards are 3 to 99 in each direction; columns after z are aa, ab, ...
