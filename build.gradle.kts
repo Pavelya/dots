@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.android.application) apply false
+    alias(libs.plugins.roborazzi) apply false
 }
 
 // JVM 17 bytecode so the engine can be consumed by the Android app.

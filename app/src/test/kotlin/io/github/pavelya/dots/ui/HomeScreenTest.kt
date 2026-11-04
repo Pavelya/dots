@@ -39,7 +39,7 @@ class HomeScreenTest {
         compose.setContent { DotsApp() }
         val notes = mapOf(
             "Play the computer" to "The game screen arrives in task P-05.",
-            "Two players" to "The game screen arrives in task P-05.",
+            "Two players" to "Red to move · 33 dots left",
             "Rules" to "The rules screen arrives in task P-07.",
             "Settings" to "Settings arrive in task P-07.",
         )

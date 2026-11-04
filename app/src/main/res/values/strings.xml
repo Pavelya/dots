@@ -10,4 +10,16 @@
     <string name="placeholder_game">The game screen arrives in task P-05.</string>
     <string name="placeholder_rules">The rules screen arrives in task P-07.</string>
     <string name="placeholder_settings">Settings arrive in task P-07.</string>
+    <string name="player_red">Red</string>
+    <string name="player_blue">Blue</string>
+    <string name="game_score">Red %1$d · Blue %2$d</string>
+    <string name="game_to_move">%1$s to move</string>
+    <string name="game_won">%1$s wins %2$d to %3$d</string>
+    <string name="game_draw">A draw, %1$d to %1$d</string>
+    <string name="game_hint">Tap a point to choose it, tap it again to place your dot.</string>
+    <string name="board_description">Board, %1$d × %2$d. %3$s.</string>
+    <plurals name="game_to_move_dots">
+        <item quantity="one">%1$s to move · %2$d dot left</item>
+        <item quantity="other">%1$s to move · %2$d dots left</item>
+    </plurals>
 </resources>

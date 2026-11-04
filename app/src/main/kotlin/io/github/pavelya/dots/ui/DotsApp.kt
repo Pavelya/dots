@@ -9,6 +9,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dots.engine.GameSettings
+import io.github.pavelya.dots.game.GameViewModel
+import io.github.pavelya.dots.ui.screen.GameScreen
+import kotlin.random.Random
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.ui.screen.HomeScreen
 import io.github.pavelya.dots.ui.screen.PlaceholderScreen
@@ -45,7 +50,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     PlaceholderScreen(R.string.home_play_computer, R.string.placeholder_game, back)
                 }
                 composable(Routes.TWO_PLAYERS) {
-                    PlaceholderScreen(R.string.home_two_players, R.string.placeholder_game, back)
+                    val game = viewModel { GameViewModel(GameSettings.POC.copy(seed = Random.nextLong())) }
+                    GameScreen(game, back)
                 }
                 composable(Routes.RULES) {
                     PlaceholderScreen(R.string.home_rules, R.string.placeholder_rules, back)

@@ -97,7 +97,7 @@ P-01 ─┬─ P-02 ───────────────┐
 | P-01 Approve the charter | Done 2026-11-04 |
 | P-02 Engine additions | Done 2026-11-04 |
 | P-03 App skeleton and CI | Done in CI 2026-11-04; waiting for the owner to install it on a phone |
-| P-04 Board view and placement | Not started |
+| P-04 Board view and placement | Done in CI 2026-11-04; waiting for the owner's 20-dot placement check on a phone |
 | P-05 Playing a game | Not started |
 | P-06 Threat highlight | Not started |
 | P-07 Rules screen and settings | Not started |

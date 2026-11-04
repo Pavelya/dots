@@ -27,6 +27,7 @@ class GameState private constructor(
     private val owner: ByteArray,
     private val captured: BooleanArray,
     private val dead: BooleanArray,
+    private val enclosedBy: ByteArray,
     private val scores: IntArray,
     private val liveDots: IntArray,
     private val dotsLeft: IntArray,
@@ -94,6 +95,15 @@ class GameState private constructor(
     fun isDead(x: Int, y: Int): Boolean = dead[y * width + x]
 
     fun isDead(pos: Pos): Boolean = isDead(pos.x, pos.y)
+
+    /** For a cell inside a capturing chain: the player whose chain closed it most recently. */
+    fun enclosedBy(x: Int, y: Int): Player? = when (enclosedBy[y * width + x]) {
+        Player.RED.code -> Player.RED
+        Player.BLUE.code -> Player.BLUE
+        else -> null
+    }
+
+    fun enclosedBy(pos: Pos): Player? = enclosedBy(pos.x, pos.y)
 
     fun isLegal(x: Int, y: Int): Boolean =
         !isOver && (isCleanup || dotsLeft[toMove.ordinal] != 0) && inBounds(x, y) &&
@@ -174,7 +184,7 @@ class GameState private constructor(
     private fun canMove(player: Player): Boolean = dotsLeft[player.ordinal] != 0 && playableCells > 0
 
     private fun copy() = GameState(
-        width, height, owner.clone(), captured.clone(), dead.clone(), scores.clone(),
+        width, height, owner.clone(), captured.clone(), dead.clone(), enclosedBy.clone(), scores.clone(),
         liveDots.clone(), dotsLeft.clone(), playableCells, toMove, passesInRow, moveCount, cleaner, finished,
     )
 
@@ -292,6 +302,7 @@ class GameState private constructor(
                 liveDots[enemy.ordinal]--
                 dots += pos
             }
+            enclosedBy[i] = by.code
             if (!dead[i]) {
                 dead[i] = true
                 if (owner[i] == EMPTY) playableCells--
@@ -360,7 +371,7 @@ class GameState private constructor(
             val n = width * height
             val budget = dotsPerPlayer ?: -1
             val state = GameState(
-                width, height, ByteArray(n), BooleanArray(n), BooleanArray(n), IntArray(2),
+                width, height, ByteArray(n), BooleanArray(n), BooleanArray(n), ByteArray(n), IntArray(2),
                 IntArray(2), intArrayOf(budget, budget), n, first, 0, 0, null, false,
             )
             for ((pos, player) in dots) {

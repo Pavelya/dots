@@ -405,4 +405,29 @@ class GameStateTest {
             GameState.start(20, 20, dots = crosses)
         }
     }
+
+    @Test
+    fun `an enclosed area remembers who enclosed it, and a bigger ring takes it over`() {
+        val start = GameState.start(
+            width = 9,
+            height = 9,
+            dots = mapOf(
+                Pos(4, 3) to Player.RED, Pos(3, 4) to Player.RED, Pos(5, 4) to Player.RED,
+                Pos(4, 4) to Player.BLUE,
+                Pos(4, 1) to Player.BLUE, Pos(5, 2) to Player.BLUE, Pos(6, 3) to Player.BLUE,
+                Pos(7, 4) to Player.BLUE, Pos(6, 5) to Player.BLUE, Pos(5, 6) to Player.BLUE,
+                Pos(4, 7) to Player.BLUE, Pos(3, 6) to Player.BLUE, Pos(2, 5) to Player.BLUE,
+                Pos(1, 4) to Player.BLUE, Pos(2, 3) to Player.BLUE,
+            ),
+        )
+        assertNull(start.enclosedBy(4, 4))
+
+        val afterRed = start.play(Pos(4, 5)).state
+        assertEquals(Player.RED, afterRed.enclosedBy(4, 4))
+        assertNull(afterRed.enclosedBy(0, 0))
+
+        val afterBlue = afterRed.play(Pos(3, 2)).state
+        assertEquals(Player.BLUE, afterBlue.enclosedBy(4, 4))
+        assertEquals(Player.BLUE, afterBlue.enclosedBy(4, 3))
+    }
 }
