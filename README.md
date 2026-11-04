@@ -6,6 +6,9 @@ two players alternately place dots on a grid and score by surrounding the other 
 This repository holds the platform-independent game logic, a computer opponent, a sample
 campaign, and a terminal front end to play it. The Android UI is not started yet.
 
+**Current focus: a proof of concept.** A plain Android version to find out whether people
+enjoy the game, before any visual work. Goals, scope, tasks and test plan: [`docs/poc/`](docs/poc/README.md).
+
 ## Layout
 
 | Module   | What it is |
