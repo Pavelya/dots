@@ -1,6 +1,7 @@
 package io.github.pavelya.dots.ui
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -40,11 +41,13 @@ class HomeScreenTest {
         val notes = mapOf(
             "Play the computer" to "The game screen arrives in task P-05.",
             "Two players" to "Red to move · 33 dots left",
-            "Rules" to "The rules screen arrives in task P-07.",
-            "Settings" to "Settings arrive in task P-07.",
+            "Rules" to "Capture more of the other player’s dots than they capture of yours.",
+            "Settings" to "Game length",
         )
         for ((entry, note) in notes) {
             compose.onNodeWithText(entry).performClick()
+            // Some screens first read the saved settings, so give them a moment to appear.
+            compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(note)).fetchSemanticsNodes().isNotEmpty() }
             compose.onNodeWithText(note).assertIsDisplayed()
             compose.onNodeWithText("Back").performClick()
             compose.onNodeWithText("Proof of concept").assertIsDisplayed()

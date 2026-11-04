@@ -8,8 +8,6 @@
     <string name="home_settings">Settings</string>
     <string name="back">Back</string>
     <string name="placeholder_game">The game screen arrives in task P-05.</string>
-    <string name="placeholder_rules">The rules screen arrives in task P-07.</string>
-    <string name="placeholder_settings">Settings arrive in task P-07.</string>
     <string name="player_red">Red</string>
     <string name="player_blue">Blue</string>
     <string name="game_score">Red %1$d · Blue %2$d</string>
@@ -18,8 +16,33 @@
     <string name="game_draw">A draw, %1$d to %1$d</string>
     <string name="game_hint">Tap a point to choose it, tap it again to place your dot.</string>
     <string name="board_description">Board, %1$d × %2$d. %3$s.</string>
+    <string name="settings_board">Board</string>
+    <string name="settings_board_size">%1$d × %2$d</string>
+    <string name="settings_length">Game length</string>
+    <string name="settings_computer">Computer</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_normal">Normal</string>
+    <string name="difficulty_hard">Hard</string>
+    <string name="settings_threats">Show threats</string>
+    <string name="settings_threats_detail">Mark groups of dots that are close to being captured.</string>
+    <string name="rules_goal">Capture more of the other player’s dots than they capture of yours.</string>
+    <string name="rules_chain">Take turns placing one dot on a free point. Your dots link up with neighbouring dots of your colour, also diagonally.</string>
+    <string name="rules_chain_picture">Red’s dots linked into a chain, some diagonally.</string>
+    <string name="rules_capture">Close a ring of your dots around the other player’s dots to capture them. Each captured dot is a point for you, and the inside of the ring is out of play.</string>
+    <string name="rules_capture_picture">A red ring of four dots has captured a blue dot.</string>
+    <string name="rules_edge">Dots on the edge of the board can never be captured. A ring around empty points captures nothing.</string>
+    <string name="rules_edge_picture">A blue dot on the edge, with red dots around it, is safe.</string>
+    <string name="rules_end">Both players have the same number of dots. When all are placed, whoever captured more wins.</string>
     <plurals name="game_to_move_dots">
         <item quantity="one">%1$s to move · %2$d dot left</item>
         <item quantity="other">%1$s to move · %2$d dots left</item>
+    </plurals>
+    <plurals name="settings_length_short">
+        <item quantity="one">Short: %1$d dot each</item>
+        <item quantity="other">Short: %1$d dots each</item>
+    </plurals>
+    <plurals name="settings_length_long">
+        <item quantity="one">Long: %1$d dot each</item>
+        <item quantity="other">Long: %1$d dots each</item>
     </plurals>
 </resources>

@@ -100,7 +100,7 @@ P-01 ─┬─ P-02 ───────────────┐
 | P-04 Board view and placement | Done in CI 2026-11-04; waiting for the owner's 20-dot placement check on a phone |
 | P-05 Playing a game | Not started |
 | P-06 Threat highlight | Not started |
-| P-07 Rules screen and settings | Not started |
+| P-07 Rules screen and settings | Done in CI 2026-11-04; waiting for a newcomer to read the rules and explain captures |
 | P-08 Resume and game log | Not started |
 | P-09 Test build and analysis script | Not started |
 | P-10 Test week and decision | Not started |

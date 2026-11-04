@@ -18,7 +18,9 @@ import dots.engine.Pos
 /**
  * Draws a position: grid, enclosed areas shaded in the colour of the player who closed them, live
  * and captured dots, the last move, and a placement preview. It decides nothing about the game;
- * a tap is reported as the board point it hit (or null when off the board).
+ * a tap is reported as the board point it hit (or null when off the board). [showLinks] draws the
+ * links between neighbouring dots of one colour, which makes chains and rings visible (used to
+ * teach the rules).
  */
 @Composable
 fun BoardView(
@@ -28,6 +30,7 @@ fun BoardView(
     modifier: Modifier = Modifier,
     lastMove: Pos? = null,
     preview: Pos? = null,
+    showLinks: Boolean = false,
     onTap: ((Pos?) -> Unit)? = null,
 ) {
     val tapModifier = if (onTap == null) Modifier else Modifier.pointerInput(state.width, state.height) {
@@ -45,6 +48,7 @@ fun BoardView(
         drawRect(style.background)
         drawAreas(state, geometry, style)
         drawGrid(state, geometry, style)
+        if (showLinks) drawLinks(state, geometry, style)
         drawDots(state, geometry, style)
         lastMove?.let { drawRing(geometry.center(it), geometry.spacing * 0.42f, style.grid, geometry.spacing * 0.06f) }
         preview?.let {
@@ -73,6 +77,24 @@ private fun DrawScope.drawGrid(state: GameState, geometry: BoardGeometry, style:
         drawLine(style.grid, geometry.center(0, y), geometry.center(state.width - 1, y), stroke)
     }
 }
+
+/** A line between every two live dots of one colour that touch, orthogonally or diagonally. */
+private fun DrawScope.drawLinks(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
+    val width = geometry.spacing * 0.08f
+    for (y in 0 until state.height) for (x in 0 until state.width) {
+        val owner = state.ownerAt(x, y) ?: continue
+        if (state.isCaptured(x, y)) continue
+        for ((dx, dy) in LINK_DIRECTIONS) {
+            val nx = x + dx
+            val ny = y + dy
+            if (!state.inBounds(nx, ny) || state.ownerAt(nx, ny) != owner || state.isCaptured(nx, ny)) continue
+            drawLine(style.color(owner).copy(alpha = 0.6f), geometry.center(x, y), geometry.center(nx, ny), width)
+        }
+    }
+}
+
+/** Each touching pair once: right, down, and the two diagonals going right. */
+private val LINK_DIRECTIONS = listOf(1 to 0, 0 to 1, 1 to 1, 1 to -1)
 
 private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
     val radius = geometry.spacing * style.dotRadius
