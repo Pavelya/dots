@@ -162,6 +162,35 @@ people, and nobody has played the levels yet, so treat the curve as a first draf
 **Speed.** On a laptop, a HARD move on a 14×14 board takes about 40 ms (EXPERT about 130 ms).
 Not yet measured on a phone.
 
+### Which game format has the most action?
+
+`cli bench variants 20`: each format played 20 times between two equal stand-ins, a *casual*
+one (NORMAL that plays a random nearby move 25% of the time) and a *strong* one (HARD). It
+measures whether things happen in a game, not whether people enjoy it. Selected rows:
+
+```
+                              draws   captures  lead changes  won from   first capture  first player's
+format (dots each)                    per game  per game      behind     (median move)  share of wins
+strong vs strong
+15x15 empty    (33)            95%     0.1       0.0           0%        never          -
+15x15 1 cross  (33)            55%     0.8       0.1           5%        56             44%
+15x15 4 crosses (33)            5%     4.4       0.5          35%        11             42%
+15x15 4 crosses (67)            5%     6.3       0.7          45%        11             21%
+9x9   4 crosses (12)           45%     2.0       0.1           5%         5             82%
+casual vs casual
+15x15 4 crosses (33)            0%     3.9       0.3          25%         6             40%
+12x12 4 crosses (21)           35%     2.5       0.1           5%         5             69%
+```
+
+- **The opening matters most.** From an empty board equal players draw almost every game; from
+  four random crosses there is contact from the first moves, a capture by about move 10, and
+  comebacks in a third of games.
+- **15x15 with four crosses and about 33 dots each** (66 moves, roughly 5 to 8 minutes for people)
+  is the best candidate default; 67 dots each makes a longer, even livelier game.
+- **Small boards favour the first player** (9x9: 82% to 91% of decisive games) and still draw often.
+- 20 games per row, so differences of a few points are noise; people play differently from
+  these stand-ins, so this picks formats to play-test rather than replacing the test.
+
 ## Status and checks
 
 - GitHub Actions runs `./gradlew test` on every push and pull request (`.github/workflows`).
