@@ -8,22 +8,22 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: 17
-      - uses: gradle/actions/setup-gradle@v4
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v5
       - name: Engine and app tests, lint, builds
         run: ./gradlew --continue :engine:test :cli:installDist :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
       - name: Debug APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: dots-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Reports, when something failed
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: reports
           path: |

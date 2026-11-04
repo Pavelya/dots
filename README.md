@@ -22,7 +22,8 @@ Packages in `engine`: `dots.engine` (rules, openings, grounding, game records), 
 
 ## Run it
 
-Needs a JDK 17 or newer; the Gradle wrapper downloads everything else.
+Needs a JDK 21 (Android Studio bundles one; the engine and CLI also run on 17). The Gradle
+wrapper downloads everything else.
 
 ```sh
 ./gradlew test                      # engine tests

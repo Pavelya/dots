@@ -59,6 +59,8 @@ access, no identifiers beyond what the tester types in a note field.
   `app/src/test/resources/robolectric.properties` until Robolectric supports Android 37 (the
   app's target). Where Maven Central is rate-limited, `ROBOLECTRIC_REPO_URL` points Robolectric's
   own download at a mirror; CI does not need it.
+- The build runs on JDK 21: Robolectric needs it for the Android 35+ runtimes. Code is still
+  compiled to Java 17 bytecode.
 - Lint treats warnings as errors, so a new warning fails the build instead of piling up.
 
 ## What is deliberately temporary
