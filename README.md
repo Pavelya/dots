@@ -4,7 +4,7 @@ A prototype of the paper-and-pencil game *Dots* (Kropki / Точки / Židi) fo
 two players alternately place dots on a grid and score by surrounding the other side's dots.
 
 This repository holds the platform-independent game logic, a computer opponent, a sample
-campaign, and a terminal front end to play it. The Android UI is not started yet.
+campaign, a terminal front end, and the start of the Android app.
 
 **Current focus: a proof of concept.** A plain Android version to find out whether people
 enjoy the game, before any visual work. Goals, scope, tasks and test plan: [`docs/poc/`](docs/poc/README.md).
@@ -15,9 +15,10 @@ enjoy the game, before any visual work. Goals, scope, tasks and test plan: [`doc
 |----------|------------|
 | `engine` | Pure Kotlin/JVM library (JVM 17 bytecode, stdlib only): rules, AI, campaign data. Meant to be imported by an Android module. |
 | `cli`    | Terminal game and AI benchmarks, built on `engine`. |
+| `app`    | Android app (Jetpack Compose, Material 3, Android 7+), built on `engine`. Structure: [`docs/poc/architecture.md`](docs/poc/architecture.md). |
 
-Packages in `engine`: `dots.engine` (rules, openings, grounding), `dots.ai` (computer opponent),
-`dots.campaign` (levels).
+Packages in `engine`: `dots.engine` (rules, openings, grounding, game records), `dots.ai`
+(computer opponent), `dots.campaign` (levels). All versions live in `gradle/libs.versions.toml`.
 
 ## Run it
 
@@ -34,6 +35,16 @@ cli/build/install/cli/bin/cli watch hard normal      # two computers play each o
 ```
 
 Run the game from a real terminal: `./gradlew :cli:run` does not pass keyboard input through.
+
+The Android app needs the Android SDK as well (Android Studio installs it, or set `ANDROID_HOME`):
+
+```sh
+./gradlew :app:assembleDebug                    # APK in app/build/outputs/apk/debug/
+./gradlew :app:testDebugUnitTest :app:lintDebug # app tests (Robolectric, no phone needed) and lint
+```
+
+Every push also builds the APK on GitHub Actions: open the run and download the `dots-debug-apk`
+artifact.
 
 Moves are a column and a row: `e5`, or `ab12` on boards wider than 26 columns (after `z` come
 `aa`, `ab`, ...). Other commands: `stop` (declare your dots grounded, see the rules), `done`

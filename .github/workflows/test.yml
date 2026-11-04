@@ -14,4 +14,18 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
-      - run: ./gradlew test :cli:installDist
+      - name: Engine and app tests, lint, builds
+        run: ./gradlew --continue :engine:test :cli:installDist :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+      - name: Debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: dots-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Reports, when something failed
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports
+          path: |
+            engine/build/reports/
+            app/build/reports/

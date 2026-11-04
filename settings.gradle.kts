@@ -15,4 +15,4 @@ dependencyResolutionManagement {
     }
 }
 
-include("engine", "cli")
+include("engine", "cli", "app")

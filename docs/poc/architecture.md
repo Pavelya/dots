@@ -51,10 +51,15 @@ access, no identifiers beyond what the tester types in a note field.
 
 ## Build, test, CI
 
-- Gradle version catalog for all versions; `minSdk` 24; `targetSdk` the current Play requirement.
+- Gradle version catalog (`gradle/libs.versions.toml`) for all versions; `minSdk` 24 (Android 7); `compileSdk` and `targetSdk` 37, the newest Android.
 - CI (GitHub Actions) on every push: engine tests, app unit tests (ViewModel, input mapping, log
   format), screenshot tests of the board (Robolectric + Roborazzi), lint, debug APK build.
 - A tagged commit (`poc-v0.1`, ...) builds the test APK and attaches it to a GitHub Release.
+- App tests run on Robolectric, pinned to the Android 36 runtime in
+  `app/src/test/resources/robolectric.properties` until Robolectric supports Android 37 (the
+  app's target). Where Maven Central is rate-limited, `ROBOLECTRIC_REPO_URL` points Robolectric's
+  own download at a mirror; CI does not need it.
+- Lint treats warnings as errors, so a new warning fails the build instead of piling up.
 
 ## What is deliberately temporary
 
