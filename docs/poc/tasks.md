@@ -102,5 +102,5 @@ P-01 ─┬─ P-02 ───────────────┐
 | P-06 Threat highlight | Done in CI 2026-11-05 |
 | P-07 Rules screen and settings | Done in CI 2026-11-04; waiting for a newcomer to read the rules and explain captures |
 | P-08 Resume and game log | Done in CI 2026-11-05 |
-| P-09 Test build and analysis script | Done in CI 2026-11-05; waiting for the owner to install from the release link and, with the next release, to update over it |
+| P-09 Test build and analysis script | Done 2026-11-05 (release [poc-v0.1](https://github.com/Pavelya/dots/releases/tag/poc-v0.1)) |
 | P-10 Test week and decision | Not started |
