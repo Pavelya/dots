@@ -8,6 +8,8 @@ campaign, a terminal front end, and the start of the Android app.
 
 **Current focus: a proof of concept.** A plain Android version to find out whether people
 enjoy the game, before any visual work. Goals, scope, tasks and test plan: [`docs/poc/`](docs/poc/README.md).
+The road from the POC to the store is the [full plan](https://claude.ai/artifact/9GaGRbXg9qwJsYMswwE7ZF);
+settled choices are in [`docs/decisions/`](docs/decisions/).
 
 ## Layout
 

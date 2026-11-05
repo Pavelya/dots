@@ -3,9 +3,10 @@
 **Status:** approved by the owner on 2026-11-04 (task P-01), with decisions D-POC-1 to 3 as proposed below.
 **One question:** do people enjoy the core game on a phone, enough to keep playing without being asked?
 
-Everything else (themes, figures, animations, sound, campaign, online play, store release) is
-parked in the [full plan](https://claude.ai/artifact/9GaGRbXg9qwJsYMswwE7ZF) until this question
-has an answer. The POC builds only what is needed to answer it, in a way the full version can
+Everything else (themes, figures, animations, sound, campaign, online play, store release) is in
+the [full plan](https://claude.ai/artifact/9GaGRbXg9qwJsYMswwE7ZF), rewritten on 2026-11-05 after
+the design investigation (decisions 0004 to 0015). Naming and design work may run beside the test
+week; engine and app work for the full game waits for this question's answer. The POC builds only what is needed to answer it, in a way the full version can
 reuse.
 
 ## What we already know (computer simulation only)
@@ -34,7 +35,7 @@ Measured during one test week with 5 to 10 players (see [test protocol](test-pro
 
 **Decision after the test week** (recorded in `docs/decisions/`):
 
-- **Go:** H1 and H3 pass, and no other hypothesis fails badly. Un-park the full plan, re-scored with what we learned.
+- **Go:** H1 and H3 pass, and no other hypothesis fails badly. Start the full plan's game design phase (G tasks), adjusted with what we learned.
 - **Change and retest:** H1 is borderline, or a fixable hypothesis (H2, H4, H5, H6) fails. Fix it, retest for one more week.
 - **Stop:** H1 clearly fails (most testers stop after one or two days) even though the game is easy to learn and the format works. The core game is the problem, and visuals will not fix it.
 
@@ -53,7 +54,7 @@ Measured during one test week with 5 to 10 players (see [test protocol](test-pro
 - Resume an unfinished game after closing the app.
 - A game log on the phone, shared by the tester with one button (no tracking, no internet).
 
-**Not in the POC (parked in the full plan):** themes, piece figures, animations beyond simple
+**Not in the POC (in the full plan):** themes, piece figures, animations beyond simple
 feedback, sound, campaign and levels, tutorial, online play, achievements, languages other than
 English, Play Store release.
 
