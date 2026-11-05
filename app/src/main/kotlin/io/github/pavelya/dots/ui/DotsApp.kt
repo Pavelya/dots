@@ -18,11 +18,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.pavelya.dots.game.GameViewModel
+import io.github.pavelya.dots.game.computer
 import io.github.pavelya.dots.ui.screen.GameScreen
 import kotlin.random.Random
-import io.github.pavelya.dots.R
 import io.github.pavelya.dots.ui.screen.HomeScreen
-import io.github.pavelya.dots.ui.screen.PlaceholderScreen
 import io.github.pavelya.dots.ui.theme.DotsTheme
 
 /** Every screen of the app, by route. */
@@ -54,12 +53,21 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 }
                 val back = { navController.popBackStack(); Unit }
                 composable(Routes.PLAY_COMPUTER) {
-                    PlaceholderScreen(R.string.home_play_computer, R.string.placeholder_game, back)
+                    val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+                    settings?.let { chosen ->
+                        val game = viewModel {
+                            GameViewModel(
+                                newSettings = { chosen.gameSettings(seed = Random.nextLong()) },
+                                newComputer = { chosen.difficulty.computer() },
+                            )
+                        }
+                        GameScreen(game, back)
+                    }
                 }
                 composable(Routes.TWO_PLAYERS) {
                     val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
                     settings?.let { chosen ->
-                        val game = viewModel { GameViewModel(chosen.gameSettings(seed = Random.nextLong())) }
+                        val game = viewModel { GameViewModel(newSettings = { chosen.gameSettings(seed = Random.nextLong()) }) }
                         GameScreen(game, back)
                     }
                 }

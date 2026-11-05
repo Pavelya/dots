@@ -45,7 +45,7 @@ class SearchAi(
      * player leaves the game screen). A cancelled call still returns a legal action, which the
      * caller is expected to throw away.
      */
-    fun choose(state: GameState, isCancelled: () -> Boolean): Action {
+    override fun choose(state: GameState, isCancelled: () -> Boolean): Action {
         if (state.isOver) return Action.Pass
         if (state.isCleanup) return Cleanup.next(state)
         if (shouldStop(state)) return Action.Stop

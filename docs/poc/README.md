@@ -44,7 +44,8 @@ Measured during one test week with 5 to 10 players (see [test protocol](test-pro
 
 - Android app, plain grey look, Material defaults.
 - Game: 15x15 board, four random crosses, 33 dots each. Settings also allow 12x12 / 20x20 and 67 dots, for comparison.
-- Opponents: computer (Easy, Normal, Hard) and two players on one phone.
+- Opponents: computer (Easy, Normal, Hard, as a test setting only: the full version raises
+  difficulty through levels instead, decision 0003) and two players on one phone.
 - Accurate placement: tap to preview, tap again to confirm; undo of the last own move against the computer.
 - Threat highlight, switchable in settings.
 - One rules screen, with three small pictures.

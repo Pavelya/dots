@@ -2,6 +2,8 @@ package io.github.pavelya.dots
 
 import android.app.Application
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.os.StrictMode
 import androidx.datastore.preferences.preferencesDataStore
 import io.github.pavelya.dots.data.SettingsRepository
 
@@ -10,4 +12,13 @@ private val Context.settingsStore by preferencesDataStore(name = "settings")
 /** Holds the app-wide objects; screens reach them through the application context. */
 class DotsApplication : Application() {
     val settings: SettingsRepository by lazy { SettingsRepository(settingsStore) }
+
+    override fun onCreate() {
+        super.onCreate()
+        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) {
+            // Debug builds report slow work on the main thread and leaks in the log (logcat "StrictMode").
+            StrictMode.setThreadPolicy(StrictMode.ThreadPolicy.Builder().detectAll().penaltyLog().build())
+            StrictMode.setVmPolicy(StrictMode.VmPolicy.Builder().detectAll().penaltyLog().build())
+        }
+    }
 }

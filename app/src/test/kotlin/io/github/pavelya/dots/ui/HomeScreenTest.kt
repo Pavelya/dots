@@ -39,7 +39,7 @@ class HomeScreenTest {
     fun `every entry opens its screen and back returns home`() {
         compose.setContent { DotsApp() }
         val notes = mapOf(
-            "Play the computer" to "The game screen arrives in task P-05.",
+            "Play the computer" to "Your turn · 33 dots left",
             "Two players" to "Red to move · 33 dots left",
             "Rules" to "Capture more of the other player’s dots than they capture of yours.",
             "Settings" to "Game length",

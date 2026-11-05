@@ -7,6 +7,12 @@ import dots.engine.GameState
 interface Ai {
     /** What [GameState.toMove] should do now. Only call this while the game is not over. */
     fun choose(state: GameState): Action
+
+    /**
+     * As [choose], but may give up early once [isCancelled] returns true; the action returned
+     * then is legal but should be thrown away. By default it simply ignores [isCancelled].
+     */
+    fun choose(state: GameState, isCancelled: () -> Boolean): Action = choose(state)
 }
 
 /**
