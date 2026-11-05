@@ -61,6 +61,7 @@ These are settled; tasks build on them. Changing one means a new decision record
 | 0014 | Multiplayer order: same phone, then online with friends turn by turn, ranked only later | 2026-11-05 |
 | 0015 | Launch with about 75 levels in 4 worlds, plus a daily puzzle | 2026-11-05 |
 | 0016 | The game is called Pinfold; the store app ID will be io.github.pavelya.pinfold (POC test builds keep theirs) | 2026-11-05 |
+| 0017 | The repository is public; secrets live only in Actions secrets; the old committed test key is burned | 2026-11-05 |
 
 Decisions 0004 to 0015 come from the [design investigation](https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP); their record files are added to `docs/decisions/` in the repository together with this plan.
 
@@ -1028,7 +1029,6 @@ These are still open; each gets a record in `docs/decisions/` when made.
 | The name | The clear candidates from B-02 | Pick after seeing the mood boards, so name and look fit | B-03 |
 | Buy a domain | Yes (about $10 to $20 a year); no, use github.io | Yes once the name is final: a stable support and privacy address | B-05 |
 | Prices and ad caps | From C-01 | Low prices per country tier; at most 3 rewarded ads a day | C-01 |
-| Repository public or private | Public; private | Public keeps CI minutes and GitHub Pages free; private with Google Sites for the policy | R-03 |
 | Hole edges in odd boards | Count as border (safe); count as open (capturable) | Per level, stated on the level card | G-06 |
 | One dot closing several chains | Capture every enclosed area (current); only the smallest | Keep the current rule; revisit after play-tests | Q-04 |
 | Free play ending | Dot budget (current); open-ended with "stop" as on paper | Budget by default, open-ended as an option | A-08 |

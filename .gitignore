@@ -6,3 +6,9 @@ local.properties
 .kotlin/
 *.hprof
 .claude/settings.local.json
+# Signing keys and secrets never enter the repository.
+*.jks
+*.keystore
+keystore.properties
+secrets.properties
+.env
