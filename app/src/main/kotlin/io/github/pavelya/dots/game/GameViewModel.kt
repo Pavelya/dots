@@ -3,6 +3,8 @@ package io.github.pavelya.dots.game
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dots.ai.Ai
+import dots.ai.Danger
+import dots.ai.Hints
 import dots.engine.Action
 import dots.engine.Game
 import dots.engine.GameSettings
@@ -30,6 +32,8 @@ data class GameUiState(
     val thinking: Boolean = false,
     val canUndo: Boolean = false,
     val vsComputer: Boolean = false,
+    /** Groups close to capture, for both players; empty unless the threat highlight is on. */
+    val dangers: List<Danger> = emptyList(),
 )
 
 /**
@@ -43,12 +47,14 @@ data class GameUiState(
  *
  * @param newSettings settings for each new game (a fresh seed every time)
  * @param newComputer the opponent for each new game, or null for two players on one phone
+ * @param showThreats mark groups close to capture (the Settings switch)
  */
 class GameViewModel(
     private val newSettings: () -> GameSettings,
     private val newComputer: (() -> Ai)? = null,
     private val computerDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val replyDelayMillis: Long = 400,
+    private val showThreats: Boolean = false,
 ) : ViewModel() {
     val human: Player = Player.RED
 
@@ -123,5 +129,6 @@ class GameViewModel(
         lastMove = lastMove,
         canUndo = computer != null && !game.state.isOver && game.canUndo(human),
         vsComputer = computer != null,
+        dangers = if (showThreats) Player.entries.flatMap { Hints.dangers(game.state, it) } else emptyList(),
     )
 }

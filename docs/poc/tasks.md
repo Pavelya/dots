@@ -99,7 +99,7 @@ P-01 ─┬─ P-02 ───────────────┐
 | P-03 App skeleton and CI | Done in CI 2026-11-04; waiting for the owner to install it on a phone |
 | P-04 Board view and placement | Done in CI 2026-11-04; waiting for the owner's 20-dot placement check on a phone |
 | P-05 Playing a game | Done in CI 2026-11-05; waiting for the owner to play a game on a phone |
-| P-06 Threat highlight | Not started |
+| P-06 Threat highlight | Done in CI 2026-11-05 |
 | P-07 Rules screen and settings | Done in CI 2026-11-04; waiting for a newcomer to read the rules and explain captures |
 | P-08 Resume and game log | Not started |
 | P-09 Test build and analysis script | Not started |

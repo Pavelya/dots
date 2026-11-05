@@ -11,8 +11,9 @@ import dots.engine.Player
  * @param cost how many more dots the attacker must place to wall the group in; 1 means one move
  *   from capture
  * @param cells indices of the empty cells of one cheapest way to do it
+ * @param group indices of the group's dots
  */
-internal class Threat(val anchor: Int, val size: Int, val cost: Int, val cells: IntArray)
+internal class Threat(val anchor: Int, val size: Int, val cost: Int, val cells: IntArray, val group: IntArray)
 
 /**
  * Finds, for every group of a player's dots that is not grounded, the fewest dots the opponent
@@ -145,7 +146,7 @@ internal class ThreatFinder {
             for (i in 0 until cells) {
                 if (kind[i] == BUILDABLE && visitedAt[2 * i] == stamp && visitedAt[2 * i + 1] != stamp) cut += i
             }
-            threat = Threat(anchor, size, flow, cut.toIntArray())
+            threat = Threat(anchor, size, flow, cut.toIntArray(), groupCells.copyOf(size))
         }
         resetFlows()
         return threat

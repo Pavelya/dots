@@ -215,4 +215,20 @@ class GameViewModelTest {
             assertEquals("$difficulty: both sides place all 33 dots", 66, end.moveCount)
         }
     }
+
+    @Test
+    fun `threats are marked only when the setting is on`() {
+        val settings = GameSettings(width = 5, height = 5, dotsPerPlayer = 10, opening = Opening.EMPTY)
+        fun play(showThreats: Boolean): GameViewModel {
+            val vm = GameViewModel(newSettings = { settings }, showThreats = showThreats)
+            // Red builds three sides of a diamond around blue's dot at the centre.
+            for (move in listOf(Pos(2, 1), Pos(2, 2), Pos(1, 2), Pos(4, 4), Pos(3, 2))) vm.place(move)
+            return vm
+        }
+
+        val on = play(showThreats = true).ui.value.dangers
+        assertEquals(listOf(Pos(2, 2)), on.first().group)
+        assertEquals(listOf(Pos(2, 3)), on.first().closingPoints)
+        assertTrue(play(showThreats = false).ui.value.dangers.isEmpty())
+    }
 }

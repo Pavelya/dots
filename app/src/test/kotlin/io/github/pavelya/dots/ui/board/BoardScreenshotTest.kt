@@ -9,6 +9,8 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import dots.ai.Danger
+import dots.ai.Hints
 import dots.engine.GameSettings
 import dots.engine.GameState
 import dots.engine.Player
@@ -30,10 +32,10 @@ class BoardScreenshotTest {
 
     private val style = BoardStyle.plain(lightColorScheme(), dark = false)
 
-    private fun capture(name: String, state: GameState, lastMove: Pos? = null, preview: Pos? = null) {
+    private fun capture(name: String, state: GameState, lastMove: Pos? = null, preview: Pos? = null, dangers: List<Danger> = emptyList()) {
         compose.setContent {
             Box(Modifier.size(360.dp)) {
-                BoardView(state, style, "board", Modifier.fillMaxSize(), lastMove, preview)
+                BoardView(state, style, "board", Modifier.fillMaxSize(), lastMove, preview, dangers = dangers)
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
@@ -58,5 +60,27 @@ class BoardScreenshotTest {
     fun largeBoardWithPreview() {
         val state = GameSettings(width = 20, height = 20, dotsPerPlayer = 60, seed = 2).newGame()
         capture("board_20x20_preview", state, preview = Pos(3, 4))
+    }
+
+    @Test
+    fun threatHighlight() {
+        // Blue's dot in the middle is one red dot from capture (closing point below it); the two
+        // red dots at the bottom are two blue dots away.
+        val state = GameState.fromAscii(
+            """
+            .........
+            ....R....
+            ...RBR...
+            .........
+            .........
+            .....B...
+            ....BRB..
+            .....RB..
+            .........
+            """,
+            dotsPerPlayer = 20,
+        )
+        val dangers = Player.entries.flatMap { Hints.dangers(state, it) }
+        capture("board_threat_highlight", state, dangers = dangers)
     }
 }

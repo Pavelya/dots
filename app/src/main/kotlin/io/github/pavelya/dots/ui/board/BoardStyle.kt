@@ -13,6 +13,7 @@ data class BoardStyle(
     val grid: Color,
     val red: Color,
     val blue: Color,
+    val danger: Color,
     val dotRadius: Float = 0.28f,
     val capturedAlpha: Float = 0.35f,
     val areaAlpha: Float = 0.14f,
@@ -25,6 +26,7 @@ data class BoardStyle(
             grid = colors.outlineVariant,
             red = if (dark) Color(0xFFFF6B6B) else Color(0xFFD63031),
             blue = if (dark) Color(0xFF5DADEC) else Color(0xFF0984E3),
+            danger = if (dark) Color(0xFFFFC14D) else Color(0xFFE08A00),
         )
     }
 }

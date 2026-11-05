@@ -59,6 +59,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             GameViewModel(
                                 newSettings = { chosen.gameSettings(seed = Random.nextLong()) },
                                 newComputer = { chosen.difficulty.computer() },
+                                showThreats = chosen.threatHighlight,
                             )
                         }
                         GameScreen(game, back)
@@ -67,7 +68,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 composable(Routes.TWO_PLAYERS) {
                     val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
                     settings?.let { chosen ->
-                        val game = viewModel { GameViewModel(newSettings = { chosen.gameSettings(seed = Random.nextLong()) }) }
+                        val game = viewModel {
+                            GameViewModel(newSettings = { chosen.gameSettings(seed = Random.nextLong()) }, showThreats = chosen.threatHighlight)
+                        }
                         GameScreen(game, back)
                     }
                 }

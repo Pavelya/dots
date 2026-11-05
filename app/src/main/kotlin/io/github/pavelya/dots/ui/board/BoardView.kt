@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import dots.ai.Danger
 import dots.engine.GameState
 import dots.engine.Pos
 
@@ -20,7 +21,7 @@ import dots.engine.Pos
  * and captured dots, the last move, and a placement preview. It decides nothing about the game;
  * a tap is reported as the board point it hit (or null when off the board). [showLinks] draws the
  * links between neighbouring dots of one colour, which makes chains and rings visible (used to
- * teach the rules).
+ * teach the rules). [dangers] marks groups close to capture (the threat highlight).
  */
 @Composable
 fun BoardView(
@@ -31,6 +32,7 @@ fun BoardView(
     lastMove: Pos? = null,
     preview: Pos? = null,
     showLinks: Boolean = false,
+    dangers: List<Danger> = emptyList(),
     onTap: ((Pos?) -> Unit)? = null,
 ) {
     val tapModifier = if (onTap == null) Modifier else Modifier.pointerInput(state.width, state.height) {
@@ -50,6 +52,7 @@ fun BoardView(
         drawGrid(state, geometry, style)
         if (showLinks) drawLinks(state, geometry, style)
         drawDots(state, geometry, style)
+        drawDangers(state, dangers, geometry, style)
         lastMove?.let { drawRing(geometry.center(it), geometry.spacing * 0.42f, style.grid, geometry.spacing * 0.06f) }
         preview?.let {
             val color = style.color(state.toMove)
@@ -95,6 +98,26 @@ private fun DrawScope.drawLinks(state: GameState, geometry: BoardGeometry, style
 
 /** Each touching pair once: right, down, and the two diagonals going right. */
 private val LINK_DIRECTIONS = listOf(1 to 0, 0 to 1, 1 to 1, 1 to -1)
+
+/**
+ * An amber ring around every dot of a group close to capture: solid when one dot away, faint
+ * when two. When one dot away, the point that would close the ring gets a small marker.
+ */
+private fun DrawScope.drawDangers(state: GameState, dangers: List<Danger>, geometry: BoardGeometry, style: BoardStyle) {
+    for (danger in dangers) {
+        val near = danger.dotsNeeded == 1
+        val ring = style.danger.copy(alpha = if (near) 1f else 0.45f)
+        for (dot in danger.group) {
+            drawRing(geometry.center(dot), geometry.spacing * 0.42f, ring, geometry.spacing * (if (near) 0.09f else 0.06f))
+        }
+        if (near) {
+            val attacker = state.ownerAt(danger.group.first())?.opponent ?: continue
+            for (point in danger.closingPoints) {
+                drawRing(geometry.center(point), geometry.spacing * 0.16f, style.color(attacker), geometry.spacing * 0.06f)
+            }
+        }
+    }
+}
 
 private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
     val radius = geometry.spacing * style.dotRadius

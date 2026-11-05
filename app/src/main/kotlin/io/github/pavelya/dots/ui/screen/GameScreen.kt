@@ -60,6 +60,7 @@ fun GameScreen(viewModel: GameViewModel, onBack: () -> Unit) {
             modifier = Modifier.fillMaxWidth().weight(1f, fill = false).testTag(BOARD_TAG),
             lastMove = ui.lastMove,
             preview = ui.preview,
+            dangers = ui.dangers,
             onTap = viewModel::onTap,
         )
         if (state.isOver) {
