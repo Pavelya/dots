@@ -76,8 +76,8 @@ replay does not give.
 
 ## Build, test, CI
 
-- Gradle version catalog (`gradle/libs.versions.toml`) for all versions; `minSdk` 24 (Android 7); `compileSdk` and `targetSdk` 37, the newest Android.
-- CI (GitHub Actions) on every push: engine and CLI tests, app unit tests (ViewModel, input
+- Gradle version catalog (`gradle/libs.versions.toml`) for all versions, kept current by Dependabot PRs; `minSdk` 24 (Android 7); `compileSdk` and `targetSdk` 37, the newest Android.
+- CI (GitHub Actions) on every pull request and push to `main`: engine and CLI tests, app unit tests (ViewModel, input
   mapping, saved game and log), screenshot tests of the board (Robolectric + Roborazzi), lint, debug APK build.
 - A tagged commit (`poc-v0.1`, ...) builds the test APK and attaches it to a GitHub Release.
 - App tests run on Robolectric, pinned to the Android 36 runtime in

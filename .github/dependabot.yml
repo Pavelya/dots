@@ -1,0 +1,23 @@
+# Weekly update PRs for the version catalog (gradle/libs.versions.toml) and the workflow actions.
+# Minor and patch updates come as one grouped PR per ecosystem; major updates get their own PRs.
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      gradle-minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - minor
+          - patch

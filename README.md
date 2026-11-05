@@ -24,6 +24,9 @@ The road from the POC to the store is the full plan ([`docs/plan.md`](docs/plan.
 
 Packages in `engine`: `dots.engine` (rules, openings, grounding, game records), `dots.ai`
 (computer opponent), `dots.campaign` (levels). All versions live in `gradle/libs.versions.toml`.
+Keeping them up to date is Dependabot's job (`.github/dependabot.yml`): it opens update PRs every
+week, minor and patch updates grouped into one PR per ecosystem. Lint's "a newer version is
+available" checks are switched off so that an upstream release cannot fail the build.
 
 ## Run it
 
@@ -49,8 +52,8 @@ The Android app needs the Android SDK as well (Android Studio installs it, or se
 ./gradlew :app:testDebugUnitTest :app:lintDebug # app tests (Robolectric, no phone needed) and lint
 ```
 
-Every push also builds the APK on GitHub Actions: open the run and download the `dots-debug-apk`
-artifact.
+Every pull request and every push to `main` also builds the APK on GitHub Actions: open the run
+and download the `dots-debug-apk` artifact.
 
 Moves are a column and a row: `e5`, or `ab12` on boards wider than 26 columns (after `z` come
 `aa`, `ab`, ...). Other commands: `stop` (declare your dots grounded, see the rules), `done`
@@ -227,7 +230,7 @@ casual vs casual
 
 ## Status and checks
 
-- GitHub Actions runs on every push and pull request (`.github/workflows/test.yml`): engine and
+- GitHub Actions runs on every pull request and push to `main` (`.github/workflows/test.yml`): engine and
   CLI tests, app tests and screenshot tests, lint, and the debug APK. Locally, the same:
   `./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug`
 - Not yet verified: speed of the computer on a real phone.

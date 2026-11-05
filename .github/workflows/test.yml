@@ -1,7 +1,9 @@
 name: test
 
+# Pushes to main, and pull requests. A push to a PR branch is tested once, by its pull_request run.
 on:
   push:
+    branches: [main]
   pull_request:
 
 jobs:
