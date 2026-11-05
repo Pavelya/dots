@@ -99,8 +99,8 @@ P-01 ─┬─ P-02 ───────────────┐
 | P-03 App skeleton and CI | Done 2026-11-05 (owner installed it on a phone) |
 | P-04 Board view and placement | Done in CI 2026-11-04; waiting for the owner's 20-dot placement check on a phone |
 | P-05 Playing a game | Done 2026-11-05 (owner played both modes on a phone) |
-| P-06 Threat highlight | Done in CI 2026-11-05 |
+| P-06 Threat highlight | Done 2026-11-05 |
 | P-07 Rules screen and settings | Done in CI 2026-11-04; waiting for a newcomer to read the rules and explain captures |
-| P-08 Resume and game log | Done in CI 2026-11-05 |
+| P-08 Resume and game log | Done 2026-11-05 |
 | P-09 Test build and analysis script | Done 2026-11-05 (release [poc-v0.1](https://github.com/Pavelya/dots/releases/tag/poc-v0.1)) |
 | P-10 Test week and decision | Not started |
