@@ -53,6 +53,10 @@ android {
     lint {
         warningsAsErrors = true
         abortOnError = true
+        // "A newer version is available" checks look at what has been released upstream, not at
+        // our code, so any new release would fail the build with warningsAsErrors. Dependabot
+        // (.github/dependabot.yml) proposes updates instead.
+        disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "NewerVersionAvailable")
     }
 }
 
