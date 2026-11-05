@@ -1,0 +1,39 @@
+name: poc release
+
+# Tagging a commit poc-v0.1, poc-v0.2, ... builds the test APK and publishes it as a GitHub
+# Release with install notes for testers (docs/poc/install.md).
+on:
+  push:
+    tags:
+      - "poc-v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Version from the tag
+        # poc-v0.2 -> version 0.2-poc; the code rises with every release run, so updates install.
+        run: |
+          echo "VERSION_NAME=${GITHUB_REF_NAME#poc-v}-poc" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+      - name: Test and build
+        run: ./gradlew --continue :engine:test :cli:test :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          apk="dots-${GITHUB_REF_NAME}.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$apk"
+          gh release create "$GITHUB_REF_NAME" "$apk" \
+            --title "Dots test build ${VERSION_NAME}" \
+            --notes-file docs/poc/install.md \
+            --prerelease

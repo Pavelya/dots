@@ -27,7 +27,7 @@ at least 2 who never heard of it. Nobody who worked on the game.
 
 ## From the logs
 
-A script in `cli` reads all logs and reports, per tester and overall: days played, games, game
+`cli poc-report <logs>` reads all logs (one file per tester, named after them) and reports, per tester and overall: days played, games, game
 length, share of games with a winner, win rate per difficulty, undos per game, captures per
 game with the threat highlight on and off. It replays every game with the engine to check the
 logs are consistent.

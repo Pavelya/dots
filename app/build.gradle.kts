@@ -12,8 +12,28 @@ android {
         applicationId = "io.github.pavelya.dots"
         minSdk = 24
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1-poc"
+        // Release builds on a poc-v* tag set these (.github/workflows/poc-release.yml), so each test
+        // build is a higher version than the one before and installs over it.
+        versionCode = providers.environmentVariable("VERSION_CODE").map(String::toInt).getOrElse(1)
+        versionName = providers.environmentVariable("VERSION_NAME").getOrElse("0.1-poc")
+    }
+
+    signingConfigs {
+        // Signs POC test builds, so a new test build installs over the previous one instead of
+        // asking testers to uninstall. Deliberately not secret, and never used for the store app,
+        // which gets its own upload key kept out of the repository (full plan task R-02).
+        create("pocTest") {
+            storeFile = file("poc-test.keystore")
+            storePassword = "poc-test"
+            keyAlias = "poc-test"
+            keyPassword = "poc-test"
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("pocTest")
+        }
     }
 
     compileOptions {

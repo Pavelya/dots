@@ -67,7 +67,13 @@ Game logs shared by testers from the app (Settings, "Share the game log"; format
 
 ```sh
 cli/build/install/cli/bin/cli log-check game-log.txt    # replays every game, flags results that don't match
+cli/build/install/cli/bin/cli poc-report ann.txt bob.txt # the POC test week's numbers, one log per tester
 ```
+
+Test builds for testers: tag a commit `poc-v0.1`, `poc-v0.2`, ... and the `poc release` workflow
+publishes the APK as a GitHub Release with install notes ([`docs/poc/install.md`](docs/poc/install.md)).
+Every build is signed with the same test key (`app/poc-test.keystore`, deliberately not secret and
+never used for the store), so a new test build installs over the previous one.
 
 ## Rules
 

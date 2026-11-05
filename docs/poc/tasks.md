@@ -69,9 +69,9 @@ One task = one pull request with green CI. Status is kept in the table at the en
 
 ### P-09 Test build and analysis script
 
-- **Goal:** testers can install the app from one link, and their logs can be analysed in one command.
+- **Goal:** testers can install the app from one link with a stable signing key, and their logs can be analysed in one command.
 - **Depends on:** P-05 to P-08.
-- **Done when:** tagging `poc-v0.1` puts a signed debug APK on a GitHub Release; `cli poc-report <logs>` prints every metric in the test protocol.
+- **Done when:** tagging `poc-v0.1` puts a signed debug APK on a GitHub Release with install notes; a later `poc-v0.2` installs over it without uninstalling; `cli poc-report <logs>` prints every metric in the test protocol.
 - **Verified by:** Agent (build) and Human (installs from the link on a second phone).
 
 ### P-10 Test week and decision
@@ -102,5 +102,5 @@ P-01 ─┬─ P-02 ───────────────┐
 | P-06 Threat highlight | Done in CI 2026-11-05 |
 | P-07 Rules screen and settings | Done in CI 2026-11-04; waiting for a newcomer to read the rules and explain captures |
 | P-08 Resume and game log | Done in CI 2026-11-05 |
-| P-09 Test build and analysis script | Not started |
+| P-09 Test build and analysis script | Done in CI 2026-11-05; waiting for the owner to install from the release link and, with the next release, to update over it |
 | P-10 Test week and decision | Not started |
