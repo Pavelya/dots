@@ -27,7 +27,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       - name: Version
         # Version 0.2 -> tag poc-v0.2, version name 0.2-poc. The version code is 100 + the number of
         # commits, the same rule as every CI build, so any newer build installs over an older one.
