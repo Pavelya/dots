@@ -21,14 +21,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # the whole history: the version code counts commits
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v5
       - name: Version
-        # Version 0.2 -> tag poc-v0.2, version name 0.2-poc; the code rises with every release run,
-        # so each build installs over the one before.
+        # Version 0.2 -> tag poc-v0.2, version name 0.2-poc. The version code is 100 + the number of
+        # commits, the same rule as every CI build, so any newer build installs over an older one.
         env:
           INPUT_VERSION: ${{ inputs.version }}
         run: |
@@ -36,7 +38,7 @@ jobs:
           case "$version" in *[!0-9.]*|"") echo "Version must look like 0.2, got '$version'"; exit 1;; esac
           echo "RELEASE_TAG=poc-v$version" >> "$GITHUB_ENV"
           echo "VERSION_NAME=$version-poc" >> "$GITHUB_ENV"
-          echo "VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$((100 + $(git rev-list --count HEAD)))" >> "$GITHUB_ENV"
       - name: Test and build
         run: ./gradlew --continue :engine:test :cli:test :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
       - name: Publish the release
