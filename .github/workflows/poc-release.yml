@@ -1,8 +1,14 @@
 name: poc release
 
-# Tagging a commit poc-v0.1, poc-v0.2, ... builds the test APK and publishes it as a GitHub
-# Release with install notes for testers (docs/poc/install.md).
+# Builds the test APK and publishes it as a GitHub Release poc-v<version> with install notes for
+# testers (docs/poc/install.md). Start it from the Actions tab ("Run workflow", enter a version
+# such as 0.2), or by pushing a tag poc-v0.2.
 on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Test build version, for example 0.2"
+        required: true
   push:
     tags:
       - "poc-v*"
@@ -20,10 +26,16 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v5
-      - name: Version from the tag
-        # poc-v0.2 -> version 0.2-poc; the code rises with every release run, so updates install.
+      - name: Version
+        # Version 0.2 -> tag poc-v0.2, version name 0.2-poc; the code rises with every release run,
+        # so each build installs over the one before.
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          echo "VERSION_NAME=${GITHUB_REF_NAME#poc-v}-poc" >> "$GITHUB_ENV"
+          if [ -n "$INPUT_VERSION" ]; then version="$INPUT_VERSION"; else version="${GITHUB_REF_NAME#poc-v}"; fi
+          case "$version" in *[!0-9.]*|"") echo "Version must look like 0.2, got '$version'"; exit 1;; esac
+          echo "RELEASE_TAG=poc-v$version" >> "$GITHUB_ENV"
+          echo "VERSION_NAME=$version-poc" >> "$GITHUB_ENV"
           echo "VERSION_CODE=$((100 + GITHUB_RUN_NUMBER))" >> "$GITHUB_ENV"
       - name: Test and build
         run: ./gradlew --continue :engine:test :cli:test :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
@@ -31,9 +43,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          apk="dots-${GITHUB_REF_NAME}.apk"
+          apk="dots-${RELEASE_TAG}.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "$apk"
-          gh release create "$GITHUB_REF_NAME" "$apk" \
+          # Creates the tag on this commit when it does not exist yet (a run from the Actions tab).
+          gh release create "$RELEASE_TAG" "$apk" \
+            --target "$GITHUB_SHA" \
             --title "Dots test build ${VERSION_NAME}" \
             --notes-file docs/poc/install.md \
             --prerelease
