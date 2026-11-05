@@ -13,7 +13,7 @@ import dots.engine.Action
 import dots.engine.GameSettings
 import dots.engine.GameState
 import dots.engine.Opening
-import io.github.pavelya.dots.game.GameViewModel
+import io.github.pavelya.dots.game.gameViewModel
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
@@ -47,7 +47,7 @@ class GameScreenTest {
 
     @Test
     fun `a whole game against the computer ends on the result screen, and play again restarts`() {
-        val vm = GameViewModel(
+        val vm = gameViewModel(
             newSettings = { settings },
             newComputer = { firstFreePoint },
             computerDispatcher = Dispatchers.Default,

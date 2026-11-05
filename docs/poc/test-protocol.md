@@ -11,7 +11,7 @@ at least 2 who never heard of it. Nobody who worked on the game.
 |---|---|
 | 0 | Tester installs the APK from the GitHub Release link. One 15-minute call: they read the rules screen and play their first game against Easy while thinking aloud. We note what confuses them; we do not explain unless they are stuck for over a minute. |
 | 1 to 6 | They play whenever they feel like it. No reminders, no requests to play. Whether they come back on their own is the main thing being measured. |
-| 7 | They tap "Export log" and send the file, then fill in the survey (5 minutes). |
+| 7 | They open Settings, tap "Share the game log" and send the file, then fill in the survey (5 minutes). |
 
 ## Survey (Google Forms, free)
 

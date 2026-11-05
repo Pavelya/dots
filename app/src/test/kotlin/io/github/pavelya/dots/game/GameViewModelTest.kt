@@ -45,10 +45,10 @@ class GameViewModelTest {
     @After
     fun tearDown() = Dispatchers.resetMain()
 
-    private fun twoPlayers() = GameViewModel(newSettings = { GameSettings.POC.copy(seed = 1) })
+    private fun twoPlayers() = gameViewModel(newSettings = { GameSettings.POC.copy(seed = 1) })
 
     private fun vsComputer(settings: GameSettings = small, ai: () -> Ai = { FirstFreePoint() }) =
-        GameViewModel(newSettings = { settings }, newComputer = ai, computerDispatcher = dispatcher)
+        gameViewModel(newSettings = { settings }, newComputer = ai, computerDispatcher = dispatcher)
 
     private fun GameViewModel.place(pos: Pos) {
         onTap(pos)
@@ -181,7 +181,7 @@ class GameViewModelTest {
             }
         }
         val background = Executors.newSingleThreadExecutor().asCoroutineDispatcher()
-        val vm = GameViewModel(newSettings = { small }, newComputer = { slow }, computerDispatcher = background, replyDelayMillis = 0)
+        val vm = gameViewModel(newSettings = { small }, newComputer = { slow }, computerDispatcher = background, replyDelayMillis = 0)
 
         val started = System.nanoTime()
         vm.place(Pos(4, 4))
@@ -200,7 +200,7 @@ class GameViewModelTest {
     @Test
     fun `the real computer at each difficulty plays a whole game in the test format`() = runTest(dispatcher) {
         for (difficulty in io.github.pavelya.dots.data.Difficulty.entries) {
-            val vm = GameViewModel(
+            val vm = gameViewModel(
                 newSettings = { GameSettings.POC.copy(seed = 5) },
                 newComputer = { difficulty.computer(kotlin.random.Random(6)) },
                 computerDispatcher = dispatcher,
@@ -220,7 +220,7 @@ class GameViewModelTest {
     fun `threats are marked only when the setting is on`() {
         val settings = GameSettings(width = 5, height = 5, dotsPerPlayer = 10, opening = Opening.EMPTY)
         fun play(showThreats: Boolean): GameViewModel {
-            val vm = GameViewModel(newSettings = { settings }, showThreats = showThreats)
+            val vm = gameViewModel(newSettings = { settings }, showThreats = showThreats)
             // Red builds three sides of a diamond around blue's dot at the centre.
             for (move in listOf(Pos(2, 1), Pos(2, 2), Pos(1, 2), Pos(4, 4), Pos(3, 2))) vm.place(move)
             return vm

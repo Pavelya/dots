@@ -15,6 +15,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -32,7 +33,13 @@ import io.github.pavelya.dots.data.Difficulty
 import io.github.pavelya.dots.data.GameLength
 
 @Composable
-fun SettingsScreen(settings: AppSettings, onChange: (AppSettings) -> Unit, onBack: () -> Unit) {
+fun SettingsScreen(
+    settings: AppSettings,
+    onChange: (AppSettings) -> Unit,
+    loggedGames: Int,
+    onShareLog: () -> Unit,
+    onBack: () -> Unit,
+) {
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -93,6 +100,15 @@ fun SettingsScreen(settings: AppSettings, onChange: (AppSettings) -> Unit, onBac
             Switch(checked = settings.threatHighlight, onCheckedChange = null)
         }
 
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Section(R.string.log_title)
+        Text(
+            if (loggedGames == 0) stringResource(R.string.log_empty) else pluralStringResource(R.plurals.log_detail, loggedGames, loggedGames),
+            style = MaterialTheme.typography.bodyMedium,
+        )
+        OutlinedButton(onClick = onShareLog, enabled = loggedGames > 0, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.log_share))
+        }
     }
 }
 

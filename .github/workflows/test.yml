@@ -15,7 +15,7 @@ jobs:
           java-version: 21
       - uses: gradle/actions/setup-gradle@v5
       - name: Engine and app tests, lint, builds
-        run: ./gradlew --continue :engine:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
+        run: ./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
       - name: Debug APK
         uses: actions/upload-artifact@v5
         with:

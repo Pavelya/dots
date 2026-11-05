@@ -2,6 +2,8 @@ package io.github.pavelya.dots.data
 
 import dots.engine.GameSettings
 import dots.engine.Opening
+import dots.log.GameLogEntry
+import kotlin.random.Random
 
 enum class BoardSize(val points: Int) { SMALL(12), STANDARD(15), LARGE(20) }
 
@@ -26,6 +28,14 @@ data class AppSettings(
         dotsPerPlayer = dotsPerPlayer,
         opening = Opening.CROSSES,
         seed = seed,
+    )
+
+    /** A new game in these settings, against the computer or, when [vsComputer] is false, between two people. */
+    fun newGame(vsComputer: Boolean, now: Long, seed: Long = Random.nextLong()): GameLogEntry = GameLogEntry.start(
+        settings = gameSettings(seed),
+        opponent = if (vsComputer) difficulty.name.lowercase() else GameLogEntry.HUMAN,
+        threatHighlight = threatHighlight,
+        now = now,
     )
 
     companion object {

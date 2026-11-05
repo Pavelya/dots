@@ -23,6 +23,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true // the version name goes into the game log
     }
 
     testOptions {
@@ -42,6 +43,7 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.core) // FileProvider, to share the game log
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)

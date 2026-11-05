@@ -5,6 +5,7 @@ plugins {
 
 dependencies {
     implementation(project(":engine"))
+    testImplementation(kotlin("test"))
 }
 
 application {

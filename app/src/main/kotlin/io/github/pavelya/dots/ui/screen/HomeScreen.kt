@@ -23,6 +23,8 @@ import io.github.pavelya.dots.ui.theme.DotsTheme
 
 @Composable
 fun HomeScreen(
+    canContinue: Boolean,
+    onContinue: () -> Unit,
     onPlayComputer: () -> Unit,
     onTwoPlayers: () -> Unit,
     onRules: () -> Unit,
@@ -37,6 +39,9 @@ fun HomeScreen(
         Text(stringResource(R.string.home_subtitle), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(24.dp))
         val wide = Modifier.fillMaxWidth().widthIn(max = 360.dp)
+        if (canContinue) {
+            Button(onClick = onContinue, modifier = wide) { Text(stringResource(R.string.home_continue)) }
+        }
         Button(onClick = onPlayComputer, modifier = wide) { Text(stringResource(R.string.home_play_computer)) }
         Button(onClick = onTwoPlayers, modifier = wide) { Text(stringResource(R.string.home_two_players)) }
         OutlinedButton(onClick = onRules, modifier = wide) { Text(stringResource(R.string.home_rules)) }
@@ -47,5 +52,5 @@ fun HomeScreen(
 @Preview(showBackground = true)
 @Composable
 private fun HomeScreenPreview() {
-    DotsTheme { HomeScreen({}, {}, {}, {}) }
+    DotsTheme { HomeScreen(true, {}, {}, {}, {}, {}) }
 }

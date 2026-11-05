@@ -101,6 +101,6 @@ P-01 ─┬─ P-02 ───────────────┐
 | P-05 Playing a game | Done in CI 2026-11-05; waiting for the owner to play a game on a phone |
 | P-06 Threat highlight | Done in CI 2026-11-05 |
 | P-07 Rules screen and settings | Done in CI 2026-11-04; waiting for a newcomer to read the rules and explain captures |
-| P-08 Resume and game log | Not started |
+| P-08 Resume and game log | Done in CI 2026-11-05 |
 | P-09 Test build and analysis script | Not started |
 | P-10 Test week and decision | Not started |

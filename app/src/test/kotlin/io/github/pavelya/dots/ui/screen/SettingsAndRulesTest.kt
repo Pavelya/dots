@@ -35,7 +35,7 @@ class SettingsAndRulesTest {
         var latest = AppSettings()
         compose.setContent {
             var settings by remember { mutableStateOf(AppSettings()) }
-            SettingsScreen(settings, onChange = { settings = it; latest = it }, onBack = {})
+            SettingsScreen(settings, onChange = { settings = it; latest = it }, loggedGames = 0, onShareLog = {}, onBack = {})
         }
         compose.onNodeWithText("Short: 33 dots each").assertIsDisplayed()
 
@@ -51,7 +51,7 @@ class SettingsAndRulesTest {
         var latest = AppSettings()
         compose.setContent {
             var settings by remember { mutableStateOf(AppSettings()) }
-            SettingsScreen(settings, onChange = { settings = it; latest = it }, onBack = {})
+            SettingsScreen(settings, onChange = { settings = it; latest = it }, loggedGames = 0, onShareLog = {}, onBack = {})
         }
         compose.onNodeWithText("Show threats").performClick()
 

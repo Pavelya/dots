@@ -26,7 +26,7 @@ Needs a JDK 21 (Android Studio bundles one; the engine and CLI also run on 17). 
 wrapper downloads everything else.
 
 ```sh
-./gradlew test                      # engine tests
+./gradlew :engine:test :cli:test    # engine and CLI tests
 ./gradlew :cli:installDist          # build the terminal game (on Windows: gradlew.bat, cli.bat)
 cli/build/install/cli/bin/cli levels                 # list the campaign levels
 cli/build/install/cli/bin/cli play 3                 # campaign level 3, you are red and move first
@@ -58,6 +58,13 @@ Benchmarks (computer against computer; see "How strong is it" below):
 cli/build/install/cli/bin/cli bench tiers 40 10 24      # every tier against every other: games, board size, dots each
 cli/build/install/cli/bin/cli bench levels 20 normal    # a stand-in plays each level: a tier, or "border"
 cli/build/install/cli/bin/cli bench duel                # two custom configurations; prints its arguments
+```
+
+Game logs shared by testers from the app (Settings, "Share the game log"; format in
+[`docs/poc/architecture.md`](docs/poc/architecture.md)):
+
+```sh
+cli/build/install/cli/bin/cli log-check game-log.txt    # replays every game, flags results that don't match
 ```
 
 ## Rules
@@ -208,8 +215,11 @@ casual vs casual
 
 ## Status and checks
 
-- GitHub Actions runs `./gradlew test` on every push and pull request (`.github/workflows`).
-- Not yet verified: using `engine` from an actual Android project, and speed on a real phone.
+- GitHub Actions runs on every push and pull request (`.github/workflows/test.yml`): engine and
+  CLI tests, app tests and screenshot tests, lint, and the debug APK. Locally, the same:
+  `./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug`
+- Not yet verified: speed of the computer on a real phone.
+- POC progress: [`docs/poc/tasks.md`](docs/poc/tasks.md).
 
 ## Next steps
 

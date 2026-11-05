@@ -25,6 +25,7 @@ private const val USAGE = """Dots - terminal prototype
   bench levels [games] [stand-in]       a stand-in player (a tier, or border) plays every level
   bench duel ...                        two custom configurations play each other (run it for help)
   bench variants [games]                how much happens in each game format (draws, captures, ...)
+  log-check <file>...                   replay the games in logs exported from the app, check their results
 
   tier: easy, normal, hard, expert        opening: cross (default), double, crosses, empty
   boards are 3 to 99 in each direction; columns after z are aa, ab, ...
@@ -43,6 +44,7 @@ fun main(args: Array<String>) {
         "pvp" -> pvp(args.drop(1))
         "watch" -> watch(args.drop(1))
         "bench" -> Bench.run(args.drop(1))
+        "log-check" -> if (LogCheck.run(args.drop(1)) > 0) exitProcess(1)
         else -> println(USAGE)
     }
 }
