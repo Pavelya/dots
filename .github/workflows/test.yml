@@ -17,7 +17,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - uses: gradle/actions/setup-gradle@v5
+      - uses: gradle/actions/setup-gradle@v6
       - name: Version
         # 100 + the number of commits, as in the release workflow: a newer build always has a higher
         # version, so it installs over an older one (test builds share one signing key).
