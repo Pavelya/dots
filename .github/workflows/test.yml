@@ -28,13 +28,13 @@ jobs:
       - name: Engine and app tests, lint, builds
         run: ./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
       - name: Debug APK
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: dots-debug-apk
           path: app/build/outputs/apk/debug/app-debug.apk
       - name: Reports, when something failed
         if: failure()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: reports
           path: |
