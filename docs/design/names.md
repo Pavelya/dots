@@ -1,5 +1,7 @@
 # Name candidates (task B-01)
 
+**Chosen: Pinfold** (owner, 2026-11-05; decision 0016). Checks on that name are at the end.
+
 The game needs its own name: "DOTS" is a registered game trademark of another company
 (decision 0010). This list feeds B-02 (store, trademark and domain checks) and B-03 (the owner's
 pick). Nothing here has been checked for availability yet.
@@ -64,3 +66,20 @@ a native speaker of each language.
 Strongest on meaning and sound: **Ringbound** (fits the Notebook theme twice over), **Penned**
 (pen and trapped), **Pinfold** (rare, so likely free), and **Okolo** (friendly, means "around"
 in two of the target languages). B-02 checks all 20; the owner picks from the ones that pass.
+
+## Checks on Pinfold (B-02, 2026-11-05)
+
+Only the chosen name was checked; the other 19 were not.
+
+| Where | Found | Risk |
+|---|---|---|
+| Google Play search | Only "Pinfold Chippy", a fish-and-chip shop's ordering app in Bloxwich, UK | Low: not a game |
+| App Store (iOS) | "Pinfold", an offline map-file catalogue for travellers by an independent developer (per a third-party app profile, [marlvel.ai](https://marlvel.ai/apps/pinfold)) | Medium for a future iOS version: Apple wants unique app names, so the iOS title would need an addition such as "Pinfold: Rings of Dots" |
+| Web | pinfold.app (registered 2026-08-05) is a log-in page of some animal-related service; pinfold.com is registered since 1998 with no site | Low to medium: different products, but the obvious domains are gone |
+| Domains that look free | pinfold.game, pinfold.io (no registration record found) | Confirm at a registrar before buying |
+| Trademarks | A web search found no PINFOLD mark; nearest are PINFOLK (jewellery) and PINFINITY | Not definitive: the official registers were not searched from here |
+| Meaning | An old English word for a pound for stray animals; nothing bad in Russian, Ukrainian or Polish | None |
+
+**Before money is spent on the name** (domain, store listing, logo work): the owner searches the
+free official registers once: [USPTO](https://tmsearch.uspto.gov), [EUIPO eSearch](https://euipo.europa.eu/eSearch)
+and [WIPO Global Brand Database](https://branddb.wipo.int), for "pinfold" in classes 9, 28 and 41.
