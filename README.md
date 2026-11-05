@@ -14,6 +14,9 @@ The road from the POC to the store is the full plan ([`docs/plan.md`](docs/plan.
 ([`docs/design/investigation.md`](docs/design/investigation.md)); settled choices are in
 [`docs/decisions/`](docs/decisions/).
 
+Work is tracked in [GitHub Issues](https://github.com/Pavelya/dots/issues), one pull request per
+issue; how a task is picked up and finished: [`CLAUDE.md`](CLAUDE.md).
+
 ## Layout
 
 | Module   | What it is |
