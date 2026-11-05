@@ -7,7 +7,7 @@ import dots.engine.Opening
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -21,10 +21,15 @@ class SettingsRepositoryTest {
 
     /** Opens the settings file as the app would after a start; close() is what a restart does. */
     private class Session(file: java.io.File) {
-        val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-        val store = PreferenceDataStoreFactory.create(scope = scope) { file }
+        private val job = SupervisorJob()
+        val store = PreferenceDataStoreFactory.create(scope = CoroutineScope(Dispatchers.IO + job)) { file }
         val repository = SettingsRepository(store)
-        fun close() = scope.cancel()
+
+        /**
+         * Waits until the store has let go of the file. Cancelling without waiting lets the next
+         * session open the file while this one still holds it, which DataStore refuses.
+         */
+        suspend fun close() = job.cancelAndJoin()
     }
 
     private fun file() = folder.root.resolve("settings.preferences_pb")
