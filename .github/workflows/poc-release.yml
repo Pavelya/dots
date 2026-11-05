@@ -45,11 +45,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          apk="dots-${RELEASE_TAG}.apk"
+          apk="pinfold-${RELEASE_TAG}.apk"
           cp app/build/outputs/apk/debug/app-debug.apk "$apk"
           # Creates the tag on this commit when it does not exist yet (a run from the Actions tab).
           gh release create "$RELEASE_TAG" "$apk" \
             --target "$GITHUB_SHA" \
-            --title "Dots test build ${VERSION_NAME}" \
+            --title "Pinfold test build ${VERSION_NAME}" \
             --notes-file docs/poc/install.md \
             --prerelease

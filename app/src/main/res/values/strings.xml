@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Dots</string>
+    <string name="app_name">Pinfold</string>
     <string name="home_subtitle">Proof of concept</string>
     <string name="home_play_computer">Play the computer</string>
     <string name="home_two_players">Two players</string>
@@ -44,7 +44,7 @@
     <string name="rules_end">Both players have the same number of dots. When all are placed, whoever captured more wins.</string>
     <string name="log_title">Test log</string>
     <string name="log_share">Share the game log</string>
-    <string name="log_share_subject">Dots game log</string>
+    <string name="log_share_subject">Pinfold game log</string>
     <string name="log_empty">No games in the log yet. Finished games are kept on this phone until you share them.</string>
     <plurals name="log_detail">
         <item quantity="one">%1$d game in the log, kept on this phone until you share it. It holds your moves and results, nothing else.</item>

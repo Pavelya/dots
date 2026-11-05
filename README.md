@@ -1,6 +1,7 @@
-# Dots
+# Pinfold
 
-A prototype of the paper-and-pencil game *Dots* (Kropki / Точки / Židi) for a future Android app:
+**Pinfold** (decision 0016) is a future Android game built on the paper-and-pencil game *Dots*
+(Kropki / Точки / Židi). This repository is its prototype:
 two players alternately place dots on a grid and score by surrounding the other side's dots.
 
 This repository holds the platform-independent game logic, a computer opponent, a sample

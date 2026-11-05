@@ -1,4 +1,4 @@
-# Installing the Dots test build
+# Installing the Pinfold test build
 
 Thank you for testing! This build is for the one-week test (see the test protocol). It needs an
 Android phone with Android 7 or newer.
@@ -9,7 +9,7 @@ Android phone with Android 7 or newer.
 2. Open it. Android asks to allow installing apps from your browser or files app: allow it for
    this one install (Settings > Apps > Special access > Install unknown apps), then go back and
    tap **Install**.
-3. If you had an older Dots test build from before version 0.1, uninstall it first; from 0.1 on,
+3. If you had an older test build (called Dots) from before version 0.1, uninstall it first; from 0.1 on,
    new versions install over the old one and keep your games.
 
 ## Update
