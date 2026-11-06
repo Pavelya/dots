@@ -4,7 +4,7 @@
 
 ## Context
 
-The look, the characters and the store rating depend on who the game is for. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+The look, the characters and the store rating depend on who the game is for. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

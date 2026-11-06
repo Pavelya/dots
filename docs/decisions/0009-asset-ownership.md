@@ -4,7 +4,7 @@
 
 ## Context
 
-AI-generated art may not be protected by copyright, so others could copy it. The owner accepts that. What must never happen is a claim that we used someone else's work. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+AI-generated art may not be protected by copyright, so others could copy it. The owner accepts that. What must never happen is a claim that we used someone else's work. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

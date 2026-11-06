@@ -4,7 +4,7 @@
 
 ## Context
 
-The paper game is known in Russia, Ukraine, Poland and Czechia and little known in the West. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+The paper game is known in Russia, Ukraine, Poland and Czechia and little known in the West. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

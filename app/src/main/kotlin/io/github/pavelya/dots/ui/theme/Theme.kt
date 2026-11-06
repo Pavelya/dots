@@ -6,7 +6,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
-/** The POC's plain Material look. The designed themes replace it after the POC (full plan, V-01). */
+/** The POC's plain Material look. The designed themes replace it after the POC (tasks V-02 #73 and V-03 #74). */
 @Composable
 fun DotsTheme(content: @Composable () -> Unit) {
     MaterialTheme(

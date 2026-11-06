@@ -1,13 +1,14 @@
 # Dots POC: charter
 
-**Status:** approved by the owner on 2026-11-04 (task P-01), with decisions D-POC-1 to 3 as proposed below.
+**Approved** by the owner on 2026-11-04, with decisions D-POC-1 to 3 as proposed below.
 **One question:** do people enjoy the core game on a phone, enough to keep playing without being asked?
 
 Everything else (themes, figures, animations, sound, campaign, online play, store release) is in
-the [full plan](https://claude.ai/artifact/9GaGRbXg9qwJsYMswwE7ZF), rewritten on 2026-11-05 after
-the design investigation (decisions 0004 to 0015). Naming and design work may run beside the test
-week; engine and app work for the full game waits for this question's answer. The POC builds only what is needed to answer it, in a way the full version can
-reuse.
+the [full plan](../plan.md). Naming and design work may run beside the test week; engine and app
+work for the full game waits for this question's answer. The POC builds only what is needed to
+answer it, in a way the full version can reuse.
+
+The POC's tasks are the issues in the [0 POC milestone](https://github.com/Pavelya/dots/milestone/2).
 
 ## What we already know (computer simulation only)
 
@@ -75,6 +76,6 @@ English, Play Store release.
 ## Documents
 
 - [Architecture and reuse](architecture.md): how the POC code is structured so the full version keeps it.
-- [Tasks](tasks.md): the POC work, in order, each with its goal and how it is verified.
+- [Tasks](https://github.com/Pavelya/dots/milestone/2): the POC work, one issue per task, each with its goal and how it is verified.
 - [Test protocol](test-protocol.md): how the test week runs and what is measured.
 - Decision records: `docs/decisions/`.

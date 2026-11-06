@@ -4,7 +4,7 @@
 
 ## Context
 
-The investigation compared five theme directions and seven booster ideas. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+The investigation compared five theme directions and seven booster ideas. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

@@ -4,7 +4,7 @@
 
 ## Context
 
-Puzzle games launch with enough levels to hold players for weeks and then add worlds regularly. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+Puzzle games launch with enough levels to hold players for weeks and then add worlds regularly. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

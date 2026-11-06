@@ -13,7 +13,7 @@ explains the rules and how the computer opponent works.
 | `cli/` | Terminal game, benchmarks, tester-log tools. Built on `engine`. |
 | `app/` | Android app (Jetpack Compose). Built on `engine`. Structure: `docs/poc/architecture.md`. |
 | `gradle/libs.versions.toml` | Every dependency version. Dependabot updates it; don't bump versions by hand unless the task asks for it. |
-| `docs/plan.md` | The plan: phases and task cards. |
+| `docs/plan.md` | The plan: the game, phases, gates, tools and accounts. Task cards are issues. |
 | `docs/poc/` | The proof of concept: charter, architecture, test protocol. |
 | `docs/design/` | Design work: names, investigation, later the theme, flows and canvas. |
 | `docs/decisions/` | One file per settled decision, `NNNN-short-title.md`. |

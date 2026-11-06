@@ -4,7 +4,7 @@
 
 ## Context
 
-Songs made on Suno's free plan stay Suno's and are non-commercial; songs made while on a paid plan carry commercial rights that last after cancelling (per Suno's help pages as seen in search results; to be checked before subscribing). Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+Songs made on Suno's free plan stay Suno's and are non-commercial; songs made while on a paid plan carry commercial rights that last after cancelling (per Suno's help pages as seen in search results; to be checked before subscribing). Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

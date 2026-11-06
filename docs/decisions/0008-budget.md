@@ -4,7 +4,7 @@
 
 ## Context
 
-The project aims at free tools and free tiers. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+The project aims at free tools and free tiers. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 
