@@ -7,7 +7,7 @@ labels: []
 
 **Goal:** <!-- the outcome, in one sentence -->
 
-**Depends on:** <!-- issue numbers that must be closed first, or "nothing" -->
+**Depends on:** <!-- IDs of the tasks that must be closed first (B-02), or "nothing" -->
 
 **Steps**
 -
