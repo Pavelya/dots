@@ -44,16 +44,18 @@ command was not run locally.
 
 ## Session protocol
 
-One session works on one issue. Given "Work on #N":
+One session works on one issue. Given "Work on B-02" (a task ID):
 
-1. **Read the issue** with `gh issue view N --comments`. Comments can change the task. If it
+1. **Read the issue.** Find its number with `gh issue list --state all --search "B-02 in:title"`,
+   then `gh issue view <number> --comments`. Comments can change the task. If it
    depends on an open issue, or is labelled `blocked`, stop and say so.
 2. **Branch** `task/<ID>-<slug>` from the latest `main`, e.g. `task/F-3-safe-to-publish`
    (`git fetch origin && git switch -c task/F-3-safe-to-publish origin/main`).
 3. **Stay within the issue.** Anything else you notice (a bug, a stale doc, a better idea) becomes
-   a new issue (`gh issue create`, using the task template), not an extra change in this PR.
+   a new issue (`gh issue create`, using the task template, titled with a new ID), not an extra
+   change in this PR.
 4. **Run the CI command** before pushing.
-5. **Open a PR** with `gh pr create`, following `.github/pull_request_template.md`: `Closes #N`,
+5. **Open a PR** with `gh pr create`, following `.github/pull_request_template.md`: `Closes #<number>`,
    what changed, and the issue's "Done when" checklist copied with each item ticked or explained.
    Items that only a person can check stay unticked, with a note on what they should do.
 6. **The owner merges.** Never run `gh pr merge`, never push to `main`, never force-push.
@@ -63,11 +65,21 @@ Labels: `agent` (checkable from the repository, CI or a script), `human` (needs 
 a phone or taste), `blocked`, `decision` (closes with a record in `docs/decisions/`), `draft`
 (card to be revised after the POC test week).
 
+## Task IDs
+
+Every task has one name: its **ID**, a letter and a number, e.g. B-02. The letter is the phase:
+F foundation, P POC, B brand, D design, G game design and engine, A app, V visuals and sound,
+C money, O online, Q quality, R release, X open decisions. A new issue takes the next free number
+of its letter, and its title starts with the ID (`B-06 Store subtitle`).
+
+Refer to tasks only by ID, in chat, docs, code comments, commits and PRs. Issue numbers appear
+only where GitHub needs them: `Closes #<number>` and `gh` commands. Decision records keep their
+own four-digit numbers (decision 0016); those are documents, not tasks.
+
 ## Rules
 
 - **Status lives only in GitHub Issues.** Never write task status ("done", "in progress",
-  "not started", counts of finished tasks) into docs or code comments. Refer to tasks by issue
-  number.
+  "not started", counts of finished tasks) into docs or code comments.
 - **The engine stays free of Android code**, so the rules run the same in the app, the CLI and a
   future server.
 - **Every image, sound or font** enters the repository with a row in the asset register
