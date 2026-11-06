@@ -78,4 +78,6 @@ English, Play Store release.
 - [Architecture and reuse](architecture.md): how the POC code is structured so the full version keeps it.
 - [Tasks](https://github.com/Pavelya/dots/milestone/2): the POC work, one issue per task, each with its goal and how it is verified.
 - [Test protocol](test-protocol.md): how the test week runs and what is measured.
+- [Results](results.md): what the POC test found, and where each finding went. The decision is
+  [0019](../decisions/0019-poc-go-without-the-test-week.md).
 - Decision records: `docs/decisions/`.
