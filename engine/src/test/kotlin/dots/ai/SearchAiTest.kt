@@ -50,6 +50,37 @@ class SearchAiTest {
         }
     }
 
+    /**
+     * Blue to move. The red dot at the top left and the blue dot at the bottom right are each two
+     * dots from capture: blue can close in on the red dot or shore up its own.
+     */
+    private val attackOrDefend = """
+        .........
+        .........
+        ..B......
+        .BR......
+        .........
+        .........
+        ......R..
+        .....RB..
+        .........
+    """
+
+    @Test
+    fun `the threat weights decide between attacking and defending`() {
+        val state = GameState.fromAscii(attackOrDefend, first = Player.BLUE)
+        val attackCells = setOf(Pos(3, 3), Pos(2, 4))
+        val defendCells = setOf(Pos(7, 7), Pos(6, 8))
+        val base = AiConfig(depth = 1, breadth = 10, attackReach = 2, dangerReach = 2)
+        val attacker = base.copy(attackWeights = listOf(3000, 2000, 120), dangerWeights = listOf(3000, 100, 20))
+        val defender = base.copy(attackWeights = listOf(3000, 100, 20), dangerWeights = listOf(3000, 2000, 120))
+
+        val attack = SearchAi(attacker, Random(1)).chooseMove(state)
+        val defend = SearchAi(defender, Random(1)).chooseMove(state)
+        assertTrue(attack in attackCells, "leaning to attack, it played $attack")
+        assertTrue(defend in defendCells, "leaning to defence, it played $defend")
+    }
+
     @Test
     fun `the first move on an empty board is near the centre`() {
         val move = SearchAi(AiConfig.EASY.copy(mistakeRate = 0.0), Random(1)).chooseMove(GameState.start(9, 9))

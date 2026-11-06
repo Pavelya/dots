@@ -31,6 +31,8 @@ class SearchAi(
     private class Node(val pos: Pos, val state: GameState, val key: Int, val local: Int)
 
     private val finder = ThreatFinder()
+    private val attackWeights = config.attackWeights.toIntArray()
+    private val dangerWeights = config.dangerWeights.toIntArray()
 
     /** Set while a search runs: true once it must give up (time is up or it was cancelled). */
     private var mustStop: () -> Boolean = { false }
@@ -179,16 +181,17 @@ class SearchAi(
         if (config.attackReach == 0 && config.dangerReach == 0) return null
         val bonus = IntArray(state.width * state.height)
         for (threat in finder.find(state, mover.opponent, config.attackReach)) {
-            for (cell in threat.cells) bonus[cell] += weight(ATTACK, threat)
+            for (cell in threat.cells) bonus[cell] += weight(attackWeights, threat)
         }
         for (threat in finder.find(state, mover, config.dangerReach)) {
-            for (cell in threat.cells) bonus[cell] += weight(DANGER, threat)
+            for (cell in threat.cells) bonus[cell] += weight(dangerWeights, threat)
         }
         return bonus
     }
 
+    /** [AiConfig.attackWeights] or [AiConfig.dangerWeights] for [threat]: by its cost, times its size. */
     private fun weight(table: IntArray, threat: Threat): Int =
-        table[min(threat.cost, table.size - 1)] * min(threat.size, MAX_GROUP_WEIGHT)
+        table[min(threat.cost, table.size) - 1] * min(threat.size, MAX_GROUP_WEIGHT)
 
     /** Without threat guidance every cell near a dot; with it the threat cells plus the busiest few. */
     private fun movesToTry(state: GameState, bonus: IntArray?): List<Pos> {
@@ -324,11 +327,5 @@ class SearchAi(
         const val ENEMY_NEIGHBOUR = 2
         const val EXTRA_NEIGHBOURS = 6
         const val MAX_GROUP_WEIGHT = 3
-
-        /** Bonus by cost (dots still needed) for a cell that walls in an enemy group. */
-        val ATTACK = intArrayOf(0, 3000, 600, 120, 30)
-
-        /** The same for a cell that would stop the opponent walling in one of our groups. */
-        val DANGER = intArrayOf(0, 2500, 400, 80, 20)
     }
 }

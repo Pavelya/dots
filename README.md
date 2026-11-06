@@ -68,6 +68,7 @@ cli/build/install/cli/bin/cli bench tiers 40 10 24      # every tier against eve
 cli/build/install/cli/bin/cli bench levels 20 normal    # a stand-in plays each level: a tier, or "border"
 cli/build/install/cli/bin/cli bench duel                # two custom configurations; prints its arguments
 cli/build/install/cli/bin/cli bench variety hard        # how often a tier answers the same position differently
+cli/build/install/cli/bin/cli bench balance 40          # how often each tier attacks or defends
 ```
 
 Game logs shared by testers from the app (Settings, "Share the game log"; format in
@@ -178,6 +179,87 @@ without a margin), NORMAL in 16, EXPERT in 13, EASY in all 20. Over 80 paired ga
 (`cli bench duel 80 10 24 3 8 3 2 3 8 3 2 5 0`), HARD with its margin against HARD without won
 9, lost 11 and drew 60 (sign test p=0.82): the variety costs no strength. With a seed fixed, as in
 the tests, the computer still plays the same game every time.
+
+**Attack and defence.** Testers felt the computer "always prefers to attack". Two things set the
+balance in a tier:
+
+- **How far it looks.** `attackReach`: enemy groups at most this many dots from capture count as
+  chances to attack. `dangerReach`: its own groups at most this many dots from capture count as
+  in danger.
+- **How much it wants each.** A cell that walls in an enemy group gets a bonus
+  (`attackWeights`), and so does a cell that stops the opponent walling in one of its own groups
+  (`dangerWeights`). The closer the group is to capture, the bigger the bonus.
+
+| Tier   | Looks for attacks | Looks for danger | Attack weights (1, 2, 3, 4+ dots away) | Danger weights |
+|--------|------------------:|-----------------:|----------------------------------------|----------------|
+| EASY   | none              | none             | (not used)                             | (not used)     |
+| NORMAL | 2 dots            | 1 dot            | 3000, 600, 120, 30                     | the same       |
+| HARD   | 3 dots            | 2 dots           | 3000, 600, 120, 30                     | the same       |
+| EXPERT | 3 dots            | 3 dots           | 3000, 600, 120, 30                     | the same       |
+
+Defence and attack now have the same weights at every tier (`AiConfig.BALANCED`). Before, the
+danger weights were lower: 2500, 400, 80, 20.
+
+`cli bench balance 40` measures what each tier does. Each tier plays 40 games against a casual
+stand-in: NORMAL that plays a random nearby move a quarter of the time. The games use the
+testers' format: 15×15, four crosses, 33 dots each. Every move of the tier is sorted by its effect
+on groups at most three dots from capture:
+
+- *attack*: it captures, or brings an enemy group closer to capture;
+- *defend*: it moves one of its own groups further from capture;
+- *both*, or *neither*.
+
+The table also shows three more things:
+
+- *threatened*: the share of moves made while one of the tier's own groups was at most two dots
+  from capture, and how many of those moves defended.
+- *en prise*: attacks made while one of the tier's own groups was one dot from capture, without
+  defending it.
+- *lost after attack*: dots lost on the opponent's next move after an attack that did not also
+  defend. *Lost* counts all the dots the tier lost.
+
+```
+                  share of the tier's moves          threatened   defended   per game:
+tier    weights   attack  defend  both  neither      (moves)      of those   en prise  lost after attack  lost
+EASY    old/new    12.7%    7.0%  0.2%   80.1%        47.1%        10.3%      0.70      0.80               6.88
+NORMAL  old        23.9%    8.5%  0.3%   67.3%         6.6%        47.1%      0.10      0.68               1.70
+        new        23.9%    8.5%  0.3%   67.3%         6.6%        47.1%      0.10      0.68               1.70
+HARD    old        37.4%    8.3%  0.3%   54.0%         6.6%        51.7%      0.08      0.75               1.75
+        new        37.1%    8.3%  0.4%   54.2%         5.9%        59.0%      0.08      0.75               1.78
+EXPERT  old        32.5%    8.5%  0.4%   58.6%        10.7%        37.6%      0.13      0.70               1.53
+        new        31.4%    8.6%  0.5%   59.4%        10.2%        37.8%      0.13      0.68               1.50
+```
+
+What this shows:
+
+- **The weights did not cause the lean.** With equal weights NORMAL plays exactly the same games,
+  and HARD's shares move by less than a point. Even danger weights two to three times the attack
+  weights (6000, 1800, 360, 90) leave HARD at 37% attack and 9% defence.
+- **The computer attacks often because there is often something to attack.** It rarely needs to
+  defend: one of its own groups is within two dots of capture on only 6% to 10% of its moves
+  (EASY, which ignores threats: almost half). It almost never leaves a group one dot from capture
+  to attack elsewhere (0.1 times per game or less).
+- **Looking as far for danger as for attacks made HARD passive.** With danger 3 dots out, HARD
+  failed to capture players who only defend. Over 60 games per level, against a player who only
+  plays on the border, it won level 7 in 27 games instead of 44. Against the NORMAL stand-in it
+  won level 8 in 23 games instead of 42. Against itself it was no stronger (81-68-11 over 160
+  games, p=0.33). So HARD looks for danger one dot less far than for attacks.
+- **NORMAL sees danger only one dot away on purpose.** It stands for a weaker player, and a
+  weaker player notices too late that a group of theirs is being walled in.
+
+Equal weights cost HARD no strength. Over 80 paired games (`cli bench duel`, weights given as
+`dangerWeightsB=2500,400,80,20` and so on), HARD with each set of new danger weights against
+HARD with the old ones:
+
+```
+danger weights               15×15, four crosses, 33 dots    10×10, a cross, 24 dots
+3000, 600, 120, 30 (chosen)  40-34- 6  p=0.56                 11-11-58  p=1.00
+3600, 900, 180, 45           35-37- 8  p=0.91
+6000, 1800, 360, 90          37-38- 5  p=1.00
+```
+
+Nothing else in this README changed with the new weights: the tier and level tables and the
+variety numbers come out the same.
 
 Endgame behaviour follows the grounding rule:
 
