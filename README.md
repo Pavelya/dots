@@ -67,6 +67,7 @@ Benchmarks (computer against computer; see "How strong is it" below):
 cli/build/install/cli/bin/cli bench tiers 40 10 24      # every tier against every other: games, board size, dots each
 cli/build/install/cli/bin/cli bench levels 20 normal    # a stand-in plays each level: a tier, or "border"
 cli/build/install/cli/bin/cli bench duel                # two custom configurations; prints its arguments
+cli/build/install/cli/bin/cli bench variety hard        # how often a tier answers the same position differently
 ```
 
 Game logs shared by testers from the app (Settings, "Share the game log"; format in
@@ -148,8 +149,35 @@ so it is fast enough to run inside the search). It is used three ways:
   safe one, and deeper search played worse, not better.
 - **Collecting** after the opponent stops (below).
 
-Tiers are `AiConfig`: search depth and breadth, how far ahead it looks for threats, and a mistake
-rate. EASY is deliberately blind to threats and plays a random nearby move a third of the time.
+Tiers are `AiConfig`: search depth and breadth, how far ahead it looks for threats, a mistake
+rate and a variety margin. EASY is deliberately blind to threats and plays a random nearby move a
+third of the time.
+
+**Variety.** So that a position does not always get the same answer, every candidate move gets a
+random bonus of 0 to a small margin before the best is picked. A move that scores just below the
+best is then played now and then, one a full margin below never. A captured dot is worth 10,000
+points and touching one more dot 2 or 3, so the margins never trade away a capture; they only
+choose between quiet moves.
+
+| Tier   | Margin |
+|--------|-------:|
+| EASY   | 0      |
+| NORMAL | 10     |
+| HARD   | 5      |
+| EXPERT | 5      |
+
+EASY needs no margin: its random mistakes already vary every position. NORMAL, the weaker
+searching tier, gets the wider margin. The margins stay small because, once a capture is more than
+a few moves away, the only thing steering the computer towards it is that "touching one more dot"
+score. A larger margin drowns it out: with a margin of 10, HARD on level 7 failed to capture a
+player who only plays on the border in half its games.
+
+`cli bench variety <tier> [margin]` answers 20 fixed mid-game positions 10 times each and counts
+the different moves. HARD plays at least two different moves in 14 of the 20 positions (2 of 20
+without a margin), NORMAL in 16, EXPERT in 13, EASY in all 20. Over 80 paired games
+(`cli bench duel 80 10 24 3 8 3 2 3 8 3 2 5 0`), HARD with its margin against HARD without won
+9, lost 11 and drew 60 (sign test p=0.82): the variety costs no strength. With a seed fixed, as in
+the tests, the computer still plays the same game every time.
 
 Endgame behaviour follows the grounding rule:
 
@@ -169,9 +197,9 @@ W-L-D is for the first-named tier; *p* is a two-sided sign test on the decisive 
 about 0.05 the difference is unlikely to be chance).
 
 ```
-EASY   vs NORMAL   0-36- 4  p=0.000      NORMAL vs HARD     1- 8-31  p=0.039
-EASY   vs HARD     1-39- 0  p=0.000      NORMAL vs EXPERT   0- 8-32  p=0.008
-EASY   vs EXPERT   0-40- 0  p=0.000      HARD   vs EXPERT   4- 5-31  p=1.000
+EASY   vs NORMAL   2-34- 4  p=0.000      NORMAL vs HARD     1-17-22  p=0.000
+EASY   vs HARD     0-40- 0  p=0.000      NORMAL vs EXPERT   1-14-25  p=0.001
+EASY   vs EXPERT   0-39- 1  p=0.000      HARD   vs EXPERT   2- 9-29  p=0.065
 ```
 
 So there are three strength levels, **EASY ≪ NORMAL < HARD**. **EXPERT is no stronger than HARD**
@@ -185,13 +213,13 @@ someone who only plays on the border.
 
 ```
                      EASY stand-in    NORMAL stand-in    border-only
-1 Warm-up            9- 4- 7          14- 0- 6           0-19- 1
-2 Open Field        11- 5- 4          16- 0- 4           0-20- 0
-3 Scout              8- 8- 4           8- 1-11           0-19- 1
+1 Warm-up            9- 4- 7          18- 0- 2           0-19- 1
+2 Open Field        11- 5- 4          19- 0- 1           0-20- 0
+3 Scout              8- 8- 4          14- 0- 6           0-19- 1
 4 Outpost            0-20- 0           3- 2-15           0-20- 0
-5 Rescue             0-19- 1           1- 3-16           0-20- 0
-6 Pincer             0-20- 0           1- 9-10           0-19- 1
-7 Siege              0-17- 3           0- 3-17           0-14- 6
+5 Rescue             0-20- 0           2- 5-13           0-20- 0
+6 Pincer             0-20- 0           1-10- 9           0-20- 0
+7 Siege              0-17- 3           2- 4-14           0-15- 5
 8 Grandmaster        0-20- 0           2-15- 3           0-20- 0
 ```
 
@@ -212,22 +240,22 @@ measures whether things happen in a game, not whether people enjoy it. Selected 
                               draws   captures  lead changes  won from   first capture  first player's
 format (dots each)                    per game  per game      behind     (median move)  share of wins
 strong vs strong
-15x15 empty    (33)            95%     0.1       0.0           0%        never          -
-15x15 1 cross  (33)            55%     0.8       0.1           5%        56             44%
-15x15 4 crosses (33)            5%     4.4       0.5          35%        11             42%
-15x15 4 crosses (67)            5%     6.3       0.7          45%        11             21%
-9x9   4 crosses (12)           45%     2.0       0.1           5%         5             82%
+15x15 empty    (33)            80%     0.3       0.1           5%        never          25%
+15x15 1 cross  (33)            70%     0.8       0.1          10%        never          50%
+15x15 4 crosses (33)            5%     5.5       0.8          55%        12             58%
+15x15 4 crosses (67)           10%     7.7       1.0          55%        12             50%
+9x9   4 crosses (12)           50%     2.2       0.1           5%         5             80%
 casual vs casual
-15x15 4 crosses (33)            0%     3.9       0.3          25%         6             40%
-12x12 4 crosses (21)           35%     2.5       0.1           5%         5             69%
+15x15 4 crosses (33)           15%     4.2       0.1           5%         8             59%
+12x12 4 crosses (21)            0%     2.7       0.3          25%         5             65%
 ```
 
-- **The opening matters most.** From an empty board equal players draw almost every game; from
-  four random crosses there is contact from the first moves, a capture by about move 10, and
-  comebacks in a third of games.
+- **The opening matters most.** From an empty board equal players draw most games; from four
+  random crosses there is contact from the first moves, a capture by about move 10, and between
+  strong players comebacks in half of the games.
 - **15x15 with four crosses and about 33 dots each** (66 moves, roughly 5 to 8 minutes for people)
   is the best candidate default; 67 dots each makes a longer, even livelier game.
-- **Small boards favour the first player** (9x9: 82% to 91% of decisive games) and still draw often.
+- **Small boards favour the first player** (9x9 with four crosses: 64% to 83% of decisive games) and still draw often.
 - 20 games per row, so differences of a few points are noise; people play differently from
   these stand-ins, so this picks formats to play-test rather than replacing the test.
 

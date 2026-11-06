@@ -107,12 +107,19 @@ class SearchAi(
         return best
     }
 
+    /**
+     * The move to play after searching [depth] plies. Each root move gets a random bonus of 0 to
+     * [AiConfig.variety] and the highest total wins, ties broken at random: a move that scores a
+     * little below the best is played now and then, and the further below, the less often. Every
+     * root move is searched with the full window, so its score is exact.
+     */
     private fun bestMove(state: GameState, depth: Int): Pos {
         val me = state.toMove
         var bestValue = Int.MIN_VALUE
         val best = ArrayList<Pos>()
         for (node in expand(state, me, config.breadth * 2)) {
-            val value = search(node.state, me, depth - 1, -INF, INF) + node.local
+            val noise = if (config.variety > 0) random.nextInt(config.variety + 1) else 0
+            val value = search(node.state, me, depth - 1, -INF, INF) + node.local + noise
             when {
                 value > bestValue -> {
                     bestValue = value
