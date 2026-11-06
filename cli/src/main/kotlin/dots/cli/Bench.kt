@@ -15,7 +15,8 @@ import kotlin.random.Random
 internal object Bench {
     private const val DEFAULT_GAMES = 10
     private const val DUEL_USAGE =
-        "bench duel games size dots depthA breadthA attackA dangerA depthB breadthB attackB dangerB [varietyA varietyB]"
+        "bench duel games size dots depthA breadthA attackA dangerA depthB breadthB attackB dangerB [varietyA varietyB]\n" +
+            "           [attackWeightsA=3000,600,120,30] [dangerWeightsA=...] [attackWeightsB=...] [dangerWeightsB=...] [opening=cross|crosses]"
     private const val POSITIONS = 20
     private const val RUNS = 10
 
@@ -30,9 +31,14 @@ internal object Bench {
                 args.getOrNull(2)?.let { it.toIntOrNull() ?: exitWith("not a number: $it") },
             )
             "variants" -> Variants.run(games)
+            "balance" -> Balance.run(
+                args.getOrNull(1)?.let { it.toIntOrNull() ?: exitWith("not a number: $it") } ?: 20,
+                args.getOrNull(2)?.let(::weights),
+                args.getOrNull(3)?.let(::weights),
+            )
             else -> exitWith(
                 "usage: bench tiers [games] [size] [dots each] | bench levels [games] [tier] | bench variants [games] |\n" +
-                    "       bench variety [tier] [margin] |\n" +
+                    "       bench variety [tier] [margin] | bench balance [games] [attack weights] [danger weights] |\n" +
                     "       $DUEL_USAGE",
             )
         }
@@ -74,17 +80,19 @@ internal object Bench {
     }
 
     /**
-     * Plays [games] games between [a] and [b] from the cross opening, in pairs: both games of a pair
-     * use the same random seeds for the red and blue seats, with the configurations swapped. Luck
-     * then cancels out between the two sides, so two identical configurations always come out even.
+     * Plays [games] games between [a] and [b] in pairs: both games of a pair start from the same
+     * position and use the same random seeds for the red and blue seats, with the configurations
+     * swapped. Luck then cancels out between the two sides, so two identical configurations always
+     * come out even. The games start from one cross, or with [crosses] from four random crosses.
      */
-    private fun pairedGames(a: AiConfig, b: AiConfig, games: Int, size: Int, dots: Int): Tally {
+    private fun pairedGames(a: AiConfig, b: AiConfig, games: Int, size: Int, dots: Int, crosses: Boolean = false): Tally {
         val tally = Tally()
         for (g in 0 until games) {
             val aIsRed = g % 2 == 0
             val pair = g / 2
+            val opening = if (crosses) Openings.randomCrosses(size, size, random = Random(pair)) else Openings.cross(size, size)
             val end = Match.playOut(
-                GameState.start(size, size, dots, dots = Openings.cross(size, size)),
+                GameState.start(size, size, dots, dots = opening),
                 SearchAi(if (aIsRed) a else b, Random(1000 + pair)),
                 SearchAi(if (aIsRed) b else a, Random(2000 + pair)),
             )
@@ -109,17 +117,36 @@ internal object Bench {
 
     /**
      * Two hand-made configurations play each other; for tuning. The optional last two numbers are
-     * each side's [AiConfig.variety] (default 0).
+     * each side's [AiConfig.variety] (default 0). Settings written as name=value may follow: each
+     * side's threat weights ([AiConfig.attackWeights], [AiConfig.dangerWeights]; default
+     * [AiConfig.BALANCED]) and the opening (one cross by default).
      */
     private fun duel(args: List<String>) {
-        val n = args.map { it.toIntOrNull() ?: exitWith("not a number: $it") }
+        val (named, positional) = args.partition { '=' in it }
+        val settings = named.associate { it.substringBefore('=') to it.substringAfter('=') }
+        val unknown = settings.keys - setOf("attackWeightsA", "dangerWeightsA", "attackWeightsB", "dangerWeightsB", "opening")
+        if (unknown.isNotEmpty()) exitWith("unknown setting ${unknown.first()}\nusage: $DUEL_USAGE")
+        val n = positional.map { it.toIntOrNull() ?: exitWith("not a number: $it") }
         if (n.size != 11 && n.size != 13) exitWith("usage: $DUEL_USAGE")
         val (games, size, dots) = n
-        val a = AiConfig(depth = n[3], breadth = n[4], attackReach = n[5], dangerReach = n[6], variety = n.getOrElse(11) { 0 })
-        val b = AiConfig(depth = n[7], breadth = n[8], attackReach = n[9], dangerReach = n[10], variety = n.getOrElse(12) { 0 })
+        fun weights(name: String) = settings[name]?.let(::weights) ?: AiConfig.BALANCED
+        val a = AiConfig(
+            depth = n[3], breadth = n[4], attackReach = n[5], dangerReach = n[6], variety = n.getOrElse(11) { 0 },
+            attackWeights = weights("attackWeightsA"), dangerWeights = weights("dangerWeightsA"),
+        )
+        val b = AiConfig(
+            depth = n[7], breadth = n[8], attackReach = n[9], dangerReach = n[10], variety = n.getOrElse(12) { 0 },
+            attackWeights = weights("attackWeightsB"), dangerWeights = weights("dangerWeightsB"),
+        )
+        val crosses = when (val opening = settings["opening"] ?: "cross") {
+            "cross" -> false
+            "crosses" -> true
+            else -> exitWith("unknown opening $opening (cross, crosses)")
+        }
         val started = System.nanoTime()
-        val tally = pairedGames(a, b, games, size, dots)
-        println("A=$a\nB=$b\n$games games, ${size}x$size, $dots dots: A $tally  [${(System.nanoTime() - started) / 1_000_000_000} s]")
+        val tally = pairedGames(a, b, games, size, dots, crosses)
+        val from = if (crosses) "four crosses" else "a cross"
+        println("A=$a\nB=$b\n$games games, ${size}x$size from $from, $dots dots: A $tally  [${(System.nanoTime() - started) / 1_000_000_000} s]")
     }
 
     /**
@@ -192,5 +219,12 @@ internal object Bench {
             val pick = border.ifEmpty { moves }
             return if (pick.isEmpty()) Action.Pass else Action.Place(pick[random.nextInt(pick.size)])
         }
+    }
+
+    /** Threat weights written as numbers separated by commas, e.g. 3000,600,120,30. */
+    private fun weights(text: String): List<Int> {
+        val numbers = text.split(',').map { it.trim().toIntOrNull() ?: exitWith("not a list of weights: $text") }
+        if (numbers.isEmpty() || numbers.any { it < 0 }) exitWith("weights must be numbers of 0 or more: $text")
+        return numbers
     }
 }
