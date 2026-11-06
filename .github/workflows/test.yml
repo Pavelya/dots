@@ -6,7 +6,36 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
+  commit-identity:
+    # Every commit becomes public with the repository, so its author and committer must be GitHub
+    # noreply addresses, never a personal email. Checks the commits of the pull request, or the
+    # commits a push added to main (a squash merge takes the merger's GitHub email setting).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Commit emails are noreply addresses
+        env:
+          RANGE: ${{ github.event_name == 'pull_request' && format('origin/{0}..{1}', github.base_ref, github.event.pull_request.head.sha) || format('{0}..{1}', github.event.before, github.sha) }}
+        run: |
+          commits=$(git log --format='%h %ae %ce' "$RANGE")
+          status=0
+          while read -r sha author committer; do
+            [ -n "$sha" ] || continue
+            for email in "$author" "$committer"; do
+              case "$email" in
+                *@users.noreply.github.com|noreply@github.com) ;;
+                *) echo "::error::Commit $sha uses $email. Use your GitHub noreply address (see CLAUDE.md, Commits)."; status=1 ;;
+              esac
+            done
+          done <<< "$commits"
+          exit $status
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -25,8 +54,26 @@ jobs:
           count=$(git rev-list --count HEAD)
           echo "VERSION_CODE=$((100 + count))" >> "$GITHUB_ENV"
           echo "VERSION_NAME=0.1-poc-dev.$count" >> "$GITHUB_ENV"
+      - name: Test signing key
+        # The POC test key from the Actions secrets. Runs without secrets (Dependabot pull requests)
+        # sign with the standard debug key instead.
+        env:
+          POC_KEYSTORE_BASE64: ${{ secrets.POC_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$POC_KEYSTORE_BASE64" ]; then
+            echo "::notice::No POC test key in this run: the APK is signed with the debug key."
+            exit 0
+          fi
+          echo "$POC_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/poc-test.keystore"
+          echo "POC_KEYSTORE_FILE=$RUNNER_TEMP/poc-test.keystore" >> "$GITHUB_ENV"
       - name: Engine and app tests, lint, builds
+        env:
+          POC_KEYSTORE_PASSWORD: ${{ secrets.POC_KEYSTORE_PASSWORD }}
         run: ./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
+      - name: Signing certificate
+        run: |
+          apksigner="$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner"
+          "$apksigner" verify --print-certs app/build/outputs/apk/debug/app-debug.apk
       - name: Debug APK
         uses: actions/upload-artifact@v7
         with:

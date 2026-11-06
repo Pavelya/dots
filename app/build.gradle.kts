@@ -18,21 +18,27 @@ android {
         versionName = providers.environmentVariable("VERSION_NAME").getOrElse("0.1-poc")
     }
 
-    signingConfigs {
-        // Signs POC test builds, so a new test build installs over the previous one instead of
-        // asking testers to uninstall. Deliberately not secret, and never used for the store app,
-        // which gets its own upload key kept out of the repository (full plan task R-02).
-        create("pocTest") {
-            storeFile = file("poc-test.keystore")
-            storePassword = "poc-test"
-            keyAlias = "poc-test"
-            keyPassword = "poc-test"
+    // The POC test key signs the builds testers install, so a new test build installs over the
+    // previous one. CI writes it from the Actions secrets POC_KEYSTORE_BASE64 and
+    // POC_KEYSTORE_PASSWORD and points POC_KEYSTORE_FILE at it. Without it (a local build, or a
+    // Dependabot pull request, which gets no secrets) the build uses the standard Android debug key.
+    // Never used for the store app, which gets its own upload key (plan task R-02).
+    val pocKeystoreFile = providers.environmentVariable("POC_KEYSTORE_FILE").orNull
+    if (pocKeystoreFile != null) {
+        val pocKeystorePassword = providers.environmentVariable("POC_KEYSTORE_PASSWORD").orNull
+            ?: error("POC_KEYSTORE_FILE is set but POC_KEYSTORE_PASSWORD is not")
+        signingConfigs {
+            create("pocTest") {
+                storeFile = file(pocKeystoreFile)
+                storePassword = pocKeystorePassword
+                keyAlias = "poc-test"
+                keyPassword = pocKeystorePassword
+            }
         }
-    }
-
-    buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("pocTest")
+        buildTypes {
+            debug {
+                signingConfig = signingConfigs.getByName("pocTest")
+            }
         }
     }
 

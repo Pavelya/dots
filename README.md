@@ -82,8 +82,10 @@ cli/build/install/cli/bin/cli poc-report ann.txt bob.txt # the POC test week's n
 Test builds for testers: on GitHub, Actions > "poc release" > Run workflow, with a version such as
 `0.2` (or push a tag `poc-v0.2`). It runs all checks and publishes the APK as a GitHub Release with
 install notes ([`docs/poc/install.md`](docs/poc/install.md)).
-Every build is signed with the same test key (`app/poc-test.keystore`, deliberately not secret and
-never used for the store), so a new test build installs over the previous one.
+CI signs every build with the same test key, so a new test build installs over the previous one.
+The key lives in the Actions secrets `POC_KEYSTORE_BASE64` and `POC_KEYSTORE_PASSWORD`, never in
+the repository, and is never used for the store. A local build, which has no key, uses the
+standard Android debug key.
 
 ## Rules
 
