@@ -4,7 +4,7 @@
 
 ## Context
 
-"DOTS" and "TWO DOTS" are registered US trademarks for mobile games owned by another company (per trademark search results). An app called "Dots" could be removed on their request. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+"DOTS" and "TWO DOTS" are registered US trademarks for mobile games owned by another company (per trademark search results). An app called "Dots" could be removed on their request. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

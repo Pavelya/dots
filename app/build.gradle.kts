@@ -22,7 +22,7 @@ android {
     // previous one. CI writes it from the Actions secrets POC_KEYSTORE_BASE64 and
     // POC_KEYSTORE_PASSWORD and points POC_KEYSTORE_FILE at it. Without it (a local build, or a
     // Dependabot pull request, which gets no secrets) the build uses the standard Android debug key.
-    // Never used for the store app, which gets its own upload key (plan task R-02).
+    // Never used for the store app, which gets its own upload key (task R-02, #104).
     val pocKeystoreFile = providers.environmentVariable("POC_KEYSTORE_FILE").orNull
     if (pocKeystoreFile != null) {
         val pocKeystorePassword = providers.environmentVariable("POC_KEYSTORE_PASSWORD").orNull

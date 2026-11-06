@@ -4,7 +4,7 @@
 
 ## Context
 
-Boosters make the campaign more varied, but they would turn games between people into a contest of items. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+Boosters make the campaign more varied, but they would turn games between people into a contest of items. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

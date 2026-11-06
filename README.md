@@ -1,33 +1,31 @@
 # Pinfold
 
 **Pinfold** (decision 0016) is a future Android game built on the paper-and-pencil game *Dots*
-(Kropki / Точки / Židi). This repository is its prototype:
-two players alternately place dots on a grid and score by surrounding the other side's dots.
+(Kropki / Точки / Židi): two players alternately place dots on a grid and score by surrounding
+the other side's dots.
 
 This repository holds the platform-independent game logic, a computer opponent, a sample
-campaign, a terminal front end, and the start of the Android app.
+campaign, a terminal front end, and the Android app. The app is a proof of concept (POC): a plain
+version that finds out whether people enjoy the game, before any visual work.
 
-**Current focus: a proof of concept.** A plain Android version to find out whether people
-enjoy the game, before any visual work. Goals, scope, tasks and test plan: [`docs/poc/`](docs/poc/README.md).
-The road from the POC to the store is the full plan ([`docs/plan.md`](docs/plan.md), a copy of the
-[plan doc](https://claude.ai/artifact/9GaGRbXg9qwJsYMswwE7ZF)), based on the design investigation
-([`docs/design/investigation.md`](docs/design/investigation.md)); settled choices are in
-[`docs/decisions/`](docs/decisions/).
-
-Work is tracked in [GitHub Issues](https://github.com/Pavelya/dots/issues), one pull request per
-issue; how a task is picked up and finished: [`CLAUDE.md`](CLAUDE.md).
+- [`docs/poc/`](docs/poc/README.md): the POC's question, scope and test plan.
+- [`docs/plan.md`](docs/plan.md): the road from the POC to the store, based on the design
+  investigation ([`docs/design/investigation.md`](docs/design/investigation.md)).
+- [`docs/decisions/`](docs/decisions/): settled choices, one file each.
+- [GitHub Issues](https://github.com/Pavelya/dots/issues): every task and its status, one pull
+  request per issue. How a task is picked up and finished: [`CLAUDE.md`](CLAUDE.md).
 
 ## Layout
 
 | Module   | What it is |
 |----------|------------|
-| `engine` | Pure Kotlin/JVM library (JVM 17 bytecode, stdlib only): rules, AI, campaign data. Meant to be imported by an Android module. |
+| `engine` | Pure Kotlin/JVM library (JVM 17 bytecode, stdlib only): rules, AI, campaign data, game log. No Android code, so the app, the CLI and a future server share it. |
 | `cli`    | Terminal game and AI benchmarks, built on `engine`. |
 | `app`    | Android app (Jetpack Compose, Material 3, Android 7+), built on `engine`. Structure: [`docs/poc/architecture.md`](docs/poc/architecture.md). |
 
 Packages in `engine`: `dots.engine` (rules, openings, grounding, game records), `dots.ai`
-(computer opponent), `dots.campaign` (levels). All versions live in `gradle/libs.versions.toml`.
-Keeping them up to date is Dependabot's job (`.github/dependabot.yml`): it opens update PRs every
+(computer opponent), `dots.campaign` (levels), `dots.log` (the game log format). All versions
+live in `gradle/libs.versions.toml`. Keeping them up to date is Dependabot's job (`.github/dependabot.yml`): it opens update PRs every
 week, minor and patch updates grouped into one PR per ecosystem. Lint's "a newer version is
 available" checks are switched off so that an upstream release cannot fail the build.
 
@@ -79,13 +77,13 @@ cli/build/install/cli/bin/cli log-check game-log.txt    # replays every game, fl
 cli/build/install/cli/bin/cli poc-report ann.txt bob.txt # the POC test week's numbers, one log per tester
 ```
 
-Test builds for testers: on GitHub, Actions > "poc release" > Run workflow, with a version such as
-`0.2` (or push a tag `poc-v0.2`). It runs all checks and publishes the APK as a GitHub Release with
-install notes ([`docs/poc/install.md`](docs/poc/install.md)).
-CI signs every build with the same test key, so a new test build installs over the previous one.
+Test builds for testers: on GitHub, Actions > "poc release" > Run workflow on `main`, with a
+version such as `0.2` (or push a tag `poc-v0.2` on a commit of `main`). It runs all checks and
+publishes the APK as a GitHub Release with install notes ([`docs/poc/install.md`](docs/poc/install.md)).
+CI signs its builds with one test key, so a new test build installs over the previous one.
 The key lives in the Actions secrets `POC_KEYSTORE_BASE64` and `POC_KEYSTORE_PASSWORD`, never in
-the repository, and is never used for the store. A local build, which has no key, uses the
-standard Android debug key.
+the repository, and is never used for the store. A build without the key (a local build, or a
+Dependabot pull request, which gets no secrets) uses the standard Android debug key.
 
 ## Rules
 
@@ -233,24 +231,11 @@ casual vs casual
 - 20 games per row, so differences of a few points are noise; people play differently from
   these stand-ins, so this picks formats to play-test rather than replacing the test.
 
-## Status and checks
+## Checks
 
-- GitHub Actions runs on every pull request and push to `main` (`.github/workflows/test.yml`): engine and
-  CLI tests, app tests and screenshot tests, lint, and the debug APK. Locally, the same:
-  `./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug`
-- Not yet verified: speed of the computer on a real phone.
-- POC progress: [`docs/poc/tasks.md`](docs/poc/tasks.md).
+GitHub Actions runs on every pull request and push to `main` (`.github/workflows/test.yml`):
+engine and CLI tests, app tests and screenshot tests, lint, and the debug APK. Locally, the same:
 
-## Next steps
-
-- Android UI (Jetpack Compose canvas or a game engine) on top of `engine`: board, zoom, a
-  precise-placement aid for fingers, capture animations (`MoveResult.captures` carries the dots
-  and the region for exactly that), highlighting grounded dots (`Grounding`).
-- Interactive tutorial; themes and piece shapes as cosmetics.
-- Play-test the campaign with people, smooth the step at level 4, add objectives beyond "more
-  captures" and a daily puzzle.
-- Async online play, then ranked.
-- Find out whether deeper search can be made to pay off (it does not yet beyond depth 3), and
-  profile HARD on a real phone; the capture check is a flood fill and can be made incremental
-  if needed.
-- Score levels by margin (stars) rather than just win/lose, since equal play often ends in a draw.
+```sh
+./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
+```

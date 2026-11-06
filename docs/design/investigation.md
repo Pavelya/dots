@@ -1,7 +1,5 @@
 # Dots: game design investigation
 
-> **Copy of a Claude Doc.** The working copy is the [investigation doc](https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP); this file is a snapshot of it, exported on 2026-11-05 and refreshed whenever the doc changes. Status values appear as plain text here.
-
 Nov 5, 2026 · @Pavel
 
 The paper game becomes exciting on a phone through three things: **varied goals** (missions and bosses instead of the same game every time), **a capture that feels great** (animation, sound, vibration), and **reasons to return** (worlds, stars, a daily puzzle). All six of your directions fit, each in a clear role; the decisions are in section 10.
@@ -141,7 +139,7 @@ Yes to multiplayer, but in steps. Launch with same-phone play, then add turn-by-
 
 | Mode | How it plays | Needs | Fits Dots? |
 | --- | --- | --- | --- |
-| Same phone | Pass the phone | Nothing (done in the POC) | Yes, at launch |
+| Same phone | Pass the phone | Nothing (the POC app has it) | Yes, at launch |
 | Online with friends, turn by turn | Invite by link; each player moves when they like; a notification says "your turn" | A small server, notifications | Yes. A 66-move game over a day suits the paper game's calm pace. |
 | Real-time online | Both players live, a clock per move | Players online at the same time; a real-time server | Later. It fails when only a few people are waiting. |
 | Ranked matchmaking | Strangers matched by rating (Elo or Glicko) | Enough players, rating, cheat protection | Only after the game has a real player base |
@@ -263,17 +261,17 @@ These are easy to forget and several are required by Google Play. None needs pai
 | 5 | Multiplayer order | Same phone, then online with friends, ranked only later | Online at launch (more work, few players at first) |
 | 6 | Launch size | About 75 levels in 4 worlds, plus a daily puzzle | Fewer levels, more frequent updates |
 
-**Next steps, all without code:**
+**Next steps, all without code** (each is now a task in the [plan](../plan.md)):
 
-- [ ] Name: 20 candidates checked against the store, trademarks and domains
-- [ ] Mood board: 3 theme directions as images made with ChatGPT under the prompt rules above; you pick one
-- [ ] Canvas: still pictures of the game screen, level map, level card and a capture moment in the chosen theme
-- [ ] World 1 on paper: 15 levels with their missions; the engine checks every puzzle can be solved
-- [ ] Sound list and the first pen-on-paper recordings
-- [ ] Asset register file started in the repository
-- [ ] Keep the POC test week going: if testers do not come back, levels and missions are the first fix to try
+- Name: 20 candidates checked against the store, trademarks and domains
+- Mood board: 3 theme directions as images made with ChatGPT under the prompt rules above; you pick one
+- Canvas: still pictures of the game screen, level map, level card and a capture moment in the chosen theme
+- World 1 on paper: 15 levels with their missions; the engine checks every puzzle can be solved
+- Sound list and the first pen-on-paper recordings
+- Asset register file started in the repository
+- Keep the POC test week going: if testers do not come back, levels and missions are the first fix to try
 
-After your decisions, the parked [full plan](https://claude.ai/artifact/9GaGRbXg9qwJsYMswwE7ZF) gets re-written around them, and the technical architecture is discussed then.
+After your decisions, the [full plan](../plan.md) is rewritten around them, and the technical architecture is discussed then.
 
 ## Sources
 
@@ -286,4 +284,4 @@ Seen in web search results on 2026-11-05. The pages themselves could not be open
 - Fenwick, [Google Play now requires disclosure of loot box odds](https://www.fenwick.com/insights/publications/google-play-now-requires-disclosure-of-loot-box-odds)
 - Firebase, [pricing](https://firebase.google.com/pricing) (Spark and Blaze plans)
 - Kenney, [support and licence](https://kenney.nl/support) (CC0 assets)
-- Earlier project work: [POC charter](https://github.com/Pavelya/dots/blob/claude/gifted-tesla-dmmchd/docs/poc/README.md) and the variant benchmark in the repository README
+- Earlier project work: [POC charter](../poc/README.md) and the variant benchmark in the repository README

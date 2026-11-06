@@ -4,7 +4,7 @@
 
 ## Context
 
-The game needs a way to earn money that does not spoil a skill game. Paid advantages are a common complaint in reviews, and paid random items (loot boxes) bring extra Google Play rules. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+The game needs a way to earn money that does not spoil a skill game. Paid advantages are a common complaint in reviews, and paid random items (loot boxes) bring extra Google Play rules. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 

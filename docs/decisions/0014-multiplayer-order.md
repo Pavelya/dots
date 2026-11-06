@@ -4,7 +4,7 @@
 
 ## Context
 
-A new, niche game rarely has enough players online at once for instant matches. Background: the design investigation (https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP).
+A new, niche game rarely has enough players online at once for instant matches. Background: the design investigation ([`docs/design/investigation.md`](../design/investigation.md)).
 
 ## Decision
 
