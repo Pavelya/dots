@@ -62,6 +62,7 @@ These are settled; tasks build on them. Changing one means a new decision record
 | 0015 | Launch with about 75 levels in 4 worlds, plus a daily puzzle | 2026-11-05 |
 | 0016 | The game is called Pinfold; the store app ID will be io.github.pavelya.pinfold (POC test builds keep theirs) | 2026-11-05 |
 | 0017 | The repository is public; secrets live only in Actions secrets; the old committed test key is burned | 2026-11-05 |
+| 0018 | Four early commits keep the owner's personal email; history is not rewritten | 2026-11-06 |
 
 Decisions 0004 to 0015 come from the [design investigation](https://claude.ai/artifact/DyiSkrrx3hwARfRpyxNGRP); their record files are added to `docs/decisions/` in the repository together with this plan.
 
