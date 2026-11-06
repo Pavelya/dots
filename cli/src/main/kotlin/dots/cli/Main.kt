@@ -25,6 +25,7 @@ private const val USAGE = """Dots - terminal prototype
   bench levels [games] [stand-in]       a stand-in player (a tier, or border) plays every level
   bench duel ...                        two custom configurations play each other (run it for help)
   bench variants [games]                how much happens in each game format (draws, captures, ...)
+  bench variety [tier] [margin]         how often a tier answers the same position differently
   log-check <file>...                   replay the games in logs exported from the app, check their results
   poc-report <file>...                  the POC test week's numbers, one shared log per tester
 

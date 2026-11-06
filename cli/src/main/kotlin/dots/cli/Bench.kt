@@ -14,6 +14,10 @@ import kotlin.random.Random
 /** Self-play harness: measures whether harder tiers really win, and how hard each level is. */
 internal object Bench {
     private const val DEFAULT_GAMES = 10
+    private const val DUEL_USAGE =
+        "bench duel games size dots depthA breadthA attackA dangerA depthB breadthB attackB dangerB [varietyA varietyB]"
+    private const val POSITIONS = 20
+    private const val RUNS = 10
 
     fun run(args: List<String>) {
         val games = args.getOrNull(1)?.toIntOrNull() ?: DEFAULT_GAMES
@@ -21,10 +25,15 @@ internal object Bench {
             "tiers" -> tiers(games, args.getOrNull(2)?.toIntOrNull() ?: 10, args.getOrNull(3)?.toIntOrNull() ?: 16)
             "levels" -> levels(games, args.getOrNull(2)?.uppercase() ?: "NORMAL")
             "duel" -> duel(args.drop(1))
+            "variety" -> variety(
+                args.getOrNull(1)?.uppercase() ?: "HARD",
+                args.getOrNull(2)?.let { it.toIntOrNull() ?: exitWith("not a number: $it") },
+            )
             "variants" -> Variants.run(games)
             else -> exitWith(
                 "usage: bench tiers [games] [size] [dots each] | bench levels [games] [tier] | bench variants [games] |\n" +
-                    "       bench duel games size dots depthA breadthA attackA dangerA depthB breadthB attackB dangerB",
+                    "       bench variety [tier] [margin] |\n" +
+                    "       $DUEL_USAGE",
             )
         }
     }
@@ -98,18 +107,55 @@ internal object Bench {
         }
     }
 
-    /** Two hand-made configurations play each other; for tuning. */
+    /**
+     * Two hand-made configurations play each other; for tuning. The optional last two numbers are
+     * each side's [AiConfig.variety] (default 0).
+     */
     private fun duel(args: List<String>) {
         val n = args.map { it.toIntOrNull() ?: exitWith("not a number: $it") }
-        if (n.size != 11) {
-            exitWith("usage: bench duel games size dots depthA breadthA attackA dangerA depthB breadthB attackB dangerB")
-        }
+        if (n.size != 11 && n.size != 13) exitWith("usage: $DUEL_USAGE")
         val (games, size, dots) = n
-        val a = AiConfig(depth = n[3], breadth = n[4], attackReach = n[5], dangerReach = n[6])
-        val b = AiConfig(depth = n[7], breadth = n[8], attackReach = n[9], dangerReach = n[10])
+        val a = AiConfig(depth = n[3], breadth = n[4], attackReach = n[5], dangerReach = n[6], variety = n.getOrElse(11) { 0 })
+        val b = AiConfig(depth = n[7], breadth = n[8], attackReach = n[9], dangerReach = n[10], variety = n.getOrElse(12) { 0 })
         val started = System.nanoTime()
         val tally = pairedGames(a, b, games, size, dots)
         println("A=$a\nB=$b\n$games games, ${size}x$size, $dots dots: A $tally  [${(System.nanoTime() - started) / 1_000_000_000} s]")
+    }
+
+    /**
+     * How often a tier answers the same position differently: [POSITIONS] fixed mid-game positions,
+     * each answered [RUNS] times with a different seed. [margin], if given, replaces the tier's
+     * own [AiConfig.variety].
+     */
+    private fun variety(tierName: String, margin: Int?) {
+        val tier = TIERS[tierName] ?: exitWith("unknown tier $tierName (${TIERS.keys.joinToString()})")
+        val config = if (margin == null) tier else tier.copy(variety = margin)
+        println("$tierName, variety ${config.variety}: different moves in each of $POSITIONS positions, $RUNS runs each")
+        val counts = varietyPositions().map { state ->
+            (0 until RUNS).map { run -> SearchAi(config, Random(5000 + run)).chooseMove(state) }.toSet().size
+        }
+        println(counts.joinToString(" "))
+        println("positions with at least 2 different moves: ${counts.count { it >= 2 }} of $POSITIONS")
+    }
+
+    /**
+     * Mid-game positions for [variety]: two casual players (a NORMAL-like computer that plays a
+     * random nearby move a quarter of the time) play from a cross on 10x10, 24 dots each, for 8 to
+     * 20 moves. Spelled out rather than built from NORMAL, so retuning a tier keeps the positions.
+     */
+    private fun varietyPositions(): List<GameState> {
+        val casual = AiConfig(depth = 2, breadth = 10, mistakeRate = 0.25, attackReach = 2, dangerReach = 1)
+        return (0 until POSITIONS).map { i ->
+            val red = SearchAi(casual, Random(6000 + i))
+            val blue = SearchAi(casual, Random(7000 + i))
+            var state = GameState.start(10, 10, 24, dots = Openings.cross(10, 10))
+            repeat(8 + i % 5 * 3) {
+                if (state.isOver) return@repeat
+                val ai = if (state.toMove == Player.RED) red else blue
+                state = state.apply(ai.choose(state)).state
+            }
+            state
+        }
     }
 
     /**

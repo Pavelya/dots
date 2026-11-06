@@ -96,6 +96,49 @@ class SearchAiTest {
         assertEquals(game(), game())
     }
 
+    @Test
+    fun `hard answers a quiet position in more than one way`() {
+        val state = quiet()
+
+        val moves = (0 until 10).map { SearchAi(AiConfig.HARD, Random(it)).chooseMove(state) }.toSet()
+
+        assertTrue(moves.size >= 2, "always played $moves")
+    }
+
+    @Test
+    fun `without variety a quiet position gets one answer, whatever the seed`() {
+        val state = quiet()
+        val config = AiConfig.HARD.copy(variety = 0)
+
+        val moves = (0 until 10).map { SearchAi(config, Random(it)).chooseMove(state) }.toSet()
+
+        assertEquals(1, moves.size, "played $moves")
+    }
+
+    @Test
+    fun `the same seed gives the same answer`() {
+        val state = quiet()
+
+        assertEquals(SearchAi(AiConfig.HARD, Random(3)).chooseMove(state), SearchAi(AiConfig.HARD, Random(3)).chooseMove(state))
+    }
+
+    /** A mid-game position with no capture or threat in reach, so many moves score about the same. */
+    private fun quiet(): GameState = GameState.fromAscii(
+        """
+        ..........
+        ..........
+        ....RRB...
+        .....RRB..
+        ....RBBB..
+        ...BBRB...
+        ...BRR....
+        ....B.....
+        ...RRR....
+        ..........
+        """,
+        first = Player.BLUE,
+    )
+
     private fun wonPosition(dotsPerPlayer: Int? = null): GameState {
         val map = """
             ..R...
