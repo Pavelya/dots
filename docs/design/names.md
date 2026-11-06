@@ -3,8 +3,8 @@
 **Chosen: Pinfold** (owner, 2026-11-05; decision 0016). Checks on that name are at the end.
 
 The game needs its own name: "DOTS" is a registered game trademark of another company
-(decision 0010). This list feeds B-02 (store, trademark and domain checks) and B-03 (the owner's
-pick). Nothing here has been checked for availability yet.
+(decision 0010). The owner picked from this list; only the chosen name was checked for
+availability.
 
 **What a name must do:** be distinctive (not "Dots" plus a common word), be short and easy to say
 in English, Russian, Ukrainian and Polish, mean nothing bad in any of them, and fit the game:
@@ -77,9 +77,5 @@ Only the chosen name was checked; the other 19 were not.
 | App Store (iOS) | "Pinfold", an offline map-file catalogue for travellers by an independent developer (per a third-party app profile, [marlvel.ai](https://marlvel.ai/apps/pinfold)) | Medium for a future iOS version: Apple wants unique app names, so the iOS title would need an addition such as "Pinfold: Rings of Dots" |
 | Web | pinfold.app (registered 2026-08-05) is a log-in page of some animal-related service; pinfold.com is registered since 1998 with no site | Low to medium: different products, but the obvious domains are gone |
 | Domains that look free | pinfold.game, pinfold.io (no registration record found) | Confirm at a registrar before buying |
-| Trademarks | A web search found no PINFOLD mark; nearest are PINFOLK (jewellery) and PINFINITY | Not definitive: the official registers were not searched from here |
+| Trademarks | A web search found no PINFOLD mark; nearest are PINFOLK (jewellery) and PINFINITY. The owner then searched the official registers ([USPTO](https://tmsearch.uspto.gov), [EUIPO eSearch](https://euipo.europa.eu/eSearch), [WIPO Global Brand Database](https://branddb.wipo.int)) and found no PINFOLD mark in any of them (2026-11-06) | Low |
 | Meaning | An old English word for a pound for stray animals; nothing bad in Russian, Ukrainian or Polish | None |
-
-**Before money is spent on the name** (domain, store listing, logo work): the owner searches the
-free official registers once: [USPTO](https://tmsearch.uspto.gov), [EUIPO eSearch](https://euipo.europa.eu/eSearch)
-and [WIPO Global Brand Database](https://branddb.wipo.int), for "pinfold" in classes 9, 28 and 41.
