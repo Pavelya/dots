@@ -100,7 +100,7 @@ section 8. "First needed in" names the task that first needs the tool or account
 | --- | --- | --- | --- |
 | GitHub | Code, CI, releases, issues | Free | In use |
 | A Google account just for the game | Owns Play Console, Firebase, AdMob, Play Games | Free | [B-05](https://github.com/Pavelya/dots/issues/34) |
-| A support email address on that account | Shown in the store, answers players | Free | [B-05](https://github.com/Pavelya/dots/issues/34) |
+| A support email address on that account: `pinfoldsupport@gmail.com` | Shown in the store, answers players | Free | [B-05](https://github.com/Pavelya/dots/issues/34) |
 | Figma | Design files | Free | [D-06](https://github.com/Pavelya/dots/issues/40) |
 | Freesound | Downloading CC0 sounds | Free | [V-08](https://github.com/Pavelya/dots/issues/79) |
 | Suno (Pro for one month, then cancel) | Music with commercial rights | About $10 | [V-09](https://github.com/Pavelya/dots/issues/80) |
