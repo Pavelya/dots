@@ -5,6 +5,8 @@ import dots.ai.AiConfig
 import dots.ai.SearchAi
 import dots.campaign.Campaign
 import dots.campaign.Level
+import dots.campaign.LevelFormat
+import dots.campaign.LevelFormatException
 import dots.engine.Action
 import dots.engine.GameState
 import dots.engine.MoveResult
@@ -12,12 +14,14 @@ import dots.engine.Notation
 import dots.engine.Openings
 import dots.engine.Player
 import dots.engine.Pos
+import java.io.File
 import kotlin.system.exitProcess
 
 private const val USAGE = """Dots - terminal prototype
 
   levels                                list the campaign levels
-  play [level]                          campaign level against the computer (you are red and move first)
+  play [level | file]                   campaign level (e.g. 1-3) or level file against the computer;
+                                        you are red and move first
   vs [tier] [width height] [opening]    classic open-ended game against the computer
   pvp [width height] [opening] [dots]   two players on one keyboard (traditional size: 39 32)
   watch [tierA] [tierB] [size] [dots]   two computers play each other (A is red)
@@ -54,26 +58,36 @@ fun main(args: Array<String>) {
 
 private fun listLevels() {
     for (level in Campaign.levels) {
-        val size = level.map.lines().first { it.isNotBlank() }.trim().length
         println(
-            "%2d  %-12s %2dx%-2d  %2d dots each  computer head start: %2d  %s"
-                .format(level.id, level.name, size, size, level.dotsPerPlayer, level.headStart, tierName(level.ai)),
+            "%-5s %-12s %2dx%-2d  %2d dots each  computer head start: %2d  %-6s  %s"
+                .format(
+                    level.code, level.name, level.map.width, level.map.height, level.dotsPerPlayer, level.headStart,
+                    level.strength.text, level.mission.text,
+                ),
         )
     }
 }
 
+/** A campaign level by world and number (`1-3`), or a level file by its path. */
 private fun levelFrom(arg: String?): Level {
     if (arg == null) return Campaign.levels.first()
-    val id = arg.toIntOrNull()
-    return Campaign.levels.firstOrNull { it.id == id }
-        ?: exitWith("No level '$arg': choose 1 to ${Campaign.levels.size} (see: cli levels)")
+    val file = File(arg)
+    if (file.isFile) {
+        return try {
+            LevelFormat.parse(file.readText(), file.path)
+        } catch (e: LevelFormatException) {
+            exitWith(e.message!!)
+        }
+    }
+    val (world, number) = Regex("(\\d+)-(\\d+)").matchEntire(arg)?.destructured
+        ?: exitWith("'$arg' is neither a level like 1-3 nor a level file (see: cli levels)")
+    return Campaign.levels.firstOrNull { it.world == world.toInt() && it.number == number.toInt() }
+        ?: exitWith("No level $arg in the campaign (see: cli levels)")
 }
 
 private fun checkSize(width: Int, height: Int) {
     if (width !in 3..99 || height !in 3..99) exitWith("Boards are 3 to 99 in each direction, not ${width}x$height")
 }
-
-private fun tierName(config: AiConfig): String = TIERS.entries.firstOrNull { it.value == config }?.key ?: "custom"
 
 internal val TIERS = linkedMapOf(
     "EASY" to AiConfig.EASY,
@@ -91,7 +105,8 @@ private fun openingDots(name: String, width: Int, height: Int): Map<Pos, Player>
 }
 
 private fun playLevel(level: Level) {
-    println("Level ${level.id}: ${level.name} - computer is ${tierName(level.ai)}, head start ${level.headStart}")
+    level.unplayable?.let { exitWith("Level ${level.code} cannot be played: $it") }
+    println("Level ${level.code}: ${level.name} - computer is ${level.strength.text}, head start ${level.headStart}")
     val computer = SearchAi(level.ai)
     val end = loop(level.newGame(), mapOf(level.human to null, level.computer to computer)) ?: return
     println(
