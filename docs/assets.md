@@ -19,7 +19,8 @@ An asset may come only from:
 Never use images from search results or Pinterest, assets from other games, music from YouTube or
 streaming services, fonts from "free font" sites without a clear licence, or anything marked
 "personal use only" or "non-commercial". Screenshots of other games stay private references
-(D-01). They never enter the repository and are never given to an AI tool.
+(D-01). They never enter the repository and are never uploaded to an image or music generator.
+AI assistants may read them to collect and describe references.
 
 ## Prompt rules
 
