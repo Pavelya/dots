@@ -38,7 +38,8 @@ wrapper downloads everything else.
 ./gradlew :engine:test :cli:test    # engine and CLI tests
 ./gradlew :cli:installDist          # build the terminal game (on Windows: gradlew.bat, cli.bat)
 cli/build/install/cli/bin/cli levels                 # list the campaign levels
-cli/build/install/cli/bin/cli play 3                 # campaign level 3, you are red and move first
+cli/build/install/cli/bin/cli play 1-3               # level 3 of world 1, you are red and move first
+cli/build/install/cli/bin/cli play my.level          # any level file
 cli/build/install/cli/bin/cli vs normal 16 14 cross  # classic open-ended game against the computer
 cli/build/install/cli/bin/cli pvp 39 32              # two players, one keyboard, traditional size
 cli/build/install/cli/bin/cli watch hard normal      # two computers play each other
@@ -125,13 +126,63 @@ Implemented from the Wikipedia article
 
 ## Campaign
 
-Eight levels (`Campaign`) against the computer, with a dot budget each. Difficulty comes from the
+Levels against the computer, with a dot budget each, grouped in worlds. Difficulty comes from the
 computer's tier, its head start (dots already on the board) and the board size.
 
 - **Only a win passes a level** (`Level.isPassed`); a draw is not enough.
 - **Every level starts the human with dots in the middle.** Otherwise placing every dot on the
   border would be a safe way never to lose, which is exactly the forced draw the article warns
   about. A border-only stand-in now loses every level (`bench levels 20 border`).
+
+### Level files
+
+Each level is a text file in [`engine/src/main/resources/levels/`](engine/src/main/resources/levels/),
+named after its world and number: `1-03.level` is level 3 of world 1. The engine, the app and the
+CLI all read the same files (`Campaign`, `LevelFormat`). Worlds and levels are numbered from 1
+without gaps.
+
+```
+world: 1
+level: 3
+name: Scout
+computer: easy
+dots: 14
+mission: win
+boosters: none
+rule: none
+stars: none
+map:
+..........
+..........
+..........
+......B...
+....RB....
+....BR....
+...B......
+..........
+..........
+..........
+```
+
+| Field | What it holds |
+|-------|---------------|
+| `world`, `level` | The world (1 or more) and the level's number in it (1 to 99). They must match the file name. |
+| `name` | The name players see. |
+| `computer` | The computer's strength: `easy`, `normal`, `hard` or `expert`. |
+| `dots` | Dots each side may place. |
+| `mission` | What passes the level: `win` (more captures than the computer), `win by 3`, `win with fewer dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` (keep the group holding your dot at e5), `target e5` (capture the computer's dot at e5). |
+| `boosters` | `none`, or the boosters allowed and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. |
+| `rule` | A rule the computer bends: `none`, or `double move every 5 turns`. |
+| `stars` | `none`, or the scores for two and for three stars: `3 6`. What is counted depends on the mission. |
+| `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
+
+The rules play only the `win` mission, no special rule, and maps without holes, blocked or bonus
+points. A level that uses more can be written and read, but refuses to start.
+
+A file that cannot be read gives an error with the line, for example
+`1-03.level, line 4: unknown computer strength 'medium' (easy, normal, hard, expert)`. The files
+are kept in the exact form `LevelFormat.write` gives, and a test checks that each one is written
+back unchanged.
 
 ## Computer opponent
 

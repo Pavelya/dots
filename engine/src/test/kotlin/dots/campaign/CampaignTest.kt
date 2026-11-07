@@ -7,17 +7,38 @@ import dots.engine.GameState
 import dots.engine.Grounding
 import dots.engine.Player
 import dots.engine.Pos
+import java.io.File
 import kotlin.random.Random
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 class CampaignTest {
 
     @Test
-    fun `levels are numbered from one without gaps`() {
-        assertEquals((1..Campaign.levels.size).toList(), Campaign.levels.map { it.id })
+    fun `worlds and levels are numbered from one without gaps`() {
+        for ((world, levels) in Campaign.levels.groupBy { it.world }) {
+            assertEquals((1..levels.size).toList(), levels.map { it.number }, "world $world")
+        }
+        assertEquals((1..Campaign.levels.maxOf { it.world }).toList(), Campaign.levels.map { it.world }.distinct())
+    }
+
+    @Test
+    fun `every file in the levels folder is part of the campaign`() {
+        val files = File("src/main/resources/${Campaign.FOLDER}").list()!!.sorted()
+
+        assertTrue(files.isNotEmpty())
+        assertEquals(files, Campaign.levels.map { Campaign.fileName(it.world, it.number) }.sorted())
+    }
+
+    @Test
+    fun `a file whose name does not match its level is refused`() {
+        val text = LevelFormat.write(Campaign.levels.first().copy(number = 2))
+        val error = assertFailsWith<LevelFormatException> { Campaign.load { if (it == "1-01.level") text else null } }
+
+        assertEquals("1-01.level: the file says level 1-2, but its name says 1-1", error.message)
     }
 
     @Test
@@ -36,7 +57,7 @@ class CampaignTest {
     @Test
     fun `the computer never gets weaker or the game shorter as the levels go on`() {
         for ((easier, harder) in Campaign.levels.zipWithNext()) {
-            assertTrue(harder.ai.depth >= easier.ai.depth, "${harder.name} has a weaker computer than ${easier.name}")
+            assertTrue(harder.strength >= easier.strength, "${harder.name} has a weaker computer than ${easier.name}")
             assertTrue(harder.dotsPerPlayer >= easier.dotsPerPlayer, "${harder.name} is shorter than ${easier.name}")
         }
     }
@@ -53,7 +74,8 @@ class CampaignTest {
     fun `every level can be played to the end`() {
         for (level in Campaign.levels) {
             val easy = AiConfig.EASY
-            val end = Match.playOut(level.newGame(), SearchAi(easy, Random(level.id)), SearchAi(easy, Random(level.id + 50)))
+            val seed = level.world * 100 + level.number
+            val end = Match.playOut(level.newGame(), SearchAi(easy, Random(seed)), SearchAi(easy, Random(seed + 50)))
 
             assertTrue(end.isOver, level.name)
             assertEquals(level.dotsPerPlayer * 2, end.moveCount, level.name)
@@ -91,7 +113,7 @@ class CampaignTest {
 
     @Test
     fun `asking for a missing level fails clearly`() {
-        val error = runCatching { Campaign.level(99) }.exceptionOrNull()
+        val error = runCatching { Campaign.level(1, 99) }.exceptionOrNull()
 
         assertTrue(error is NoSuchElementException)
     }

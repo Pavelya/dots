@@ -207,7 +207,7 @@ internal object Bench {
                 )
                 tally.add(end.score(level.human), end.score(level.computer))
             }
-            println("%2d %-12s %s  [%d s]".format(level.id, level.name, tally, (System.nanoTime() - started) / 1_000_000_000))
+            println("%-5s %-12s %s  [%d s]".format(level.code, level.name, tally, (System.nanoTime() - started) / 1_000_000_000))
         }
     }
 

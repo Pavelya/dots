@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="280" viewBox="0 0 640 280">
+<defs><filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+<rect width="640" height="280" fill="#0A0A12"/>
+<rect x="24" y="24" width="56" height="104" rx="8" fill="#0A0A12" stroke="#FFFFFF33"/>
+<rect x="92" y="24" width="56" height="104" rx="8" fill="#23203A" stroke="#FFFFFF33"/>
+<rect x="160" y="24" width="56" height="104" rx="8" fill="#FF3D8B" stroke="#FFFFFF33"/>
+<rect x="228" y="24" width="56" height="104" rx="8" fill="#26E5FF" stroke="#FFFFFF33"/>
+<rect x="24" y="144" width="56" height="104" rx="8" fill="#3A1630" stroke="#FFFFFF33"/>
+<rect x="92" y="144" width="56" height="104" rx="8" fill="#0E3540" stroke="#FFFFFF33"/>
+<rect x="160" y="144" width="56" height="104" rx="8" fill="#F5F23A" stroke="#FFFFFF33"/>
+<rect x="228" y="144" width="56" height="104" rx="8" fill="#F3F3FF" stroke="#FFFFFF33"/>
+<line x1="340" y1="20" x2="580" y2="20" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="20" x2="340" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="50" x2="580" y2="50" stroke="#23203A" stroke-width="1"/>
+<line x1="370" y1="20" x2="370" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="80" x2="580" y2="80" stroke="#23203A" stroke-width="1"/>
+<line x1="400" y1="20" x2="400" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="110" x2="580" y2="110" stroke="#23203A" stroke-width="1"/>
+<line x1="430" y1="20" x2="430" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="140" x2="580" y2="140" stroke="#23203A" stroke-width="1"/>
+<line x1="460" y1="20" x2="460" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="170" x2="580" y2="170" stroke="#23203A" stroke-width="1"/>
+<line x1="490" y1="20" x2="490" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="200" x2="580" y2="200" stroke="#23203A" stroke-width="1"/>
+<line x1="520" y1="20" x2="520" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="230" x2="580" y2="230" stroke="#23203A" stroke-width="1"/>
+<line x1="550" y1="20" x2="550" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="340" y1="260" x2="580" y2="260" stroke="#23203A" stroke-width="1"/>
+<line x1="580" y1="20" x2="580" y2="260" stroke="#23203A" stroke-width="1"/>
+<polygon points="430,50 460,80 490,110 460,140 430,170 400,140 370,110 400,80" fill="#3A1630" stroke="#FF3D8B" stroke-width="3" stroke-linejoin="round" filter="url(#glow)"/>
+<circle cx="430" cy="50" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="460" cy="80" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="490" cy="110" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="460" cy="140" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="430" cy="170" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="400" cy="140" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="370" cy="110" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="400" cy="80" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="520" cy="200" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="550" cy="80" r="6" fill="#FF3D8B" filter="url(#glow)"/>
+<circle cx="430" cy="110" r="6" fill="#26E5FF" filter="url(#glow)"/>
+<circle cx="430" cy="140" r="6" fill="#26E5FF" filter="url(#glow)"/>
+<circle cx="460" cy="110" r="6" fill="#26E5FF" filter="url(#glow)"/>
+<circle cx="520" cy="170" r="6" fill="#26E5FF" filter="url(#glow)"/>
+<circle cx="370" cy="200" r="6" fill="#26E5FF" filter="url(#glow)"/>
+<circle cx="550" cy="230" r="6" fill="#26E5FF" filter="url(#glow)"/>
+</svg>
