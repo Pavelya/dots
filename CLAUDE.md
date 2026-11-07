@@ -83,7 +83,8 @@ own four-digit numbers (decision 0016); those are documents, not tasks.
 - **The engine stays free of Android code**, so the rules run the same in the app, the CLI and a
   future server.
 - **Every image, sound or font** enters the repository with a row in the asset register
-  (`docs/assets.md`): source, tool, licence, author. Without a row, it does not enter.
+  (`docs/assets.md`): source, tool, licence, author. Without a row, it does not enter, and
+  `:cli:test` fails.
 - **Decisions** go in `docs/decisions/`, one short file each (Context, Decision, Consequences).
   Changing a settled decision means a new record, not an edit of the old one.
 - **Numbers in "Done when"** are targets. If one turns out wrong, change it in the issue and say
