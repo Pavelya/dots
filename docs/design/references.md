@@ -13,14 +13,29 @@ their rules.
 
 | Group | Entries | Question it answers |
 | --- | ---: | --- |
-| [Board](#board) | 8 | Can I read dots, turns, boundaries and a crowded board? |
-| [Map](#map) | 5 | Can I find my next level, or replay an earlier one? |
-| [Moment](#moment) | 6 | Do I see what changed, and why I won? |
-| [Menus](#menus) | 7 | Can I start a level, change settings and read a result? |
+| [Board](#board) | 9 | Can I read dots, turns, boundaries and a crowded board? Can a level teach a rule? |
+| [Map](#map) | 6 | Can I find my next level, or replay an earlier one? |
+| [Moment](#moment) | 11 | Do I see what changed and why? Captures, bosses, boosters, results. |
+| [Menus](#menus) | 8 | Can I start a level or a game with a friend, change settings, read a result? |
 | [Paper](#paper) | 3 | What should survive from ink on squared paper? |
 
-Start with these: B01, B02, B03, F01 and F03 for the board; M01 to M04 for the capture; P01, P02
-and P03 for the world map; U01 for the level card; M05, M06 and U06 for the result.
+Where to look first:
+
+| Topic | Entries |
+| --- | --- |
+| The board | B01, B02, B03, B09, F01, F03 |
+| Teaching a new idea | B10, B11 |
+| The capture | M01, M03, M04 |
+| World map | P01, P02, P03, P06, P07 |
+| Level card | U01 |
+| Boss levels | M07, M08 |
+| Boosters | M09, M10, U04 |
+| Result | M05, M06, U06 |
+| Daily puzzle | P03, M11, M12, U06 |
+| Playing with a friend | U09, U07 |
+
+The IDs match the names of the private image files. Some numbers are unused because weaker
+references were left out.
 
 ## Board
 
@@ -81,17 +96,6 @@ Screenshot from the developer
 
 **For Pinfold:** a dot must look different from the line that joins it into a capture ring.
 
-### B06 I Love Hue Too: fixed tiles marked with a small dot
-
-[Source page](https://minireview.io/puzzle/i-love-hue-too) ·
-[Image](https://minireview.io/common/uploads/review/e02e5611c5b66e743425b1f5c9ab31c7.jpg) ·
-Android screenshot on MiniReview
-
-**Shows:** small dark dots mark the tiles that cannot move, on a large, calm field of colour.
-
-**For Pinfold:** use one small symbol for special board points (blocked or bonus points) and
-tutorial hints. Most points should stay plain.
-
 ### B07 The Battle of Polytopia: territory borders on a crowded board
 
 [Source page](https://minireview.io/strategy/the-battle-of-polytopia) ·
@@ -103,16 +107,39 @@ Android screenshot on MiniReview
 **For Pinfold:** the capture outline matters more than the fill. Enemy dots inside a captured
 area must stay readable.
 
-### B08 Two Dots: dot spacing and a small goal bar
+### B09 SmartGo One: numbered last moves on a 13x13 board
 
-[Source page](https://apps.apple.com/us/app/two-dots-connect-the-colors/id880178264) ·
-[Image](https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/4c/db/9d/4cdb9d11-57d4-fcb0-a37b-18cc79d10b7a/TD_CPP_ColectThemAll_IOS_1290x2796_1.png/1290x2796bb.png) ·
-iOS App Store advert image (has a caption)
+[Source page](https://www.smartgo.com/screenshots.html) ·
+[Image](https://www.smartgo.com/images/en-3-play-go-1242x2208.png) ·
+iOS screenshot from the developer
 
-**Shows:** evenly spaced dots, and a small top bar with moves left and colour goals.
+**Shows:** a crowded 13x13 Go board on a phone. The last two stones carry their move numbers, and
+the move history sits below the board.
 
-**For Pinfold:** show the mission and moves left in a bar this small. Try the full 15x15 board
-before deciding whether it needs zoom.
+**For Pinfold:** a board close to 15x15 can stay readable on a phone. Marking the last move of
+each player helps someone who looked away follow the game.
+
+### B10 SmartGo One: stones marked in a capture puzzle
+
+[Source page](https://www.smartgo.com/screenshots.html) ·
+[Image](https://www.smartgo.com/images/problem-dark-mode.jpeg) ·
+iOS screenshot from the developer
+
+**Shows:** "Black to capture" above the board. Small triangles mark the stones the puzzle is about.
+
+**For Pinfold:** in a mission or capture lesson, mark the target dots with a small symbol and leave
+the rest of the board plain.
+
+### B11 Threes!: a tutorial that starts on the board
+
+[Source page](https://www.businessinsider.com/threes-iphone-game-2014-3) ·
+[Image](https://i.insider.com/5317290deab8eaba53ecf106?auto=webp&format=jpeg&width=800) ·
+iOS screenshot in a Business Insider article
+
+**Shows:** "Meet 1 & 2": two tiles on an empty board and one line, "Swipe anywhere to move them".
+
+**For Pinfold:** teach each world's new idea inside a real level: a few dots already placed, one
+short line, and one move that closes the ring.
 
 ## Map
 
@@ -162,17 +189,29 @@ iOS App Store screenshot
 
 **For Pinfold:** the level card's small picture of the board, with the best stars beside it.
 
-### P05 I Love Hue Too: replay preview and a numbered level strip
+### P06 Angry Birds 2: stars and a chest on the path
 
-[Source page](https://minireview.io/puzzle/i-love-hue-too) ·
-[Image](https://minireview.io/common/uploads/review/26f01b02a672fc35fe5d1666e70d5670.jpg) ·
-Android screenshot on MiniReview
+[Source page](https://mobilesyrup.com/2015/08/23/review-angry-birds-2-is-a-great-game-ruined-by-ridiculous-microtransactions/) ·
+[Image](https://images2026.mobilesyrup.com/uploads/2015/08/angrybirds2-2.jpg) ·
+Screenshot in a MobileSyrup review
 
-**Shows:** a finished puzzle fills the screen, with a Replay link, a slim strip of level numbers
-and the chapter name.
+**Shows:** the level path winds through a lantern-lit village. Passed levels carry stars, and a
+chest sits on the path as a reward.
 
-**For Pinfold:** replaying a passed level for more stars can be one tap from the level itself,
-without going back to the full map.
+**For Pinfold:** each world gets its own look on the map. Show the chest every 10 levels and the
+boss level on the path itself.
+
+### P07 Cut the Rope 2: stars across a level pack
+
+[Source page](https://www.imore.com/cut-rope-2-top-10-tips-tricks-and-cheats-help-om-nom-find-his-candy-faster) ·
+[Image](https://cdn.mos.cms.futurecdn.net/dCWNge9TNK5xV8938S7q8g.jpg) ·
+Two iOS screenshots side by side, from an iMore article
+
+**Shows:** a grid of levels with the stars earned under each number, and the total ("60/360")
+above. Beside it, a "Level completed" screen with three stars.
+
+**For Pinfold:** show a world's star total next to its name, and 1 to 3 stars on each passed
+level, so players can spot levels worth replaying.
 
 ## Moment
 
@@ -187,17 +226,6 @@ Two iOS screenshots side by side, from an iMore article
 **For Pinfold:** treat the capture as three steps, each readable on its own: the ring closes, the
 capture is confirmed, the area fills.
 
-### M02 Two Dots: a burst inside the board
-
-[Source page](https://apps.apple.com/us/app/two-dots-connect-the-colors/id880178264) ·
-[Image](https://is1-ssl.mzstatic.com/image/thumb/PurpleSource211/v4/c6/02/9b/c6029b88-7acb-afdd-7960-c21cd96f2bc8/TD_CPP_ColectThemAll_IOS_1290x2796_5.png/1290x2796bb.png) ·
-iOS App Store advert image (has a caption)
-
-**Shows:** an effect bursts out from one dot. The rest of the board and the top bar stay visible.
-
-**For Pinfold:** keep the capture effect local and short, and the same for booster effects. Then
-settle to a still outline and fill, so the player can read the new position.
-
 ### M03 KAMI 2: a paper fold during a colour change
 
 [Source page](https://www.stateofplaygames.com/kami2press) ·
@@ -207,7 +235,7 @@ iPhone press screenshot from the developer
 **Shows:** a red paper fold lifts out of an otherwise flat puzzle.
 
 **For Pinfold:** ink spreading into the paper could confirm a capture, if it ends fast and leaves
-the outline clear.
+the outline clear. Booster effects should be just as short.
 
 ### M04 I Love Hue Too: quiet success over the solved board
 
@@ -242,6 +270,77 @@ with the score needed for the next one.
 
 **For Pinfold:** show who won and the captured dots first, the details below. Say what the next
 star needs.
+
+### M07 Angry Birds 2: the boss announced on the board
+
+[Source page](https://arenalte.com/review/game/angry-birds-2/) ·
+[Image](https://static.arenalte.com/uploads/2015/09/Angry-Birds-2-4.jpg) ·
+Android screenshot in an Arena LTE review
+
+**Shows:** the boss's name and health bar at the top, an arrow pointing at them, and a character
+saying "The boss is tough, be smart!".
+
+**For Pinfold:** give each boss a name and a face, and announce its rule before the first move.
+Point at the counter that will track the rule.
+
+### M08 Into the Breach: turns left and the enemy's next move
+
+[Source page](https://minireview.io/strategy/into-the-breach) ·
+[Image](https://minireview.io/common/uploads/review/50656f136a36fa1f8e9ac8a71598b466.jpg) ·
+Android screenshot on MiniReview
+
+**Shows:** "Victory in 3 turns" and the bonus goal sit in the corner. Arrows on the board show
+where things will move next turn.
+
+**For Pinfold:** keep the boss counter above the board ("double move in 2 turns"). When it reaches
+zero, show on the board that the boss will place two dots.
+
+### M09 Candy Crush Saga: booster counts below the board
+
+[Source page](https://candycrush.zendesk.com/hc/en-us/articles/360000750998-What-are-Boosters) ·
+[Image](https://candycrush.zendesk.com/hc/article_attachments/8683750594717) ·
+Screenshot from the game's help pages (the red box was added by the help page)
+
+**Shows:** a row of booster icons under the board, each with a small badge for the uses left.
+
+**For Pinfold:** one slim booster bar with a count on each. After one is used, dim the rest until
+the next turn, since only one booster is allowed per turn.
+
+### M10 Candy Crush Saga: a booster ready to aim
+
+[Source page](https://www.mobygames.com/game/61070/candy-crush-saga/screenshots/iphone/965911/) ·
+[Image](https://cdn.mobygames.com/screenshots/6471865-candy-crush-saga-iphone-using-the-lollipop-hammer-with-my-last-m.png) ·
+iOS screenshot on MobyGames
+
+**Shows:** the chosen booster is shown large at the top with one line on what it does ("Remove
+candy by smashing it with the hammer!"). The board stays visible for aiming.
+
+**For Pinfold:** when a booster is chosen, say what it does in one line and mark the points it can
+be used on. Spend it only when the player confirms a point.
+
+### M11 Wordle: streak and Share on the result
+
+[Source page](https://www.iphonelife.com/content/how-to-share-wordle-results-iphone-or-ipad) ·
+[Image](https://www.iphonelife.com/sites/iphonelife.com/files/styles/2023_iphone14pro_642_2x/public/wordle_1.png) ·
+iOS screenshot in an iPhone Life article (the red circle was added by the article)
+
+**Shows:** the result shows games played, wins, current and longest streak, the time to the next
+puzzle, and a Share button.
+
+**For Pinfold:** the daily puzzle result: the streak and the time to the next puzzle, with Share
+right beside them.
+
+### M12 Wordle: a shared result that hides the answer
+
+[Source page](https://www.iphonelife.com/content/how-to-share-wordle-results-iphone-or-ipad) ·
+[Image](https://www.iphonelife.com/sites/iphonelife.com/files/styles/2023_iphone14pro_642_2x/public/wordle_4.png) ·
+iOS screenshot in an iPhone Life article
+
+**Shows:** the shared post holds the puzzle number, the guesses used ("4/6") and a grid of
+coloured squares, but not the answer.
+
+**For Pinfold:** share the daily puzzle number, the moves used and a small grid of symbols. Leave
+out the board and the moves themselves.
 
 ## Menus
 
@@ -326,6 +425,18 @@ Android screenshot on MiniReview
 **For Pinfold:** setting up a game with a friend on one phone: board size and opening, summed up in
 one line above Start. Pinfold has no difficulty picker
 ([decision 0003](../decisions/0003-difficulty-by-levels-not-a-picker.md)), so leave that part out.
+
+### U09 Torpedo: who goes first on one phone
+
+[Source page](https://playtorpedo.com/blog/best-2-player-board-games) ·
+[Image](https://playtorpedo.com/img/iphone-versus.png) ·
+iOS screenshot from the developer, in a phone frame
+
+**Shows:** "Anna vs Ben", each in their own colour with their wins so far, and the line "Ben fires
+first".
+
+**For Pinfold:** before a game with a friend, show both names in their ink colours and say who
+places the first dot. During play, keep whose turn it is above the board.
 
 ## Paper
 
