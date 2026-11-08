@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Drawn from docs/design/brand/pinfold-icon.svg (Foreground layer). -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:pathData="M33,30 H67 L78,41 V75 A3,3 0 0 1 75,78 H33 A3,3 0 0 1 30,75 V33 A3,3 0 0 1 33,30 Z"
+        android:fillColor="#FBF8F1" />
+    <path
+        android:pathData="M41,33 L41,75 M33,41 L75,41 M54,33 L54,75 M33,54 L75,54 M67,33 L67,75 M33,67 L75,67"
+        android:strokeColor="#BCCBEA"
+        android:strokeWidth="1.25"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M67,30 V39.5 A1.5,1.5 0 0 0 68.5,41 H78 Z"
+        android:fillColor="#DCE4F4"
+        android:strokeColor="#1F4E9C"
+        android:strokeWidth="1.5"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M54,41 L67,54 L54,67 L41,54 Z"
+        android:strokeColor="#C0392B"
+        android:strokeWidth="2.75"
+        android:strokeLineJoin="round" />
+    <path
+        android:pathData="M49.75,41 A4.25,4.25 0 1 1 58.25,41 A4.25,4.25 0 1 1 49.75,41 Z M62.75,54 A4.25,4.25 0 1 1 71.25,54 A4.25,4.25 0 1 1 62.75,54 Z M49.75,67 A4.25,4.25 0 1 1 58.25,67 A4.25,4.25 0 1 1 49.75,67 Z M36.75,54 A4.25,4.25 0 1 1 45.25,54 A4.25,4.25 0 1 1 36.75,54 Z"
+        android:fillColor="#C0392B" />
+    <path
+        android:pathData="M50.25,54 A3.75,3.75 0 1 1 57.75,54 A3.75,3.75 0 1 1 50.25,54 Z"
+        android:fillColor="#1F4E9C" />
+</vector>

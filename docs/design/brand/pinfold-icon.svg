@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Pinfold app icon. 108 x 108 dp adaptive-icon canvas: phones show the middle 72 dp,
+     and everything that matters stays inside the 66 dp safe circle (layer "Guides").
+     The Android layers in app/src/main/res/drawable/ic_launcher_*.xml are drawn from these shapes. -->
+<svg xmlns="http://www.w3.org/2000/svg"
+     xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+     width="432" height="432" viewBox="0 0 108 108">
+  <title>Pinfold app icon</title>
+  <g id="background" inkscape:groupmode="layer" inkscape:label="Background">
+    <rect width="108" height="108" fill="#1F4E9C"/>
+  </g>
+  <g id="foreground" inkscape:groupmode="layer" inkscape:label="Foreground">
+    <path id="sheet" d="M33,30 H67 L78,41 V75 A3,3 0 0 1 75,78 H33 A3,3 0 0 1 30,75 V33 A3,3 0 0 1 33,30 Z" fill="#FBF8F1"/>
+    <path id="grid" d="M41,33 L41,75 M33,41 L75,41 M54,33 L54,75 M33,54 L75,54 M67,33 L67,75 M33,67 L75,67" fill="none" stroke="#BCCBEA" stroke-width="1.25" stroke-linecap="round"/>
+    <path id="flap" d="M67,30 V39.5 A1.5,1.5 0 0 0 68.5,41 H78 Z" fill="#DCE4F4" stroke="#1F4E9C" stroke-width="1.5" stroke-linejoin="round"/>
+    <path id="ring" d="M54,41 L67,54 L54,67 L41,54 Z" fill="none" stroke="#C0392B" stroke-width="2.75" stroke-linejoin="round"/>
+    <path id="red-dots" d="M49.75,41 A4.25,4.25 0 1 1 58.25,41 A4.25,4.25 0 1 1 49.75,41 Z M62.75,54 A4.25,4.25 0 1 1 71.25,54 A4.25,4.25 0 1 1 62.75,54 Z M49.75,67 A4.25,4.25 0 1 1 58.25,67 A4.25,4.25 0 1 1 49.75,67 Z M36.75,54 A4.25,4.25 0 1 1 45.25,54 A4.25,4.25 0 1 1 36.75,54 Z" fill="#C0392B"/>
+    <path id="blue-dot" d="M50.25,54 A3.75,3.75 0 1 1 57.75,54 A3.75,3.75 0 1 1 50.25,54 Z" fill="#1F4E9C"/>
+  </g>
+  <g id="monochrome" inkscape:groupmode="layer" inkscape:label="Monochrome" style="display:none">
+    <path d="M33,30 H67 L78,41 V75 A3,3 0 0 1 75,78 H33 A3,3 0 0 1 30,75 V33 A3,3 0 0 1 33,30 Z" fill="none" stroke="#000000" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="M67,30 V39.5 A1.5,1.5 0 0 0 68.5,41 H78 Z" fill="#000000" stroke="#000000" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M54,41 L67,54 L54,67 L41,54 Z" fill="none" stroke="#000000" stroke-width="2.75" stroke-linejoin="round"/>
+    <path d="M49.75,41 A4.25,4.25 0 1 1 58.25,41 A4.25,4.25 0 1 1 49.75,41 Z M62.75,54 A4.25,4.25 0 1 1 71.25,54 A4.25,4.25 0 1 1 62.75,54 Z M49.75,67 A4.25,4.25 0 1 1 58.25,67 A4.25,4.25 0 1 1 49.75,67 Z M36.75,54 A4.25,4.25 0 1 1 45.25,54 A4.25,4.25 0 1 1 36.75,54 Z M50.25,54 A3.75,3.75 0 1 1 57.75,54 A3.75,3.75 0 1 1 50.25,54 Z" fill="#000000"/>
+  </g>
+  <g id="guides" inkscape:groupmode="layer" inkscape:label="Guides" style="display:none">
+    <rect x="18" y="18" width="72" height="72" fill="none" stroke="#FF00FF" stroke-width="0.25"/>
+    <circle cx="54" cy="54" r="33" fill="none" stroke="#FF00FF" stroke-width="0.25"/>
+  </g>
+</svg>
