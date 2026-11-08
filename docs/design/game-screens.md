@@ -46,7 +46,7 @@ mark where art goes; the art itself comes later (D-07 and phase 5).
 
 | Frame | What it shows | From |
 | --- | --- | --- |
-| Loading | The app icon on paper, its red ring drawing itself as the game loads, a one-line tip. No buttons. | Brand (B-04) |
+| Loading | The app icon on paper, its red ring drawing itself as the game loads, a one-line tip. No buttons. On the very first start it leads straight into Level 1; the map first appears after Level 1's result. | Brand (B-04); B11 |
 | Map (home) | The world's path through a doodled landscape. Finished stops with stars, the next stop circled twice and marked "next", near the thumb; tapping it opens its card. The boss fortress, a chest every 10 levels. Today's puzzle as a sticky note. Small icons: play a game, How to play, Stats, Shop, Settings. The player's title and stars. | P01, P06, P07, P03; mood boards 4 and 7 |
 | Map: a world opens | After the last star needed: the next world's page turns and the path continues. | P02, P06 |
 | Level card | A page torn from the notebook, over the map: the mission in one line, the board picture, the opponent's face and head start, the boosters allowed (tap one to see what it does), the star targets. One button: Start. | U01, P04 |
