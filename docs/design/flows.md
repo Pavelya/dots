@@ -332,8 +332,8 @@ They are drawn from the [game-screen brief](game-screens.md). Each frame carries
 screen in the tables above; the game board has one frame per moment. The canvas opens only for
 people the owner has shared it with.
 
-- **Four rows.** The map and the way into a level; the play, one level moment by moment; around
-  the game; after launch.
+- **Four rows.** Loading, the map and the way into a level; the play, one level moment by moment;
+  around the game; after launch.
 - **Two phone sizes.** Every frame is 360 x 800 dp. Under each of the first three rows, the same
   screens on a small phone, 320 x 568 dp.
 - **Sketches, not art.** Paper, red and blue ink, hand-drawn icons and Caveat headings. Faces, the
@@ -346,9 +346,11 @@ people the owner has shared it with.
 
 The frames follow these layout rules:
 
-- **Touch targets** are at least 48 x 48 dp. Main buttons are 56 dp tall.
+- **One main action.** Every card and note has one big button, 56 dp tall; anything else is a
+  small icon or link. The map has no Play buttons, and the board has only a pause icon above it.
+- **Touch targets** are at least 48 x 48 dp.
 - **Thumb reach.** Main actions sit in the lower two thirds of the screen. Only things to read, the
-  menu and close sit in the top third; Android's Back gesture does the same job as those two.
+  pause icon and close sit in the top third; Android's Back gesture does the same job as those two.
 - **The board** takes the largest whole-dp spacing that fits 15 points across the width and in the
   height left between the top row and the player's line and tool bar: 24 dp on 360 x 800 (a 360 dp
   board, edge to edge) and 21 dp on 320 x 568 (315 dp). The player's line and tool bar sit under
