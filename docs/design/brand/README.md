@@ -1,8 +1,10 @@
 # Logo and app icon
 
 Pinfold's mark is the game's key moment: a ring of red ink closing around a blue dot. A pinfold is
-an old pen for stray animals, so the mark is the name too. This page gives the brief, the prompts
-for the drafts, and the sizes Android and Google Play need.
+an old pen for stray animals, so the mark is the name too. This page gives the brief, the drafts
+and their prompts, the icon and logo, and the sizes Android and Google Play need.
+
+<img src="pinfold-icon.svg" alt="The Pinfold app icon: a notebook page with a folded corner on deep blue; on the page, four red dots joined in a diamond around one blue dot" width="216"> <img src="pinfold-logo.svg" alt="The Pinfold logo: the icon tile beside the word Pinfold in handwritten letters" width="400">
 
 ## The brief
 
@@ -32,11 +34,21 @@ prompt rules in [`docs/assets.md`](../../assets.md): no names, no uploads, and t
 thrown away if it shows letters, a logo, a signature or a known character. If a picture breaks a
 rule, ask ChatGPT for a new one (up to two more tries) and keep the best clean one.
 
-Save each kept picture as PNG and name it after its prompt: `draft-1.png` to `draft-5.png`. Run a
-reverse image search on each with [Google Lens](https://lens.google.com) and
-[TinEye](https://tineye.com), and note anything that looks close to an existing icon.
+Each picture sits above the prompt that made it, in `drafts/` as a 1024 px JPEG named after its
+prompt. Each draft gets a reverse image search with [Google Lens](https://lens.google.com) and
+[TinEye](https://tineye.com); the result goes in its row in the asset register.
+
+| 1. Diamond on the grid | 2. Ring of eight | 3. One closing stroke | 4. The folded page | 5. Paper badge on blue |
+| --- | --- | --- | --- | --- |
+| <img src="drafts/draft-1.jpg" alt="Draft 1" width="140"> | <img src="drafts/draft-2.jpg" alt="Draft 2" width="140"> | <img src="drafts/draft-3.jpg" alt="Draft 3" width="140"> | <img src="drafts/draft-4.jpg" alt="Draft 4, the pick" width="140"> | <img src="drafts/draft-5.jpg" alt="Draft 5" width="140"> |
+
+**The pick: draft 4, the folded page.** It carries both halves of the name: the pen (the ring) and
+the fold (the turned-down corner of a notebook page). The paper page on blue stands out among
+light icons on a home screen.
 
 ### 1. Diamond on the grid
+
+<img src="drafts/draft-1.jpg" alt="Draft 1: diamond on the grid" width="240">
 
 The smallest capture in the game: four dots around one, on the crossings of the grid.
 
@@ -46,6 +58,8 @@ Square image. A mobile app icon, seen straight on, flat and simple: one bold emb
 
 ### 2. Ring of eight
 
+<img src="drafts/draft-2.jpg" alt="Draft 2: ring of eight" width="240">
+
 The mood board's emblem, made bolder and simpler.
 
 ```text
@@ -53,6 +67,8 @@ Square image. A mobile app icon, seen straight on, flat and simple: one bold emb
 ```
 
 ### 3. One closing stroke
+
+<img src="drafts/draft-3.jpg" alt="Draft 3: one closing stroke" width="240">
 
 The pen gesture alone: the moment the ring closes.
 
@@ -62,6 +78,8 @@ Square image. A mobile app icon, seen straight on, flat and simple: one bold emb
 
 ### 4. The folded page
 
+<img src="drafts/draft-4.jpg" alt="Draft 4: the folded page" width="240">
+
 The "fold" in the name: a notebook page with its corner turned over.
 
 ```text
@@ -70,11 +88,34 @@ Square image. A mobile app icon, seen straight on, flat and simple: one bold emb
 
 ### 5. Paper badge on blue
 
+<img src="drafts/draft-5.jpg" alt="Draft 5: paper badge on blue" width="240">
+
 A light mark on a dark field, so it stands out among light icons.
 
 ```text
 Square image. A mobile app icon, seen straight on, flat and simple: one bold emblem on a plain background, filling the whole square edge to edge. No rounded corners, no frame, no drop shadow, no 3D, no gloss, no gradients. Background: flat deep blue ink colour. The emblem: a round disc of warm off-white paper in the middle. On the disc, six red ink dots set in a ring, joined by a thick hand-drawn red pen loop, around one blue ink dot in the centre. Lines slightly uneven like a pen but bold and clean. Few shapes, thick enough to read when the icon is shown very small on a phone home screen. The disc sits in the middle, with a wide empty margin of blue around it on every side. No text, letters, numbers, logos or signatures anywhere in the image.
 ```
+
+## The icon and the logo
+
+The icon is draft 4 redrawn as clean vector shapes in the theme colours, on the 108 dp
+adaptive-icon canvas of [`pinfold-icon.svg`](pinfold-icon.svg):
+
+- **Background:** flat Blue ink.
+- **Foreground:** a 48 dp Paper page with a folded top-right corner, a three-line grid in Blue
+  pale, and a Red ink diamond through four dots around a Blue ink dot. Every dot sits on a grid
+  crossing, as in the game. The page fits inside the 66 dp safe circle.
+- **Monochrome:** the page as an outline with the folded corner, the diamond and the dots, without
+  the grid.
+- **Guides:** the visible 72 dp square and the safe circle, hidden. Show this layer in Inkscape
+  while editing.
+
+The SVG's layers are Inkscape layers. The Android layers in `app/src/main/res/drawable/` use the
+same shapes, so a change to the SVG has to be copied into them, and the PNGs rendered again.
+
+The logo, [`pinfold-logo.svg`](pinfold-logo.svg), is the icon's visible square with rounded
+corners beside the word Pinfold in Caveat Bold, Pencil colour. The letters are outlines, so the
+logo looks the same without the font installed.
 
 ## From draft to icon
 
@@ -107,8 +148,9 @@ corners itself), at most 1 MB.
 | File | What it is |
 | --- | --- |
 | `docs/design/brand/drafts/draft-*.jpg` | The ChatGPT drafts. Reference only, never shipped. |
-| `docs/design/brand/pinfold-mark.svg` | The mark: the icon's source |
-| `docs/design/brand/pinfold-logo.svg` | The logo: the mark and the word Pinfold |
+| `docs/design/brand/pinfold-icon.svg` | The icon's source, with its layers |
+| `docs/design/brand/pinfold-logo.svg` | The logo: the icon tile and the word Pinfold |
 | `docs/design/brand/pinfold-store-512.png` | The Google Play icon |
-| `app/src/main/res/drawable/ic_launcher_*.xml` | The adaptive icon layers |
-| `app/src/main/res/mipmap-*/ic_launcher*` | The launcher icon for each screen density |
+| `app/src/main/res/drawable/ic_launcher_*.xml` | The adaptive icon layers: background, foreground, monochrome |
+| `app/src/main/res/mipmap-anydpi-v26/ic_launcher*.xml` | The adaptive icon, square and round, for Android 8 and later |
+| `app/src/main/res/mipmap-*/ic_launcher*.png` | The PNG icons for Android 7, square and round, five sizes |
