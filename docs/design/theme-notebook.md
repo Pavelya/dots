@@ -6,12 +6,12 @@ red and blue ink on squared school paper, with rings drawn like a pen stroke. Th
 every value the app needs to draw it, in a light and a dark version. The
 [Notebook mood board](moodboards/notebook.md) shows the feel. This page gives the exact values.
 
-<img src="theme-notebook.svg" alt="A board sample in the light and the dark version: grid, two captured areas with rings, washes and hatching, a threat, a closing point and a preview" width="720">
+<img src="theme-notebook.svg" alt="A board sample in the light and the dark version: red dots and blue diamonds, two captured areas with rings, washes and hatching, a threat, a closing point and a preview" width="720">
 
 The sample above is drawn from the values on this page, at 2 px per dp. It shows a red capture
-around two blue dots, a blue capture around one red dot, a blue dot one move from capture (solid
-ring) and one two moves away (faint ring), the point that would close the ring (small red circle),
-and the dot the player is about to place (bottom right).
+around two blue pieces, a blue capture around one red piece, a blue piece one move from capture
+(solid ring) and one two moves away (faint ring), the point that would close the ring (small red
+circle), and the dot the player is about to place (bottom right).
 
 ## Rules of the look
 
@@ -20,8 +20,8 @@ and the dot the player is about to place (bottom right).
 - **Three weights.** Grid lines are thin, rings are twice as thick, and dots are solid. Nobody
   should confuse one for another.
 - **Never colour alone.** Red areas are hatched one way, blue areas the other way, so a player
-  who can't tell red from blue can still tell the areas apart. D-04 gives the two sides different
-  piece shapes for the same reason.
+  who can't tell red from blue can still tell the areas apart. For the same reason red pieces are
+  round and blue pieces are diamonds ([Piece shapes](pieces.md)).
 - **Light or dark follows the phone.** The game uses the dark version when the phone's dark theme
   is on.
 - **No texture on the board.** Paper grain, doodles and pictures belong to the world backgrounds
@@ -60,28 +60,29 @@ smaller or larger spacing.
 | --- | --- | --- | --- |
 | Grid line | 1 dp | always 1 dp | Grid |
 | Board edge (outermost grid lines) | 1.5 dp | always 1.5 dp | Grid |
-| Dot | 12 dp across | half the spacing, at least 9 dp, at most 20 dp | Red ink or Blue ink |
+| Dot size (red dot across) | 12 dp | half the spacing, at least 9 dp, at most 20 dp | Red ink |
+| Blue diamond, corner to corner | 14 dp | 7/6 of the dot size | Blue ink |
 | Ring (capture outline) | 2 dp | 1/12 of the spacing, at least 1.5 dp, at most 3 dp | Ink of the side that captured |
 | Hatch line | 1 dp, one line every 5 dp | always the same | Red pale or Blue pale |
 | Link between two dots of one side | 1.5 dp | always 1.5 dp | Red pale or Blue pale |
 | Threat ring, one move from capture | 20 dp across, 2 dp line | 0.84 of the spacing across | Highlighter |
 | Threat ring, two moves from capture | 20 dp across, 1.5 dp line | 0.84 of the spacing across | Highlighter faint |
 | Closing point (where the attacker would close the ring) | 8 dp across, 1.5 dp line | a third of the spacing across | Ink of the attacker |
-| Preview (the dot about to be placed) | a 12 dp dot inside a 22 dp ring, 2 dp line | dot as above; ring 0.9 of the spacing across | Dot: Red pale or Blue pale; ring: ink of the side to move |
+| Preview (the piece about to be placed) | the moving side's piece inside a 22 dp ring, 2 dp line | piece as above; ring 0.9 of the spacing across | Piece: Red pale or Blue pale; ring: ink of the side to move |
 
 Paper fills the board and half a spacing around its outermost points. Outside the board the screen
 is plain paper without a grid, so the board's edge is clear.
 
 **Drawing order**, from the back: paper, washes, hatching, grid, links, rings, threat rings,
-dots, closing points, preview. The grid lies on top of the washes, so the squared paper shows
+pieces, last-move pinhole and captured cuts, closing points, preview. The grid lies on top of the washes, so the squared paper shows
 through a captured area.
 
 **Captured dots** keep their full ink colour. The wash and the hatching around them show that they
-are captured, and they stay at least 3:1 against both (see the contrast table). D-04 may add a
-mark of its own.
+are captured, and they stay at least 3:1 against both (see the contrast table). A cut across
+each captured piece marks it too.
 
-**Piece shapes, the last-move marker and the captured-dot mark** come from D-04. They use the
-colours on this page and fit inside the dot size above.
+**Piece shapes, the last-move pinhole, the captured cut and the preview** are on
+[Piece shapes](pieces.md).
 
 ## The ring
 
@@ -220,7 +221,7 @@ a grid crossing, either wash and either hatch line.
 
 The last row shows the two inks differ in lightness too, in both versions (red is the lighter
 one), so they don't turn into the same grey. That alone is not enough to tell the sides apart,
-which is why D-04 adds shapes.
+which is why the sides also differ in shape ([Piece shapes](pieces.md)).
 
 The grid is deliberately quiet. It guides the eye but carries no game information; the dots and
 rings do. The mood boards showed that a grid as dark as the ink makes the board hard to read. The faint threat ring
