@@ -15,7 +15,7 @@ explains the rules and how the computer opponent works.
 | `gradle/libs.versions.toml` | Every dependency version. Dependabot updates it; don't bump versions by hand unless the task asks for it. |
 | `docs/plan.md` | The plan: the game, phases, gates, tools and accounts. Task cards are issues. |
 | `docs/poc/` | The proof of concept: charter, architecture, test protocol. |
-| `docs/design/` | Design work: names, investigation, later the theme, flows and canvas. |
+| `docs/design/` | Design work: names, investigation, references, mood boards, the Notebook theme, the brand, and the screens and flows (`flows.md`). |
 | `docs/decisions/` | One file per settled decision, `NNNN-short-title.md`. |
 
 ## Commands
