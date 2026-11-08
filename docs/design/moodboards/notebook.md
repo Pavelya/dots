@@ -95,4 +95,5 @@ Fonts (Google Fonts, Open Font License):
 - [Caveat](https://fonts.google.com/specimen/Caveat): headings, a handwritten feel
 - [Atkinson Hyperlegible](https://fonts.google.com/specimen/Atkinson+Hyperlegible): everything else, built to be easy to read
 
-The colours and fonts are a first proposal. D-03 sets the final ones and checks the contrast.
+The colours and fonts are a first proposal. The final ones, with contrast checks, are in the
+[Notebook theme](../theme-notebook.md).
