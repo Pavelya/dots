@@ -517,10 +517,11 @@ def map_art(t, uid):
     return f"<defs>{defs}</defs>" + "".join(a)
 
 
-def map_stops(t):
+def map_stops(t, done=3):
+    """The path and the stops. The path is inked up to the stop at index done - 1."""
     out = []
-    done_pts = [(130, 820)] + [(x, y) for (_, x, y, st, _) in STOPS[:3]]
-    rest = [(x, y) for (_, x, y, st, _) in STOPS[2:]]
+    done_pts = [(130, 820)] + [(x, y) for (_, x, y, st, _) in STOPS[:done]]
+    rest = [(x, y) for (_, x, y, st, _) in STOPS[done - 1:]]
     paths = (el("path", d=spline(done_pts), fill="none", stroke=t["blue"], stroke_width=2.2, stroke_dasharray="7 6",
                 stroke_linecap="round") +
              el("path", d=spline(rest), fill="none", stroke=t["graphite"], stroke_width=2.2, stroke_dasharray="1 7",
@@ -577,8 +578,8 @@ def map_stops(t):
     return "".join(out)
 
 
-def map_frame(t, uid, extra=""):
-    parts = [svg(W, H, map_art(t, uid), style="position: absolute; left: 0; top: 0"), map_stops(t)]
+def map_frame(t, uid, extra="", done=3):
+    parts = [svg(W, H, map_art(t, uid), style="position: absolute; left: 0; top: 0"), map_stops(t, done)]
     parts.append(f'<div style="position: absolute; left: 70px; top: 26px">'
                  f'<div style="{LABEL}; color: {t["graphite"]}">World 1</div>'
                  f'<div style="{DISPLAY}; color: {t["blue"]}">Notebook</div>'
