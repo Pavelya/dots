@@ -49,6 +49,7 @@ flowchart TD
 
     start --> loading
     loading --> map
+    loading -->|"very first start"| board
     map -->|"a level"| card
     map -->|"Today's puzzle"| daily
     map -->|"Play a game"| play
@@ -140,7 +141,7 @@ over the map or the board, which stay visible around it.
 
 | Screen | Opens from | What the player sees and does | Built in |
 | --- | --- | --- | --- |
-| Loading | App start | The app icon on paper, as on Android's own start-up screen, with its red ring drawing itself as the game loads, and a one-line tip. No buttons. Then the map. | A-01 |
+| Loading | App start | The app icon on paper, as on Android's own start-up screen, with its red ring drawing itself as the game loads, and a one-line tip. No buttons. Then the map; until Level 1 is finished, Level 1 instead. | A-01, A-06 |
 | World map (home) | Loading; Back from Rules, Stats, Shop or Settings; leaving a game | One scrolling map with a section per world. Finished levels with their stars, the next level circled and marked "next", boss levels as fortresses, a chest every 10 levels, locked worlds with the stars they need. No Play buttons: a level opens its Level card. Labelled icons for Today's puzzle, Play a game, How to play, Stats, Shop and Settings; the player's title and stars. | A-01, A-02, A-04 |
 | Level card | A level on the map, Next on Result | Over the map: the mission in one line, a small picture of the board, the computer's face for its strength, its head start, allowed boosters and star targets. A boss level adds the boss's name, face and rule. One button: Start, or Resume when the level's game is saved. Tapping a booster opens Boosters. | A-03 |
 | Boosters | A booster on the Level card | Wall, Hint, Bomb and Double dot: how many the player has, what each does, how to earn more. Close returns to where it opened. | A-05 |
@@ -214,14 +215,18 @@ the developer menu are left out.
 
 ## First launch
 
-1. The loading screen, then the map at World 1. Once ads ship, players in the EU and the UK first
-   see Google's consent form (C-03). No sign-in is needed for anything offline.
-2. Level 1 is circled and marked "next". Today's puzzle, Play a game and How to play are open too.
-3. Tapping Level 1 opens its card; Start begins it with guided steps (A-06). Levels 1 to 3 teach
-   placing, linking and capturing, one step at a time, with threat highlights on. Level 1 teaches
-   the placement method that A-13 picks.
-4. Result shows the stars over the final board. Next returns to the map, where the stars fly to
-   Level 1 and the Level card of Level 2 opens. Retry plays Level 1 again.
+The first tap a new player makes is a move on the board.
+
+1. The loading screen, then straight into Level 1: no map and no Level card. Once ads ship,
+   players in the EU and the UK first see Google's consent form (C-03). No sign-in is needed for
+   anything offline.
+2. Level 1 starts with guided steps (A-06). Levels 1 to 3 teach placing, linking and capturing,
+   one step at a time, with threat highlights on. Level 1 teaches the placement method that A-13
+   picks.
+3. Result shows the stars over the final board. Next opens the map for the first time: the stars
+   fly to Level 1, and the Level card of Level 2 opens. Retry plays Level 1 again.
+4. Until Level 1 is finished, the app opens straight into it, where the player left off. To the
+   map in Pause shows the map early; Level 1 is circled there.
 
 ## Returning player
 
