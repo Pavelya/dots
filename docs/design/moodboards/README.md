@@ -30,6 +30,19 @@ Pictures 1 to 7 are generated with ChatGPT from the prompts on each board page. 
 SVG drawn in code, because the prompt rules reject AI images that contain letters. The palettes
 and fonts are first proposals. D-03 sets the final colours, with contrast checks.
 
+## Side by side
+
+| # | Notebook | Night sky | Neon arcade |
+| --- | --- | --- | --- |
+| 1. The board in play | <img src="notebook-1.jpg" alt="Notebook: the board in play" width="200"> | <img src="night-sky-1.jpg" alt="Night sky: the board in play" width="200"> | <img src="neon-arcade-1.jpg" alt="Neon arcade: the board in play" width="200"> |
+| 2. A capture | <img src="notebook-2.jpg" alt="Notebook: a capture" width="200"> | <img src="night-sky-2.jpg" alt="Night sky: a capture" width="200"> | <img src="neon-arcade-2.jpg" alt="Neon arcade: a capture" width="200"> |
+| 3. A crowded late game | <img src="notebook-3.jpg" alt="Notebook: a crowded late game" width="200"> | <img src="night-sky-3.jpg" alt="Night sky: a crowded late game" width="200"> | <img src="neon-arcade-3.jpg" alt="Neon arcade: a crowded late game" width="200"> |
+| 4. The world map | <img src="notebook-4.jpg" alt="Notebook: the world map" width="200"> | <img src="night-sky-4.jpg" alt="Night sky: the world map" width="200"> | <img src="neon-arcade-4.jpg" alt="Neon arcade: the world map" width="200"> |
+| 5. A world background | <img src="notebook-5.jpg" alt="Notebook: a world background" width="200"> | <img src="night-sky-5.jpg" alt="Night sky: a world background" width="200"> | <img src="neon-arcade-5.jpg" alt="Neon arcade: a world background" width="200"> |
+| 6. A won level | <img src="notebook-6.jpg" alt="Notebook: a won level" width="200"> | <img src="night-sky-6.jpg" alt="Night sky: a won level" width="200"> | <img src="neon-arcade-6.jpg" alt="Neon arcade: a won level" width="200"> |
+| 7. The home screen | <img src="notebook-7.jpg" alt="Notebook: the home screen" width="200"> | <img src="night-sky-7.jpg" alt="Night sky: the home screen" width="200"> | <img src="neon-arcade-7.jpg" alt="Neon arcade: the home screen" width="200"> |
+| 8. Colours and type | <img src="notebook-8.svg" alt="Notebook: palette" width="200"> | <img src="night-sky-8.svg" alt="Night sky: palette" width="200"> | <img src="neon-arcade-8.svg" alt="Neon arcade: palette" width="200"> |
+
 ## Making the pictures
 
 1. Use ChatGPT image generation. Start a new chat for each picture, so earlier pictures do not
@@ -49,4 +62,14 @@ These pictures are references only. None of them ships in the app.
 
 ## The pick
 
-The owner's pick goes here once the boards are complete, with the reasons in a few lines.
+**Notebook** is the launch look, as decision 0012 says. It keeps the feeling of the paper game.
+Night sky came second: the pictures are rough, but the direction works. Neon arcade came last: it
+lacks a personality of its own.
+
+What the boards teach the next steps:
+
+- **D-03, Notebook theme:** on the board, the grid must be much paler than the blue ink. In
+  picture 1 the grid came out as dark as the blue dots. Washes stay light and hatched, so
+  captured dots show through, as in pictures 2 and 3.
+- **D-04, piece shapes:** in Night sky, the two sides differ by shape as well as colour (stars
+  and comets). That helps colour-blind players and works in any theme.
