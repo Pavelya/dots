@@ -62,4 +62,14 @@ These pictures are references only. None of them ships in the app.
 
 ## The pick
 
-The owner's pick goes here once the boards are complete, with the reasons in a few lines.
+**Notebook** is the launch look, as decision 0012 says. It keeps the feeling of the paper game.
+Night sky came second: the pictures are rough, but the direction works. Neon arcade came last: it
+lacks a personality of its own.
+
+What the boards teach the next steps:
+
+- **D-03, Notebook theme:** on the board, the grid must be much paler than the blue ink. In
+  picture 1 the grid came out as dark as the blue dots. Washes stay light and hatched, so
+  captured dots show through, as in pictures 2 and 3.
+- **D-04, piece shapes:** in Night sky, the two sides differ by shape as well as colour (stars
+  and comets). That helps colour-blind players and works in any theme.
