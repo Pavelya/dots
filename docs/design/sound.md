@@ -265,12 +265,20 @@ to half its volume and comes back after.
 
 ### Settings for every track
 
-- **Custom** mode, **Instrumental** on, the newest model Suno offers that day.
-- **Style:** the track's prompt below, pasted exactly.
+Every track is instrumental: music only, with no voice of any kind. Three things make sure of it:
+the **Instrumental** switch, the first words of each prompt, and the Exclude list.
+
+- **Custom** mode, the newest model Suno offers that day.
+- **Instrumental: on.** Check it before every generation; it is the main guard against a voice.
+  With it on, the lyrics box disappears or is ignored. If the switch is missing, type only
+  `[Instrumental]` in the lyrics box. Never leave the lyrics box empty with the switch off: Suno
+  may then add a voice of its own.
+- **Style:** the track's prompt below, pasted exactly. Each starts with "Instrumental only, no
+  vocals, no lyrics."
 - **Exclude** (the same for every track):
 
   ```
-  vocals, singing, choir, humming, spoken word, EDM drop, heavy drums, distorted guitar, trap, dubstep, fade out
+  vocals, lyrics, singing, rap, choir, humming, vocal chops, vocal samples, spoken word, EDM drop, heavy drums, distorted guitar, fade out
   ```
 
 - **Weirdness** about 35% and **Style influence** about 65%, if the sliders show. These are a
@@ -283,44 +291,46 @@ to half its volume and comes back after.
 **`music_map.wav`**, title `Pinfold Map`
 
 ```
-Warm, playful instrumental for a puzzle game's home screen. Felt piano melody, pizzicato strings, soft glockenspiel accents, upright bass, light brushed snare. Curious and inviting, like doodling in a notebook margin on a sunny afternoon. 90 BPM, C major, steady groove throughout, simple repeating phrases, gentle and uncluttered, no build-up, no ending.
+Instrumental only, no vocals, no lyrics. Warm, playful instrumental for a puzzle game's home screen. Felt piano melody, pizzicato strings, soft glockenspiel accents, upright bass, light brushed snare. Curious and inviting, like doodling in a notebook margin on a sunny afternoon. 90 BPM, C major, steady groove throughout, simple repeating phrases, gentle and uncluttered, no build-up, no ending.
 ```
 
 **`music_notebook.wav`**, title `Pinfold Notebook`
 
 ```
-Calm, focused instrumental for thinking. Muted felt piano, warm electric piano chords, soft clarinet countermelody, quiet shaker and soft wood block like a pencil tapping. Cozy study room, quiet concentration, a little playful. 80 BPM, F major, steady and even, sparse arrangement with lots of space, same energy from start to end, no ending.
+Instrumental only, no vocals, no lyrics. Calm, focused instrumental for thinking. Muted felt piano, warm electric piano chords, soft clarinet countermelody, quiet shaker and soft wood block like a pencil tapping. Cozy study room, quiet concentration, a little playful. 80 BPM, F major, steady and even, sparse arrangement with lots of space, same energy from start to end, no ending.
 ```
 
 **`music_garden.wav`**, title `Pinfold Garden`
 
 ```
-Gentle, sunny instrumental. Nylon-string acoustic guitar picking, soft marimba, airy flute melody, light hand percussion and shaker, warm upright bass. Morning in a garden, birdsong mood without birds, relaxed and bright but calm enough to think. 84 BPM, G major, steady groove throughout, simple repeating melody, no build-up, no ending.
+Instrumental only, no vocals, no lyrics. Gentle, sunny instrumental. Nylon-string acoustic guitar picking, soft marimba, airy flute melody, light hand percussion and shaker, warm upright bass. Morning in a garden, birdsong mood without birds, relaxed and bright but calm enough to think. 84 BPM, G major, steady groove throughout, simple repeating melody, no build-up, no ending.
 ```
 
 **`music_night_sky.wav`**, title `Pinfold Night Sky`
 
 ```
-Dreamy, calm instrumental. Celesta and music box melody, soft warm synth pad, slow low strings, felt piano, very light brushed percussion. Starry night, quiet wonder, peaceful but awake, not sleepy. 70 BPM, D major with a lifted, floating feel, slow and even, spacious, same energy from start to end, no ending.
+Instrumental only, no vocals, no lyrics. Dreamy, calm instrumental. Celesta and music box melody, soft warm synth pad, slow low strings, felt piano, very light brushed percussion. Starry night, quiet wonder, peaceful but awake, not sleepy. 70 BPM, D major with a lifted, floating feel, slow and even, spacious, same energy from start to end, no ending.
 ```
 
 **`music_sea.wav`**, title `Pinfold Sea`
 
 ```
-Breezy, flowing instrumental in a gentle 6/8 sway. Harp arpeggios, soft vibraphone, warm string pads swelling like waves, upright bass, light brushed drums. Calm seaside, open horizon, soft sunlight on water, relaxed and steady. 76 BPM, A dorian, rolling rhythm throughout, simple repeating phrases, no build-up, no ending.
+Instrumental only, no vocals, no lyrics. Breezy, flowing instrumental in a gentle 6/8 sway. Harp arpeggios, soft vibraphone, warm string pads swelling like waves, upright bass, light brushed drums. Calm seaside, open horizon, soft sunlight on water, relaxed and steady. 76 BPM, A dorian, rolling rhythm throughout, simple repeating phrases, no build-up, no ending.
 ```
 
 **`music_boss.wav`**, title `Pinfold Boss`
 
 ```
-Playful, mischievous tension for a friendly boss battle in a puzzle game. Low pizzicato strings, staccato bassoon, ticking wood block, soft timpani hits, repeating piano pattern. Cheeky villain sneaking around, focused and a bit urgent but never scary or loud. 100 BPM, D minor, tight steady groove throughout, short repeating phrases, no ending.
+Instrumental only, no vocals, no lyrics. Playful, mischievous tension for a friendly boss battle in a puzzle game. Low pizzicato strings, staccato bassoon, ticking wood block, soft timpani hits, repeating piano pattern. Cheeky villain sneaking around, focused and a bit urgent but never scary or loud. 100 BPM, D minor, tight steady groove throughout, short repeating phrases, no ending.
 ```
 
 ### Choosing and saving
 
 1. Generate 2 to 4 versions of each track. Keep the one with the steadiest middle: V-09 cuts the
    loop from the middle, so the start and the ending do not matter.
-2. Reject any version with a voice, or a melody that sounds familiar.
+2. Reject any version with a voice anywhere in it, even a short "ooh", a hum or a whisper, and any
+   version with a melody that sounds familiar. Listen to the whole track: a voice sometimes comes in
+   only near the end.
 3. Run the kept version through a song-recognition app (for example Shazam). A match means: reject
    it and generate again.
 4. Download the kept version as WAV and name it as in the table above.
