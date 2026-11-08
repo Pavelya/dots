@@ -1,8 +1,8 @@
 # Screens and flows
 
 This page lists every screen in Pinfold and how a player moves between them. The app's navigation
-(A-01) is built from it, the wireframes (D-06) draw one frame per screen listed here, and the
-prototype (D-10) follows these flows.
+(A-01) is built from it, the [wireframes](#wireframes) (D-06) draw one frame per screen listed
+here, and the prototype (D-10) follows these flows.
 
 Three decisions shape it: no difficulty picker (decision 0003), boosters only in the solo campaign
 (decision 0006), and two players on one phone at launch with online play after it (decision 0014).
@@ -328,6 +328,45 @@ These tasks change what some screens show:
 - **G-18** decides on timed games. A timed mode would be a new choice in Play a game.
 - **C-01** sets the cosmetics, the prices and where rewarded ads appear.
 - **X-08** sets the gate for ranked games.
+
+## Wireframes
+
+The wireframes (D-06) sketch every screen above, and every moment of a level, in the Notebook look:
+[Pinfold wireframes](https://claude.ai/artifact/NpxuGodPYwFGjgB6kpipR4), a Claude design canvas.
+They are drawn from the [game-screen brief](game-screens.md). Each frame carries the name of its
+screen in the tables above; the game board has one frame per moment. The canvas opens only for
+people the owner has shared it with.
+
+- **Four rows.** Loading, the map and the way into a level; the play, one level moment by moment;
+  around the game; after launch.
+- **Two phone sizes.** Every frame is 360 x 800 dp. Under each of the first three rows, the same
+  screens on a small phone, 320 x 568 dp.
+- **Sketches, not art.** Paper, red and blue ink, hand-drawn icons and Caveat headings. Faces, the
+  map's landscape and world pictures are doodles that mark where art goes.
+- **States.** Some frames show more than one state, picked in the frame's Tweaks: the map (home,
+  a world opens), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
+  game), the game board (every moment), Cosmetic preview, Settings details, Invite and Ranked.
+- **Screens Google draws.** Leaderboards and achievements, and the other Android screens, are drawn
+  by Google. Their frame shows only what we draw: the sign-in question over Stats.
+
+The frames follow these layout rules:
+
+- **One main action.** Every card and note has one big button, 56 dp tall; anything else is a
+  small icon or link. The map has no Play buttons, and the board has only a pause icon above it.
+- **Touch targets** are at least 48 x 48 dp.
+- **Thumb reach.** Main actions sit in the lower two thirds of the screen. Only things to read, the
+  pause icon and close sit in the top third; Android's Back gesture does the same job as those two.
+- **The board** takes the largest whole-dp spacing that fits 15 points across the width and in the
+  height left between the top row and the player's line and tool bar: 24 dp on 360 x 800 (a 360 dp
+  board, edge to edge) and 21 dp on 320 x 568 (315 dp). The player's line and tool bar sit under
+  the board, near the thumb. Spare height goes above the board, to the opponent's face and name.
+  Opening a booster preview does not move the board.
+- **Bars.** 24 dp at the top for the status bar and at least 12 dp at the bottom for the gesture
+  bar. With three-button navigation the bottom bar is 48 dp, and the board takes the next smaller
+  spacing.
+- **Notes over the map or the board.** The Level card, the chest, Today's puzzle, Play a game,
+  Pause and Result are notes laid over what the player was looking at, with their main button at
+  the bottom.
 
 ## How to check the flows
 

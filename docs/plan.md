@@ -78,7 +78,8 @@ section 8. "First needed in" names the task that first needs the tool or account
 | Git, GitHub Actions | Version control, CI, APK builds | Free | In use |
 | A real Android phone, plus an old cheap one | Touch, feel, speed on low-end hardware | Own devices | In use / [Q-02](https://github.com/Pavelya/dots/issues/97) |
 | ChatGPT image generation | Mood boards, concept art, backgrounds, portraits | Owner's Pro plan | [D-02](https://github.com/Pavelya/dots/issues/36) |
-| Figma (free plan); Penpot as a fallback | Wireframes, canvas mock-ups, clickable prototype | Free | [D-06](https://github.com/Pavelya/dots/issues/40) |
+| Claude design canvas | Wireframes | Owner's Claude plan | [D-06](https://github.com/Pavelya/dots/issues/40) |
+| Figma (free plan); Penpot as a fallback | Canvas mock-ups, clickable prototype | Free | [D-07](https://github.com/Pavelya/dots/issues/41) |
 | Krita, Inkscape, GIMP | Clean-up, piece shapes as SVG, icons, textures | Free | [D-04](https://github.com/Pavelya/dots/issues/38) |
 | Google Fonts (OFL), Material Symbols (Apache 2.0) | Type and interface icons | Free | [D-03](https://github.com/Pavelya/dots/issues/37) |
 | WebAIM Contrast Checker, Coblis, Android "Simulate color space" | Contrast and colour-blindness checks | Free | [D-04](https://github.com/Pavelya/dots/issues/38) |
@@ -101,7 +102,7 @@ section 8. "First needed in" names the task that first needs the tool or account
 | GitHub | Code, CI, releases, issues | Free | In use |
 | A Google account just for the game | Owns Play Console, Firebase, AdMob, Play Games | Free | [B-05](https://github.com/Pavelya/dots/issues/34) |
 | A support email address on that account: `pinfoldsupport@gmail.com` | Shown in the store, answers players | Free | [B-05](https://github.com/Pavelya/dots/issues/34) |
-| Figma | Design files | Free | [D-06](https://github.com/Pavelya/dots/issues/40) |
+| Figma | Design files | Free | [D-07](https://github.com/Pavelya/dots/issues/41) |
 | Freesound | Downloading CC0 sounds | Free | [V-08](https://github.com/Pavelya/dots/issues/79) |
 | Suno (Pro for one month, then cancel) | Music with commercial rights | About $10 | [V-09](https://github.com/Pavelya/dots/issues/80) |
 | Google Play Console, personal, with identity check | Publishing; Play Games Services; in-app purchases | $25 once | [R-01](https://github.com/Pavelya/dots/issues/103) |
