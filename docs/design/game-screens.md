@@ -57,10 +57,10 @@ mark where art goes; the art itself comes later (D-07 and phase 5).
 
 | Frame | What it shows | From |
 | --- | --- | --- |
-| Board: anatomy | Opponent above the board (face, tally, boss counter), the board edge to edge, the player below (tally, the tool bar). The mission as a note in a corner. | B01, M08, M09; mood board 1 |
+| Game board: the parts | Opponent above the board (face, tally, boss counter), the board edge to edge, the player below (tally, the tool bar). The mission as a note in a corner. | B01, M08, M09; mood board 1 |
 | Level opening | The mission note over the board, target dots marked on the board, the boss rule if any. The first tap starts. | B10, M07 |
-| Placing | The preview ring, then the dot with its last-move pinhole. | B01, B09; D-04 |
 | Threat | Highlighter rings around a group in danger, the closing point; the opponent's face reacts. | Investigation section 3; D-03 |
+| Placing | The preview ring, then the dot with its last-move pinhole. | B01, B09; D-04 |
 | Capture 1: the ring closes | The pen stroke runs around the area. | M01; mood board 2 |
 | Capture 2: ink spreads | The wash soaks in, captured dots get their cut. | M01, M03; mood board 2 |
 | Capture 3: the score | +N flies to the tally, the mission note ticks. | M01, M02 |

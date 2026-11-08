@@ -323,35 +323,40 @@ These tasks change what some screens show:
 
 ## Wireframes
 
-The wireframes (D-06) draw every screen above in grey boxes, without colours, fonts or pictures:
+The wireframes (D-06) sketch every screen above, and every moment of a level, in the Notebook look:
 [Pinfold wireframes](https://claude.ai/artifact/NpxuGodPYwFGjgB6kpipR4), a Claude design canvas.
-Each frame carries the name of its screen in the tables above. The canvas opens only for people the
-owner has shared it with.
+They are drawn from the [game-screen brief](game-screens.md). Each frame carries the name of its
+screen in the tables above; the game board has one frame per moment. The canvas opens only for
+people the owner has shared it with.
 
-- **Two phone sizes.** Every frame is drawn at 360 x 800 dp. The screens at launch are drawn again
-  at 320 x 568 dp, a small phone. On the small phone, content below the bottom edge scrolls.
-- **States.** Some frames show more than one state, picked in the frame's Tweaks: Game board
-  (campaign, free play, two players, tutorial, online, booster preview), Result (campaign win,
-  campaign fail, daily puzzle, free play), Daily puzzle, Cosmetic preview, Settings details, Invite
-  and Ranked.
+- **Four rows.** The map and the way into a level; the play, one level moment by moment; around
+  the game; after launch.
+- **Two phone sizes.** Every frame is 360 x 800 dp. Under each of the first three rows, the same
+  screens on a small phone, 320 x 568 dp.
+- **Sketches, not art.** Paper, red and blue ink, hand-drawn icons and Caveat headings. Faces, the
+  map's landscape and world pictures are doodles that mark where art goes.
+- **States.** Some frames show more than one state, picked in the frame's Tweaks: the map (home,
+  a world opens), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
+  game), the game board (every moment), Cosmetic preview, Settings details, Invite and Ranked.
 - **Screens Google draws.** Leaderboards and achievements, and the other Android screens, are drawn
   by Google. Their frame shows only what we draw: the sign-in question over Stats.
 
 The frames follow these layout rules:
 
 - **Touch targets** are at least 48 x 48 dp. Main buttons are 56 dp tall.
-- **Thumb reach.** Main buttons sit below the top third of the screen, most of them in the bottom
-  third. Only things to read, and Back, menu and close, sit in the top third; Android's Back
-  gesture does the same job as those three.
+- **Thumb reach.** Main actions sit in the lower two thirds of the screen. Only things to read, the
+  menu and close sit in the top third; Android's Back gesture does the same job as those two.
 - **The board** takes the largest whole-dp spacing that fits 15 points across the width and in the
-  height left between the bars: 24 dp on 360 x 800 (a 360 dp board, edge to edge) and 21 dp on
-  320 x 568 (315 dp). It sits low, just above the turn line and the booster bar. Spare height goes
-  above it, where the world background shows. Opening a booster preview does not move the board.
-- **Bars.** 24 dp at the top for the status bar. The tabs are 64 dp, plus 16 dp for the gesture
+  height left between the top row and the player's line and tool bar: 24 dp on 360 x 800 (a 360 dp
+  board, edge to edge) and 21 dp on 320 x 568 (315 dp). The player's line and tool bar sit under
+  the board, near the thumb. Spare height goes above the board, to the opponent's face and name.
+  Opening a booster preview does not move the board.
+- **Bars.** 24 dp at the top for the status bar and at least 12 dp at the bottom for the gesture
   bar. With three-button navigation the bottom bar is 48 dp, and the board takes the next smaller
   spacing.
-- **Sheets.** The Level card, Pause and the sign-in question rise from the bottom, so their buttons
-  stay near the thumb.
+- **Notes over the map or the board.** The Level card, the chest, Today's puzzle, Play a game,
+  Pause and Result are notes laid over what the player was looking at, with their main button at
+  the bottom.
 
 ## How to check the flows
 
