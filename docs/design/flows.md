@@ -11,9 +11,12 @@ Three decisions shape it: no difficulty picker (decision 0003), boosters only in
 
 - **The map is home.** The game opens on the world map, at the world the player is in, with the
   next level low on the screen, near the thumb. There is no tab bar.
+- **No Play buttons on the map.** Tapping a level opens its Level card; Start is there.
 - **Small labelled icons on the map** lead to everything else: Today's puzzle (a note pinned to the
-  page), Play a game (free play or two players), How to play, Boosters, Stats, Shop and Settings.
-  After launch, Online joins them.
+  page), Play a game (free play or two players), How to play, Stats, Shop and Settings. After
+  launch, Online joins them.
+- **One main action.** Every card and note has one big button. Anything else is a small icon or
+  link. On the board, the only button above it is the pause icon.
 - **Over the map or the board, not instead of it.** The Level card, the chest, Today's puzzle, Play
   a game, Pause, the booster preview and Result are laid over the map or the board, so the player
   always sees where they are. Rules, Stats, Shop and Settings are full screens on the same paper.
@@ -28,6 +31,8 @@ Three decisions shape it: no difficulty picker (decision 0003), boosters only in
 
 ```mermaid
 flowchart TD
+    start(["App start"])
+    loading["Loading"]
     map(["World map (home)"])
     card["Level card"]
     boosters["Boosters"]
@@ -42,20 +47,20 @@ flowchart TD
     preview["Cosmetic preview"]
     board[["Game board"]]
 
+    start --> loading
+    loading --> map
     map -->|"a level"| card
-    map -->|"Play or Resume on the next level"| board
     map -->|"Today's puzzle"| daily
     map -->|"Play a game"| play
     map -->|"How to play"| rules
-    map -->|"Boosters"| boosters
     map -->|"Settings"| settings
     map -->|"Stats"| stats
     map -->|"Shop"| shop
 
-    card --> boosters
+    card -->|"a booster"| boosters
     card -->|"Start or Resume"| board
     daily -->|"Play or Resume"| board
-    play -->|"Start or Resume"| board
+    play -->|"a card"| board
     rules -->|"Play tutorial"| board
     settings -->|"Replay tutorial"| board
     settings --> details
@@ -73,19 +78,17 @@ flowchart TD
     result["Result"]
     chest["Chest"]
     rules["Rules"]
-    settings["Settings"]
     nextCard["Level card of the next level, over the map"]
     daily["Today's puzzle"]
-    origin(["The place the game started from"])
+    origin(["The map"])
 
     board -->|"a booster, campaign only"| boosterPreview
     boosterPreview -->|"Confirm or Cancel"| board
-    board -->|"menu or Back"| pause
+    board -->|"pause icon or Back"| pause
     pause -->|"Resume or Back"| board
     pause -->|"Restart, after asking"| board
-    pause --> rules
-    pause --> settings
-    pause -->|"Save and leave"| origin
+    pause -->|"How to play"| rules
+    pause -->|"To the map"| origin
     board -->|"game ends"| result
     daily -->|"View result"| result
     result -->|"Retry or Play again"| board
@@ -95,8 +98,8 @@ flowchart TD
     result -->|"Map or Back"| origin
 ```
 
-"The place the game started from" is the map at that level, Today's puzzle, Play a game, or Rules
-for a tutorial replay.
+Leaving a game always returns to the map, scrolled to the level the game belonged to. The game is
+saved first, so nothing is lost.
 
 ### After launch
 
@@ -137,23 +140,24 @@ over the map or the board, which stay visible around it.
 
 | Screen | Opens from | What the player sees and does | Built in |
 | --- | --- | --- | --- |
-| World map (home) | App start; Back from Rules, Stats, Shop or Settings; Map on Result | One scrolling map with a section per world. Finished levels with their stars, the next level circled with Play (or Resume when a game is saved), boss levels as fortresses, a chest every 10 levels, locked worlds with the stars they need. Labelled icons for Today's puzzle, Play a game, How to play, Boosters, Stats, Shop and Settings; the player's title and stars. A level opens its Level card. | A-01, A-02, A-04 |
-| Level card | A level on the map, Next on Result | Over the map: the mission in one line, a small picture of the board, the computer's face for its strength, its head start, allowed boosters and star targets. A boss level adds the boss's name, face and rule. Start, Resume or close. | A-03 |
-| Boosters | Boosters on the map, Level card | Wall, Hint, Bomb and Double dot: how many the player has, what each does, how to earn more. Close returns to where it opened. | A-05 |
+| Loading | App start | The app icon on paper, as on Android's own start-up screen, with its red ring drawing itself as the game loads, and a one-line tip. No buttons. Then the map. | A-01 |
+| World map (home) | Loading; Back from Rules, Stats, Shop or Settings; leaving a game | One scrolling map with a section per world. Finished levels with their stars, the next level circled and marked "next", boss levels as fortresses, a chest every 10 levels, locked worlds with the stars they need. No Play buttons: a level opens its Level card. Labelled icons for Today's puzzle, Play a game, How to play, Stats, Shop and Settings; the player's title and stars. | A-01, A-02, A-04 |
+| Level card | A level on the map, Next on Result | Over the map: the mission in one line, a small picture of the board, the computer's face for its strength, its head start, allowed boosters and star targets. A boss level adds the boss's name, face and rule. One button: Start, or Resume when the level's game is saved. Tapping a booster opens Boosters. | A-03 |
+| Boosters | A booster on the Level card | Wall, Hint, Bomb and Double dot: how many the player has, what each does, how to earn more. Close returns to where it opened. | A-05 |
 | Chest | Next on the Result of every 10th level | Over the map: pick one of two rewards. | A-04 |
-| Game board | Start, Play, Resume, Retry, Play again | The opponent above the board, with a face and a tally; the player below it, with a tally and the tool bar. Whose turn, dots left, the last move (A-14), the mission note, special points and any boss countdown. In the campaign, the boosters sit in the tool bar. A menu icon opens Pause. | A-03, A-05, A-13, A-14 |
+| Game board | Start, Play, Resume, Retry, Play again | The opponent above the board, with a face and a tally; the player below it, with a tally and the tool bar. Whose turn, dots left, the last move (A-14), the mission note, special points and any boss countdown. In the campaign, the boosters sit in the tool bar. A pause icon opens Pause. | A-03, A-05, A-13, A-14 |
 | Booster preview | A booster on a campaign board | Over the board: one line on what the booster does, the points it can act on, and its effect at the chosen point. Confirm or Cancel. One booster per turn. | A-05 |
-| Pause | Menu icon or Back on the board | Over the board: Resume, Rules, Settings, Restart (asks first, where the mode allows it), Save and leave. | A-01 |
-| Result | The end of a game, View result on Today's puzzle | Over the final board: the captured areas light up and the score counts up, then a note with the outcome, score, stars and anything newly unlocked. Campaign: Next, Retry, Map. Daily: Retry after a failed attempt, Share. Free play and two players: Play again, Back. | A-03, A-07, A-08 |
+| Pause | Pause icon or Back on the board | Over the board: Resume, Restart (asks first, where the mode allows it) and To the map. Small icons for sound on or off and How to play. | A-01 |
+| Result | The end of a game, View result on Today's puzzle | Over the final board: the captured areas light up and the score counts up, then a note with the outcome, score, stars and anything newly unlocked. Campaign win: Next, with a small Retry. Campaign failure: Retry, with a small Map. Daily: Share, or Retry after a failed attempt, with a small Map. Free play and two players: Play again, with a small Map. | A-03, A-07, A-08 |
 | Tutorial | Levels 1 to 3 of World 1, Play tutorial on Rules, Replay tutorial in Settings | The game board with a few dots placed and one sentence at a time: placing, linking, capturing. Threat highlights are on. Hints can be skipped. A replay is practice and does not change campaign progress. | A-06 |
 | Today's puzzle | The puzzle's note on the map | Over the map: the date, the mission, the streak, whether a freeze is left this week, and the time to the next puzzle. Play, Resume or View result. | A-07 |
-| Play a game | Play a game on the map | Over the map: Free play (against the computer) and Two players (two people on one phone), each with Start, or Resume when a game is saved. Board size and game length are set to defaults and can be changed here. The computer plays at the strength reached in the campaign; two players use the pure rules. | A-08 |
-| Rules | How to play on the map, Rules in Pause | Placing, capturing, empty rings, the border and how a game ends, with small board pictures. Play tutorial. | A-06 |
+| Play a game | Play a game on the map | Over the map: two big cards, Free play (against the computer) and Two players (two people on one phone). A card starts a game at once with the defaults, or resumes the saved one. A small link changes board size and game length. The computer plays at the strength reached in the campaign; two players use the pure rules. | A-08 |
+| Rules | How to play on the map or in Pause | Placing, capturing, empty rings, the border and how a game ends, with small board pictures. Play tutorial. | A-06 |
 | Stats | Stats on the map | Games played and won, captures, best capture, longest streak, stars per world, the player's title. Opens Leaderboards and achievements. | A-11 |
 | Leaderboards and achievements | Stats | The daily puzzle and total-star leaderboards and the achievements, shown by Google Play Games. Asks to sign in when the player is not. Closing returns to Stats. | O-02 |
 | Shop | Shop on the map | Themes, piece styles and ring effects, each on a small board; owned items marked. Restore purchases. | C-02 |
 | Cosmetic preview | An item in Shop | The item on a sample board, its price or how to earn it, and whether it is owned or in use. Buy or Use. | C-02 |
-| Settings | Settings on the map, Settings in Pause | The controls listed under [Settings](#settings). | A-09 |
+| Settings | Settings on the map | The controls listed under [Settings](#settings). | A-09 |
 | Settings details | A row in Settings | Language, privacy (the policy and ad choices), Play Games backup, credits and licences. | A-09, A-10 |
 | Developer menu | Hidden; A-01 picks how it opens | The POC's difficulty picker and test-only settings. Not for players, so it is left out of the two-tap check. | A-01 |
 | Android screens | An action in the game | Not drawn by us: the share screen, the feedback email, the review prompt (A-12), Play Games sign-in, Google Play purchase, a rewarded ad, the ad consent form. Closing one returns to the screen that opened it. | A-07, A-12, O-02, C-02, C-03 |
@@ -171,7 +175,7 @@ over the map or the board, which stay visible around it.
 ## Settings
 
 Settings is one scrolling screen. Changes take effect at once and survive a restart. Back returns
-to the map, or to Pause when Settings was opened from a game.
+to the map.
 
 - **Sound and vibration:** music volume, sound-effects volume, vibration on or off.
 - **Board:** high-contrast pieces, threat highlights.
@@ -191,14 +195,13 @@ the developer menu are left out.
 | --- | --- | --- |
 | World map, and the stars a locked world needs | (home) | 0 |
 | A Level card, or why a level is locked | The level | 1 |
-| The board of the next level | Play on the next level | 1 |
-| The board of any unlocked level | The level → Start | 2 |
-| The saved campaign game | Resume on the level | 1 |
-| Boosters | Boosters | 1 |
+| The board of any unlocked level, the next one included | The level → Start | 2 |
+| The saved campaign game | The level → Resume | 2 |
+| Boosters | A level → a booster | 2 |
 | Daily puzzle and streak | Today's puzzle | 1 |
 | The daily board or today's result | Today's puzzle → Play, Resume or View result | 2 |
-| A free play board | Play a game → Start or Resume | 2 |
-| A two-player board | Play a game → Start or Resume | 2 |
+| A free play board | Play a game → Free play | 2 |
+| A two-player board | Play a game → Two players | 2 |
 | Rules | How to play | 1 |
 | Tutorial | How to play → Play tutorial | 2 |
 | Stats | Stats | 1 |
@@ -211,20 +214,20 @@ the developer menu are left out.
 
 ## First launch
 
-1. The app opens on the map, at World 1. Once ads ship, players in the EU and the UK first see
-   Google's consent form (C-03). No sign-in is needed for anything offline.
-2. Level 1 is circled, with Play. Today's puzzle, Play a game and How to play are open too.
-3. Play starts Level 1 with guided steps (A-06). Levels 1 to 3 teach placing, linking and
-   capturing, one step at a time, with threat highlights on. Level 1 teaches the placement method
-   that A-13 picks. Tapping the level instead opens its Level card.
+1. The loading screen, then the map at World 1. Once ads ship, players in the EU and the UK first
+   see Google's consent form (C-03). No sign-in is needed for anything offline.
+2. Level 1 is circled and marked "next". Today's puzzle, Play a game and How to play are open too.
+3. Tapping Level 1 opens its card; Start begins it with guided steps (A-06). Levels 1 to 3 teach
+   placing, linking and capturing, one step at a time, with threat highlights on. Level 1 teaches
+   the placement method that A-13 picks.
 4. Result shows the stars over the final board. Next returns to the map, where the stars fly to
    Level 1 and the Level card of Level 2 opens. Retry plays Level 1 again.
 
 ## Returning player
 
-- **A campaign game is saved.** The map opens at that level, which shows Resume. One tap brings back
+- **A campaign game is saved.** The map opens at that level. Its card says Resume, which brings back
   the board, the turn, the dots left, the boosters and the tutorial step.
-- **No campaign game is saved.** The map opens at the next unlocked level, with Play. After the last
+- **No campaign game is saved.** The map opens at the next unlocked level. After the last
   level that exists, the end of the path says that more worlds are coming.
 - **Saved games.** Each mode keeps one unfinished game: the campaign, the daily puzzle, free play
   and two players. Starting a different game in the same mode asks before replacing the saved
@@ -233,14 +236,14 @@ the developer menu are left out.
 ## Campaign
 
 - **Win.** Stars and unlocks are saved before Result opens. Result shows the new stars, a newly
-  unlocked world and any reward over the final board. Next is the main button: it returns to the
-  map, where the stars fly to the level; when a world opens, its page turns and the path goes on.
-- **Fail or draw.** Result says which goal was missed. Retry is the main button, Map is beside it.
+  unlocked world and any reward over the final board. Next is the main button, with a small Retry
+  beside it. Next returns to the map, where the stars fly to the level; when a world opens, its
+  page turns and the path goes on.
+- **Fail or draw.** Result says how close it was. Retry is the main button, with a small Map.
   After the third failure on the same level, Result offers a hint or a booster (A-03). If C-01
   places a rewarded ad here, its offer sits below Retry.
-- **Play from the map.** Play on the next level skips the Level card. The board then shows the
-  mission and any boss rule before the first move, so the player never starts blind. The Level
-  card stays one tap away for the details.
+- **Starting a level.** Every level starts from its Level card. The board then shows the mission,
+  and any boss rule, big for a moment before it shrinks into the corner note. No tap is needed.
 - **Boss levels.** The boss rule shows on the Level card and on the board before the first move.
   The boss's face sits above the board, with a countdown to its special turn (G-05).
 - **Chests.** After every 10th level, Next opens a chest over the map: the player picks one of two
@@ -250,13 +253,13 @@ the developer menu are left out.
 
 - Back closes an open card, chest, preview or Android screen first.
 - On the board, Back opens Pause. Back in Pause resumes the game.
-- Save and leave in Pause, and Back on Result, return to the place the game started from (see
+- To the map in Pause, and Map or Back on Result, return to the map (see
   [Around the board](#around-the-board)).
-- Back on Rules, Stats, Shop or Settings returns to the map (Settings and Rules opened from Pause
-  return to Pause). Back on the map leaves the app.
+- Back on Rules, Stats, Shop or Settings returns to the map (Rules opened from Pause returns to
+  Pause). Back on the map leaves the app.
 - Confirmed moves, stars, unlocks and rewards are saved the moment they happen (Q-07). After a
-  short interruption the same screen comes back. After the app is closed, it opens on the map,
-  with Resume on the saved level.
+  short interruption the same screen comes back. After the app is closed, it opens with the loading
+  screen, then the map at the saved level.
 - Restart always asks before it replaces a board.
 
 ## Daily puzzle
@@ -272,8 +275,8 @@ the developer menu are left out.
 
 ## Free play and two players
 
-- Play a game on the map opens one sheet for both. Start begins at once with the defaults; board
-  size and game length can be changed first. When a game is saved, Resume is the main button.
+- Play a game on the map opens one sheet with two cards. A card starts a game at once with the
+  defaults, or resumes the saved one. A small link changes board size and game length first.
 - Two players on one phone shows whose turn it is with both names in their inks and the piece
   shape (D-04), and a banner at each change of turn.
 - Play again keeps the same setup. How a free play game ends follows X-06.
