@@ -68,6 +68,7 @@ Benchmarks (computer against computer; see "How strong is it" below):
 cli/build/install/cli/bin/cli bench steps 160          # each strength step against the next: games [board size] [dots each]
 cli/build/install/cli/bin/cli bench tiers 40 10 24      # every tier against every other: games, board size, dots each
 cli/build/install/cli/bin/cli bench levels 20 normal    # a stand-in plays each level: a tier, or "border"
+cli/build/install/cli/bin/cli bench stars 200           # stars earned on each level by four stand-ins; [stand-in...] [level...]
 cli/build/install/cli/bin/cli bench duel                # two custom configurations; prints its arguments
 cli/build/install/cli/bin/cli bench variety hard        # how often a tier answers the same position differently
 cli/build/install/cli/bin/cli bench balance 40          # how often each tier attacks or defends
@@ -161,7 +162,7 @@ mission: win
 solutions: open
 boosters: none
 rule: none
-stars: none
+stars: margin 2 5
 holes: none
 map:
 ..........
@@ -186,7 +187,7 @@ map:
 | `solutions` | `few` or `open`: how many first moves may pass a puzzle. `few` allows at most 3; `open` any number, for teaching levels where any sensible move should work. See [Checking puzzles](#checking-puzzles). |
 | `boosters` | `none`, or the boosters the player may use and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. See [Boosters](#boosters). |
 | `rule` | A rule the computer bends on a boss level: `none`, `double move every 5 turns`, `fortress of 12 dots` or `two groups at once`. See [Boss rules](#boss-rules). |
-| `stars` | `none`, or the scores for two and for three stars: `3 6`. What is counted depends on the mission. |
+| `stars` | What earns two and three stars: what is counted, then the score for two stars and for three, `margin 2 5`. See [Stars](#stars). |
 | `holes` | Whether the edge of the map's holes counts as border: `border` or `open`, or `none` for a map without holes. See [Board shapes and special points](#board-shapes-and-special-points). |
 | `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
 
@@ -223,6 +224,27 @@ safe.
 
 A level is refused if its mission is decided before the first move, or asks for more moves than
 that side has dots. The computer plays for captures only, not against the mission.
+
+### Stars
+
+A passed level earns 1 to 3 stars, a failed one none. The level's `stars` line says what is
+counted and the scores for two and for three stars: with `stars: margin 2 5`, passing earns one
+star, passing 2 or more captures ahead two, and 5 or more ahead three. The count is taken when
+the level ends: at the end of the game in the win missions, on the deciding move in the others.
+`Level.result` gives the result of a level game: the mission's status, the stars, and the count
+they were judged on. `Level.starScore` gives the count in any position, for showing it during
+play.
+
+| Count | What it counts | Fits |
+|-------|----------------|------|
+| `margin` | Margin of victory: the player's captures minus the computer's, a dot on a bonus point counting 2. | Every mission. In the win missions, the two-star score must ask for more than passing does: more than 1 in `win`, more than 3 in `win by 3`. |
+| `moves` | Moves to spare: in `capture 5 in 8 moves`, the moves left of the 8; in `rescue` and `target`, the dots the player has not placed. | Capture, rescue and target, the missions that end the moment they pass. |
+| `saved` | Dots saved: the player's dots on the map at the start (`R`) that are not captured. | Every mission but survive, where losing a dot fails. At most the number of `R` dots. |
+| `boosters` | Boosters unused: the level's boosters the player has left, all kinds together. | Levels with boosters, up to as many as they allow. |
+
+Both scores are 1 or more, and the three-star score is higher. Targets that do not fit the level
+are refused, with the line of the `stars` field. A level file may say `stars: none`, and then
+passing earns one star; every campaign level has targets, and a test checks it.
 
 ### Boosters
 
@@ -591,6 +613,25 @@ moves. Against a player who only plays on the border, the normal computer of lev
 game: with its focus on the last dots it does not go after the human's starting dots. A draw
 does not pass a `win` level, so border play still passes none. The stand-ins are computers, not
 people, and nobody has played the levels yet, so treat the curve as a first draft.
+
+**Stars.** `cli bench stars 200`: four stand-ins, the EASY, NORMAL, HARD and EXPERT computers,
+play each level 200 times; how many of the 800 games earned 0, 1, 2 and 3 stars. A level's star
+targets are set so that three stars are reached, but more rarely than one.
+
+```
+                    stars        0     1     2     3
+1 Warm-up           margin 2 4   191   310   247    52
+2 Open Field        margin 2 5   158   295   304    43
+3 Scout             margin 2 5   292   206   247    55
+4 Outpost           margin 2 3   770    21     8     1
+5 Rescue            margin 2 4   758    30     8     4
+6 Pincer            margin 2 4   736    36    21     7
+7 Siege             margin 2 4   744    40    13     3
+8 Grandmaster       margin 3 5   609   113    54    24
+```
+
+On level 4 the EASY, NORMAL and HARD stand-ins never won by more than 1 in 200 games each;
+only EXPERT did. Like the curve above, these are computers standing in for people.
 
 **Speed.** On a laptop, a HARD move on a 14×14 board takes about 40 ms (EXPERT about 130 ms).
 Not yet measured on a phone.

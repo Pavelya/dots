@@ -7,7 +7,7 @@ mission: win
 solutions: open
 boosters: none
 rule: none
-stars: none
+stars: margin 2 3
 holes: none
 map:
 ...........

@@ -15,7 +15,8 @@ import dots.engine.TurnRule
  * Difficulty comes from the computer's [strength], the [map] it starts with (`B` dots are its head
  * start, `R` dots are the human's), the [dotsPerPlayer] budget and the [mission]. [boosters] are
  * the ones the human may use in the level, by kind and count. A boss level has a [rule] the
- * computer bends. [solutions] says how many first moves may pass a puzzle mission (see [Solver]).
+ * computer bends. [stars] are the targets for two and three stars. [solutions] says how many first
+ * moves may pass a puzzle mission (see [Solver]).
  * The map may have holes, blocked points and bonus points; [holes] says whether the edge of a hole
  * counts as border.
  */
@@ -42,6 +43,7 @@ data class Level(
         rule?.problem(map, dotsPerPlayer)?.let { throw IllegalArgumentException(it) }
         holes.problem(map)?.let { throw IllegalArgumentException(it) }
         checkMission()
+        stars?.problem(mission, map, dotsPerPlayer, boosters)?.let { throw IllegalArgumentException(it) }
     }
 
     val human: Player get() = Player.RED
@@ -74,6 +76,24 @@ data class Level(
 
     /** The level is passed when its mission is; in "win", a draw (for instance 0-0) is not enough. */
     fun isPassed(end: GameState): Boolean = status(end).outcome == Outcome.PASSED
+
+    /** What the [stars]' measure counts in [state], or null if the level has no star targets. */
+    fun starScore(state: GameState): Int? = stars?.let { count(it, this, state) }
+
+    /**
+     * The result of a level game that ended in [end]: the mission's status and the stars. A passed
+     * level earns 1 to 3 stars (1 when it has no star targets), a failed one none.
+     */
+    fun result(end: GameState): LevelResult {
+        val status = status(end)
+        val score = starScore(end)
+        val earned = when {
+            status.outcome != Outcome.PASSED -> 0
+            score == null -> 1
+            else -> stars!!.earned(score)
+        }
+        return LevelResult(status, earned, score)
+    }
 
     /**
      * The human has the level's [boosters]; the computer has none (decision 0006). The computer
@@ -388,15 +408,5 @@ sealed interface SpecialRule {
             dotsPerPlayer < 2 -> "the rule '$text' needs at least 2 dots for the computer"
             else -> null
         }
-    }
-}
-
-/**
- * The scores that earn two and three stars; passing the level earns one. What is counted (margin
- * of victory, moves to spare, ...) depends on the mission.
- */
-data class Stars(val two: Int, val three: Int) {
-    init {
-        require(two >= 0 && three > two) { "the three-star score must be higher than the two-star score, both 0 or more" }
     }
 }

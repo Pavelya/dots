@@ -5,6 +5,9 @@ import dots.ai.AiConfig
 import dots.ai.Match
 import dots.ai.SearchAi
 import dots.campaign.Campaign
+import dots.campaign.Level
+import dots.campaign.LevelResult
+import dots.campaign.Stars
 import dots.engine.Action
 import dots.engine.GameState
 import dots.engine.Openings
@@ -20,6 +23,7 @@ internal object Bench {
             "           [opening=cross|crosses]"
     private const val POSITIONS = 20
     private const val RUNS = 10
+    private val LEVEL_CODE = Regex("\\d+-\\d+")
 
     fun run(args: List<String>) {
         val games = args.getOrNull(1)?.toIntOrNull() ?: DEFAULT_GAMES
@@ -27,6 +31,10 @@ internal object Bench {
             "tiers" -> tiers(games, args.getOrNull(2)?.toIntOrNull() ?: 10, args.getOrNull(3)?.toIntOrNull() ?: 16)
             "steps" -> steps(games, args.getOrNull(2)?.toIntOrNull() ?: 15, args.getOrNull(3)?.toIntOrNull() ?: 33)
             "levels" -> levels(games, args.getOrNull(2)?.uppercase() ?: "NORMAL")
+            "stars" -> {
+                val (codes, names) = args.drop(2).partition { LEVEL_CODE.matches(it) }
+                stars(games, names.map { it.uppercase() }.ifEmpty { listOf("EASY", "NORMAL", "HARD", "EXPERT") }, codes)
+            }
             "duel" -> duel(args.drop(1))
             "variety" -> variety(
                 args.getOrNull(1)?.uppercase() ?: "HARD",
@@ -40,7 +48,7 @@ internal object Bench {
             )
             else -> exitWith(
                 "usage: bench tiers [games] [size] [dots each] | bench steps [games] [size] [dots each] |\n" +
-                    "       bench levels [games] [tier] | bench variants [games] |\n" +
+                    "       bench levels [games] [tier] | bench stars [games] [stand-in...] [level...] | bench variants [games] |\n" +
                     "       bench variety [tier] [margin] | bench balance [games] [attack weights] [danger weights] |\n" +
                     "       $DUEL_USAGE",
             )
@@ -212,34 +220,74 @@ internal object Bench {
      * or BORDER, which only ever plays on the border (where dots can never be captured).
      */
     private fun levels(games: Int, standInName: String) {
-        val config = TIERS[standInName]
-        if (config == null && standInName != "BORDER") {
-            exitWith("unknown stand-in $standInName (${TIERS.keys.joinToString()}, BORDER)")
-        }
-        fun standIn(random: Random): Ai = if (config == null) BorderOnly(random) else SearchAi(config, random)
+        val standIn = standIn(standInName)
         println("Stand-in human: $standInName, $games games per level (captures W-L-D from the human's side; levels passed)")
         for (level in Campaign.levels) {
-            val tally = Tally()
-            var passed = 0
             val started = System.nanoTime()
-            for (g in 0 until games) {
-                val end = Match.playOut(
-                    level.newGame(),
-                    standIn(Random(3000 + g)),
-                    SearchAi(level.ai, Random(4000 + g)),
-                    level::isOver,
-                )
-                tally.add(end.score(level.human), end.score(level.computer))
-                if (level.isPassed(end)) passed++
-            }
+            val results = playLevel(level, games, standIn)
+            val tally = Tally()
+            for (result in results) tally.add(result.status.captured, result.status.lost)
             println(
                 "%-5s %-12s %-22s %s  passed %d of %d  [%d s]".format(
-                    level.code, level.name, level.mission.text, tally, passed, games,
+                    level.code, level.name, level.mission.text, tally, results.count { it.isPassed }, games,
                     (System.nanoTime() - started) / 1_000_000_000,
                 ),
             )
         }
     }
+
+    /**
+     * Each stand-in (see [levels]) plays each level [games] times; how many games earned 0, 1, 2
+     * and 3 stars, and the star scores of the passed games. A level is "ok" when, over all the
+     * stand-ins together, three stars are reachable but rarer than one. [codes] (like `1-4`) picks
+     * levels; without them, every level plays.
+     */
+    private fun stars(games: Int, standInNames: List<String>, codes: List<String>) {
+        val standIns = standInNames.associateWith(::standIn)
+        val levels = if (codes.isEmpty()) Campaign.levels else codes.map { code ->
+            Campaign.levels.firstOrNull { it.code == code } ?: exitWith("No level $code in the campaign")
+        }
+        println("Stars: $games games per level for each stand-in; games with 0/1/2/3 stars, then the star scores of passes (score x games)")
+        for (level in levels) {
+            val started = System.nanoTime()
+            val all = IntArray(Stars.MAX + 1)
+            val columns = standIns.map { (name, standIn) ->
+                val results = playLevel(level, games, standIn)
+                val counts = IntArray(Stars.MAX + 1)
+                for (result in results) counts[result.stars]++
+                for (n in counts.indices) all[n] += counts[n]
+                val scores = results.filter { it.isPassed }.mapNotNull { it.starScore }.groupingBy { it }.eachCount().toSortedMap()
+                "%s %s  %s".format(name, counts.joinToString("/"), scores.entries.joinToString(" ") { "${it.key}x${it.value}" })
+            }
+            val verdict = when {
+                level.stars == null -> "no star targets"
+                all[3] == 0 -> "3 stars never reached"
+                all[3] >= all[1] -> "3 stars not rarer than 1"
+                else -> "ok"
+            }
+            println("%-5s %-12s %-12s %s".format(level.code, level.name, level.stars?.text ?: "none", verdict))
+            for (column in columns) println("      $column")
+            println("      all ${all.joinToString("/")}  [${(System.nanoTime() - started) / 1_000_000_000} s]")
+        }
+    }
+
+    /** A stand-in human by name: a computer tier, or BORDER (see [BorderOnly]). */
+    private fun standIn(name: String): (Random) -> Ai {
+        val config = TIERS[name]
+        if (config == null && name != "BORDER") exitWith("unknown stand-in $name (${TIERS.keys.joinToString()}, BORDER)")
+        return { random -> if (config == null) BorderOnly(random) else SearchAi(config, random) }
+    }
+
+    /**
+     * [games] games of [level] between [standIn] as red and the level's computer, each stopping
+     * when the mission is decided. Games run in parallel; each has its own seeds, so the results
+     * are the same every run.
+     */
+    private fun playLevel(level: Level, games: Int, standIn: (Random) -> Ai): List<LevelResult> =
+        (0 until games).toList().parallelStream().map { g ->
+            val end = Match.playOut(level.newGame(), standIn(Random(3000 + g)), SearchAi(level.ai, Random(4000 + g)), level::isOver)
+            level.result(end)
+        }.toList()
 
     /** Places every dot on a random free border cell while there is one. */
     private class BorderOnly(private val random: Random) : Ai {

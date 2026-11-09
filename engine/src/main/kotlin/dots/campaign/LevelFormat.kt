@@ -30,7 +30,7 @@ object LevelFormat {
         appendLine("solutions: ${level.solutions.text}")
         appendLine("boosters: ${boostersText(level.boosters)}")
         appendLine("rule: ${level.rule?.text ?: NONE}")
-        appendLine("stars: ${level.stars?.let { "${it.two} ${it.three}" } ?: NONE}")
+        appendLine("stars: ${level.stars?.text ?: NONE}")
         appendLine("holes: ${level.holes.text}")
         appendLine("$MAP:")
         level.map.rows.forEach { appendLine(it) }
@@ -65,6 +65,7 @@ object LevelFormat {
             val rule = field("rule") { rule(it) }
             val stars = field("stars") { stars(it) }
             rule?.problem(map, dotsPerPlayer)?.let { Line(fields.getValue("rule").first).fail(it) }
+            stars?.problem(mission, map, dotsPerPlayer, boosters)?.let { Line(fields.getValue("stars").first).fail(it) }
             // The fields are each fine on their own; what Level still refuses is how the mission
             // fits the rest of the level, so the error points at the mission.
             return try {
@@ -209,11 +210,15 @@ object LevelFormat {
             fun stars(text: String): Stars? {
                 if (text == NONE) return null
                 val words = text.split(Regex("\\s+"))
-                if (words.size != 2) fail("stars are 'none' or two scores, for two and for three stars, like '3 6'")
-                val two = number(words[0], 0..9999)
-                val three = number(words[1], 0..9999)
+                if (words.size != 3) {
+                    fail("stars are 'none', or what they count and the scores for two and for three stars, like 'margin 3 6'")
+                }
+                val measure = StarMeasure.entries.firstOrNull { it.text == words[0] }
+                    ?: fail("unknown star count '${words[0]}' (${StarMeasure.entries.joinToString { it.text }})")
+                val two = number(words[1], 1..9999)
+                val three = number(words[2], 1..9999)
                 if (three <= two) fail("the three-star score ($three) must be higher than the two-star score ($two)")
-                return Stars(two, three)
+                return Stars(measure, two, three)
             }
         }
     }
