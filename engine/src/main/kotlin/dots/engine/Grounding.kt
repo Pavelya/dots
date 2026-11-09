@@ -42,6 +42,46 @@ object Grounding {
     fun ungrounded(state: GameState, player: Player): List<List<Pos>> =
         groups(state, player).filter { group -> group.none { onBorder(state, it) } }
 
+    /**
+     * [player]'s live dots that can certainly never be captured: those joined to the border by a
+     * chain of the player's live dots that steps only up, down, left or right. An enemy ring
+     * cannot cross such a chain. It can cross a diagonal step, so a group that is only joined to
+     * the border diagonally may not be safe.
+     */
+    fun safe(state: GameState, player: Player): Set<Pos> {
+        val width = state.width
+        val height = state.height
+        val safe = HashSet<Pos>()
+        val stack = ArrayDeque<Pos>()
+        for (y in 0 until height) {
+            for (x in 0 until width) {
+                val pos = Pos(x, y)
+                if (onBorder(state, pos) && isLive(state, player, x, y) && safe.add(pos)) stack.addLast(pos)
+            }
+        }
+        while (stack.isNotEmpty()) {
+            val (x, y) = stack.removeLast()
+            for ((dx, dy) in STRAIGHT) {
+                val next = Pos(x + dx, y + dy)
+                if (state.inBounds(next.x, next.y) && isLive(state, player, next.x, next.y) && safe.add(next)) {
+                    stack.addLast(next)
+                }
+            }
+        }
+        return safe
+    }
+
+    /** How many of [player]'s dots are live (not captured). */
+    fun liveCount(state: GameState, player: Player): Int {
+        var count = 0
+        for (y in 0 until state.height) {
+            for (x in 0 until state.width) if (isLive(state, player, x, y)) count++
+        }
+        return count
+    }
+
+    private val STRAIGHT = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
+
     private fun isLive(state: GameState, player: Player, x: Int, y: Int) =
         state.ownerAt(x, y) == player && !state.isCaptured(x, y)
 

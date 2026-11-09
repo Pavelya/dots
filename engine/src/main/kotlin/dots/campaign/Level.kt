@@ -11,7 +11,7 @@ import dots.engine.Pos
  * stored as text files; [LevelFormat] reads and writes them.
  *
  * Difficulty comes from the computer's [strength], the [map] it starts with (`B` dots are its head
- * start, `R` dots are the human's) and the [dotsPerPlayer] budget.
+ * start, `R` dots are the human's), the [dotsPerPlayer] budget and the [mission].
  */
 data class Level(
     val world: Int,
@@ -31,6 +31,7 @@ data class Level(
         require(name.isNotBlank() && name.lines().size == 1 && name == name.trim()) { "name must be one line of text" }
         require(dotsPerPlayer >= 1) { "dotsPerPlayer must be 1 or more" }
         require(boosters.values.all { it >= 1 }) { "booster counts must be 1 or more" }
+        checkMission()
     }
 
     val human: Player get() = Player.RED
@@ -41,28 +42,63 @@ data class Level(
 
     val ai: AiConfig get() = strength.config
 
+    /** Dots the human may place: [dotsPerPlayer], or fewer in a "win with fewer dots" mission. */
+    val humanDots: Int get() = (mission as? Mission.WinWithFewerDots)?.dots ?: dotsPerPlayer
+
     /** How many more dots than the human the computer starts with. */
     val headStart: Int get() = map.points(LevelMap.COMPUTER).size - map.points(LevelMap.HUMAN).size
 
     /**
      * Why the engine cannot play this level as written, or null if it can. The file format already
-     * holds missions, special rules and special points that the rules do not use.
+     * holds special rules and special points that the rules do not use.
      */
     val unplayable: String?
         get() = when {
             map.hasSpecialPoints -> "its board has holes, blocked points or bonus points, which the engine does not play"
-            mission != Mission.Win -> "its mission is '${mission.text}', and the engine plays only 'win'"
             rule != null -> "it has the special rule '${rule.text}', which the engine does not play"
             else -> null
         }
 
     fun newGame(): GameState {
         unplayable?.let { throw UnsupportedOperationException("Level $code cannot be played: $it") }
-        return GameState.start(map.width, map.height, dotsPerPlayer, human, map.startDots())
+        return start()
     }
 
-    /** A level is passed only by winning: a draw (for instance 0-0) is not enough. */
-    fun isPassed(end: GameState): Boolean = end.isOver && end.winner == human
+    /** Where the mission stands in [state], a position of this level's game. */
+    fun status(state: GameState): MissionStatus = judge(mission, state, human)
+
+    /** The level ends when its game is over or its mission is decided, whichever comes first. */
+    fun isOver(state: GameState): Boolean = state.isOver || status(state).isDecided
+
+    /** The level is passed when its mission is; in "win", a draw (for instance 0-0) is not enough. */
+    fun isPassed(end: GameState): Boolean = status(end).outcome == Outcome.PASSED
+
+    private fun start() = GameState.start(
+        map.width, map.height, dotsPerPlayer, human, map.startDots(), dotsFor = mapOf(human to humanDots),
+    )
+
+    private fun checkMission() {
+        val what = "the mission '${mission.text}'"
+        when (mission) {
+            is Mission.WinWithFewerDots -> require(mission.dots < dotsPerPlayer) {
+                "$what must give the player fewer dots than the computer's $dotsPerPlayer"
+            }
+            is Mission.Capture -> require(mission.moves <= humanDots) {
+                "$what has more moves than the $humanDots dots the player may place"
+            }
+            is Mission.Survive -> require(mission.moves <= dotsPerPlayer) {
+                "$what has more moves than the $dotsPerPlayer dots the computer may place"
+            }
+            is Mission.Rescue -> require(map[mission.dot] == LevelMap.HUMAN) {
+                "${Notation.name(mission.dot)} must hold a human dot ('R' on the map) for $what"
+            }
+            is Mission.Target -> require(map[mission.dot] == LevelMap.COMPUTER) {
+                "${Notation.name(mission.dot)} must hold a computer dot ('B' on the map) for $what"
+            }
+            Mission.Win, is Mission.WinBy -> Unit
+        }
+        require(!status(start()).isDecided) { "$what is already decided before the first move" }
+    }
 }
 
 /** How strongly the computer plays a level. */
@@ -114,7 +150,12 @@ data class LevelMap(val rows: List<String>) {
     }
 }
 
-/** What the human must do to pass a level. Only [Win] is played by the rules so far. */
+/**
+ * What the human must do to pass a level. A "move" is one dot placed. Capture, survive, rescue and
+ * target end the level as soon as they are decided; the three win missions pass only when the game
+ * is over, because the margin still counts for stars, but fail as soon as the target is out of
+ * reach. [Level.status] judges them.
+ */
 sealed interface Mission {
     /** The words a level file uses for it. */
     val text: String
@@ -133,41 +174,49 @@ sealed interface Mission {
         override val text get() = "win by $margin"
     }
 
-    /** Win while having fewer dots than the computer. */
-    data object WinWithFewerDots : Mission {
-        override val text = "win with fewer dots"
+    /** Win with only [dots] dots to place, against the computer's level budget. */
+    data class WinWithFewerDots(val dots: Int) : Mission {
+        init {
+            require(dots >= 1) { "dots must be 1 or more" }
+        }
+
+        override val text get() = "win with ${count(dots, "dot")}"
     }
 
-    /** Capture at least [dots] dots within [moves] moves. */
+    /** Capture at least [dots] dots within the human's first [moves] moves. */
     data class Capture(val dots: Int, val moves: Int) : Mission {
         init {
             require(dots >= 1 && moves >= 1) { "dots and moves must be 1 or more" }
         }
 
-        override val text get() = "capture $dots in ${moves(moves)}"
+        override val text get() = "capture $dots in ${count(moves, "move")}"
     }
 
-    /** Lose no dot for [moves] moves. */
+    /** Lose no dot while the computer places its next [moves] dots. */
     data class Survive(val moves: Int) : Mission {
         init {
             require(moves >= 1) { "moves must be 1 or more" }
         }
 
-        override val text get() = "survive ${moves(moves)}"
+        override val text get() = "survive ${count(moves, "move")}"
     }
 
-    /** Keep the human's group that holds the dot at [dot] from being captured. */
+    /**
+     * Keep the human's dot at [dot] (and so the group holding it) from being captured. It passes
+     * once the dot is joined to the border by a straight chain (see `Grounding.safe`), or at the
+     * end of the game.
+     */
     data class Rescue(val dot: Pos) : Mission {
         override val text get() = "rescue ${Notation.name(dot)}"
     }
 
-    /** Capture the computer's dot at [dot]. */
+    /** Capture the computer's dot at [dot]. It fails once that dot can never be captured. */
     data class Target(val dot: Pos) : Mission {
         override val text get() = "target ${Notation.name(dot)}"
     }
 
     private companion object {
-        fun moves(n: Int) = if (n == 1) "1 move" else "$n moves"
+        fun count(n: Int, word: String) = if (n == 1) "1 $word" else "$n ${word}s"
     }
 }
 

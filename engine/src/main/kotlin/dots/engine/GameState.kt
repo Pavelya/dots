@@ -31,6 +31,7 @@ class GameState private constructor(
     private val scores: IntArray,
     private val liveDots: IntArray,
     private val dotsLeft: IntArray,
+    private val placed: IntArray,
     private var playableCells: Int,
     toMove: Player,
     passesInRow: Int,
@@ -75,6 +76,9 @@ class GameState private constructor(
 
     /** Dots [player] may still place, or null when there is no limit. */
     fun dotsLeft(player: Player): Int? = dotsLeft[player.ordinal].takeIf { it >= 0 }
+
+    /** Dots [player] has placed in this game, collecting after a [stop] included; starting dots are not counted. */
+    fun dotsPlaced(player: Player): Int = placed[player.ordinal]
 
     fun inBounds(x: Int, y: Int): Boolean = x in 0 until width && y in 0 until height
 
@@ -185,7 +189,7 @@ class GameState private constructor(
 
     private fun copy() = GameState(
         width, height, owner.clone(), captured.clone(), dead.clone(), enclosedBy.clone(), scores.clone(),
-        liveDots.clone(), dotsLeft.clone(), playableCells, toMove, passesInRow, moveCount, cleaner, finished,
+        liveDots.clone(), dotsLeft.clone(), placed.clone(), playableCells, toMove, passesInRow, moveCount, cleaner, finished,
     )
 
     private fun applyMove(pos: Pos): MoveResult {
@@ -193,6 +197,7 @@ class GameState private constructor(
         val index = pos.y * width + pos.x
         owner[index] = mover.code
         liveDots[mover.ordinal]++
+        placed[mover.ordinal]++
         playableCells--
         if (!isCleanup && dotsLeft[mover.ordinal] > 0) dotsLeft[mover.ordinal]--
 
@@ -357,7 +362,8 @@ class GameState private constructor(
 
         /**
          * Starts a game. [dots] are placed up front (an opening or a head start) and do not count
-         * against [dotsPerPlayer]; they must not already enclose an enemy dot.
+         * against [dotsPerPlayer]; they must not already enclose an enemy dot. [dotsFor] gives a
+         * player a budget of their own instead of [dotsPerPlayer].
          */
         fun start(
             width: Int,
@@ -365,14 +371,16 @@ class GameState private constructor(
             dotsPerPlayer: Int? = null,
             first: Player = Player.RED,
             dots: Map<Pos, Player> = emptyMap(),
+            dotsFor: Map<Player, Int> = emptyMap(),
         ): GameState {
             require(width >= 3 && height >= 3) { "Board must be at least 3x3" }
             require(dotsPerPlayer == null || dotsPerPlayer >= 0) { "dotsPerPlayer must not be negative" }
+            require(dotsFor.values.all { it >= 0 }) { "a player's dots must not be negative" }
             val n = width * height
-            val budget = dotsPerPlayer ?: -1
+            val budgets = IntArray(2) { dotsFor[Player.entries[it]] ?: dotsPerPlayer ?: -1 }
             val state = GameState(
                 width, height, ByteArray(n), BooleanArray(n), BooleanArray(n), ByteArray(n), IntArray(2),
-                IntArray(2), intArrayOf(budget, budget), n, first, 0, 0, null, false,
+                IntArray(2), budgets, IntArray(2), n, first, 0, 0, null, false,
             )
             for ((pos, player) in dots) {
                 require(state.inBounds(pos.x, pos.y)) { "Starting dot $pos is off the board" }

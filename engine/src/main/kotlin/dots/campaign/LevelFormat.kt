@@ -51,18 +51,21 @@ object LevelFormat {
             readLines()
             val map = map()
             val mission = field("mission") { mission(it, map) }
-            return Level(
-                world = field("world") { number(it, 1..999) },
-                number = field("level") { number(it, 1..99) },
-                name = field("name") { it.ifEmpty { fail("the name is empty") } },
-                strength = field("computer") { strength(it) },
-                dotsPerPlayer = field("dots") { number(it, 1..9999) },
-                map = map,
-                mission = mission,
-                boosters = field("boosters") { boosters(it) },
-                rule = field("rule") { rule(it) },
-                stars = field("stars") { stars(it) },
-            )
+            val world = field("world") { number(it, 1..999) }
+            val number = field("level") { number(it, 1..99) }
+            val name = field("name") { it.ifEmpty { fail("the name is empty") } }
+            val strength = field("computer") { strength(it) }
+            val dotsPerPlayer = field("dots") { number(it, 1..9999) }
+            val boosters = field("boosters") { boosters(it) }
+            val rule = field("rule") { rule(it) }
+            val stars = field("stars") { stars(it) }
+            // The fields are each fine on their own; what Level still refuses is how the mission
+            // fits the rest of the level, so the error points at the mission.
+            return try {
+                Level(world, number, name, strength, dotsPerPlayer, map, mission, boosters, rule, stars)
+            } catch (e: IllegalArgumentException) {
+                throw LevelFormatException(source, fields.getValue("mission").first, e.message ?: "the mission does not fit the level")
+            }
         }
 
         private fun readLines() {
@@ -148,14 +151,15 @@ object LevelFormat {
                 val moves = words.lastOrNull() == "moves" || words.lastOrNull() == "move"
                 return when {
                     text == Mission.Win.text -> Mission.Win
-                    text == Mission.WinWithFewerDots.text -> Mission.WinWithFewerDots
+                    words.size == 4 && words[0] == "win" && words[1] == "with" && words[3] in setOf("dot", "dots") ->
+                        Mission.WinWithFewerDots(count(2))
                     words.size == 3 && words[0] == "win" && words[1] == "by" -> Mission.WinBy(count(2))
                     words.size == 5 && words[0] == "capture" && words[2] == "in" && moves -> Mission.Capture(count(1), count(3))
                     words.size == 3 && words[0] == "survive" && moves -> Mission.Survive(count(1))
                     words.size == 2 && words[0] == "rescue" -> Mission.Rescue(point(LevelMap.HUMAN, "human"))
                     words.size == 2 && words[0] == "target" -> Mission.Target(point(LevelMap.COMPUTER, "computer"))
                     else -> fail(
-                        "unknown mission '$text' (win; win by 3; win with fewer dots; capture 5 in 8 moves; " +
+                        "unknown mission '$text' (win; win by 3; win with 8 dots; capture 5 in 8 moves; " +
                             "survive 6 moves; rescue e5; target e5)",
                     )
                 }

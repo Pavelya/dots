@@ -195,19 +195,27 @@ internal object Bench {
             exitWith("unknown stand-in $standInName (${TIERS.keys.joinToString()}, BORDER)")
         }
         fun standIn(random: Random): Ai = if (config == null) BorderOnly(random) else SearchAi(config, random)
-        println("Stand-in human: $standInName, $games games per level (W-L-D from the human's side)")
+        println("Stand-in human: $standInName, $games games per level (captures W-L-D from the human's side; levels passed)")
         for (level in Campaign.levels) {
             val tally = Tally()
+            var passed = 0
             val started = System.nanoTime()
             for (g in 0 until games) {
                 val end = Match.playOut(
                     level.newGame(),
                     standIn(Random(3000 + g)),
                     SearchAi(level.ai, Random(4000 + g)),
+                    level::isOver,
                 )
                 tally.add(end.score(level.human), end.score(level.computer))
+                if (level.isPassed(end)) passed++
             }
-            println("%-5s %-12s %s  [%d s]".format(level.code, level.name, tally, (System.nanoTime() - started) / 1_000_000_000))
+            println(
+                "%-5s %-12s %-22s %s  passed %d of %d  [%d s]".format(
+                    level.code, level.name, level.mission.text, tally, passed, games,
+                    (System.nanoTime() - started) / 1_000_000_000,
+                ),
+            )
         }
     }
 
