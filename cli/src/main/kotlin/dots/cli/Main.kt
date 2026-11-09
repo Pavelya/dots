@@ -5,13 +5,15 @@ import dots.ai.AiConfig
 import dots.ai.SearchAi
 import dots.campaign.Campaign
 import dots.campaign.Level
+import dots.campaign.LevelResult
 import dots.campaign.LevelFormat
 import dots.campaign.LevelFormatException
 import dots.campaign.Mission
 import dots.campaign.MissionStatus
-import dots.campaign.Outcome
 import dots.campaign.Reason
 import dots.campaign.SpecialRule
+import dots.campaign.StarMeasure
+import dots.campaign.Stars
 import dots.engine.Action
 import dots.engine.GameState
 import dots.engine.MoveResult
@@ -118,15 +120,38 @@ private fun openingDots(name: String, width: Int, height: Int): Map<Pos, Player>
 private fun playLevel(level: Level) {
     println("Level ${level.code}: ${level.name} - computer is ${level.strength.text}, head start ${level.headStart}")
     println("Mission: ${goal(level)}")
+    level.stars?.let { println("Stars: ${targets(it)}") }
     level.rule?.let { println("Boss rule: ${announce(it)}") }
     val computer = SearchAi(level.ai)
     val seats = mapOf(level.human to null, level.computer to computer)
     val end = loop(level.newGame(), seats, level::isOver) { state ->
         listOfNotNull(progress(level.mission, level.status(state)), countdown(level, state)).joinToString("\n    ")
     } ?: return
-    val status = level.status(end)
-    val verdict = if (status.outcome == Outcome.PASSED) "Level passed!" else "Try again."
-    println("${outcome(level, status)} $verdict")
+    val result = level.result(end)
+    val verdict = if (result.isPassed) "Level passed! ${earned(level, result)}" else "Try again."
+    println("${outcome(level, result.status)} $verdict")
+}
+
+/** What earns two and three stars, as the level opens. */
+private fun targets(stars: Stars): String = when (stars.measure) {
+    StarMeasure.MARGIN -> "two for a margin of ${stars.two} (your captures minus the computer's), three for ${stars.three}."
+    StarMeasure.MOVES -> "two with ${moves(stars.two)} to spare, three with ${moves(stars.three)}."
+    StarMeasure.SAVED -> "two for saving ${stars.two} of your starting dots, three for ${stars.three}."
+    StarMeasure.BOOSTERS -> "two for leaving ${stars.two} boosters unused, three for ${stars.three}."
+}
+
+/** The stars a passed level earned, and the count they were judged on. */
+private fun earned(level: Level, result: LevelResult): String {
+    val stars = if (result.stars == 1) "1 star" else "${result.stars} stars"
+    val measure = level.stars?.measure ?: return "$stars."
+    val score = result.starScore!!
+    val why = when (measure) {
+        StarMeasure.MARGIN -> "margin $score"
+        StarMeasure.MOVES -> "${moves(score)} to spare"
+        StarMeasure.SAVED -> "${dots(score)} saved"
+        StarMeasure.BOOSTERS -> if (score == 1) "1 booster unused" else "$score boosters unused"
+    }
+    return "$stars of ${Stars.MAX} ($why)."
 }
 
 /** The mission in a sentence, as the level opens. */
