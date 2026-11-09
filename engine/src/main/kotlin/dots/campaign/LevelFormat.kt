@@ -1,5 +1,6 @@
 package dots.campaign
 
+import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Notation
 import dots.engine.Player

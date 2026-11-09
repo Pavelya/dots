@@ -81,6 +81,12 @@ data class AiConfig(
          * passive, and it failed to capture players who only defend (README, "Attack and defence").
          */
         val HARD = AiConfig(depth = 3, breadth = 8, variety = 5, attackReach = 3, dangerReach = 2)
+        /**
+         * The [dots.engine.Booster.HINT]: [HARD] without its random bonus, so it shows the move it
+         * rates best, within 1.5 seconds on a phone.
+         */
+        val HINT = HARD.copy(variety = 0, timeLimitMillis = 1500)
+
         /** Looks one move further than [HARD], at about three times the cost. Benchmarks show no gain yet. */
         val EXPERT = AiConfig(depth = 4, breadth = 8, variety = 5, attackReach = 3, dangerReach = 3)
     }

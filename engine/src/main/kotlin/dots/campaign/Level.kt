@@ -1,6 +1,7 @@
 package dots.campaign
 
 import dots.ai.AiConfig
+import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Notation
 import dots.engine.Player
@@ -11,8 +12,9 @@ import dots.engine.Pos
  * stored as text files; [LevelFormat] reads and writes them.
  *
  * Difficulty comes from the computer's [strength], the [map] it starts with (`B` dots are its head
- * start, `R` dots are the human's), the [dotsPerPlayer] budget and the [mission]. [solutions] says
- * how many first moves may pass a puzzle mission (see [Solver]).
+ * start, `R` dots are the human's), the [dotsPerPlayer] budget and the [mission]. [boosters] are
+ * the ones the human may use in the level, by kind and count. [solutions] says how many first
+ * moves may pass a puzzle mission (see [Solver]).
  */
 data class Level(
     val world: Int,
@@ -75,8 +77,10 @@ data class Level(
     /** The level is passed when its mission is; in "win", a draw (for instance 0-0) is not enough. */
     fun isPassed(end: GameState): Boolean = status(end).outcome == Outcome.PASSED
 
+    /** The human has the level's [boosters]; the computer has none (decision 0006). */
     private fun start() = GameState.start(
         map.width, map.height, dotsPerPlayer, human, map.startDots(), dotsFor = mapOf(human to humanDots),
+        boosters = mapOf(human to boosters),
     )
 
     private fun checkMission() {
@@ -94,8 +98,12 @@ data class Level(
             is Mission.Rescue -> require(map[mission.dot] == LevelMap.HUMAN) {
                 "${Notation.name(mission.dot)} must hold a human dot ('R' on the map) for $what"
             }
-            is Mission.Target -> require(map[mission.dot] == LevelMap.COMPUTER) {
-                "${Notation.name(mission.dot)} must hold a computer dot ('B' on the map) for $what"
+            is Mission.Target -> {
+                require(map[mission.dot] == LevelMap.COMPUTER) {
+                    "${Notation.name(mission.dot)} must hold a computer dot ('B' on the map) for $what"
+                }
+                // A bomb would remove the target instead of capturing it.
+                require(Booster.BOMB !in boosters) { "$what cannot allow the bomb, which would remove the target" }
             }
             Mission.Win, is Mission.WinBy -> Unit
         }
@@ -232,14 +240,6 @@ sealed interface Mission {
     private companion object {
         fun count(n: Int, word: String) = if (n == 1) "1 $word" else "$n ${word}s"
     }
-}
-
-/** The boosters a level may allow, with the word a level file uses for each. */
-enum class Booster(val text: String) {
-    WALL("wall"),
-    HINT("hint"),
-    BOMB("bomb"),
-    DOUBLE_DOT("double-dot"),
 }
 
 /** A rule of a level that the computer bends, announced to the player (boss levels). */

@@ -18,6 +18,8 @@ package dots.engine
  *
  * Deliberate additions and choices:
  *  - Optional dot budget per player, for short mobile sessions and puzzle levels.
+ *  - Boosters for the solo campaign ([Booster], [useBooster]): a player may use at most one per
+ *    turn, before placing their dot, and only during normal play (not after a [stop]).
  *  - When one dot closes several chains the wiki lets players choose; this engine captures every
  *    newly enclosed area that holds an enemy dot.
  */
@@ -32,12 +34,16 @@ class GameState private constructor(
     private val liveDots: IntArray,
     private val dotsLeft: IntArray,
     private val placed: IntArray,
+    private val blocked: BooleanArray,
+    private val boosters: IntArray,
     private var playableCells: Int,
     toMove: Player,
     passesInRow: Int,
     moveCount: Int,
     cleaner: Player?,
     finished: Boolean,
+    boosterUsed: Boolean,
+    doubleDots: Int,
 ) {
     var toMove: Player = toMove
         private set
@@ -50,6 +56,16 @@ class GameState private constructor(
     var cleaner: Player? = cleaner
         private set
     private var finished: Boolean = finished
+
+    /** True once the player to move has used a booster this turn: no other until the turn passes. */
+    var boosterUsed: Boolean = boosterUsed
+        private set
+
+    /** The dots of a [Booster.DOUBLE_DOT] still to place this turn: 2, then 1; 0 without one. */
+    private var doubleDots: Int = doubleDots
+
+    /** Dots the player to move still places this turn: 2 right after a double dot, else 1. */
+    val dotsThisTurn: Int get() = maxOf(1, doubleDots)
 
     val isCleanup: Boolean get() = cleaner != null
 
@@ -95,10 +111,39 @@ class GameState private constructor(
 
     fun isCaptured(pos: Pos): Boolean = isCaptured(pos.x, pos.y)
 
-    /** True for cells inside a capturing chain: no further moves there. */
+    /**
+     * True for cells out of play: inside a capturing chain, or blocked by a [Booster.WALL]. No
+     * further moves there. Rings pass over them as over empty points.
+     */
     fun isDead(x: Int, y: Int): Boolean = dead[y * width + x]
 
     fun isDead(pos: Pos): Boolean = isDead(pos.x, pos.y)
+
+    /** True for a point blocked by a [Booster.WALL]. */
+    fun isBlocked(x: Int, y: Int): Boolean = blocked[y * width + x]
+
+    fun isBlocked(pos: Pos): Boolean = isBlocked(pos.x, pos.y)
+
+    /** How many of [booster] [player] has left to use in this game. */
+    fun boostersLeft(player: Player, booster: Booster): Int = boosters[boosterIndex(player, booster)]
+
+    /** True if the player to move may use [booster] now, on some point if it needs one. */
+    fun canUse(booster: Booster): Boolean =
+        !isOver && !isCleanup && !boosterUsed && boostersLeft(toMove, booster) > 0 &&
+            (booster != Booster.DOUBLE_DOT || (dotsLeft(toMove) ?: Int.MAX_VALUE) >= 2)
+
+    /**
+     * The opponent's dots a [Booster.BOMB] dropped on [center] would remove: those on [center] and
+     * the four points next to it, up, down, left and right, that are not out of play. Captured dots
+     * and dots inside a capturing chain are never touched, so a bomb cannot undo a capture.
+     */
+    fun bombHits(center: Pos): List<Pos> {
+        if (!inBounds(center.x, center.y)) return emptyList()
+        val enemy = toMove.opponent.code
+        return PLUS.map { (dx, dy) -> Pos(center.x + dx, center.y + dy) }.filter { p ->
+            inBounds(p.x, p.y) && owner[p.y * width + p.x] == enemy && !dead[p.y * width + p.x]
+        }
+    }
 
     /** For a cell inside a capturing chain: the player whose chain closed it most recently. */
     fun enclosedBy(x: Int, y: Int): Player? = when (enclosedBy[y * width + x]) {
@@ -124,11 +169,25 @@ class GameState private constructor(
         return moves
     }
 
+    /** True if the player to move may take [action] now. */
+    fun isLegal(action: Action): Boolean = when (action) {
+        is Action.Place -> isLegal(action.pos)
+        Action.Pass, Action.Stop -> !isOver && !isCleanup && doubleDots == 0
+        Action.Finish -> isCleanup && !isOver
+        is Action.UseBooster -> canUse(action.booster) && when (action) {
+            is Action.Wall -> inBounds(action.pos.x, action.pos.y) && owner[index(action.pos)] == EMPTY && !dead[index(action.pos)]
+            is Action.Hint -> isLegal(action.pos)
+            is Action.Bomb -> bombHits(action.pos).isNotEmpty()
+            Action.DoubleDot -> true
+        }
+    }
+
     fun apply(action: Action): MoveResult = when (action) {
         is Action.Place -> play(action.pos)
         Action.Pass -> MoveResult(pass(), emptyList())
         Action.Stop -> MoveResult(stop(), emptyList())
         Action.Finish -> MoveResult(finish(), emptyList())
+        is Action.UseBooster -> MoveResult(useBooster(action), emptyList())
     }
 
     fun play(pos: Pos): MoveResult {
@@ -136,11 +195,12 @@ class GameState private constructor(
         return copy().applyMove(pos)
     }
 
-    /** Skips the turn. Two passes in a row end the game. */
+    /** Skips the turn. Two passes in a row end the game. Not allowed between the two dots of a double dot. */
     fun pass(): GameState {
-        check(!isOver && !isCleanup) { "Cannot pass now" }
+        check(isLegal(Action.Pass)) { "Cannot pass now" }
         val next = copy()
         next.passesInRow++
+        next.boosterUsed = false
         val other = toMove.opponent
         next.toMove = if (next.canMove(other)) other else toMove
         return next
@@ -151,8 +211,9 @@ class GameState private constructor(
      * opponent moves, with no dot limit, until they call [finish].
      */
     fun stop(): GameState {
-        check(!isOver && !isCleanup) { "Cannot stop now" }
+        check(isLegal(Action.Stop)) { "Cannot stop now" }
         val next = copy()
+        next.boosterUsed = false
         next.cleaner = toMove.opponent
         next.toMove = toMove.opponent
         next.passesInRow = 0
@@ -167,7 +228,43 @@ class GameState private constructor(
         return next
     }
 
-    /** One row per line: `.` empty, `,` out of play, `R`/`B` dots, `r`/`b` captured dots. */
+    /**
+     * Uses a booster of the player to move. It does not end the turn: the player still places
+     * their dot (two after [Action.DoubleDot]). Boosters, and the rules for each:
+     *  - [Action.Wall] blocks an empty point that is in play. Nobody may place a dot there; rings
+     *    pass over it as over an empty point, so a wall on the point that would close a ring stops
+     *    that ring there.
+     *  - [Action.Hint] changes nothing on the board; [Action.Hint.pos] must be a legal move.
+     *  - [Action.Bomb] removes the dots of [bombHits]; there must be at least one. Their points
+     *    become empty and playable. Scores, dots left and dots placed do not change.
+     *  - [Action.DoubleDot] needs 2 dots left (or no limit). The turn passes after the second dot,
+     *    or after the first if the player cannot place another. No pass or stop in between.
+     * Each needs [canUse]: one left, none used this turn, normal play.
+     */
+    fun useBooster(action: Action.UseBooster): GameState {
+        require(isLegal(action)) { "Cannot use $action now for $toMove" }
+        val next = copy()
+        next.boosters[boosterIndex(toMove, action.booster)]--
+        next.boosterUsed = true
+        when (action) {
+            is Action.Wall -> {
+                val i = index(action.pos)
+                next.blocked[i] = true
+                next.dead[i] = true
+                next.playableCells--
+            }
+            is Action.Hint -> Unit
+            is Action.Bomb -> for (pos in bombHits(action.pos)) {
+                next.owner[index(pos)] = EMPTY
+                next.liveDots[toMove.opponent.ordinal]--
+                next.playableCells++
+            }
+            Action.DoubleDot -> next.doubleDots = 2
+        }
+        return next
+    }
+
+    /** One row per line: `.` empty, `,` out of play, `#` a wall, `R`/`B` dots, `r`/`b` captured dots. */
     fun toAscii(): String = buildString {
         for (y in 0 until height) {
             if (y > 0) append('\n')
@@ -176,7 +273,7 @@ class GameState private constructor(
                 val player = ownerAt(x, y)
                 append(
                     when {
-                        player == null -> if (dead[i]) ',' else '.'
+                        player == null -> if (blocked[i]) '#' else if (dead[i]) ',' else '.'
                         captured[i] -> player.symbol.lowercaseChar()
                         else -> player.symbol
                     },
@@ -189,8 +286,11 @@ class GameState private constructor(
 
     private fun copy() = GameState(
         width, height, owner.clone(), captured.clone(), dead.clone(), enclosedBy.clone(), scores.clone(),
-        liveDots.clone(), dotsLeft.clone(), placed.clone(), playableCells, toMove, passesInRow, moveCount, cleaner, finished,
+        liveDots.clone(), dotsLeft.clone(), placed.clone(), blocked.clone(), boosters.clone(), playableCells, toMove,
+        passesInRow, moveCount, cleaner, finished, boosterUsed, doubleDots,
     )
+
+    private fun index(pos: Pos) = pos.y * width + pos.x
 
     private fun applyMove(pos: Pos): MoveResult {
         val mover = toMove
@@ -207,8 +307,14 @@ class GameState private constructor(
         moveCount++
         passesInRow = 0
         if (!isCleanup) {
-            val other = mover.opponent
-            toMove = if (canMove(other) || !canMove(mover)) other else mover
+            if (doubleDots == 2 && canMove(mover)) {
+                doubleDots = 1 // the double dot's second dot: same player, same turn
+            } else {
+                doubleDots = 0
+                boosterUsed = false
+                val other = mover.opponent
+                toMove = if (canMove(other) || !canMove(mover)) other else mover
+            }
         }
         return MoveResult(this, captures)
     }
@@ -360,10 +466,16 @@ class GameState private constructor(
         private val DX = intArrayOf(-1, 1, 0, 0)
         private val DY = intArrayOf(0, 0, -1, 1)
 
+        /** A bomb's points around its centre. */
+        private val PLUS = listOf(0 to 0, -1 to 0, 1 to 0, 0 to -1, 0 to 1)
+
+        private fun boosterIndex(player: Player, booster: Booster) = player.ordinal * Booster.entries.size + booster.ordinal
+
         /**
          * Starts a game. [dots] are placed up front (an opening or a head start) and do not count
          * against [dotsPerPlayer]; they must not already enclose an enemy dot. [dotsFor] gives a
-         * player a budget of their own instead of [dotsPerPlayer].
+         * player a budget of their own instead of [dotsPerPlayer]. [boosters] gives each player the
+         * boosters they may use in this game, by kind and count.
          */
         fun start(
             width: Int,
@@ -372,15 +484,19 @@ class GameState private constructor(
             first: Player = Player.RED,
             dots: Map<Pos, Player> = emptyMap(),
             dotsFor: Map<Player, Int> = emptyMap(),
+            boosters: Map<Player, Map<Booster, Int>> = emptyMap(),
         ): GameState {
             require(width >= 3 && height >= 3) { "Board must be at least 3x3" }
             require(dotsPerPlayer == null || dotsPerPlayer >= 0) { "dotsPerPlayer must not be negative" }
             require(dotsFor.values.all { it >= 0 }) { "a player's dots must not be negative" }
+            require(boosters.values.all { kinds -> kinds.values.all { it >= 0 } }) { "booster counts must not be negative" }
             val n = width * height
             val budgets = IntArray(2) { dotsFor[Player.entries[it]] ?: dotsPerPlayer ?: -1 }
+            val stock = IntArray(2 * Booster.entries.size)
+            for ((player, kinds) in boosters) for ((booster, count) in kinds) stock[boosterIndex(player, booster)] = count
             val state = GameState(
                 width, height, ByteArray(n), BooleanArray(n), BooleanArray(n), ByteArray(n), IntArray(2),
-                IntArray(2), budgets, IntArray(2), n, first, 0, 0, null, false,
+                IntArray(2), budgets, IntArray(2), BooleanArray(n), stock, n, first, 0, 0, null, false, false, 0,
             )
             for ((pos, player) in dots) {
                 require(state.inBounds(pos.x, pos.y)) { "Starting dot $pos is off the board" }

@@ -15,7 +15,7 @@ data class GameRecord(val settings: GameSettings, val actions: List<Action>) {
         append(" dots=${settings.dotsPerPlayer ?: "none"}")
         append(" opening=${settings.opening.name.lowercase()}")
         append(" seed=${settings.seed} first=${settings.first.symbol} |")
-        for (action in actions) append(' ').append(word(action))
+        for (action in actions) append(' ').append(Action.word(action))
     }
 
     companion object {
@@ -40,22 +40,8 @@ data class GameRecord(val settings: GameSettings, val actions: List<Action>) {
                 seed = fields.getValue("seed").toLong(),
                 first = Player.entries.first { it.symbol.toString() == fields.getValue("first") },
             )
-            val actions = if (body.isEmpty()) emptyList() else body.split(Regex("\\s+")).map(::action)
+            val actions = if (body.isEmpty()) emptyList() else body.split(Regex("\\s+")).map(Action::parse)
             return GameRecord(settings, actions)
-        }
-
-        private fun word(action: Action): String = when (action) {
-            is Action.Place -> Notation.name(action.pos)
-            Action.Pass -> "pass"
-            Action.Stop -> "stop"
-            Action.Finish -> "done"
-        }
-
-        private fun action(word: String): Action = when (word) {
-            "pass" -> Action.Pass
-            "stop" -> Action.Stop
-            "done" -> Action.Finish
-            else -> Action.Place(Notation.parse(word) ?: throw IllegalArgumentException("Bad move '$word'"))
         }
     }
 }

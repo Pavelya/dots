@@ -1,5 +1,6 @@
 package dots.campaign
 
+import dots.engine.Booster
 import dots.engine.Pos
 import java.io.File
 import kotlin.test.Test

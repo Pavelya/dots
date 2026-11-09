@@ -1,5 +1,7 @@
 package dots.ai
 
+import dots.engine.Action
+import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
@@ -13,7 +15,7 @@ import dots.engine.Pos
  */
 data class Danger(val group: List<Pos>, val dotsNeeded: Int, val closingPoints: List<Pos>)
 
-/** What the screen can show about threats on the board, for both players. */
+/** What the screen can show about threats on the board, for both players, and the hint booster. */
 object Hints {
     /**
      * Groups of [player] that the opponent could capture with at most [maxDots] more dots, nearest
@@ -28,5 +30,15 @@ object Hints {
             .filter { it.cost <= dotsLeft }
             .sortedBy { it.cost }
             .map { threat -> Danger(threat.group.map(::pos), threat.cost, threat.cells.map(::pos)) }
+    }
+
+    /**
+     * The [Booster.HINT] for the player to move: the computer's best move for them, played as
+     * [ai] sees it. Null if they cannot use a hint now or have no move. Apply the result to use
+     * up the hint; the record keeps the point.
+     */
+    fun hint(state: GameState, ai: SearchAi = SearchAi(AiConfig.HINT)): Action.Hint? {
+        if (!state.canUse(Booster.HINT)) return null
+        return ai.chooseMove(state)?.let { Action.Hint(it) }?.takeIf { state.isLegal(it) }
     }
 }

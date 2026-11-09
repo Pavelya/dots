@@ -266,6 +266,7 @@ private fun describe(mover: Player, action: Action, result: MoveResult): String 
     Action.Pass -> "$mover passes"
     Action.Stop -> "$mover declares its remaining dots grounded - ${mover.opponent} may now capture whatever it can"
     Action.Finish -> "$mover is done capturing"
+    is Action.UseBooster -> "$mover uses a booster: ${Action.word(action)}"
 }
 
 private fun name(pos: Pos) = Notation.name(pos)
