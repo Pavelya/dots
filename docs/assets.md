@@ -11,7 +11,7 @@ An asset may come only from:
 
 - **us:** drawn, recorded, written or coded by the owner or by Claude for the owner;
 - **AI tools under the prompt rules below:** ChatGPT for images, Suno Pro (while subscribed) for
-  music;
+  music and a few sound effects (decision 0020);
 - **CC0:** Kenney packs, Freesound sounds marked CC0;
 - **a licence that allows commercial use in an app:** Google Fonts (Open Font License, keep the
   licence file next to the font), Material Symbols (Apache 2.0).

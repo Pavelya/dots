@@ -1,107 +1,93 @@
 # Sound
 
-This page names every sound in Pinfold before it is made: 38 sound effects and 6 music tracks.
+This page names every sound in Pinfold before it is made: 17 sound effects and 6 music tracks.
 For each one it gives when it plays, how long it is, its mood, and how it is made, with the exact
-file name to save and the exact prompt, recording or recipe. The effects are made in V-08, the
-music in V-09, and V-10 makes the app play them.
+file name to save and the exact prompt or recipe. The effects are made in V-08, the music in V-09,
+and V-10 makes the app play them.
 
 The times come from the [motion storyboard](motion.md): a sound starts at the moment its animation
 step starts, and its "When it plays" names that step.
 
 ## Rules for all sound
 
-1. **The game works on mute.** Every moment is carried by the animation and the vibration. Sound
-   adds to them and never carries information alone.
-2. **Sound and vibration start together.** A sound that goes with a vibration (motion rule 6)
+1. **The game works on mute.** Many players keep the sound off. Every moment is carried by the
+   animation and the vibration; sound adds to them and never carries information alone.
+2. **Few sounds in a level.** In a level, only what the player needs to notice makes a sound: a
+   dot landing, a capture, the player's own group in danger, the dots running low, the boss's
+   special turn and the boosters. Buttons, notes and cards are silent everywhere.
+3. **Sound and vibration start together.** A sound that goes with a vibration (motion rule 6)
    starts at the same millisecond: the dot at 0 ms, the closing ring at 550 ms, the big capture at
-   650 ms, the bomb's blast at 150 ms, each star as it lands.
-3. **Pen and paper.** Sounds of things happening on the board are recordings of a pen, a pencil
-   and a notebook. Sounds of reward and warning are soft notes, like felt mallets on small metal
-   bars, made in code.
-4. **Notes that fit every track.** Notes made in code use only D, E, G and A, in any octave. These
+   650 ms, the bomb's blast at 150 ms.
+4. **Pen and paper, and soft notes.** The three sounds of things happening on the board are a pen
+   tap, a pen drawing a circle and a soft thud. Sounds of reward and warning are soft notes, like
+   felt mallets on small metal bars, made in code.
+5. **Notes that fit every track.** Notes made in code use only D, E, G and A, in any octave. These
    four notes belong to the key of every music track, so a sound never clashes with the music.
-5. **Little repeats.** The dot is the only sound heard every turn. It has three takes, played in
-   turn at slightly different pitches (from 95% to 105% speed), so it never sounds mechanical.
-6. **A tap stops the sound with the animation.** A tap that finishes an animation (motion rule 1)
+6. **One sound, several uses.** The app plays a sound faster or slower to make it higher or lower,
+   so one file serves several moments: the computer's dot, the big capture, the wall, the hint,
+   the stars and the areas lighting up. This keeps the set small.
+7. **The dot never sounds mechanical.** It is heard every turn, so it has three takes, played in
+   turn at slightly different speeds (95% to 105%), at half volume.
+8. **A tap stops the sound with the animation.** A tap that finishes an animation (motion rule 1)
    also fades its sounds out in 50 ms.
-7. **Same loudness in every file.** Every effect is normalised to the same loudness (the V-08
-   check: within 2 dB). The app sets each sound's volume from the "Volume" column: full, or half
-   for small, frequent sounds.
-8. **Two players on one phone.** Each side's dot plays its own ink's sound. Every capture plays the
-   player's capture sounds; the sound for the computer capturing the player's dots is not used.
+9. **Same loudness in every file.** Every effect is normalised to the same loudness (the V-08
+   check: within 2 dB). The app sets each sound's volume from the "Volume" column.
+10. **Two players on one phone.** Red dots play the dot at normal speed, blue dots at 85%. Every
+    capture plays `sfx_ring_close`; `sfx_captured` is not used.
 
 ## Where each sound comes from
 
-| Source | Who makes it | Files to save | Used for |
+| Source | Who makes it | Files to save | Sounds |
 | --- | --- | --- | --- |
-| Recorded | The owner, with a phone | `rec_*` ([recording list](#the-recordings)) | Board, booster and interface sounds |
-| Made in code | Claude, in V-08, with a script kept in the repository | none; the script makes `sfx_*` | Notes for rewards, warnings and results |
-| Suno Pro | The owner, during the one paid month | `music_*.wav` ([music](#music)) | The six music tracks |
-| CC0 (Kenney, Freesound) | Claude or the owner | the sound's page link, saved with it | Only if a recording does not work after two tries |
+| Suno Sounds, during the Suno Pro month (decision 0020) | The owner | `fx_*.wav` ([the three source sounds](#the-three-source-sounds)) | The dot, the ring, the bomb |
+| A phone recording, if Suno's version is not clean | The owner | `fx_*.m4a` or `.wav` | The same three, one by one as needed |
+| Made in code | Claude, in V-08, with a script kept in the repository | none; the script makes `sfx_*` | The other 14 |
+| Suno songs, during the Suno Pro month | The owner | `music_*.wav` ([music](#music)) | The six music tracks |
+| CC0 (Kenney, Freesound) | Claude or the owner | the sound's page link, saved with it | Only if both Suno and the phone fail |
 
-Claude cuts, cleans, mixes and normalises every effect and saves it in the app as
-`sfx_<name>.ogg`. Music is saved in the app as `music_<name>.ogg`. File names use only lowercase
-letters, digits and underscores, as Android needs.
+Claude trims, cleans and normalises every effect and saves it in the app as `sfx_<name>.ogg`.
+Music is saved in the app as `music_<name>.ogg`. File names use only lowercase letters, digits and
+underscores, as Android needs.
 
-## Board sounds
+## Sound effects
+
+**Volume:** "half" is for sounds heard often; "full" for the rest.
+
+### In a level
 
 | Sound | When it plays | Length | Mood | Volume | Made from |
 | --- | --- | --- | --- | --- | --- |
-| `sfx_preview` | The preview ring appears, if A-13 chooses a placing method with a preview | 60 ms | barely there | half | `rec_pencil_touch` |
-| `sfx_place_red` (3 takes) | A red dot lands, at 0 ms | 100 to 150 ms | crisp, a full stop | full | `rec_pen_tap` |
-| `sfx_place_blue` (3 takes) | A blue dot lands, at 0 ms; the computer's dot | 100 to 150 ms | soft and a little lower than red, so the computer's move is heard | full | `rec_marker_dab` |
-| `sfx_ring_draw` | The capture ring is drawn, 150 to 550 ms. For a big capture (150 to 650 ms) the app plays it at 80% speed, which also lowers it | 400 ms | quick, sure stroke | full | `rec_pen_circle` |
-| `sfx_ring_close` | The ring closes, at 550 ms (the medium vibration). Also any capture in a two-player game | 400 ms | bright, satisfying | full | code |
+| `sfx_place_1`, `_2`, `_3` | A dot lands, at 0 ms. Red dots at normal speed; blue dots, the computer's included, at 85%, so they sound a little lower and the computer's move is heard | 100 to 150 ms | crisp, a full stop | half | `fx_pen_tap` |
+| `sfx_ring_draw` | The capture ring is drawn, 150 to 550 ms. A big capture's ring (150 to 650 ms) plays it at 80% speed, which also lowers it | 400 ms | quick, sure stroke | full | `fx_pen_circle` |
+| `sfx_ring_close` | The player's ring closes, at 550 ms (the medium vibration); any capture in a two-player game | 400 ms | bright, satisfying | full | code |
 | `sfx_captured` | Instead of `sfx_ring_close`, when the computer captures the player's dots | 500 ms | "oh no", gentle, never mocking | full | code |
-| `sfx_cut` | Each captured dot's cut, from 600 ms, 40 ms apart (30 ms in a big capture) | 60 ms | tiny tick | half | `rec_pen_flick` |
-| `sfx_score` | The tally and the score take the points, at 1100 ms (1250 ms in a big capture) | 150 ms | a point lands | half | code |
-| `sfx_capture_big` | A big capture's burst, at 650 ms (the strong vibration and the shake) | 700 ms | a thump and a chord: big, warm | full | `rec_palm_slap` and code |
-| `sfx_threat_danger` | Threat rings draw in around one of the player's groups, at 0 ms of the threat pulse | 300 ms | a low double knock: "watch out" | full | code |
-| `sfx_threat_chance` | Threat rings draw in around an opponent's group, at 0 ms of the threat pulse | 300 ms | a bright single note: "you could take this" | half | code |
-| `sfx_dots_low` | A side's dots-left count reaches 5 and turns Highlighter | 200 ms | a soft low tick | half | code |
-| `sfx_note_nudge` | The mission note swings at 3 dots left, mission not done | 300 ms | paper flutter | half | `rec_page_flutter` |
-| `sfx_last_dot` | "Last dot!" writes in | 300 ms | quick handwriting | full | `rec_scribble` |
-| `sfx_blocked` | A tap on a point where a dot cannot go | 80 ms | dull, soft, not a buzzer | half | `rec_eraser_tap` |
+| `sfx_capture_big` | A big capture's burst, at 650 ms (the strong vibration and the shake) | 700 ms | a soft thump and a warm chord | full | code |
+| `sfx_threat` | Threat rings draw in around one of the player's own groups, at 0 ms of the threat pulse. Not for the opponent's groups | 300 ms | a low double knock: "watch out" | full | code |
+| `sfx_dots_low` | The player's dots-left count reaches 5 and turns Highlighter. Once per game | 200 ms | a soft low tick | half | code |
 | `sfx_boss_turn` | The boss's countdown reaches its special turn (G-05) | 800 ms | cheeky, a little sneaky | full | code |
-| `sfx_level_start` | The level opens: the mission note shows big, at 0 ms | 150 ms | a pen cap pulled off: "let's start" | full | `rec_cap_off` |
 
-## Booster sounds
+### Boosters
 
 Each starts at 0 ms, when the player taps Confirm in the booster preview.
 
-| Sound | When it plays | Length | Mood | Volume | Made from |
-| --- | --- | --- | --- | --- | --- |
-| `sfx_wall` | The wall: square drawn, then hatched | 400 ms | pencil, firm and tidy | full | `rec_pencil_square` |
-| `sfx_circle_twice` | The hint: the point circled twice. Also the next level being circled on the map | 500 ms | pencil, light, pointing | full | `rec_pencil_circle_twice` |
-| `sfx_bomb` | The bomb: it drops at 0 ms, the blast at 150 ms falls inside the file | 450 ms | a thud and a scrunch: big but friendly | full | `rec_book_drop` and `rec_paper_crumple` |
-| `sfx_double_dot` | The "×2" chip grows in | 300 ms | two notes up: "again!" | full | code |
-| `sfx_spark` | Each of the double dot's two dots lands, with the place sound | 250 ms | a tiny sparkle | half | code |
+| Booster | What plays | Length | Volume |
+| --- | --- | --- | --- |
+| Wall | `sfx_ring_draw` at normal speed: the square being drawn | 400 ms | full |
+| Hint | `sfx_ring_draw` twice at 160% speed, 250 ms apart: the point circled twice, lighter and higher | 500 ms | full |
+| Bomb | `sfx_bomb`, made from `fx_book_drop`: the bomb drops at 0 ms and the thud lands at 150 ms, with the blast | 450 ms | full |
+| Double dot | `sfx_double_dot` (code), as the "×2" chip grows in: two notes up, "again!" | 300 ms | full |
 
-## Moments
+### After a level and on the map
 
 | Sound | When it plays | Length | Mood | Volume | Made from |
 | --- | --- | --- | --- | --- | --- |
 | `sfx_area_light` | End of game: each captured area lights up. Each area plays one note higher (D, E, G, A, then on up) | 300 ms | a counting-up recap | half | code |
-| `sfx_win` | "You won!" writes in on the result note; also the daily puzzle solved | 1.5 s | happy, short, not brassy | full | code |
+| `sfx_win` | "You won!" writes in on the result note; the daily puzzle solved | 1.5 s | happy, short, not brassy | full | code |
 | `sfx_lose` | The failure headline writes in | 1.2 s | kind, "nearly, try again" | full | code |
 | `sfx_draw` | The draw headline writes in | 800 ms | even, neither up nor down | full | code |
-| `sfx_star_1` | The first star is stamped (with its light vibration) | 400 ms | a stamp and a bell | full | `rec_stamp` and code |
-| `sfx_star_2` | The second star is stamped | 400 ms | the same, one note higher | full | `rec_stamp` and code |
-| `sfx_star_3` | The third star is stamped | 400 ms | the same, higher again, a little longer bell | full | `rec_stamp` and code |
-| `sfx_path_draw` | Level unlock: the path to the next level inks in, 800 to 1200 ms | 400 ms | marker dashes | half | `rec_marker_dashes` |
-| `sfx_page_turn` | A world opens: the new world's page slides in, 600 ms | 600 ms | a notebook page turned | full | `rec_page_turn` |
-| `sfx_world_open` | A world opens, under the page turn, from 300 ms | 2 s | a rising run and a held chord: the biggest reward sound | full | code |
-| `sfx_chest_open` | The chest opens over the map | 600 ms | a box lid lifted, then a sparkle | full | `rec_box_lid` and code |
-| `sfx_reward` | A reward is picked in the chest; an item bought or earned in the Shop | 600 ms | sparkle and chord | full | code |
-| `sfx_streak` | The daily streak goes up by one | 600 ms | three quick notes up | full | code |
-
-## Interface sounds
-
-| Sound | When it plays | Length | Mood | Volume | Made from |
-| --- | --- | --- | --- | --- | --- |
-| `sfx_button` | A button or switch is tapped (Start, Next, Retry, Confirm, Settings switches) | 60 ms | a ballpoint click | half | `rec_pen_click` |
-| `sfx_note_open` | A note or card slides up: Level card, Pause, Result, Today's puzzle, Play a game, booster preview | 300 ms | paper slid across a table | half | `rec_paper_slide_in` |
-| `sfx_note_close` | A note or card slides down; Back from one | 200 ms | a shorter slide away | half | `rec_paper_slide_out` |
+| `sfx_star` | Each earned star is stamped (with its light vibration). Star 1 at normal speed, star 2 at 112% (one note up), star 3 at 150% (two notes up) | 400 ms | a soft click and a bell | full | code |
+| `sfx_world_open` | A world opens: from 300 ms of the page turn | 2 s | a rising run and a held chord: the biggest reward sound | full | code |
+| `sfx_reward` | The chest opens; an item bought or earned in the Shop; the daily streak goes up | 600 ms | sparkle and chord | full | code |
 
 ## Deliberate silences
 
@@ -109,17 +95,22 @@ These moments have no sound on purpose:
 
 | Moment | Why silent |
 | --- | --- |
-| Chain lines growing | They grow with every dot; the dot's sound covers them, and a second sound every turn would tire. |
+| The preview ring, if A-13 uses one | It would play on almost every tap. |
+| Chain lines growing | They grow with every dot; the dot's sound covers them. |
 | The computer's ripples and edge marks | The blue dot's own sound announces the move. |
 | The pen stroke under the name of the side to move | It moves every turn. |
-| +N flying to the tally | The ring, the cuts and the score note already make the capture heard. |
+| The cuts across captured dots, +N flying, the score swelling | The ring and its closing sound already make the capture heard. |
 | The opponent's face changing | Faces have no voices. |
-| The threat pulse's three beats, and faint rings | One sound as the rings draw in is enough; a repeating warning would nag. |
-| Each dot after the count reaches 5 | The dot's own sound plays; the count's swell is silent. |
+| Threat rings around the opponent's groups | Threats come often on a crowded board; only danger to the player's own dots is worth a sound. |
+| The threat pulse's three beats, and faint rings | One sound as the rings draw in is enough. |
+| The mission note's nudge at 3 dots left, and "Last dot!" | `sfx_dots_low` already warned once; a sound every turn near the end would nag. |
+| A tap where a dot cannot go | The tap simply does nothing; a buzz would scold. |
+| The level opening | The level's music starting is enough. |
 | The booster count dropping | The booster's own sound covers it. |
 | The tool bar and pause icon leaving at the end of a game | The areas lighting up start right after. |
 | A star not earned | No sound for what was missed. |
-| Stars flying to the map, the level's stop filling, "next!" writing in | The path and the circling already play; more would crowd 2 seconds. |
+| On the map: stars flying, the level's stop filling, the path inking in, the next level circled, "next!" | The map's music carries it; these play after every level. |
+| Buttons, switches, and notes or cards sliding in and out | Interface sounds are what players find most annoying. |
 | The loading screen | The app often opens in public places. |
 | Scrolling the map | It happens all the time. |
 | A streak lost | No sound for a loss the player did not watch happen. |
@@ -131,72 +122,60 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 
 | Motion moment | Sound |
 | --- | --- |
-| Placing a dot | `sfx_place_red` or `sfx_place_blue` at 0 ms; `sfx_preview` before it if A-13 uses a preview |
+| Placing a dot | `sfx_place_*` at 0 ms; the preview silent |
 | Chain lines | silence |
-| The computer's move | `sfx_place_blue` at 0 ms; ripples and edge marks silent |
-| Capture | `sfx_ring_draw` 150 ms, `sfx_ring_close` or `sfx_captured` 550 ms, `sfx_cut` from 600 ms, `sfx_score` 1100 ms |
-| Big capture | `sfx_ring_draw` at 80% speed 150 ms, `sfx_capture_big` 650 ms, `sfx_cut` from 700 ms, `sfx_score` 1250 ms |
-| Threat pulse | `sfx_threat_danger` or `sfx_threat_chance` at 0 ms; the pulses silent |
-| Dots running out | `sfx_dots_low` at 5 left, `sfx_note_nudge` at 3 left, `sfx_last_dot` at 1 left |
-| Wall | `sfx_wall` |
-| Hint | `sfx_circle_twice` |
+| The computer's move | `sfx_place_*` at 85% speed at 0 ms; ripples and edge marks silent |
+| Capture | `sfx_ring_draw` 150 ms, `sfx_ring_close` or `sfx_captured` 550 ms; the cuts, +N and the score silent |
+| Big capture | `sfx_ring_draw` at 80% speed 150 ms, `sfx_capture_big` 650 ms; the rest silent |
+| Threat pulse | `sfx_threat` at 0 ms when the player's own group is in danger; otherwise, and the pulses, silent |
+| Dots running out | `sfx_dots_low` at 5 left; the nudge and "Last dot!" silent |
+| Wall | `sfx_ring_draw` |
+| Hint | `sfx_ring_draw` twice at 160% speed |
 | Bomb | `sfx_bomb` |
-| Double dot | `sfx_double_dot`, then `sfx_spark` with each dot |
-| End of game | `sfx_area_light` for each area; the result note slides up with `sfx_note_open` |
-| Star reveal | `sfx_win`, `sfx_lose` or `sfx_draw` at 0 ms; `sfx_star_1` to `sfx_star_3` as each star lands |
-| Level unlock | `sfx_path_draw` 800 ms, `sfx_circle_twice` 1200 ms, `sfx_note_open` 1800 ms; when a world opens, `sfx_page_turn` and `sfx_world_open` first |
-| Level opening | `sfx_level_start` at 0 ms |
-| Notes and cards | `sfx_note_open` in, `sfx_note_close` out |
+| Double dot | `sfx_double_dot`, then `sfx_place_*` with each dot |
+| End of game | `sfx_area_light` for each area; the result note silent |
+| Star reveal | `sfx_win`, `sfx_lose` or `sfx_draw` at 0 ms; `sfx_star` as each earned star lands |
+| Level unlock | silent; when a world opens, `sfx_world_open` with the page turn |
+| Level opening | silent |
+| Notes and cards | silent |
 
 If X-11 makes Undo a booster, or G-06 adds special points with their own animation, they need a
 row here too.
 
-## The recordings
+## The three source sounds
 
-The owner records these with a phone. One session of about an hour covers them all.
+Three effects start from a real-sounding source: a pen tap, a pen drawing a circle and a soft
+thud. Try Suno Sounds first, during the Suno Pro month. If Suno's version of a sound is not clean
+after three tries, record that one sound with a phone instead.
 
-**Set-up**
+| File to save | Becomes | Suno Sounds prompt (One Shot) | Phone fallback: what to record |
+| --- | --- | --- | --- |
+| `fx_pen_tap_1.wav`, `_2`, `_3` (three different versions) | `sfx_place_1` to `_3` | `A single ballpoint pen tip tapping once on a paper notebook page on a wooden table. Dry, close, quiet room, no reverb, no music.` | A ballpoint pen tip tapped once, firmly, on the page, like a full stop |
+| `fx_pen_circle.wav` | `sfx_ring_draw` | `A ballpoint pen quickly drawing one small circle on paper in a single stroke, about half a second long. Dry, close, no music.` | A small circle, 2 cm across, drawn fast in one ballpoint stroke, in under half a second |
+| `fx_book_drop.wav` | `sfx_bomb` | `A closed paperback book dropped flat onto a wooden table from a short height. One soft thud, dry, no music.` | A closed paperback dropped flat on the table from 10 cm |
 
-- A quiet room: windows shut, fans and music off. The phone in flight mode, so it does not buzz.
-- A school notebook, open, lying on a wooden table. Use the same notebook and pens throughout.
-- The phone lying on a folded cloth, 20 to 30 cm from the spot on the page, with its bottom edge
-  (the microphone) towards it.
-- The recorder app at its best quality (lossless or WAV if it offers it). Any format the phone
-  saves is fine; only the name before the dot matters.
+### With Suno Sounds
 
-**For each recording**
+1. In Suno, open **Create**, then **Sounds** (a beta mode; its place in the menu may move), and
+   choose **One Shot**.
+2. Paste the prompt exactly. Each generation gives two versions.
+3. Keep a version only if it is the sound alone: no hiss, no echo, no music, no voice, and a clean,
+   quick end. Generate again if not, up to three times.
+4. Download each kept version as WAV and name it as in the table. For the pen tap, keep three
+   versions that sound slightly different.
+5. Add an entry for each to `audio_log.txt` (see [Choosing and saving](#choosing-and-saving)).
 
-1. Start recording and stay silent for 2 seconds (Claude uses that to remove the room's hiss).
-2. Make the sound 5 times, about 1 second apart.
-3. Stop, and name the file exactly as below, for example `rec_pen_tap.m4a`.
-4. If the level meter touches the top, move the phone a little farther and record again.
+### With a phone
 
-Claude cuts the takes, picks the cleanest, and keeps three takes of each dot sound. The owner
-listens in the V-08 pull request and may name a different take.
-
-| File to save | What to record | Becomes |
-| --- | --- | --- |
-| `rec_pencil_touch` | A sharp pencil set down lightly on the page, without moving | `sfx_preview` |
-| `rec_pen_tap` | A ballpoint pen tip tapped once, firmly, on the page, like a full stop | `sfx_place_red` |
-| `rec_marker_dab` | A felt-tip marker pressed once on the page, a little softer than the pen | `sfx_place_blue` |
-| `rec_pen_circle` | A small circle, 2 cm across, drawn fast in one ballpoint stroke, in under half a second | `sfx_ring_draw` |
-| `rec_pen_flick` | A short, fast ballpoint slash, 1 cm long | `sfx_cut` |
-| `rec_palm_slap` | A flat palm patted once on the closed notebook | `sfx_capture_big` |
-| `rec_page_flutter` | A page corner lifted 3 cm and let fall | `sfx_note_nudge` |
-| `rec_scribble` | The word "last" written fast in joined-up handwriting | `sfx_last_dot` |
-| `rec_eraser_tap` | The rubber end of a pencil tapped once on the page | `sfx_blocked` |
-| `rec_cap_off` | A pen cap pulled off briskly | `sfx_level_start` |
-| `rec_pencil_square` | A small square drawn in pencil, then five quick hatch strokes inside it | `sfx_wall` |
-| `rec_pencil_circle_twice` | A point circled twice in pencil, quickly, as if marking an answer | `sfx_circle_twice` |
-| `rec_book_drop` | A closed paperback dropped flat on the table from 10 cm | `sfx_bomb` |
-| `rec_paper_crumple` | A loose sheet of paper scrunched once, fast | `sfx_bomb` |
-| `rec_stamp` | A rubber stamp pressed on the page; without one, the flat end of a marker pressed hard | `sfx_star_1` to `sfx_star_3` |
-| `rec_marker_dashes` | Four short marker dashes in a row | `sfx_path_draw` |
-| `rec_page_turn` | A notebook page turned briskly | `sfx_page_turn` |
-| `rec_box_lid` | The lid of a small cardboard box lifted off | `sfx_chest_open` |
-| `rec_pen_click` | A click-top ballpoint clicked once (the press only) | `sfx_button` |
-| `rec_paper_slide_in` | A sheet of paper slid 20 cm across the table towards the phone | `sfx_note_open` |
-| `rec_paper_slide_out` | The same sheet slid away from the phone, quicker | `sfx_note_close` |
+- A quiet room, windows shut, fans and music off, the phone in flight mode.
+- A school notebook open on a wooden table; the phone on a folded cloth 20 to 30 cm away, its
+  bottom edge (the microphone) towards the page.
+- The recorder app at its best quality (Voice Memos on iPhone: Settings, Apps, Voice Memos, Audio
+  Quality, Lossless).
+- Start recording, stay silent for 2 seconds (Claude uses that to remove the room's hiss), make
+  the sound 5 times about 1 second apart, and stop.
+- Name the file as in the table without the number, for example `fx_pen_tap.m4a`. Claude cuts the
+  takes and keeps the cleanest three of the pen tap.
 
 ## Sounds made in code
 
@@ -206,7 +185,8 @@ sounds are:
 - **mallet:** a soft felt mallet on a small metal bar: a pure tone with faint upper overtones,
   a 5 ms start and a smooth fade;
 - **pluck:** a soft nylon string, warmer and shorter than the mallet;
-- **wood:** a short, hollow knock with a little pitch.
+- **wood:** a short, hollow knock with a little pitch;
+- **thump:** a low, soft tone that falls quickly in pitch, felt more than heard.
 
 Notes are named with their octave: D5 is the D above middle C (C4).
 
@@ -214,25 +194,18 @@ Notes are named with their octave: D5 is the D above middle C (C4).
 | --- | --- | --- |
 | `sfx_ring_close` | Mallet D5, then A5 60 ms later | 400 ms |
 | `sfx_captured` | Mallet A4, then E4 80 ms later, softer | 500 ms |
-| `sfx_score` | Mallet A5, short | 150 ms |
-| `sfx_capture_big` | `rec_palm_slap`, with mallet and pluck chord D4, A4, E5 on it | 700 ms |
-| `sfx_threat_danger` | Wood G3 twice, 120 ms apart | 300 ms |
-| `sfx_threat_chance` | Mallet E6, swelling in over 50 ms | 300 ms |
+| `sfx_capture_big` | Thump, with a mallet and pluck chord D4, A4, E5 on it | 700 ms |
+| `sfx_threat` | Wood G3 twice, 120 ms apart | 300 ms |
 | `sfx_dots_low` | Wood D4, soft | 200 ms |
 | `sfx_boss_turn` | Pluck D3 and G3 together, then a slow wobble in pitch | 800 ms |
 | `sfx_double_dot` | Mallet D5, then D6 80 ms later | 300 ms |
-| `sfx_spark` | Mallet A6, D7, E7 within 60 ms, quiet | 250 ms |
 | `sfx_area_light` | Mallet D5; the app plays it faster for each later area, one note of D, E, G, A higher | 300 ms |
 | `sfx_win` | Mallet D5, G5, A5, D6, 120 ms apart, the last held, over a pluck chord D4, A4 | 1.5 s |
 | `sfx_lose` | Mallet A4, G4, E4, 180 ms apart, the last soft | 1.2 s |
 | `sfx_draw` | Mallet D5, then A4 | 800 ms |
-| `sfx_star_1` | `rec_stamp`, with mallet D6 | 400 ms |
-| `sfx_star_2` | `rec_stamp`, with mallet E6 | 400 ms |
-| `sfx_star_3` | `rec_stamp`, with mallet A6, held longer | 400 ms |
+| `sfx_star` | A short, soft paper click, then mallet D6 | 400 ms |
 | `sfx_world_open` | Mallet D5, E5, G5, A5, D6, E6, 80 ms apart, then a pluck and mallet chord D4, A4, E5, held | 2 s |
-| `sfx_chest_open` | `rec_box_lid`, then `sfx_spark` | 600 ms |
 | `sfx_reward` | Mallet A6, D7, E7, A7 within 150 ms, over a pluck chord D4, A4 | 600 ms |
-| `sfx_streak` | Mallet E5, G5, A5, 90 ms apart | 600 ms |
 
 ## Music
 
@@ -253,24 +226,33 @@ The daily puzzle and free play use the track of the world the player is in. Two-
 `music_notebook.wav`. Under `sfx_win`, `sfx_lose`, `sfx_draw` and `sfx_world_open` the music drops
 to half its volume and comes back after.
 
-### Before the first track
+### Before the first track or sound
 
-1. **Subscribe to Suno Pro first.** Songs made on the free plan carry no commercial rights, and
-   upgrading later does not change that.
+1. **Subscribe to Suno Pro first.** Songs and sounds made on the free plan carry no commercial
+   rights, and upgrading later does not change that.
 2. On the same day, before generating, save Suno's terms and its "Does Suno own the music I make?"
    help page as PDF, named `suno-terms-YYYY-MM-DD.pdf` and `suno-ownership-YYYY-MM-DD.pdf` with
-   that day's date. They go in the licence copies folder (V-14).
+   that day's date. They go in the licence copies folder (V-14). Check that they cover Sounds as
+   well as songs; if they do not, record the three source sounds with the phone instead.
 3. Keep the receipt or a screenshot of the plan and its dates privately. It shows personal details,
    so it never enters the repository, which is public.
 
 ### Settings for every track
 
-- **Custom** mode, **Instrumental** on, the newest model Suno offers that day.
-- **Style:** the track's prompt below, pasted exactly.
+Every track is instrumental: music only, with no voice of any kind. Three things make sure of it:
+the **Instrumental** switch, the first words of each prompt, and the Exclude list.
+
+- **Custom** mode, the newest model Suno offers that day.
+- **Instrumental: on.** Check it before every generation; it is the main guard against a voice.
+  With it on, the lyrics box disappears or is ignored. If the switch is missing, type only
+  `[Instrumental]` in the lyrics box. Never leave the lyrics box empty with the switch off: Suno
+  may then add a voice of its own.
+- **Style:** the track's prompt below, pasted exactly. Each starts with "Instrumental only, no
+  vocals, no lyrics."
 - **Exclude** (the same for every track):
 
   ```
-  vocals, singing, choir, humming, spoken word, EDM drop, heavy drums, distorted guitar, trap, dubstep, fade out
+  vocals, lyrics, singing, rap, choir, humming, vocal chops, vocal samples, spoken word, EDM drop, heavy drums, distorted guitar, fade out
   ```
 
 - **Weirdness** about 35% and **Style influence** about 65%, if the sliders show. These are a
@@ -283,57 +265,67 @@ to half its volume and comes back after.
 **`music_map.wav`**, title `Pinfold Map`
 
 ```
-Warm, playful instrumental for a puzzle game's home screen. Felt piano melody, pizzicato strings, soft glockenspiel accents, upright bass, light brushed snare. Curious and inviting, like doodling in a notebook margin on a sunny afternoon. 90 BPM, C major, steady groove throughout, simple repeating phrases, gentle and uncluttered, no build-up, no ending.
+Instrumental only, no vocals, no lyrics. Warm, playful instrumental for a puzzle game's home screen. Felt piano melody, pizzicato strings, soft glockenspiel accents, upright bass, light brushed snare. Curious and inviting, like doodling in a notebook margin on a sunny afternoon. 90 BPM, C major, steady groove throughout, simple repeating phrases, gentle and uncluttered, no build-up, no ending.
 ```
 
 **`music_notebook.wav`**, title `Pinfold Notebook`
 
 ```
-Calm, focused instrumental for thinking. Muted felt piano, warm electric piano chords, soft clarinet countermelody, quiet shaker and soft wood block like a pencil tapping. Cozy study room, quiet concentration, a little playful. 80 BPM, F major, steady and even, sparse arrangement with lots of space, same energy from start to end, no ending.
+Instrumental only, no vocals, no lyrics. Calm, focused instrumental for thinking. Muted felt piano, warm electric piano chords, soft clarinet countermelody, quiet shaker and soft wood block like a pencil tapping. Cozy study room, quiet concentration, a little playful. 80 BPM, F major, steady and even, sparse arrangement with lots of space, same energy from start to end, no ending.
 ```
 
 **`music_garden.wav`**, title `Pinfold Garden`
 
 ```
-Gentle, sunny instrumental. Nylon-string acoustic guitar picking, soft marimba, airy flute melody, light hand percussion and shaker, warm upright bass. Morning in a garden, birdsong mood without birds, relaxed and bright but calm enough to think. 84 BPM, G major, steady groove throughout, simple repeating melody, no build-up, no ending.
+Instrumental only, no vocals, no lyrics. Gentle, sunny instrumental. Nylon-string acoustic guitar picking, soft marimba, airy flute melody, light hand percussion and shaker, warm upright bass. Morning in a garden, birdsong mood without birds, relaxed and bright but calm enough to think. 84 BPM, G major, steady groove throughout, simple repeating melody, no build-up, no ending.
 ```
 
 **`music_night_sky.wav`**, title `Pinfold Night Sky`
 
 ```
-Dreamy, calm instrumental. Celesta and music box melody, soft warm synth pad, slow low strings, felt piano, very light brushed percussion. Starry night, quiet wonder, peaceful but awake, not sleepy. 70 BPM, D major with a lifted, floating feel, slow and even, spacious, same energy from start to end, no ending.
+Instrumental only, no vocals, no lyrics. Dreamy, calm instrumental. Celesta and music box melody, soft warm synth pad, slow low strings, felt piano, very light brushed percussion. Starry night, quiet wonder, peaceful but awake, not sleepy. 70 BPM, D major with a lifted, floating feel, slow and even, spacious, same energy from start to end, no ending.
 ```
 
 **`music_sea.wav`**, title `Pinfold Sea`
 
 ```
-Breezy, flowing instrumental in a gentle 6/8 sway. Harp arpeggios, soft vibraphone, warm string pads swelling like waves, upright bass, light brushed drums. Calm seaside, open horizon, soft sunlight on water, relaxed and steady. 76 BPM, A dorian, rolling rhythm throughout, simple repeating phrases, no build-up, no ending.
+Instrumental only, no vocals, no lyrics. Breezy, flowing instrumental in a gentle 6/8 sway. Harp arpeggios, soft vibraphone, warm string pads swelling like waves, upright bass, light brushed drums. Calm seaside, open horizon, soft sunlight on water, relaxed and steady. 76 BPM, A dorian, rolling rhythm throughout, simple repeating phrases, no build-up, no ending.
 ```
 
 **`music_boss.wav`**, title `Pinfold Boss`
 
 ```
-Playful, mischievous tension for a friendly boss battle in a puzzle game. Low pizzicato strings, staccato bassoon, ticking wood block, soft timpani hits, repeating piano pattern. Cheeky villain sneaking around, focused and a bit urgent but never scary or loud. 100 BPM, D minor, tight steady groove throughout, short repeating phrases, no ending.
+Instrumental only, no vocals, no lyrics. Playful, mischievous tension for a friendly boss battle in a puzzle game. Low pizzicato strings, staccato bassoon, ticking wood block, soft timpani hits, repeating piano pattern. Cheeky villain sneaking around, focused and a bit urgent but never scary or loud. 100 BPM, D minor, tight steady groove throughout, short repeating phrases, no ending.
 ```
 
 ### Choosing and saving
 
 1. Generate 2 to 4 versions of each track. Keep the one with the steadiest middle: V-09 cuts the
    loop from the middle, so the start and the ending do not matter.
-2. Reject any version with a voice, or a melody that sounds familiar.
+2. Reject any version with a voice anywhere in it, even a short "ooh", a hum or a whisper, and any
+   version with a melody that sounds familiar. Listen to the whole track: a voice sometimes comes in
+   only near the end.
 3. Run the kept version through a song-recognition app (for example Shazam). A match means: reject
    it and generate again.
 4. Download the kept version as WAV and name it as in the table above.
-5. Add its entry to `music_log.txt`, in the same folder. If a prompt was changed, the log holds the
-   prompt actually used, and that is the one that goes in the asset register.
+5. Add its entry to `audio_log.txt`, at the top of the folder. The three source sounds get entries
+   too. If a prompt was changed, the log holds the prompt actually used, and that is the one that
+   goes in the asset register.
 
 ```
 music_map.wav
+  made with: Suno song
   date: YYYY-MM-DD
-  song link: https://suno.com/song/...
+  link: https://suno.com/song/...
   model: (the model name Suno showed)
   prompt changes: none
   Shazam: no match
+
+fx_pen_tap_1.wav
+  made with: Suno Sounds (or: phone recording)
+  date: YYYY-MM-DD
+  link: https://suno.com/song/...
+  prompt changes: none
 ```
 
 ## Handing the files over
@@ -342,16 +334,19 @@ The files are made outside the repository, in one folder that the owner backs up
 
 ```
 Pinfold-audio/
-  recordings/   rec_*.m4a (or .wav), as recorded
-  music/        music_*.wav, full length, and music_log.txt
-  licences/     suno-terms-YYYY-MM-DD.pdf, suno-ownership-YYYY-MM-DD.pdf
+  audio_log.txt
+  sounds/     fx_*.wav (Suno Sounds) or fx_*.m4a (phone)
+  music/      music_*.wav, full length
+  licences/   suno-terms-YYYY-MM-DD.pdf, suno-ownership-YYYY-MM-DD.pdf
 ```
 
 This folder is the master copy. Only the finished, compressed files enter the repository: the
-full-length WAVs are large, and git would keep every version for ever.
+full-length WAVs are large, and git would keep every version for ever. All 17 effects together
+come to about 0.1 MB in the app; the six music loops to about 7 to 11 MB, so V-10 looks at the
+music if the app's size matters.
 
 To bring them in, the owner starts a session with, for example, "Work on V-09, files in
 ~/Pinfold-audio". In that session Claude cuts and converts the files, puts them in the app, adds
 their rows to the [asset register](../assets.md) and the licence copies, and opens the pull
-request. The owner listens and merges. V-08 does the same for the recordings, and V-10 makes the
-app play them.
+request. The owner listens and merges. V-08 does the same for the effects, and V-10 makes the app
+play them.
