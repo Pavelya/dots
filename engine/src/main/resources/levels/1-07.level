@@ -4,6 +4,7 @@ name: Siege
 computer: hard
 dots: 20
 mission: win
+solutions: open
 boosters: none
 rule: none
 stars: none

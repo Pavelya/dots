@@ -4,6 +4,7 @@ name: Warm-up
 computer: easy
 dots: 10
 mission: win
+solutions: open
 boosters: none
 rule: none
 stars: none

@@ -4,6 +4,7 @@ name: Rescue
 computer: normal
 dots: 18
 mission: win
+solutions: open
 boosters: none
 rule: none
 stars: none

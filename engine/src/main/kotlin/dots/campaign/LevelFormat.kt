@@ -16,7 +16,7 @@ class LevelFormatException(val source: String, val line: Int?, val reason: Strin
  * ("Level files").
  */
 object LevelFormat {
-    val FIELDS = listOf("world", "level", "name", "computer", "dots", "mission", "boosters", "rule", "stars")
+    val FIELDS = listOf("world", "level", "name", "computer", "dots", "mission", "solutions", "boosters", "rule", "stars")
     private const val MAP = "map"
     private const val NONE = "none"
 
@@ -27,6 +27,7 @@ object LevelFormat {
         appendLine("computer: ${level.strength.text}")
         appendLine("dots: ${level.dotsPerPlayer}")
         appendLine("mission: ${level.mission.text}")
+        appendLine("solutions: ${level.solutions.text}")
         appendLine("boosters: ${boostersText(level.boosters)}")
         appendLine("rule: ${level.rule?.text ?: NONE}")
         appendLine("stars: ${level.stars?.let { "${it.two} ${it.three}" } ?: NONE}")
@@ -51,6 +52,7 @@ object LevelFormat {
             readLines()
             val map = map()
             val mission = field("mission") { mission(it, map) }
+            val solutions = field("solutions") { solutions(it) }
             val world = field("world") { number(it, 1..999) }
             val number = field("level") { number(it, 1..99) }
             val name = field("name") { it.ifEmpty { fail("the name is empty") } }
@@ -62,7 +64,7 @@ object LevelFormat {
             // The fields are each fine on their own; what Level still refuses is how the mission
             // fits the rest of the level, so the error points at the mission.
             return try {
-                Level(world, number, name, strength, dotsPerPlayer, map, mission, boosters, rule, stars)
+                Level(world, number, name, strength, dotsPerPlayer, map, mission, boosters, rule, stars, solutions)
             } catch (e: IllegalArgumentException) {
                 throw LevelFormatException(source, fields.getValue("mission").first, e.message ?: "the mission does not fit the level")
             }
@@ -164,6 +166,9 @@ object LevelFormat {
                     )
                 }
             }
+
+            fun solutions(text: String): Solutions = Solutions.entries.firstOrNull { it.text == text }
+                ?: fail("unknown solutions '$text' (${Solutions.entries.joinToString { it.text }})")
 
             fun boosters(text: String): Map<Booster, Int> {
                 if (text == NONE) return emptyMap()

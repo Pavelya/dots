@@ -72,6 +72,13 @@ cli/build/install/cli/bin/cli bench variety hard        # how often a tier answe
 cli/build/install/cli/bin/cli bench balance 40          # how often each tier attacks or defends
 ```
 
+Puzzle levels (see [Checking puzzles](#checking-puzzles)):
+
+```sh
+cli/build/install/cli/bin/cli check-levels              # solve every puzzle level of the campaign
+cli/build/install/cli/bin/cli check-levels my.level     # or the given files; --seconds 60 sets the time cap
+```
+
 Game logs shared by testers from the app (Settings, "Share the game log"; format in
 [`docs/poc/architecture.md`](docs/poc/architecture.md)):
 
@@ -148,6 +155,7 @@ name: Scout
 computer: easy
 dots: 14
 mission: win
+solutions: open
 boosters: none
 rule: none
 stars: none
@@ -171,6 +179,7 @@ map:
 | `computer` | The computer's strength: `easy`, `normal`, `hard` or `expert`. |
 | `dots` | Dots each side may place. |
 | `mission` | What passes the level: `win`, `win by 3`, `win with 8 dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` or `target e5`. See [Missions](#missions). |
+| `solutions` | `few` or `open`: how many first moves may pass a puzzle. `few` allows at most 3; `open` any number, for teaching levels where any sensible move should work. See [Checking puzzles](#checking-puzzles). |
 | `boosters` | `none`, or the boosters allowed and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. |
 | `rule` | A rule the computer bends: `none`, or `double move every 5 turns`. |
 | `stars` | `none`, or the scores for two and for three stars: `3 6`. What is counted depends on the mission. |
@@ -209,6 +218,42 @@ step, so a dot joined to the border only diagonally is not safe.
 
 A level is refused if its mission is decided before the first move, or asks for more moves than
 that side has dots. The computer plays for captures only, not against the mission.
+
+### Checking puzzles
+
+A level whose mission is short is a **puzzle**: `capture` and `survive` with 5 moves or fewer,
+and `rescue` and `target`. `cli check-levels` solves each puzzle with `Solver` and fails if:
+
+- **it is unsolvable**: the computer can stop the player whatever the player does;
+- **it is too easy**: more than 3 first moves pass it, and its file says `solutions: few`;
+- **it cannot be decided within the time cap** (20 seconds): make the board or the mission
+  smaller.
+
+A passing puzzle shows its shortest answer, the computer's replies in brackets:
+
+```
+1-9   Fork         capture 1 in 2 moves   ok      passes in 2 moves: d3 (c4) e4; 1 first move passes: d3  (0.0 s, 66 positions)
+```
+
+The win missions, and capture or survive with more than 5 moves, are whole games, not puzzles,
+and are not checked; `bench levels` covers them. A rescue or target that neither side can force
+within 5 of the player's moves is not checked either: it plays as a longer game. A test runs the
+check on every campaign level, so CI stops a bad puzzle.
+
+**How the solver works.** It searches every move of the player's against every reply of the
+computer's, a pass included. These are the replies of a perfect opponent, who plays better than
+the computer a player meets, so a puzzle the solver passes can be passed in the game. To keep
+this fast:
+
+- Points within two of a live dot are tried one by one. One point further away stands for all
+  the others, which are too far to take part in a capture within a few moves.
+- Lower bounds cut lines short. A dot needs at least as many more dots to wall in as the
+  smallest set of empty points between it and the border (a minimum cut), and at least as many
+  to make safe as the empty points on its shortest straight chain to the border. When that is
+  more than the moves left, the line cannot work.
+- Positions reached by different move orders are solved once, and the points that settled
+  earlier positions are tried first.
+- Counting stops at 4 passing first moves, which is already too many.
 
 ## Computer opponent
 

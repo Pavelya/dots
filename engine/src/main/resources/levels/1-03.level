@@ -4,6 +4,7 @@ name: Scout
 computer: easy
 dots: 14
 mission: win
+solutions: open
 boosters: none
 rule: none
 stars: none
