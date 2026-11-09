@@ -22,6 +22,7 @@ class LevelFormatTest {
         boosters: none
         rule: none
         stars: none
+        holes: none
         map:
         .....
         .R...
@@ -55,12 +56,13 @@ class LevelFormatTest {
             rule = SpecialRule.DoubleMove(every = 5),
             stars = Stars(two = 3, three = 6),
             solutions = Solutions.OPEN,
+            holes = Holes.OPEN,
         )
         val text = LevelFormat.write(level)
 
         assertEquals(level, LevelFormat.parse(text))
         assertTrue("boosters: wall 2, hint 1, bomb 3, double-dot 1\n" in text, text)
-        assertTrue("map:\n-.....-\n.R.#...\n" in text, text)
+        assertTrue("holes: open\nmap:\n-.....-\n.R.#...\n" in text, text)
     }
 
     @Test
@@ -99,7 +101,7 @@ class LevelFormatTest {
     @Test
     fun `fields can come in any order before the map`() {
         val lines = sample.lines()
-        val shuffled = (lines.take(10).reversed() + lines.drop(10)).joinToString("\n")
+        val shuffled = (lines.take(11).reversed() + lines.drop(11)).joinToString("\n")
 
         assertEquals(LevelFormat.parse(sample), LevelFormat.parse(shuffled))
     }
@@ -144,12 +146,15 @@ class LevelFormatTest {
             Triple("rule: none", "rules: none", "line 9: unknown field 'rules'"),
             Triple("rule: none", "rule none", "line 9: expected 'field: value' or 'map:', found 'rule none'"),
             Triple("stars: none", "stars: none\ndots: 3", "line 11: 'dots' appears twice (first on line 5)"),
-            Triple(".R...\n", ".R..\n", "line 13: this row has 4 points, the first row has 5"),
-            Triple("..B..\n", "..B.X\n", "line 15: unknown map symbol 'X' in column 5"),
-            Triple("..B..\n.....\n", "..B..\n.....\nstars: 3 6\n", "line 17: fields must come before 'map:'"),
-            Triple("map:\n", "map: .....\n", "line 11: the map's rows start on the line after 'map:'"),
-            Triple("..RB.\n..B..\n.....\n", "", "line 11: the board is 5x2; boards are 3 to 99 points in each direction"),
-            Triple("..RB.\n..B..\n.....\n", "..RB.\n.RBR.\n..R..\n", "line 11: The starting position already encloses an enemy dot"),
+            Triple("holes: none", "holes: some", "line 11: unknown holes 'some' (none, border, open)"),
+            Triple("holes: none", "holes: border", "line 11: the map has no holes, so 'holes' must be 'none'"),
+            Triple(".....\n.R...", "-....\n.R...", "line 11: the map has holes: say whether their edge counts as border ('holes: border') or not ('holes: open')"),
+            Triple(".R...\n", ".R..\n", "line 14: this row has 4 points, the first row has 5"),
+            Triple("..B..\n", "..B.X\n", "line 16: unknown map symbol 'X' in column 5"),
+            Triple("..B..\n.....\n", "..B..\n.....\nstars: 3 6\n", "line 18: fields must come before 'map:'"),
+            Triple("map:\n", "map: .....\n", "line 12: the map's rows start on the line after 'map:'"),
+            Triple("..RB.\n..B..\n.....\n", "", "line 12: the board is 5x2; boards are 3 to 99 points in each direction"),
+            Triple("..RB.\n..B..\n.....\n", "..RB.\n.RBR.\n..R..\n", "line 12: The starting position already encloses an enemy dot"),
             Triple("dots: 12\n", "", "level: missing 'dots:'"),
         )
         for ((find, replace, expected) in cases) {
@@ -170,18 +175,17 @@ class LevelFormatTest {
     }
 
     @Test
-    fun `levels with special points the engine does not play refuse to start`() {
-        val level = LevelFormat.parse(sample)
-        val unplayable = listOf(
-            level.copy(map = LevelMap(level.map.rows.map { it.replace('.', '+') })) to "bonus points",
-        )
+    fun `a level's holes, blocked and bonus points are on the board of its game`() {
+        val text = sample.replace(".....\n.R...\n..RB.", "-...#\n.R...\n..RB+").replace("holes: none", "holes: open")
+        val level = LevelFormat.parse(text)
+        val game = level.newGame()
 
-        assertNull(level.unplayable)
-        level.copy(boosters = mapOf(Booster.HINT to 1), rule = SpecialRule.DoubleMove(4), stars = Stars(1, 2)).newGame()
-        for ((bad, reason) in unplayable) {
-            val error = assertFailsWith<UnsupportedOperationException> { bad.newGame() }
-            assertTrue(reason in error.message!!, error.message)
-        }
+        assertEquals(Holes.OPEN, level.holes)
+        assertTrue(game.isHole(0, 0) && game.isDead(0, 0) && !game.holesAreBorder)
+        assertTrue(game.isBlocked(4, 0) && game.isDead(4, 0))
+        assertTrue(game.isBonus(4, 2) && !game.isDead(4, 2) && game.isLegal(4, 2))
+        assertEquals("-...#\n.R...\n..RB+\n..B..\n.....", game.toAscii())
+        assertTrue(LevelFormat.parse(text.replace("holes: open", "holes: border")).newGame().holesAreBorder)
     }
 
     @Test

@@ -8,12 +8,13 @@ import dots.engine.Player
  *
  * @param anchor the index (y * width + x) of one dot of the group
  * @param size how many dots the group has
+ * @param points what capturing the group would score: [size], plus one for each dot on a bonus point
  * @param cost how many more dots the attacker must place to wall the group in; 1 means one move
  *   from capture
  * @param cells indices of the empty cells of one cheapest way to do it
  * @param group indices of the group's dots
  */
-internal class Threat(val anchor: Int, val size: Int, val cost: Int, val cells: IntArray, val group: IntArray)
+internal class Threat(val anchor: Int, val size: Int, val cost: Int, val cells: IntArray, val group: IntArray, val points: Int = size)
 
 /**
  * Finds, for every group of a player's dots that is not grounded, the fewest dots the opponent
@@ -33,6 +34,8 @@ internal class ThreatFinder {
     private var cells = 0
 
     private var kind = ByteArray(0)
+    private var border = BooleanArray(0)
+    private var bonus = BooleanArray(0)
     private var flowThrough = IntArray(0)
     private var flowOnLink = IntArray(0)
     private var visitedAt = IntArray(0)
@@ -68,6 +71,8 @@ internal class ThreatFinder {
             height = state.height
             cells = width * height
             kind = ByteArray(cells)
+            border = BooleanArray(cells)
+            bonus = BooleanArray(cells)
             flowThrough = IntArray(cells)
             flowOnLink = IntArray(4 * cells)
             visitedAt = IntArray(2 * cells)
@@ -84,6 +89,8 @@ internal class ThreatFinder {
             val x = i % width
             val y = i / width
             val owner = state.ownerAt(x, y)
+            border[i] = state.isBorder(x, y)
+            bonus[i] = state.isBonus(x, y)
             kind[i] = when {
                 owner == attacker && !state.isCaptured(x, y) -> WALL
                 owner == victim && !state.isCaptured(x, y) -> VICTIM
@@ -107,7 +114,7 @@ internal class ThreatFinder {
             val i = groupCells[head++]
             val x = i % width
             val y = i / width
-            if (x == 0 || y == 0 || x == width - 1 || y == height - 1) grounded = true
+            if (border[i]) grounded = true
             for (dy in -1..1) {
                 for (dx in -1..1) {
                     val nx = x + dx
@@ -146,7 +153,9 @@ internal class ThreatFinder {
             for (i in 0 until cells) {
                 if (kind[i] == BUILDABLE && visitedAt[2 * i] == stamp && visitedAt[2 * i + 1] != stamp) cut += i
             }
-            threat = Threat(anchor, size, flow, cut.toIntArray(), groupCells.copyOf(size))
+            var points = size
+            for (k in 0 until size) if (bonus[groupCells[k]]) points++
+            threat = Threat(anchor, size, flow, cut.toIntArray(), groupCells.copyOf(size), points)
         }
         resetFlows()
         return threat
@@ -165,7 +174,7 @@ internal class ThreatFinder {
             val i = queue[head++]
             val x = i % width
             val y = i / width
-            if (x == 0 || y == 0 || x == width - 1 || y == height - 1) return true
+            if (border[i]) return true
             for (d in 0 until 4) {
                 val j = neighbour(i, x, y, d)
                 if (j < 0 || kind[j] == WALL || kind[j] == BUILDABLE || visitedAt[2 * j] == stamp) continue
@@ -204,7 +213,7 @@ internal class ThreatFinder {
                     if (j >= 0 && kind[j] != WALL && flowOnLink[4 * j + (d xor 1)] > 0) tail = visit(u, 2 * j + 1, tail)
                 }
             } else {
-                if (x == 0 || y == 0 || x == width - 1 || y == height - 1) return u
+                if (border[i]) return u
                 for (d in 0 until 4) {
                     val j = neighbour(i, x, y, d)
                     if (j >= 0 && kind[j] != WALL) tail = visit(u, 2 * j, tail)

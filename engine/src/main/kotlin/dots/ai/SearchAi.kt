@@ -62,7 +62,7 @@ class SearchAi(
     private fun shouldStop(state: GameState): Boolean {
         val me = state.toMove
         if (state.dotsLeft(me) != null) return false
-        val exposed = Grounding.ungrounded(state, me).sumOf { it.size }
+        val exposed = Grounding.ungrounded(state, me).sumOf { group -> group.sumOf { state.worth(it) } }
         return state.score(me) > state.score(me.opponent) + exposed
     }
 
@@ -189,9 +189,9 @@ class SearchAi(
         return bonus
     }
 
-    /** [AiConfig.attackWeights] or [AiConfig.dangerWeights] for [threat]: by its cost, times its size. */
+    /** [AiConfig.attackWeights] or [AiConfig.dangerWeights] for [threat]: by its cost, times its points. */
     private fun weight(table: IntArray, threat: Threat): Int =
-        table[min(threat.cost, table.size) - 1] * min(threat.size, MAX_GROUP_WEIGHT)
+        table[min(threat.cost, table.size) - 1] * min(threat.points, MAX_GROUP_WEIGHT)
 
     /** Without threat guidance every cell near a dot; with it the threat cells plus the busiest few. */
     private fun movesToTry(state: GameState, bonus: IntArray?): List<Pos> {
@@ -231,7 +231,7 @@ class SearchAi(
     /** What a group that costs the attacker [Threat.cost] more dots is worth to the attacker. */
     private fun threatValue(threat: Threat, attackerToMove: Boolean): Int {
         val table = if (attackerToMove) TEMPO else NO_TEMPO
-        return table[min(threat.cost, table.size - 1)] * threat.size
+        return table[min(threat.cost, table.size - 1)] * threat.points
     }
 
     private fun evaluate(state: GameState, me: Player): Int =
@@ -245,16 +245,18 @@ class SearchAi(
      */
     private fun pressure(state: GameState, attacker: Player): Int {
         var total = 0
-        for (y in 1 until state.height - 1) {
-            for (x in 1 until state.width - 1) { // dots on the border can never be enclosed
+        for (y in 0 until state.height) {
+            for (x in 0 until state.width) {
                 if (state.ownerAt(x, y) != attacker.opponent || state.isCaptured(x, y)) continue
+                if (state.isBorder(x, y)) continue // dots on the border can never be enclosed
+                val worth = state.worth(x, y)
                 for (dy in -2..2) {
                     for (dx in -2..2) {
                         val nx = x + dx
                         val ny = y + dy
                         if ((dx == 0 && dy == 0) || !state.inBounds(nx, ny)) continue
                         if (state.ownerAt(nx, ny) != attacker || state.isCaptured(nx, ny)) continue
-                        total += if (max(abs(dx), abs(dy)) == 1) NEAR_WEIGHT else FAR_WEIGHT
+                        total += worth * if (max(abs(dx), abs(dy)) == 1) NEAR_WEIGHT else FAR_WEIGHT
                     }
                 }
             }

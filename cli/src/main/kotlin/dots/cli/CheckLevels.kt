@@ -57,7 +57,6 @@ object CheckLevels {
 
     /** Solves [level] if it is a puzzle and judges the answer. */
     fun check(level: Level, solver: Solver = Solver(firstMovesLimit = MAX_FIRST_MOVES + 1)): Check {
-        level.unplayable?.let { return Check(level, Result.NOT_CHECKED, "not checked: the engine cannot play it yet ($it)") }
         if (!solver.isPuzzle(level.mission)) {
             val why = when (level.mission) {
                 Mission.Win, is Mission.WinBy, is Mission.WinWithFewerDots -> "a whole game, not a puzzle"

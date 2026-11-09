@@ -13,6 +13,7 @@ internal class WallCost {
     private var height = 0
     private var cells = 0
     private var kind = ByteArray(0)
+    private var border = BooleanArray(0)
     private var flowThrough = IntArray(0)
     private var flowOnLink = IntArray(0)
     private var cameFrom = IntArray(0)
@@ -36,6 +37,7 @@ internal class WallCost {
      */
     fun toCapture(state: GameState, attacker: Player, target: Int, limit: Int, cut: BooleanArray? = null): Int {
         prepare(state)
+        markBorder(state)
         for (i in 0 until cells) {
             val x = i % width
             val y = i / width
@@ -67,6 +69,7 @@ internal class WallCost {
      */
     fun toSave(state: GameState, player: Player, dot: Int): Int {
         prepare(state)
+        markBorder(state)
         val cost = chainCosts(state, player, listOf(dot))
         var best = Int.MAX_VALUE
         for (i in 0 until cells) if (onBorder(i) && cost[i] < best) best = cost[i]
@@ -76,6 +79,7 @@ internal class WallCost {
     /** Marks in [path] the empty points on the cheapest chains that [toSave] counts. */
     fun savePaths(state: GameState, player: Player, dot: Int, path: BooleanArray) {
         prepare(state)
+        markBorder(state)
         val fromDot = chainCosts(state, player, listOf(dot))
         val fromBorder = chainCosts(state, player, (0 until cells).filter { onBorder(it) })
         var best = Int.MAX_VALUE
@@ -83,7 +87,7 @@ internal class WallCost {
         if (best == Int.MAX_VALUE) return
         for (i in 0 until cells) {
             if (fromDot[i] == Int.MAX_VALUE || fromBorder[i] == Int.MAX_VALUE) continue
-            val empty = state.ownerAt(i % width, i / width) == null
+            val empty = state.ownerAt(i % width, i / width) == null && !state.isDead(i % width, i / width)
             // Both costs count the point itself once.
             if (empty && fromDot[i] + fromBorder[i] - 1 == best) path[i] = true
         }
@@ -92,6 +96,7 @@ internal class WallCost {
     /**
      * For each point, the fewest empty points to fill for a straight chain of [player]'s dots from
      * one of [starts] to it, the point itself included; [Int.MAX_VALUE] where no chain can reach.
+     * Points out of play cost nothing: a safe chain may run through them, as in `Grounding.safe`.
      */
     private fun chainCosts(state: GameState, player: Player, starts: List<Int>): IntArray {
         val cost = IntArray(cells) { Int.MAX_VALUE }
@@ -102,7 +107,8 @@ internal class WallCost {
             val owner = state.ownerAt(x, y)
             return when {
                 owner == player && !state.isCaptured(x, y) -> 0
-                owner == null && !state.isDead(x, y) -> 1
+                state.isDead(x, y) -> 0
+                owner == null -> 1
                 else -> -1
             }
         }
@@ -138,6 +144,7 @@ internal class WallCost {
         height = state.height
         cells = width * height
         kind = ByteArray(cells)
+        border = BooleanArray(cells)
         flowThrough = IntArray(cells)
         flowOnLink = IntArray(4 * cells)
         cameFrom = IntArray(2 * cells)
@@ -146,11 +153,11 @@ internal class WallCost {
         stamp = 0
     }
 
-    private fun onBorder(i: Int): Boolean {
-        val x = i % width
-        val y = i / width
-        return x == 0 || y == 0 || x == width - 1 || y == height - 1
+    private fun markBorder(state: GameState) {
+        for (i in 0 until cells) border[i] = state.isBorder(i % width, i / width)
     }
+
+    private fun onBorder(i: Int): Boolean = border[i]
 
     /** True if the border can be reached from [target] through points nobody can build on: no cut exists. */
     private fun openPathToBorder(target: Int): Boolean {

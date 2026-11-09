@@ -8,6 +8,7 @@ solutions: open
 boosters: none
 rule: none
 stars: none
+holes: none
 map:
 ...........
 ...........

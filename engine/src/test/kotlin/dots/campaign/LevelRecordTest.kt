@@ -136,4 +136,40 @@ class LevelRecordTest {
         }
         assertEquals("the mission 'target d3' cannot allow the bomb, which would remove the target", error.message)
     }
+
+    @Test
+    fun `records on boards with holes, blocked and bonus points replay exactly`() {
+        val shaped = LevelMap(
+            listOf(
+                "--.....--",
+                "-.......-",
+                "....+....",
+                "...B.#...",
+                "..+RB....",
+                "...BR.+..",
+                "....-....",
+                "-...#...-",
+                "--.....--",
+            ),
+        )
+        val random = Random(9)
+        var scored = 0
+        for (holes in listOf(Holes.BORDER, Holes.OPEN)) {
+            val level = Level(3, 4, "Shapes", Strength.NORMAL, 20, shaped, boosters = boosters, holes = holes)
+            repeat(10) { i ->
+                val record = LevelRecord(level, play(level, SearchAi(level.ai, Random(i)), random))
+                val text = record.toText()
+                val parsed = LevelRecord.parse(text) { _, _ -> level }
+                val played = record.actions.fold(level.newGame()) { state, action -> state.apply(action).state }
+                val replayed = parsed.replay()
+
+                assertEquals(record, parsed, text)
+                assertEquals(played.toAscii(), replayed.toAscii(), text)
+                for (player in Player.entries) assertEquals(played.score(player), replayed.score(player), text)
+                assertEquals(level.status(played), level.status(replayed), text)
+                scored += played.score(Player.RED) + played.score(Player.BLUE)
+            }
+        }
+        assertTrue(scored > 0, "no capture in any game, so the replays prove little")
+    }
 }

@@ -223,7 +223,7 @@ internal object Bench {
     private class BorderOnly(private val random: Random) : Ai {
         override fun choose(state: GameState): Action {
             val moves = state.legalMoves()
-            val border = moves.filter { it.x == 0 || it.y == 0 || it.x == state.width - 1 || it.y == state.height - 1 }
+            val border = moves.filter { state.isBorder(it) }
             val pick = border.ifEmpty { moves }
             return if (pick.isEmpty()) Action.Pass else Action.Place(pick[random.nextInt(pick.size)])
         }

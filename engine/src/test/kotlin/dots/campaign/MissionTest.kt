@@ -5,6 +5,7 @@ import dots.engine.Notation
 import dots.engine.Player
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -261,5 +262,41 @@ class MissionTest {
 
         val error = runCatching { level(Mission.Rescue(Notation.parse("a3")!!), dots = 2, safe) }.exceptionOrNull()
         assertTrue(error is IllegalArgumentException && "already decided" in error.message!!, "$error")
+    }
+
+    @Test
+    fun `a dot captured on a bonus point counts 2 toward a capture mission`() {
+        val map = listOf(
+            ".......",
+            "...R...",
+            "..R+R..",
+            ".......",
+            ".......",
+        )
+        val level = level(Mission.Capture(dots = 2, moves = 2), 3, map)
+        // Blue steps onto the bonus point, and red closes the ring round it.
+        val end = level.newGame().then("a5", "d3", "d4")
+
+        assertStatus(level, end, Outcome.PASSED, Reason.CAPTURED_ENOUGH, movesLeft = 0)
+        assertEquals(2, level.status(end).captured)
+    }
+
+    @Test
+    fun `what is still within reach counts the bonus points the computer may yet step on`() {
+        val withBonus = listOf(
+            ".....",
+            ".....",
+            "..B..",
+            ".....",
+            "....+",
+        )
+        // One exposed dot, and one more the computer may place: 2, or 3 if it lands on the bonus point.
+        val level = level(Mission.Capture(dots = 3, moves = 1), 1, withBonus)
+
+        assertStatus(level, level.newGame(), Outcome.PLAYING, null, movesLeft = 1)
+        val error = assertFailsWith<IllegalArgumentException> {
+            level(Mission.Capture(dots = 3, moves = 1), 1, withBonus.map { it.replace('+', '.') })
+        }
+        assertTrue("already decided" in error.message!!, error.message)
     }
 }

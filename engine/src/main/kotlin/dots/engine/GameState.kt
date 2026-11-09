@@ -24,6 +24,9 @@ package dots.engine
  *    their turns, on a schedule announced in advance ([doubleMoveIn]).
  *  - When one dot closes several chains the wiki lets players choose; this engine captures every
  *    newly enclosed area that holds an enemy dot.
+ *  - Board shapes and special points for the campaign: holes (no point there; their edge counts as
+ *    border or not, see [holesAreBorder]), blocked points (nobody may place a dot there) and bonus
+ *    points (a dot captured there is worth 2, see [worth]).
  */
 class GameState private constructor(
     val width: Int,
@@ -37,6 +40,21 @@ class GameState private constructor(
     private val dotsLeft: IntArray,
     private val placed: IntArray,
     private val blocked: BooleanArray,
+    /** Holes: no point there. Shared between states, never changed. */
+    private val hole: BooleanArray,
+    /** Bonus points. Shared between states, never changed. */
+    private val bonus: BooleanArray,
+    /**
+     * Cells a region reaches the border through: the outer edge of the grid and the holes that
+     * are outside ([isOutside]). Shared between states, never changed.
+     */
+    private val edge: BooleanArray,
+    /**
+     * True if the edge of every hole counts as border: dots next to a hole can never be captured.
+     * False if holes are open: a ring may go round a hole, unless the hole reaches the edge of the
+     * map, directly or through other holes.
+     */
+    val holesAreBorder: Boolean,
     private val boosters: IntArray,
     private var playableCells: Int,
     toMove: Player,
@@ -149,17 +167,50 @@ class GameState private constructor(
     fun isCaptured(pos: Pos): Boolean = isCaptured(pos.x, pos.y)
 
     /**
-     * True for cells out of play: inside a capturing chain, or blocked by a [Booster.WALL]. No
-     * further moves there. Rings pass over them as over empty points.
+     * True for cells out of play: inside a capturing chain, a hole, a blocked point, or blocked by
+     * a [Booster.WALL]. No further moves there. Rings pass over them as over empty points, except
+     * over holes that count as border ([holesAreBorder]).
      */
     fun isDead(x: Int, y: Int): Boolean = dead[y * width + x]
 
     fun isDead(pos: Pos): Boolean = isDead(pos.x, pos.y)
 
-    /** True for a point blocked by a [Booster.WALL]. */
+    /** True for a blocked point: one of the board's from the start, or one blocked by a [Booster.WALL]. */
     fun isBlocked(x: Int, y: Int): Boolean = blocked[y * width + x]
 
     fun isBlocked(pos: Pos): Boolean = isBlocked(pos.x, pos.y)
+
+    /** True for a hole: no point there, so no dot ever. It shapes the board. */
+    fun isHole(x: Int, y: Int): Boolean = hole[y * width + x]
+
+    fun isHole(pos: Pos): Boolean = isHole(pos.x, pos.y)
+
+    /** True for a bonus point: a dot captured there is worth 2 ([worth]). */
+    fun isBonus(x: Int, y: Int): Boolean = bonus[y * width + x]
+
+    fun isBonus(pos: Pos): Boolean = isBonus(pos.x, pos.y)
+
+    /** What capturing a dot on ([x], [y]) adds to the score: 2 on a bonus point, else 1. */
+    fun worth(x: Int, y: Int): Int = if (bonus[y * width + x]) 2 else 1
+
+    fun worth(pos: Pos): Int = worth(pos.x, pos.y)
+
+    /**
+     * True on the border, where no ring can pass: the outer edge of the grid, the holes outside
+     * the board and the points next to them, up, down, left or right. A hole is outside when holes
+     * count as border ([holesAreBorder]), or when it reaches the edge of the map, directly or
+     * through other holes. A dot on the border can never be captured.
+     */
+    fun isBorder(x: Int, y: Int): Boolean {
+        val i = y * width + x
+        return edge[i] || (x > 0 && isOutside(i - 1)) || (x < width - 1 && isOutside(i + 1)) ||
+            (y > 0 && isOutside(i - width)) || (y < height - 1 && isOutside(i + width))
+    }
+
+    fun isBorder(pos: Pos): Boolean = isBorder(pos.x, pos.y)
+
+    /** A hole no ring can go round. */
+    private fun isOutside(i: Int) = hole[i] && edge[i]
 
     /** How many of [booster] [player] has left to use in this game. */
     fun boostersLeft(player: Player, booster: Booster): Int = boosters[boosterIndex(player, booster)]
@@ -315,7 +366,10 @@ class GameState private constructor(
         return next
     }
 
-    /** One row per line: `.` empty, `,` out of play, `#` a wall, `R`/`B` dots, `r`/`b` captured dots. */
+    /**
+     * One row per line: `.` empty, `+` an empty bonus point, `,` out of play, `#` a blocked point,
+     * `-` a hole, `R`/`B` dots, `r`/`b` captured dots.
+     */
     fun toAscii(): String = buildString {
         for (y in 0 until height) {
             if (y > 0) append('\n')
@@ -324,7 +378,13 @@ class GameState private constructor(
                 val player = ownerAt(x, y)
                 append(
                     when {
-                        player == null -> if (blocked[i]) '#' else if (dead[i]) ',' else '.'
+                        player == null -> when {
+                            hole[i] -> '-'
+                            blocked[i] -> '#'
+                            dead[i] -> ','
+                            bonus[i] -> '+'
+                            else -> '.'
+                        }
                         captured[i] -> player.symbol.lowercaseChar()
                         else -> player.symbol
                     },
@@ -337,7 +397,8 @@ class GameState private constructor(
 
     private fun copy() = GameState(
         width, height, owner.clone(), captured.clone(), dead.clone(), enclosedBy.clone(), scores.clone(),
-        liveDots.clone(), dotsLeft.clone(), placed.clone(), blocked.clone(), boosters.clone(), playableCells, toMove,
+        liveDots.clone(), dotsLeft.clone(), placed.clone(), blocked.clone(), hole, bonus, edge, holesAreBorder,
+        boosters.clone(), playableCells, toMove,
         passesInRow, moveCount, cleaner, finished, boosterUsed, doubleDots, turnRules, turns.clone(), half,
     )
 
@@ -406,7 +467,9 @@ class GameState private constructor(
      * Walls are [player]'s uncaptured dots. Before the dot was placed, all of its non-wall
      * orthogonal neighbours were in one connected area. Placing it may split that area into
      * pieces, and each piece cut off by the new wall is bounded by a closed chain through the
-     * new dot. Orthogonal flooding is right here: a diagonal join of walls is tight.
+     * new dot. Orthogonal flooding is right here: a diagonal join of walls is tight. Holes are
+     * crossed like empty points; when they count as border, a piece that reaches one touches the
+     * border.
      *
      * If the old area reached the border, the pieces that no longer touch it are enclosed. If it
      * was already enclosed (an empty chain from earlier), every piece after a real split is.
@@ -444,7 +507,7 @@ class GameState private constructor(
                 val i = buffer[head++]
                 val x = i % width
                 val y = i / width
-                if (x == 0 || y == 0 || x == width - 1 || y == height - 1) border = true
+                if (edge[i]) border = true
                 for (e in 0 until 4) {
                     val mx = x + DX[e]
                     val my = y + DY[e]
@@ -462,7 +525,7 @@ class GameState private constructor(
             pieces++
         }
 
-        val placedOnBorder = px == 0 || py == 0 || px == width - 1 || py == height - 1
+        val placedOnBorder = edge[placed]
         val areaReachedBorder = placedOnBorder || (0 until pieces).any { touchesBorder[it] }
         for (k in 0 until pieces) {
             val enclosed = if (areaReachedBorder) !touchesBorder[k] else pieces >= 2
@@ -482,6 +545,7 @@ class GameState private constructor(
     private fun claim(cells: IntArray, from: Int, to: Int, by: Player, out: MutableList<Capture>) {
         val enemy = by.opponent
         val dots = ArrayList<Pos>()
+        var points = 0
         val region = ArrayList<Pos>(to - from)
         for (k in from until to) {
             val i = cells[k]
@@ -491,6 +555,7 @@ class GameState private constructor(
                 captured[i] = true
                 liveDots[enemy.ordinal]--
                 dots += pos
+                points += if (bonus[i]) 2 else 1
             }
             enclosedBy[i] = by.code
             if (!dead[i]) {
@@ -498,8 +563,8 @@ class GameState private constructor(
                 if (owner[i] == EMPTY) playableCells--
             }
         }
-        scores[by.ordinal] += dots.size
-        out += Capture(by, dots, region)
+        scores[by.ordinal] += points
+        out += Capture(by, dots, region, points)
     }
 
     /** True if [player]'s dots already enclose a live enemy dot; used to vet starting positions. */
@@ -513,7 +578,7 @@ class GameState private constructor(
         for (i in 0 until n) {
             val x = i % width
             val y = i / width
-            if ((x == 0 || y == 0 || x == width - 1 || y == height - 1) && !isWall(i, wall)) {
+            if (edge[i] && !isWall(i, wall)) {
                 outside[i] = true
                 stack[top++] = i
             }
@@ -561,6 +626,10 @@ class GameState private constructor(
          * player a budget of their own instead of [dotsPerPlayer]. [boosters] gives each player the
          * boosters they may use in this game, by kind and count. [turnRules] gives a player a
          * [TurnRule], with two dots on some turns.
+         *
+         * The board's shape and special points: [holes] have no point (and [holesAreBorder] says
+         * whether their edge counts as border), nobody may place a dot on [blocked] points, and a
+         * dot captured on a [bonus] point is worth 2. None of them may hold a starting dot.
          */
         fun start(
             width: Int,
@@ -571,6 +640,10 @@ class GameState private constructor(
             dotsFor: Map<Player, Int> = emptyMap(),
             boosters: Map<Player, Map<Booster, Int>> = emptyMap(),
             turnRules: Map<Player, TurnRule> = emptyMap(),
+            holes: Set<Pos> = emptySet(),
+            holesAreBorder: Boolean = true,
+            blocked: Set<Pos> = emptySet(),
+            bonus: Set<Pos> = emptySet(),
         ): GameState {
             require(width >= 3 && height >= 3) { "Board must be at least 3x3" }
             require(dotsPerPlayer == null || dotsPerPlayer >= 0) { "dotsPerPlayer must not be negative" }
@@ -581,15 +654,49 @@ class GameState private constructor(
             val budgets = IntArray(2) { dotsFor[Player.entries[it]] ?: dotsPerPlayer ?: -1 }
             val stock = IntArray(2 * Booster.entries.size)
             for ((player, kinds) in boosters) for ((booster, count) in kinds) stock[boosterIndex(player, booster)] = count
+            fun cells(points: Set<Pos>, what: String) = BooleanArray(n).also { cells ->
+                for (pos in points) {
+                    require(pos.x in 0 until width && pos.y in 0 until height) { "$what $pos is off the board" }
+                    cells[pos.y * width + pos.x] = true
+                }
+            }
+            val hole = cells(holes, "Hole")
+            val blockedCells = cells(blocked, "Blocked point")
+            val bonusCells = cells(bonus, "Bonus point")
+            require((0 until n).none { (hole[it] && (blockedCells[it] || bonusCells[it])) || (blockedCells[it] && bonusCells[it]) }) {
+                "A point can be only one of hole, blocked or bonus"
+            }
+            val edge = BooleanArray(n) { i ->
+                val x = i % width
+                val y = i / width
+                x == 0 || y == 0 || x == width - 1 || y == height - 1 || (holesAreBorder && hole[i])
+            }
+            // Open holes that reach the edge of the map through other holes are outside as well.
+            val reach = ArrayDeque((0 until n).filter { hole[it] && edge[it] })
+            while (reach.isNotEmpty()) {
+                val i = reach.removeLast()
+                for (d in 0 until 4) {
+                    val x = i % width + DX[d]
+                    val y = i / width + DY[d]
+                    val j = y * width + x
+                    if (x in 0 until width && y in 0 until height && hole[j] && !edge[j]) {
+                        edge[j] = true
+                        reach.addLast(j)
+                    }
+                }
+            }
+            val dead = BooleanArray(n) { hole[it] || blockedCells[it] }
             val state = GameState(
-                width, height, ByteArray(n), BooleanArray(n), BooleanArray(n), ByteArray(n), IntArray(2),
-                IntArray(2), budgets, IntArray(2), BooleanArray(n), stock, n, first, 0, 0, null, false, false, 0,
+                width, height, ByteArray(n), BooleanArray(n), dead, ByteArray(n), IntArray(2),
+                IntArray(2), budgets, IntArray(2), blockedCells, hole, bonusCells, edge, holesAreBorder, stock,
+                n - dead.count { it }, first, 0, 0, null, false, false, 0,
                 Array(2) { turnRules[Player.entries[it]] }, IntArray(2), NO_HALF,
             )
             for ((pos, player) in dots) {
                 require(state.inBounds(pos.x, pos.y)) { "Starting dot $pos is off the board" }
                 val i = pos.y * width + pos.x
                 require(state.owner[i] == EMPTY) { "Two starting dots on $pos" }
+                require(!dead[i] && !bonusCells[i]) { "Starting dot $pos is on a hole, a blocked point or a bonus point" }
                 state.owner[i] = player.code
                 state.liveDots[player.ordinal]++
                 state.playableCells--
@@ -601,28 +708,41 @@ class GameState private constructor(
             return state
         }
 
-        /** Builds a start position from a map: `.` empty, `R`/`B` dots; whitespace is ignored. */
+        /**
+         * Builds a start position from a map: `.` empty, `R`/`B` dots, `-` a hole, `#` a blocked
+         * point, `+` a bonus point; whitespace is ignored.
+         */
         fun fromAscii(
             ascii: String,
             dotsPerPlayer: Int? = null,
             first: Player = Player.RED,
+            holesAreBorder: Boolean = true,
         ): GameState {
             val rows = ascii.lines().map { line -> line.filterNot { it.isWhitespace() } }.filter { it.isNotEmpty() }
             require(rows.isNotEmpty()) { "Empty map" }
             val width = rows[0].length
             require(rows.all { it.length == width }) { "All map rows must have the same length" }
             val dots = HashMap<Pos, Player>()
+            val holes = HashSet<Pos>()
+            val blocked = HashSet<Pos>()
+            val bonus = HashSet<Pos>()
             for ((y, row) in rows.withIndex()) {
                 for ((x, ch) in row.withIndex()) {
                     when (ch) {
                         '.' -> Unit
                         Player.RED.symbol -> dots[Pos(x, y)] = Player.RED
                         Player.BLUE.symbol -> dots[Pos(x, y)] = Player.BLUE
+                        '-' -> holes += Pos(x, y)
+                        '#' -> blocked += Pos(x, y)
+                        '+' -> bonus += Pos(x, y)
                         else -> throw IllegalArgumentException("Unknown map symbol '$ch' at ($x, $y)")
                     }
                 }
             }
-            return start(width, rows.size, dotsPerPlayer, first, dots)
+            return start(
+                width, rows.size, dotsPerPlayer, first, dots,
+                holes = holes, holesAreBorder = holesAreBorder, blocked = blocked, bonus = bonus,
+            )
         }
     }
 }
