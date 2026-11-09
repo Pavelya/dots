@@ -1,7 +1,6 @@
 package dots.campaign
 
 import dots.engine.Booster
-import dots.engine.GameState
 import dots.engine.Notation
 import dots.engine.Player
 import dots.engine.Pos
@@ -17,7 +16,7 @@ class LevelFormatException(val source: String, val line: Int?, val reason: Strin
  * ("Level files").
  */
 object LevelFormat {
-    val FIELDS = listOf("world", "level", "name", "computer", "dots", "mission", "solutions", "boosters", "rule", "stars")
+    val FIELDS = listOf("world", "level", "name", "computer", "dots", "mission", "solutions", "boosters", "rule", "stars", "holes")
     private const val MAP = "map"
     private const val NONE = "none"
 
@@ -32,6 +31,7 @@ object LevelFormat {
         appendLine("boosters: ${boostersText(level.boosters)}")
         appendLine("rule: ${level.rule?.text ?: NONE}")
         appendLine("stars: ${level.stars?.let { "${it.two} ${it.three}" } ?: NONE}")
+        appendLine("holes: ${level.holes.text}")
         appendLine("$MAP:")
         level.map.rows.forEach { appendLine(it) }
     }
@@ -51,7 +51,9 @@ object LevelFormat {
 
         fun level(): Level {
             readLines()
-            val map = map()
+            val holes = field("holes") { holes(it) }
+            val map = map(holes)
+            holes.problem(map)?.let { Line(fields.getValue("holes").first).fail(it) }
             val mission = field("mission") { mission(it, map) }
             val solutions = field("solutions") { solutions(it) }
             val world = field("world") { number(it, 1..999) }
@@ -66,7 +68,7 @@ object LevelFormat {
             // The fields are each fine on their own; what Level still refuses is how the mission
             // fits the rest of the level, so the error points at the mission.
             return try {
-                Level(world, number, name, strength, dotsPerPlayer, map, mission, boosters, rule, stars, solutions)
+                Level(world, number, name, strength, dotsPerPlayer, map, mission, boosters, rule, stars, solutions, holes)
             } catch (e: IllegalArgumentException) {
                 throw LevelFormatException(source, fields.getValue("mission").first, e.message ?: "the mission does not fit the level")
             }
@@ -108,7 +110,7 @@ object LevelFormat {
             return Line(lineNo).read(value)
         }
 
-        private fun map(): LevelMap {
+        private fun map(holes: Holes): LevelMap {
             if (rows.isEmpty()) throw LevelFormatException(source, mapLine, "the map has no rows")
             val width = rows[0].second.length
             for ((lineNo, row) in rows) {
@@ -125,7 +127,7 @@ object LevelFormat {
             }
             val map = LevelMap(rows.map { it.second })
             try {
-                GameState.start(map.width, map.height, dots = map.startDots())
+                map.start(holes)
             } catch (e: IllegalArgumentException) {
                 first.fail(e.message ?: "the starting position is not valid")
             }
@@ -168,6 +170,9 @@ object LevelFormat {
                     )
                 }
             }
+
+            fun holes(text: String): Holes = Holes.entries.firstOrNull { it.text == text }
+                ?: fail("unknown holes '$text' (${Holes.entries.joinToString { it.text }})")
 
             fun solutions(text: String): Solutions = Solutions.entries.firstOrNull { it.text == text }
                 ?: fail("unknown solutions '$text' (${Solutions.entries.joinToString { it.text }})")

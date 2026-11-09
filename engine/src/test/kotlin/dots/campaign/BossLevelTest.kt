@@ -27,6 +27,7 @@ class BossLevelTest {
         boosters: none
         rule: $rule
         stars: none
+        holes: none
         map:
         ..........
         ..........
@@ -94,7 +95,6 @@ class BossLevelTest {
             assertEquals(rule, level.rule)
             assertEquals(text, rule.text)
             assertEquals(file(text), LevelFormat.write(level))
-            assertNull(level.unplayable)
         }
     }
 

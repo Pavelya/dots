@@ -16,6 +16,8 @@ import dots.engine.TurnRule
  * start, `R` dots are the human's), the [dotsPerPlayer] budget and the [mission]. [boosters] are
  * the ones the human may use in the level, by kind and count. A boss level has a [rule] the
  * computer bends. [solutions] says how many first moves may pass a puzzle mission (see [Solver]).
+ * The map may have holes, blocked points and bonus points; [holes] says whether the edge of a hole
+ * counts as border.
  */
 data class Level(
     val world: Int,
@@ -29,6 +31,7 @@ data class Level(
     val rule: SpecialRule? = null,
     val stars: Stars? = null,
     val solutions: Solutions = Solutions.FEW,
+    val holes: Holes = Holes.NONE,
 ) {
     init {
         require(world >= 1) { "world must be 1 or more" }
@@ -37,6 +40,7 @@ data class Level(
         require(dotsPerPlayer >= 1) { "dotsPerPlayer must be 1 or more" }
         require(boosters.values.all { it >= 1 }) { "booster counts must be 1 or more" }
         rule?.problem(map, dotsPerPlayer)?.let { throw IllegalArgumentException(it) }
+        holes.problem(map)?.let { throw IllegalArgumentException(it) }
         checkMission()
     }
 
@@ -60,20 +64,7 @@ data class Level(
      */
     val fortress: List<Pos> get() = if (rule is SpecialRule.Fortress) map.groups(LevelMap.COMPUTER).first() else emptyList()
 
-    /**
-     * Why the engine cannot play this level as written, or null if it can. The file format already
-     * holds special points that the rules do not use.
-     */
-    val unplayable: String?
-        get() = when {
-            map.hasSpecialPoints -> "its board has holes, blocked points or bonus points, which the engine does not play"
-            else -> null
-        }
-
-    fun newGame(): GameState {
-        unplayable?.let { throw UnsupportedOperationException("Level $code cannot be played: $it") }
-        return start()
-    }
+    fun newGame(): GameState = start()
 
     /** Where the mission stands in [state], a position of this level's game. */
     fun status(state: GameState): MissionStatus = judge(mission, state, human)
@@ -88,9 +79,9 @@ data class Level(
      * The human has the level's [boosters]; the computer has none (decision 0006). The computer
      * has the [rule]'s turn rule, if any.
      */
-    private fun start() = GameState.start(
-        map.width, map.height, dotsPerPlayer, human, map.startDots(), dotsFor = mapOf(human to humanDots),
-        boosters = mapOf(human to boosters), turnRules = rule?.turnRule?.let { mapOf(computer to it) } ?: emptyMap(),
+    private fun start() = map.start(
+        holes, dotsPerPlayer, human, dotsFor = mapOf(human to humanDots), boosters = mapOf(human to boosters),
+        turnRules = rule?.turnRule?.let { mapOf(computer to it) } ?: emptyMap(),
     )
 
     private fun checkMission() {
@@ -133,6 +124,33 @@ enum class Solutions(val text: String) {
     OPEN("open"),
 }
 
+/**
+ * Whether the edge of a level's holes counts as border. It is [NONE] exactly when the map has no
+ * holes.
+ */
+enum class Holes(val text: String) {
+    /** The map has no holes. */
+    NONE("none"),
+
+    /** A hole's edge is border: a dot next to a hole can never be captured, and no ring goes round a hole. */
+    BORDER("border"),
+
+    /** A hole is open: rings go round and over it as over a blocked point, and a dot next to one can be captured. */
+    OPEN("open"),
+    ;
+
+    /** Why this does not fit [map], or null if it fits. */
+    fun problem(map: LevelMap): String? {
+        val hasHoles = map.points(LevelMap.HOLE).isNotEmpty()
+        return when {
+            hasHoles && this == NONE ->
+                "the map has holes: say whether their edge counts as border ('holes: border') or not ('holes: open')"
+            !hasHoles && this != NONE -> "the map has no holes, so 'holes' must be 'none'"
+            else -> null
+        }
+    }
+}
+
 /** How strongly the computer plays a level. */
 enum class Strength(val config: AiConfig) {
     EASY(AiConfig.EASY),
@@ -169,6 +187,23 @@ data class LevelMap(val rows: List<String>) {
         points(HUMAN).associateWith { Player.RED } + points(COMPUTER).associateWith { Player.BLUE }
 
     /**
+     * A game on this board: its shape, special points and starting dots, with [holes] saying
+     * whether the edge of a hole counts as border. The other arguments are those of [GameState.start].
+     */
+    fun start(
+        holes: Holes,
+        dotsPerPlayer: Int? = null,
+        first: Player = Player.RED,
+        dotsFor: Map<Player, Int> = emptyMap(),
+        boosters: Map<Player, Map<Booster, Int>> = emptyMap(),
+        turnRules: Map<Player, TurnRule> = emptyMap(),
+    ): GameState = GameState.start(
+        width, height, dotsPerPlayer, first, startDots(), dotsFor, boosters, turnRules,
+        holes = points(HOLE).toSet(), holesAreBorder = holes != Holes.OPEN,
+        blocked = points(BLOCKED).toSet(), bonus = points(BONUS).toSet(),
+    )
+
+    /**
      * The groups of [symbol]'s dots, biggest first: dots joined up, down, left, right or
      * diagonally, as the links of a chain are. Each group lists its dots row by row.
      */
@@ -191,8 +226,6 @@ data class LevelMap(val rows: List<String>) {
         }
         return groups.sortedByDescending { it.size }
     }
-
-    val hasSpecialPoints: Boolean get() = rows.any { row -> row.any { it == HOLE || it == BLOCKED || it == BONUS } }
 
     companion object {
         const val EMPTY = '.'

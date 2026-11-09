@@ -34,9 +34,9 @@ interface Ai {
  * @param attackWeights how strongly the computer wants to play a cell that walls in an enemy
  *   group, by how many more dots that group needs: the first number is for a group one dot from
  *   capture, the second for two dots, and so on; the last number also covers every greater
- *   distance. The bonus is multiplied by the group's size (at most 3) and added to the move's
- *   score, so it decides between moves as well as which moves are searched. For scale, a captured
- *   dot is worth 10,000.
+ *   distance. The bonus is multiplied by what capturing the group would score (its size, one more
+ *   for each dot on a bonus point; at most 3) and added to the move's score, so it decides between
+ *   moves as well as which moves are searched. For scale, a captured dot is worth 10,000.
  * @param dangerWeights the same for a cell that would stop the opponent walling in one of the
  *   computer's own groups. Higher than [attackWeights] means it defends before it attacks.
  * @param timeLimitMillis if set, the computer answers within about this many milliseconds,

@@ -62,7 +62,7 @@ internal object Cleanup {
                 if (!state.inBounds(nx, ny) || wall[ny * width + nx]) continue
                 graph.add(2 * i + 1, 2 * (ny * width + nx), INF)
             }
-            if (x == 0 || y == 0 || x == width - 1 || y == height - 1) graph.add(2 * i + 1, sink, INF)
+            if (state.isBorder(x, y)) graph.add(2 * i + 1, sink, INF)
         }
         for (pos in group) graph.add(source, 2 * (pos.y * width + pos.x), INF)
 

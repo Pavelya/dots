@@ -3,6 +3,8 @@ package dots.campaign
 import dots.engine.GameState
 import dots.engine.Grounding
 import dots.engine.Player
+import dots.engine.Pos
+import kotlin.math.min
 
 /** Whether a mission is still open, passed or failed. */
 enum class Outcome { PLAYING, PASSED, FAILED }
@@ -48,9 +50,9 @@ data class MissionStatus(
     val outcome: Outcome,
     /** What decided the mission; null while it is [Outcome.PLAYING]. */
     val reason: Reason?,
-    /** Computer dots the player has captured. */
+    /** The player's score: computer dots captured, 2 for each on a bonus point. */
     val captured: Int,
-    /** The player's dots the computer has captured. */
+    /** The computer's score: the player's dots captured, 2 for each on a bonus point. */
     val lost: Int,
     /**
      * For missions with a move limit: in "capture N in M moves", the player's moves left; in
@@ -121,16 +123,29 @@ internal fun judge(mission: Mission, state: GameState, human: Player): MissionSt
 }
 
 /**
- * The most dots [player] can still capture from here on: the opponent's live dots that are not
- * safe, plus those the opponent may still place. Null when the opponent has no dot limit.
+ * The most [player] can still add to their score from here on: the opponent's live dots that are
+ * not safe, plus those the opponent may still place, each counted 2 if it is or may be on a bonus
+ * point. Null when the opponent has no dot limit.
  */
 private fun stillCapturable(state: GameState, player: Player): Int? {
     val enemy = player.opponent
     if (state.isOver) return 0
-    val exposed = Grounding.liveCount(state, enemy) - Grounding.safe(state, enemy).size
+    val safe = Grounding.safe(state, enemy)
+    var exposed = 0
+    var freeBonus = 0
+    for (y in 0 until state.height) {
+        for (x in 0 until state.width) {
+            val owner = state.ownerAt(x, y)
+            if (owner == enemy && !state.isCaptured(x, y) && Pos(x, y) !in safe) exposed += state.worth(x, y)
+            if (owner == null && !state.isDead(x, y) && state.isBonus(x, y)) freeBonus++
+        }
+    }
     return when {
         // After a stop only the collecting player moves, and the other places no more dots.
         state.isCleanup -> if (state.cleaner == player) exposed else 0
-        else -> exposed + (state.dotsLeft(enemy) ?: return null)
+        else -> {
+            val left = state.dotsLeft(enemy) ?: return null
+            exposed + left + min(left, freeBonus)
+        }
     }
 }

@@ -60,7 +60,7 @@ and download the `dots-debug-apk` artifact.
 Moves are a column and a row: `e5`, or `ab12` on boards wider than 26 columns (after `z` come
 `aa`, `ab`, ...). Other commands: `stop` (declare your dots grounded, see the rules), `done`
 (finish collecting after your opponent stopped), `pass`, `quit`. Captured dots show as `r`/`b`,
-cells out of play as `,`.
+cells out of play as `,`, blocked points as `#`, bonus points as `+`, and holes as blanks.
 
 Benchmarks (computer against computer; see "How strong is it" below):
 
@@ -128,6 +128,8 @@ Implemented from the Wikipedia article
   programs usually take the smallest area). This engine captures every newly enclosed area that
   holds an enemy dot, which is what a player drawing freely on paper would pick.
 - **Start positions** may not already enclose an enemy dot.
+- **Board shapes and special points (campaign).** Holes, blocked points and bonus points; see
+  [Board shapes and special points](#board-shapes-and-special-points).
 - **Not implemented:** the *kropki na dwie kratki* variant (lines of length two and knight-move
   links), more than two players, and restricting early moves to the centre.
 
@@ -159,6 +161,7 @@ solutions: open
 boosters: none
 rule: none
 stars: none
+holes: none
 map:
 ..........
 ..........
@@ -183,10 +186,8 @@ map:
 | `boosters` | `none`, or the boosters the player may use and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. See [Boosters](#boosters). |
 | `rule` | A rule the computer bends on a boss level: `none`, `double move every 5 turns`, `fortress of 12 dots` or `two groups at once`. See [Boss rules](#boss-rules). |
 | `stars` | `none`, or the scores for two and for three stars: `3 6`. What is counted depends on the mission. |
+| `holes` | Whether the edge of the map's holes counts as border: `border` or `open`, or `none` for a map without holes. See [Board shapes and special points](#board-shapes-and-special-points). |
 | `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
-
-The rules play every mission and every boss rule, but no map with holes, blocked or bonus
-points. A level that uses those can be written and read, but refuses to start.
 
 A file that cannot be read gives an error with the line, for example
 `1-03.level, line 4: unknown computer strength 'medium' (easy, normal, hard, expert)`. The files
@@ -197,7 +198,8 @@ back unchanged.
 
 A move is one dot placed; a pass is not a move. After every move, `Level.status` says where the
 mission stands (playing, passed or failed), what decided it, and the numbers a player follows:
-dots captured, dots lost and moves left. The app turns these into words.
+dots captured, dots lost and moves left. The app turns these into words. A dot captured on a
+bonus point counts 2 here as everywhere: `capture 5` asks for a score of 5.
 
 | Mission | Passes | Fails |
 |---------|--------|-------|
@@ -212,9 +214,11 @@ dots captured, dots lost and moves left. The app turns these into words.
 Capture, survive, rescue and target end the level the moment they are decided. The three win
 missions play on to the end even once won, because the margin counts for stars.
 
-A dot is **safe** when a chain of its side's dots joins it to the border, stepping only up, down,
-left or right (`Grounding.safe`). Such a chain cannot be crossed. An enemy ring can cross a diagonal
-step, so a dot joined to the border only diagonally is not safe.
+A dot is **safe** when a chain joins it to the border, stepping only up, down, left or right,
+through its side's dots and points out of play: holes, blocked points and the inside of earlier
+captures (`Grounding.safe`). Such a chain cannot be crossed, since nobody can ever place a dot on
+it. An enemy ring can cross a diagonal step, so a dot joined to the border only diagonally is not
+safe.
 
 A level is refused if its mission is decided before the first move, or asks for more moves than
 that side has dots. The computer plays for captures only, not against the mission.
@@ -267,6 +271,36 @@ move. Only the computer has the rule.
   double move. `Level.fortress` lists the fortress's dots, for the app to draw.
 - **Not checked as puzzles.** The puzzle checker counts one computer dot per turn, so it leaves
   out levels with `double move` or `two groups at once` (`check-levels` says "not checked").
+
+### Board shapes and special points
+
+A level's map can shape the board and mark special points. The computer, the puzzle checker and
+replays all play them by the same rules.
+
+| Map | Point | Rules |
+|-----|-------|-------|
+| `-` | Hole | No point here, so never a dot. Holes shape the board: along the map's edge they give it an odd outline. What a hole's edge is depends on the level's `holes` line, below. |
+| `#` | Blocked point | Nobody may place a dot here. A ring passes over it as over an empty point and may enclose it, as with the wall booster. A dot next to it can be captured. |
+| `+` | Bonus point | Either side may place a dot here. A dot captured on it counts 2 instead of 1: in the result, the missions and the stars. An empty bonus point inside a capture adds nothing and is out of play. |
+
+**Hole edges.** A level with holes says on its `holes` line whether their edge is border:
+
+- `holes: border`. The edge of every hole is part of the border. A dot next to a hole, up, down,
+  left or right, can never be captured, like a dot on the edge of the board, and no ring can go
+  round a hole.
+- `holes: open`. A hole is like a blocked point: a ring may go round it, and the hole is then
+  inside the captured area. A dot next to a hole can be captured.
+
+Either way, a hole that reaches the edge of the map, directly or through other holes, is outside
+the board, since no ring can go round it. So an odd outline plays the same with `border` and
+`open`; the choice matters for holes inside the board. A dot that touches a hole only diagonally
+can be captured either way: a ring may cut across the hole's corner.
+
+A map without holes says `holes: none`, and a map with holes must say `border` or `open`.
+
+`GameState.isBorder` says which points are on the border: the outer edge of the grid, and the
+holes outside the board and the points next to them. The computer counts a dot on a bonus point
+twice when it weighs a capture.
 
 ### Checking puzzles
 

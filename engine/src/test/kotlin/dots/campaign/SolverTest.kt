@@ -254,4 +254,25 @@ class SolverTest {
         assertFalse(solver.isPuzzle(Mission.WinBy(2)))
         assertFalse(solver.isPuzzle(Mission.WinWithFewerDots(3)))
     }
+
+    @Test
+    fun `rescue, the straight step to a hole whose edge is border`() {
+        // d5 joins d4 to the hole at d6, and the edge of a hole is border here; anything else and
+        // blue captures d4 at d5.
+        val map = listOf(
+            ".......",
+            ".......",
+            "...B...",
+            "..BRB..",
+            ".......",
+            "...-...",
+            ".......",
+        )
+        val level = Level(1, 1, "Test", Strength.EASY, 6, LevelMap(map), Mission.Rescue(Pos(3, 3)), holes = Holes.BORDER)
+        val solution = Solver().solve(level)
+
+        assertEquals(Verdict.SOLVED, solution.verdict)
+        assertEquals(points("d5"), solution.winningFirstMoves)
+        assertEquals(1, solution.shortest)
+    }
 }

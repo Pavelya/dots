@@ -113,7 +113,6 @@ private fun openingDots(name: String, width: Int, height: Int): Map<Pos, Player>
 }
 
 private fun playLevel(level: Level) {
-    level.unplayable?.let { exitWith("Level ${level.code} cannot be played: $it") }
     println("Level ${level.code}: ${level.name} - computer is ${level.strength.text}, head start ${level.headStart}")
     println("Mission: ${goal(level)}")
     level.rule?.let { println("Boss rule: ${announce(it)}") }
@@ -283,7 +282,9 @@ private fun loop(
 private fun describe(mover: Player, action: Action, result: MoveResult): String = when (action) {
     is Action.Place -> {
         val captured = result.captures.sumOf { it.dots.size }
-        val note = if (captured == 0) "" else ": ${result.captures.first().by} captures $captured dot${if (captured == 1) "" else "s"}!"
+        val points = result.captures.sumOf { it.points }
+        val worth = if (points == captured) "" else ", worth $points"
+        val note = if (captured == 0) "" else ": ${result.captures.first().by} captures $captured dot${if (captured == 1) "" else "s"}$worth!"
         "$mover plays ${name(action.pos)}$note"
     }
     Action.Pass -> "$mover passes"
@@ -338,7 +339,13 @@ private fun render(state: GameState, last: Pos?): String = buildString {
         for (x in 0 until state.width) {
             val owner = state.ownerAt(x, y)
             val symbol = when {
-                owner == null -> if (state.isDead(x, y)) "," else "."
+                owner == null -> when {
+                    state.isHole(x, y) -> " "
+                    state.isBlocked(x, y) -> "#"
+                    state.isDead(x, y) -> ","
+                    state.isBonus(x, y) -> "+"
+                    else -> "."
+                }
                 state.isCaptured(x, y) -> paint(owner.symbol.lowercase(), owner, dim = true)
                 else -> paint(owner.symbol.toString(), owner, highlight = Pos(x, y) == last)
             }
@@ -351,7 +358,7 @@ private fun render(state: GameState, last: Pos?): String = buildString {
     }
     append("\n    $left\n")
     if (state.isCleanup) append("    ${state.stopper} has stopped: ${state.cleaner} is collecting\n")
-    append("    (r/b = captured, ',' = out of play)\n\n")
+    append("    (r/b = captured, ',' = out of play, '#' = blocked, '+' = bonus point: a dot captured there counts 2)\n\n")
 }
 
 internal fun exitWith(message: String): Nothing {

@@ -167,4 +167,32 @@ class ThreatFinderTest {
 
         assertEquals(1, result.state.score(Player.RED))
     }
+
+    @Test
+    fun `agrees with the slow planner on boards with holes and blocked points`() {
+        val sloppy = AiConfig(depth = 1, breadth = 12, mistakeRate = 0.6)
+        var compared = 0
+        var realThreats = 0
+        for (seed in 1..16) {
+            val random = Random(seed)
+            val ai = SearchAi(sloppy, random)
+            val opening = Openings.cross(11, 11)
+            val free = (0 until 11).flatMap { x -> (0 until 11).map { y -> Pos(x, y) } }.filter { it !in opening }.shuffled(random)
+            var state = GameState.start(
+                11, 11, dots = opening, holes = free.take(8).toSet(), holesAreBorder = seed % 2 == 0,
+                blocked = free.drop(8).take(4).toSet(), bonus = free.drop(12).take(4).toSet(),
+            )
+            repeat(40) {
+                if (state.isOver) return@repeat
+                state = state.apply(ai.choose(state)).state
+                for (victim in Player.entries) {
+                    val (all, threats) = compare(state, victim)
+                    compared += all
+                    realThreats += threats
+                }
+            }
+        }
+        assertTrue(compared > 300, "only $compared comparisons")
+        assertTrue(realThreats > 50, "only $realThreats of them were real threats, so the check proves little")
+    }
 }

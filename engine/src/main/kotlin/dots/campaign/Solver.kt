@@ -308,8 +308,7 @@ class Solver(
             var count = 0
             for (y in 0 until state.height) {
                 for (x in 0 until state.width) {
-                    val border = x == 0 || y == 0 || x == state.width - 1 || y == state.height - 1
-                    if (border && state.ownerAt(x, y) == null && !state.isDead(x, y)) count++
+                    if (state.isBorder(x, y) && state.ownerAt(x, y) == null && !state.isDead(x, y)) count++
                 }
             }
             return count
