@@ -28,6 +28,7 @@ class BossLevelTest {
         rule: $rule
         stars: none
         holes: none
+        note: none
         map:
         ..........
         ..........

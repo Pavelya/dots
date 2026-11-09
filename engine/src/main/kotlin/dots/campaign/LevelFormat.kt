@@ -16,7 +16,7 @@ class LevelFormatException(val source: String, val line: Int?, val reason: Strin
  * ("Level files").
  */
 object LevelFormat {
-    val FIELDS = listOf("world", "level", "name", "computer", "dots", "mission", "solutions", "boosters", "rule", "stars", "holes")
+    val FIELDS = listOf("world", "level", "name", "computer", "dots", "mission", "solutions", "boosters", "rule", "stars", "holes", "note")
     private const val MAP = "map"
     private const val NONE = "none"
 
@@ -32,6 +32,7 @@ object LevelFormat {
         appendLine("rule: ${level.rule?.text ?: NONE}")
         appendLine("stars: ${level.stars?.text ?: NONE}")
         appendLine("holes: ${level.holes.text}")
+        appendLine("note: ${level.note ?: NONE}")
         appendLine("$MAP:")
         level.map.rows.forEach { appendLine(it) }
     }
@@ -64,12 +65,13 @@ object LevelFormat {
             val boosters = field("boosters") { boosters(it) }
             val rule = field("rule") { rule(it) }
             val stars = field("stars") { stars(it) }
+            val note = field("note") { it.ifEmpty { fail("the note is empty; write 'none' for a level without one") }.takeIf { it != NONE } }
             rule?.problem(map, dotsPerPlayer)?.let { Line(fields.getValue("rule").first).fail(it) }
             stars?.problem(mission, map, dotsPerPlayer, boosters)?.let { Line(fields.getValue("stars").first).fail(it) }
             // The fields are each fine on their own; what Level still refuses is how the mission
             // fits the rest of the level, so the error points at the mission.
             return try {
-                Level(world, number, name, strength, dotsPerPlayer, map, mission, boosters, rule, stars, solutions, holes)
+                Level(world, number, name, strength, dotsPerPlayer, map, mission, boosters, rule, stars, solutions, holes, note)
             } catch (e: IllegalArgumentException) {
                 throw LevelFormatException(source, fields.getValue("mission").first, e.message ?: "the mission does not fit the level")
             }

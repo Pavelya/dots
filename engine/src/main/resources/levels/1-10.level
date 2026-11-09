@@ -1,0 +1,21 @@
+world: 1
+level: 10
+name: Long Chase
+computer: easy
+dots: 6
+mission: target f4
+solutions: few
+boosters: none
+rule: none
+stars: moves 1 2
+holes: none
+note: The hardest puzzle of the world: four moves, each one answering where the computer runs.
+map:
+........
+....RR..
+...R.B..
+...RBBR.
+......R.
+...R....
+........
+........

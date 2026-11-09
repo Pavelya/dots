@@ -23,6 +23,7 @@ class LevelFormatTest {
         rule: none
         stars: none
         holes: none
+        note: none
         map:
         .....
         .R...
@@ -57,12 +58,13 @@ class LevelFormatTest {
             stars = Stars(StarMeasure.MOVES, two = 3, three = 6),
             solutions = Solutions.OPEN,
             holes = Holes.OPEN,
+            note = "A fortress in the fog: the player must find the gap.",
         )
         val text = LevelFormat.write(level)
 
         assertEquals(level, LevelFormat.parse(text))
         assertTrue("boosters: wall 2, hint 1, bomb 3, double-dot 1\n" in text, text)
-        assertTrue("holes: open\nmap:\n-.....-\n.R.#...\n" in text, text)
+        assertTrue("holes: open\nnote: A fortress in the fog: the player must find the gap.\nmap:\n-.....-\n.R.#...\n" in text, text)
     }
 
     @Test
@@ -101,7 +103,7 @@ class LevelFormatTest {
     @Test
     fun `fields can come in any order before the map`() {
         val lines = sample.lines()
-        val shuffled = (lines.take(11).reversed() + lines.drop(11)).joinToString("\n")
+        val shuffled = (lines.take(12).reversed() + lines.drop(12)).joinToString("\n")
 
         assertEquals(LevelFormat.parse(sample), LevelFormat.parse(shuffled))
     }
@@ -148,18 +150,19 @@ class LevelFormatTest {
             Triple("stars: none", "stars: margin 1 3", "line 10: every pass of 'win' already has a margin of 1"),
             Triple("stars: none", "stars: moves 2 4", "line 10: stars for 'moves' fit only capture, rescue and target"),
             Triple("stars: none", "stars: saved 1 3", "line 10: the map has 2 of the player's dots, fewer than the 3"),
+            Triple("note: none", "note:", "line 12: the note is empty; write 'none' for a level without one"),
             Triple("rule: none", "rules: none", "line 9: unknown field 'rules'"),
             Triple("rule: none", "rule none", "line 9: expected 'field: value' or 'map:', found 'rule none'"),
             Triple("stars: none", "stars: none\ndots: 3", "line 11: 'dots' appears twice (first on line 5)"),
             Triple("holes: none", "holes: some", "line 11: unknown holes 'some' (none, border, open)"),
             Triple("holes: none", "holes: border", "line 11: the map has no holes, so 'holes' must be 'none'"),
             Triple(".....\n.R...", "-....\n.R...", "line 11: the map has holes: say whether their edge counts as border ('holes: border') or not ('holes: open')"),
-            Triple(".R...\n", ".R..\n", "line 14: this row has 4 points, the first row has 5"),
-            Triple("..B..\n", "..B.X\n", "line 16: unknown map symbol 'X' in column 5"),
-            Triple("..B..\n.....\n", "..B..\n.....\nstars: margin 3 6\n", "line 18: fields must come before 'map:'"),
-            Triple("map:\n", "map: .....\n", "line 12: the map's rows start on the line after 'map:'"),
-            Triple("..RB.\n..B..\n.....\n", "", "line 12: the board is 5x2; boards are 3 to 99 points in each direction"),
-            Triple("..RB.\n..B..\n.....\n", "..RB.\n.RBR.\n..R..\n", "line 12: The starting position already encloses an enemy dot"),
+            Triple(".R...\n", ".R..\n", "line 15: this row has 4 points, the first row has 5"),
+            Triple("..B..\n", "..B.X\n", "line 17: unknown map symbol 'X' in column 5"),
+            Triple("..B..\n.....\n", "..B..\n.....\nstars: margin 3 6\n", "line 19: fields must come before 'map:'"),
+            Triple("map:\n", "map: .....\n", "line 13: the map's rows start on the line after 'map:'"),
+            Triple("..RB.\n..B..\n.....\n", "", "line 13: the board is 5x2; boards are 3 to 99 points in each direction"),
+            Triple("..RB.\n..B..\n.....\n", "..RB.\n.RBR.\n..R..\n", "line 13: The starting position already encloses an enemy dot"),
             Triple("dots: 12\n", "", "level: missing 'dots:'"),
         )
         for ((find, replace, expected) in cases) {
