@@ -170,15 +170,14 @@ class LevelFormatTest {
     }
 
     @Test
-    fun `levels with rules the engine does not play refuse to start`() {
+    fun `levels with special points the engine does not play refuse to start`() {
         val level = LevelFormat.parse(sample)
         val unplayable = listOf(
-            level.copy(rule = SpecialRule.DoubleMove(4)) to "the special rule 'double move every 4 turns'",
             level.copy(map = LevelMap(level.map.rows.map { it.replace('.', '+') })) to "bonus points",
         )
 
         assertNull(level.unplayable)
-        level.copy(boosters = mapOf(Booster.HINT to 1), stars = Stars(1, 2)).newGame()
+        level.copy(boosters = mapOf(Booster.HINT to 1), rule = SpecialRule.DoubleMove(4), stars = Stars(1, 2)).newGame()
         for ((bad, reason) in unplayable) {
             val error = assertFailsWith<UnsupportedOperationException> { bad.newGame() }
             assertTrue(reason in error.message!!, error.message)

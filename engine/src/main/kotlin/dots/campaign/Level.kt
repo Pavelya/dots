@@ -6,6 +6,7 @@ import dots.engine.GameState
 import dots.engine.Notation
 import dots.engine.Player
 import dots.engine.Pos
+import dots.engine.TurnRule
 
 /**
  * A single-player level: the human (red, moving first) plays the computer (blue). Levels are
@@ -13,8 +14,8 @@ import dots.engine.Pos
  *
  * Difficulty comes from the computer's [strength], the [map] it starts with (`B` dots are its head
  * start, `R` dots are the human's), the [dotsPerPlayer] budget and the [mission]. [boosters] are
- * the ones the human may use in the level, by kind and count. [solutions] says how many first
- * moves may pass a puzzle mission (see [Solver]).
+ * the ones the human may use in the level, by kind and count. A boss level has a [rule] the
+ * computer bends. [solutions] says how many first moves may pass a puzzle mission (see [Solver]).
  */
 data class Level(
     val world: Int,
@@ -35,6 +36,7 @@ data class Level(
         require(name.isNotBlank() && name.lines().size == 1 && name == name.trim()) { "name must be one line of text" }
         require(dotsPerPlayer >= 1) { "dotsPerPlayer must be 1 or more" }
         require(boosters.values.all { it >= 1 }) { "booster counts must be 1 or more" }
+        rule?.problem(map, dotsPerPlayer)?.let { throw IllegalArgumentException(it) }
         checkMission()
     }
 
@@ -53,13 +55,18 @@ data class Level(
     val headStart: Int get() = map.points(LevelMap.COMPUTER).size - map.points(LevelMap.HUMAN).size
 
     /**
+     * The computer's dots that make up its fortress, for the app to draw: empty unless the [rule]
+     * is a [SpecialRule.Fortress].
+     */
+    val fortress: List<Pos> get() = if (rule is SpecialRule.Fortress) map.groups(LevelMap.COMPUTER).first() else emptyList()
+
+    /**
      * Why the engine cannot play this level as written, or null if it can. The file format already
-     * holds special rules and special points that the rules do not use.
+     * holds special points that the rules do not use.
      */
     val unplayable: String?
         get() = when {
             map.hasSpecialPoints -> "its board has holes, blocked points or bonus points, which the engine does not play"
-            rule != null -> "it has the special rule '${rule.text}', which the engine does not play"
             else -> null
         }
 
@@ -77,10 +84,13 @@ data class Level(
     /** The level is passed when its mission is; in "win", a draw (for instance 0-0) is not enough. */
     fun isPassed(end: GameState): Boolean = status(end).outcome == Outcome.PASSED
 
-    /** The human has the level's [boosters]; the computer has none (decision 0006). */
+    /**
+     * The human has the level's [boosters]; the computer has none (decision 0006). The computer
+     * has the [rule]'s turn rule, if any.
+     */
     private fun start() = GameState.start(
         map.width, map.height, dotsPerPlayer, human, map.startDots(), dotsFor = mapOf(human to humanDots),
-        boosters = mapOf(human to boosters),
+        boosters = mapOf(human to boosters), turnRules = rule?.turnRule?.let { mapOf(computer to it) } ?: emptyMap(),
     )
 
     private fun checkMission() {
@@ -157,6 +167,30 @@ data class LevelMap(val rows: List<String>) {
 
     fun startDots(): Map<Pos, Player> =
         points(HUMAN).associateWith { Player.RED } + points(COMPUTER).associateWith { Player.BLUE }
+
+    /**
+     * The groups of [symbol]'s dots, biggest first: dots joined up, down, left, right or
+     * diagonally, as the links of a chain are. Each group lists its dots row by row.
+     */
+    fun groups(symbol: Char): List<List<Pos>> {
+        val left = points(symbol).toMutableSet()
+        val groups = ArrayList<List<Pos>>()
+        while (left.isNotEmpty()) {
+            val first = left.first()
+            left.remove(first)
+            val group = arrayListOf(first)
+            var i = 0
+            while (i < group.size) {
+                val (x, y) = group[i++]
+                for (dy in -1..1) for (dx in -1..1) {
+                    val next = Pos(x + dx, y + dy)
+                    if (left.remove(next)) group += next
+                }
+            }
+            groups += group.sortedWith(compareBy({ it.y }, { it.x }))
+        }
+        return groups.sortedByDescending { it.size }
+    }
 
     val hasSpecialPoints: Boolean get() = rows.any { row -> row.any { it == HOLE || it == BLOCKED || it == BONUS } }
 
@@ -242,17 +276,83 @@ sealed interface Mission {
     }
 }
 
-/** A rule of a level that the computer bends, announced to the player (boss levels). */
+/**
+ * A rule the computer bends on a boss level, announced to the player before the first move. A
+ * level has at most one.
+ */
 sealed interface SpecialRule {
+    /** The words a level file uses for it. */
     val text: String
 
-    /** The computer places two dots on every [every]th turn of its own. */
+    /** The engine's rule for the computer's turns, or null for a rule about the start. */
+    val turnRule: TurnRule? get() = null
+
+    /** Why this rule does not fit a level with [map] and [dotsPerPlayer], or null if it fits. */
+    fun problem(map: LevelMap, dotsPerPlayer: Int): String?
+
+    /**
+     * The computer places two dots on every [every]th turn of its own ([TurnRule.DoubleMove]).
+     * `GameState.doubleMoveIn` counts down to the next one.
+     */
     data class DoubleMove(val every: Int) : SpecialRule {
         init {
             require(every >= 2) { "a double move comes at most every 2nd turn" }
         }
 
         override val text get() = "double move every $every turns"
+
+        override val turnRule get() = TurnRule.DoubleMove(every)
+
+        // The turns before the first double move take one dot each, and the double move two.
+        override fun problem(map: LevelMap, dotsPerPlayer: Int) = if (dotsPerPlayer < every + 1) {
+            "the computer's $dotsPerPlayer dots run out before its first double move, which needs ${every + 1}"
+        } else {
+            null
+        }
+    }
+
+    /**
+     * The computer starts with a fortress: a group of [dots] of its dots on the map, joined up,
+     * down, left, right or diagonally, and bigger than any other group of its dots. A large head
+     * start in one piece; [Level.fortress] lists its dots.
+     */
+    data class Fortress(val dots: Int) : SpecialRule {
+        init {
+            require(dots >= MIN_DOTS) { "a fortress has at least $MIN_DOTS dots" }
+        }
+
+        override val text get() = "fortress of $dots dots"
+
+        override fun problem(map: LevelMap, dotsPerPlayer: Int): String? {
+            val sizes = map.groups(LevelMap.COMPUTER).map { it.size }
+            val biggest = sizes.firstOrNull() ?: 0
+            return when {
+                biggest != dots -> "the fortress has $dots dots, but the biggest group of computer dots on the map has $biggest"
+                sizes.getOrNull(1) == dots -> "two groups of computer dots on the map have $dots dots; the fortress must be bigger than the others"
+                else -> null
+            }
+        }
+
+        companion object {
+            /** The fewest dots of a fortress: enough for a ring around four points. */
+            const val MIN_DOTS = 8
+        }
+    }
+
+    /**
+     * Every turn the computer places two dots, one in each half of the board, left and right
+     * ([TurnRule.TwoHalves]): it plays two groups at once. The board must be of even width.
+     */
+    data object TwoGroups : SpecialRule {
+        override val text = "two groups at once"
+
+        override val turnRule get() = TurnRule.TwoHalves
+
+        override fun problem(map: LevelMap, dotsPerPlayer: Int) = when {
+            map.width % 2 != 0 -> "the rule '$text' needs a board of even width, so that its halves are equal; this one is ${map.width} points wide"
+            dotsPerPlayer < 2 -> "the rule '$text' needs at least 2 dots for the computer"
+            else -> null
+        }
     }
 }
 

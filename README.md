@@ -181,11 +181,11 @@ map:
 | `mission` | What passes the level: `win`, `win by 3`, `win with 8 dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` or `target e5`. See [Missions](#missions). |
 | `solutions` | `few` or `open`: how many first moves may pass a puzzle. `few` allows at most 3; `open` any number, for teaching levels where any sensible move should work. See [Checking puzzles](#checking-puzzles). |
 | `boosters` | `none`, or the boosters the player may use and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. See [Boosters](#boosters). |
-| `rule` | A rule the computer bends: `none`, or `double move every 5 turns`. |
+| `rule` | A rule the computer bends on a boss level: `none`, `double move every 5 turns`, `fortress of 12 dots` or `two groups at once`. See [Boss rules](#boss-rules). |
 | `stars` | `none`, or the scores for two and for three stars: `3 6`. What is counted depends on the mission. |
 | `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
 
-The rules play every mission, but no special rule and no map with holes, blocked or bonus
+The rules play every mission and every boss rule, but no map with holes, blocked or bonus
 points. A level that uses those can be written and read, but refuses to start.
 
 A file that cannot be read gives an error with the line, for example
@@ -243,6 +243,30 @@ line. It replays to exactly the same position against the level as its file is n
 ```
 level/1 2-5 | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3 hint:b2 b2 c2 bomb:d3 d3 e2
 ```
+
+### Boss rules
+
+A boss level bends one rule in the computer's favour, and the player is told before the first
+move. Only the computer has the rule.
+
+| Rule | What the computer does | The level must have |
+|------|------------------------|---------------------|
+| `double move every 4 turns` | Places two dots on its turns 4, 8, 12 and so on, counting its own turns from 1. | Enough dots for the first double move: 5 here. |
+| `fortress of 12 dots` | Starts with a fortress: a group of 12 of its dots on the map, joined up, down, left, right or diagonally. A large head start in one piece. | A group of exactly that many computer dots on the map, bigger than any other, and at least 8. |
+| `two groups at once` | Places two dots on every turn, one in the left half of the board and one in the right half, in either order. | A board of even width, so the halves are equal. |
+
+- **Two dots in one turn** follow the double dot booster: both come out of the computer's dots
+  left, so it runs out sooner, and if no point is left for the second dot the turn ends after the
+  first. With only one dot left, a double move is a single dot.
+- **A pass or a stop** may come at the start of a two-dot turn, and uses it up. None between
+  the two dots.
+- **The countdown.** `GameState.doubleMoveIn(computer)` says how many of the computer's turns
+  until its next double move: 0 while it places it, 1 if its next turn is one, and so on. It is
+  null when no double move can come any more: no rule, the game is over or in collecting, or the
+  computer will have fewer than 2 dots left by then. With `two groups at once`, every turn is a
+  double move. `Level.fortress` lists the fortress's dots, for the app to draw.
+- **Not checked as puzzles.** The puzzle checker counts one computer dot per turn, so it leaves
+  out levels with `double move` or `two groups at once` (`check-levels` says "not checked").
 
 ### Checking puzzles
 

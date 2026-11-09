@@ -62,6 +62,7 @@ object LevelFormat {
             val boosters = field("boosters") { boosters(it) }
             val rule = field("rule") { rule(it) }
             val stars = field("stars") { stars(it) }
+            rule?.problem(map, dotsPerPlayer)?.let { Line(fields.getValue("rule").first).fail(it) }
             // The fields are each fine on their own; what Level still refuses is how the mission
             // fits the rest of the level, so the error points at the mission.
             return try {
@@ -187,9 +188,17 @@ object LevelFormat {
 
             fun rule(text: String): SpecialRule? {
                 if (text == NONE) return null
-                val match = Regex("double move every (\\S+) turns").matchEntire(text)
-                    ?: fail("unknown special rule '$text' (none; double move every 5 turns)")
-                return SpecialRule.DoubleMove(number(match.groupValues[1], 2..999))
+                if (text == SpecialRule.TwoGroups.text) return SpecialRule.TwoGroups
+                Regex("double move every (\\S+) turns").matchEntire(text)?.let {
+                    return SpecialRule.DoubleMove(number(it.groupValues[1], 2..999))
+                }
+                Regex("fortress of (\\S+) dots").matchEntire(text)?.let {
+                    return SpecialRule.Fortress(number(it.groupValues[1], SpecialRule.Fortress.MIN_DOTS..9999))
+                }
+                fail(
+                    "unknown special rule '$text' (none; double move every 5 turns; fortress of 12 dots; " +
+                        "${SpecialRule.TwoGroups.text})",
+                )
             }
 
             fun stars(text: String): Stars? {

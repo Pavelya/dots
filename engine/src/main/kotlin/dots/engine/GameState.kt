@@ -20,6 +20,8 @@ package dots.engine
  *  - Optional dot budget per player, for short mobile sessions and puzzle levels.
  *  - Boosters for the solo campaign ([Booster], [useBooster]): a player may use at most one per
  *    turn, before placing their dot, and only during normal play (not after a [stop]).
+ *  - Turn rules for the campaign's bosses ([TurnRule]): a player may place two dots on some of
+ *    their turns, on a schedule announced in advance ([doubleMoveIn]).
  *  - When one dot closes several chains the wiki lets players choose; this engine captures every
  *    newly enclosed area that holds an enemy dot.
  */
@@ -44,6 +46,12 @@ class GameState private constructor(
     finished: Boolean,
     boosterUsed: Boolean,
     doubleDots: Int,
+    /** Each player's [TurnRule], by [Player.ordinal]; shared between states, never changed. */
+    private val turnRules: Array<TurnRule?>,
+    /** How many turns each player has begun, the current one included. */
+    private val turns: IntArray,
+    /** In a [TurnRule.TwoHalves] turn, the half of the first dot ([LEFT] or [RIGHT]); else [NO_HALF]. */
+    private var half: Int,
 ) {
     var toMove: Player = toMove
         private set
@@ -61,11 +69,40 @@ class GameState private constructor(
     var boosterUsed: Boolean = boosterUsed
         private set
 
-    /** The dots of a [Booster.DOUBLE_DOT] still to place this turn: 2, then 1; 0 without one. */
+    /**
+     * The dots of a two-dot turn still to place: 2, then 1; 0 in a turn of one dot. Two-dot turns
+     * come from a [Booster.DOUBLE_DOT] or a [TurnRule].
+     */
     private var doubleDots: Int = doubleDots
 
-    /** Dots the player to move still places this turn: 2 right after a double dot, else 1. */
+    /**
+     * Dots the player to move still places this turn: 2 at the start of a two-dot turn (after a
+     * double dot, or on a [TurnRule]'s turn), else 1. If the board leaves no point for the second
+     * dot, the turn ends after the first.
+     */
     val dotsThisTurn: Int get() = maxOf(1, doubleDots)
+
+    /** The [TurnRule] of [player], if any. */
+    fun turnRule(player: Player): TurnRule? = turnRules[player.ordinal]
+
+    /**
+     * How many of [player]'s turns until their next turn of two dots under their [TurnRule]: 0
+     * while they are placing it, 1 if their next turn is one, and so on. The player's current
+     * turn, if it is a turn of one dot, is not counted. Null when it cannot come: no rule, the game
+     * is over or in collecting after a [stop], or the player would have fewer than 2 dots left by
+     * then, placing one dot on each turn before it.
+     */
+    fun doubleMoveIn(player: Player): Int? {
+        val rule = turnRules[player.ordinal] ?: return null
+        if (isOver || isCleanup) return null
+        val turn = turns[player.ordinal]
+        if (toMove == player && doubleDots > 0 && rule.isDouble(turn)) return 0
+        val wait = (1..Int.MAX_VALUE).first { rule.isDouble(turn + it) }
+        // The dots still to place this turn, if it is theirs, and one on each turn before the double one.
+        val before = wait - 1 + if (toMove == player) dotsThisTurn else 0
+        val left = dotsLeft(player) ?: return wait
+        return wait.takeIf { left - before >= 2 }
+    }
 
     val isCleanup: Boolean get() = cleaner != null
 
@@ -127,10 +164,13 @@ class GameState private constructor(
     /** How many of [booster] [player] has left to use in this game. */
     fun boostersLeft(player: Player, booster: Booster): Int = boosters[boosterIndex(player, booster)]
 
-    /** True if the player to move may use [booster] now, on some point if it needs one. */
+    /**
+     * True if the player to move may use [booster] now, on some point if it needs one. A double
+     * dot is not allowed in a turn that already has two dots.
+     */
     fun canUse(booster: Booster): Boolean =
         !isOver && !isCleanup && !boosterUsed && boostersLeft(toMove, booster) > 0 &&
-            (booster != Booster.DOUBLE_DOT || (dotsLeft(toMove) ?: Int.MAX_VALUE) >= 2)
+            (booster != Booster.DOUBLE_DOT || (doubleDots == 0 && (dotsLeft(toMove) ?: Int.MAX_VALUE) >= 2))
 
     /**
      * The opponent's dots a [Booster.BOMB] dropped on [center] would remove: those on [center] and
@@ -154,9 +194,13 @@ class GameState private constructor(
 
     fun enclosedBy(pos: Pos): Player? = enclosedBy(pos.x, pos.y)
 
+    /**
+     * True if the player to move may place a dot on ([x], [y]). In a [TurnRule.TwoHalves] turn,
+     * the second dot must go in the other half from the first.
+     */
     fun isLegal(x: Int, y: Int): Boolean =
         !isOver && (isCleanup || dotsLeft[toMove.ordinal] != 0) && inBounds(x, y) &&
-            owner[y * width + x] == EMPTY && !dead[y * width + x]
+            owner[y * width + x] == EMPTY && !dead[y * width + x] && (half == NO_HALF || halfOf(x) != half)
 
     fun isLegal(pos: Pos): Boolean = isLegal(pos.x, pos.y)
 
@@ -164,15 +208,18 @@ class GameState private constructor(
         if (isOver || (!isCleanup && dotsLeft[toMove.ordinal] == 0)) return emptyList()
         val moves = ArrayList<Pos>()
         for (i in owner.indices) {
-            if (owner[i] == EMPTY && !dead[i]) moves += Pos(i % width, i / width)
+            if (owner[i] == EMPTY && !dead[i] && (half == NO_HALF || halfOf(i % width) != half)) moves += Pos(i % width, i / width)
         }
         return moves
     }
 
-    /** True if the player to move may take [action] now. */
+    /**
+     * True if the player to move may take [action] now. A pass or a stop is allowed at the start
+     * of a [TurnRule]'s two-dot turn, but not after a double dot or between two dots.
+     */
     fun isLegal(action: Action): Boolean = when (action) {
         is Action.Place -> isLegal(action.pos)
-        Action.Pass, Action.Stop -> !isOver && !isCleanup && doubleDots == 0
+        Action.Pass, Action.Stop -> !isOver && !isCleanup && (doubleDots == 0 || (doubleDots == 2 && isRuleTurn()))
         Action.Finish -> isCleanup && !isOver
         is Action.UseBooster -> canUse(action.booster) && when (action) {
             is Action.Wall -> inBounds(action.pos.x, action.pos.y) && owner[index(action.pos)] == EMPTY && !dead[index(action.pos)]
@@ -195,14 +242,16 @@ class GameState private constructor(
         return copy().applyMove(pos)
     }
 
-    /** Skips the turn. Two passes in a row end the game. Not allowed between the two dots of a double dot. */
+    /**
+     * Skips the turn. Two passes in a row end the game. Not allowed after a double dot or between
+     * two dots of one turn.
+     */
     fun pass(): GameState {
         check(isLegal(Action.Pass)) { "Cannot pass now" }
         val next = copy()
         next.passesInRow++
-        next.boosterUsed = false
         val other = toMove.opponent
-        next.toMove = if (next.canMove(other)) other else toMove
+        next.beginTurn(if (next.canMove(other)) other else toMove)
         return next
     }
 
@@ -214,6 +263,8 @@ class GameState private constructor(
         check(isLegal(Action.Stop)) { "Cannot stop now" }
         val next = copy()
         next.boosterUsed = false
+        next.doubleDots = 0
+        next.half = NO_HALF
         next.cleaner = toMove.opponent
         next.toMove = toMove.opponent
         next.passesInRow = 0
@@ -287,10 +338,38 @@ class GameState private constructor(
     private fun copy() = GameState(
         width, height, owner.clone(), captured.clone(), dead.clone(), enclosedBy.clone(), scores.clone(),
         liveDots.clone(), dotsLeft.clone(), placed.clone(), blocked.clone(), boosters.clone(), playableCells, toMove,
-        passesInRow, moveCount, cleaner, finished, boosterUsed, doubleDots,
+        passesInRow, moveCount, cleaner, finished, boosterUsed, doubleDots, turnRules, turns.clone(), half,
     )
 
     private fun index(pos: Pos) = pos.y * width + pos.x
+
+    /** [LEFT] for the first width / 2 columns, else [RIGHT]. */
+    private fun halfOf(x: Int) = if (x < width / 2) LEFT else RIGHT
+
+    /** True if [side] of the board still has a point in play with no dot on it. */
+    private fun hasRoomIn(side: Int): Boolean {
+        val columns = if (side == LEFT) 0 until width / 2 else width / 2 until width
+        for (y in 0 until height) for (x in columns) {
+            val i = y * width + x
+            if (owner[i] == EMPTY && !dead[i]) return true
+        }
+        return false
+    }
+
+    /** True if the player to move is in a turn their [TurnRule] makes a turn of two dots. */
+    private fun isRuleTurn(): Boolean = turnRules[toMove.ordinal]?.isDouble(turns[toMove.ordinal]) == true
+
+    /**
+     * Starts [player]'s next turn of normal play: no booster used yet, and two dots if their
+     * [TurnRule] says so and they have 2 dots left.
+     */
+    private fun beginTurn(player: Player) {
+        toMove = player
+        turns[player.ordinal]++
+        boosterUsed = false
+        half = NO_HALF
+        doubleDots = if (isRuleTurn() && (dotsLeft(player) ?: Int.MAX_VALUE) >= 2) 2 else 0
+    }
 
     private fun applyMove(pos: Pos): MoveResult {
         val mover = toMove
@@ -307,13 +386,13 @@ class GameState private constructor(
         moveCount++
         passesInRow = 0
         if (!isCleanup) {
-            if (doubleDots == 2 && canMove(mover)) {
-                doubleDots = 1 // the double dot's second dot: same player, same turn
+            val twoHalves = turnRules[mover.ordinal] == TurnRule.TwoHalves
+            val other = mover.opponent
+            if (doubleDots == 2 && canMove(mover) && (!twoHalves || hasRoomIn(LEFT + RIGHT - halfOf(pos.x)))) {
+                doubleDots = 1 // the second dot: same player, same turn
+                if (twoHalves) half = halfOf(pos.x)
             } else {
-                doubleDots = 0
-                boosterUsed = false
-                val other = mover.opponent
-                toMove = if (canMove(other) || !canMove(mover)) other else mover
+                beginTurn(if (canMove(other) || !canMove(mover)) other else mover)
             }
         }
         return MoveResult(this, captures)
@@ -463,6 +542,11 @@ class GameState private constructor(
         /** The smallest chain that encloses a cell is the four-dot diamond. */
         private const val MIN_RING_DOTS = 4
 
+        /** The halves of the board in a [TurnRule.TwoHalves] turn. */
+        private const val NO_HALF = -1
+        private const val LEFT = 0
+        private const val RIGHT = 1
+
         private val DX = intArrayOf(-1, 1, 0, 0)
         private val DY = intArrayOf(0, 0, -1, 1)
 
@@ -475,7 +559,8 @@ class GameState private constructor(
          * Starts a game. [dots] are placed up front (an opening or a head start) and do not count
          * against [dotsPerPlayer]; they must not already enclose an enemy dot. [dotsFor] gives a
          * player a budget of their own instead of [dotsPerPlayer]. [boosters] gives each player the
-         * boosters they may use in this game, by kind and count.
+         * boosters they may use in this game, by kind and count. [turnRules] gives a player a
+         * [TurnRule], with two dots on some turns.
          */
         fun start(
             width: Int,
@@ -485,11 +570,13 @@ class GameState private constructor(
             dots: Map<Pos, Player> = emptyMap(),
             dotsFor: Map<Player, Int> = emptyMap(),
             boosters: Map<Player, Map<Booster, Int>> = emptyMap(),
+            turnRules: Map<Player, TurnRule> = emptyMap(),
         ): GameState {
             require(width >= 3 && height >= 3) { "Board must be at least 3x3" }
             require(dotsPerPlayer == null || dotsPerPlayer >= 0) { "dotsPerPlayer must not be negative" }
             require(dotsFor.values.all { it >= 0 }) { "a player's dots must not be negative" }
             require(boosters.values.all { kinds -> kinds.values.all { it >= 0 } }) { "booster counts must not be negative" }
+            require(TurnRule.TwoHalves !in turnRules.values || width % 2 == 0) { "two halves need a board of even width" }
             val n = width * height
             val budgets = IntArray(2) { dotsFor[Player.entries[it]] ?: dotsPerPlayer ?: -1 }
             val stock = IntArray(2 * Booster.entries.size)
@@ -497,6 +584,7 @@ class GameState private constructor(
             val state = GameState(
                 width, height, ByteArray(n), BooleanArray(n), BooleanArray(n), ByteArray(n), IntArray(2),
                 IntArray(2), budgets, IntArray(2), BooleanArray(n), stock, n, first, 0, 0, null, false, false, 0,
+                Array(2) { turnRules[Player.entries[it]] }, IntArray(2), NO_HALF,
             )
             for ((pos, player) in dots) {
                 require(state.inBounds(pos.x, pos.y)) { "Starting dot $pos is off the board" }
@@ -509,7 +597,7 @@ class GameState private constructor(
             require(!state.hasEnclosedEnemy(Player.RED) && !state.hasEnclosedEnemy(Player.BLUE)) {
                 "The starting position already encloses an enemy dot"
             }
-            if (!state.canMove(first) && state.canMove(first.opponent)) state.toMove = first.opponent
+            state.beginTurn(if (!state.canMove(first) && state.canMove(first.opponent)) first.opponent else first)
             return state
         }
 
