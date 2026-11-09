@@ -65,6 +65,7 @@ cells out of play as `,`, blocked points as `#`, bonus points as `+`, and holes 
 Benchmarks (computer against computer; see "How strong is it" below):
 
 ```sh
+cli/build/install/cli/bin/cli bench steps 160          # each strength step against the next: games [board size] [dots each]
 cli/build/install/cli/bin/cli bench tiers 40 10 24      # every tier against every other: games, board size, dots each
 cli/build/install/cli/bin/cli bench levels 20 normal    # a stand-in plays each level: a tier, or "border"
 cli/build/install/cli/bin/cli bench duel                # two custom configurations; prints its arguments
@@ -141,7 +142,7 @@ computer's tier, its head start (dots already on the board), the board size and 
 - **A level is passed when its mission is** (`Level.isPassed`). In `win`, a draw is not enough.
 - **Every level starts the human with dots in the middle.** Otherwise placing every dot on the
   border would be a safe way never to lose, which is exactly the forced draw the article warns
-  about. A border-only stand-in now loses every level (`bench levels 20 border`).
+  about. A border-only stand-in passes no level (`bench levels 20 border`).
 
 ### Level files
 
@@ -179,7 +180,7 @@ map:
 |-------|---------------|
 | `world`, `level` | The world (1 or more) and the level's number in it (1 to 99). They must match the file name. |
 | `name` | The name players see. |
-| `computer` | The computer's strength: `easy`, `normal`, `hard` or `expert`. |
+| `computer` | The computer's strength, weakest first: `beginner`, `easy`, `steady`, `normal` or `hard` (see [Strength steps](#strength-steps)), or `expert`. |
 | `dots` | Dots each side may place. |
 | `mission` | What passes the level: `win`, `win by 3`, `win with 8 dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` or `target e5`. See [Missions](#missions). |
 | `solutions` | `few` or `open`: how many first moves may pass a puzzle. `few` allows at most 3; `open` any number, for teaching levels where any sensible move should work. See [Checking puzzles](#checking-puzzles). |
@@ -190,7 +191,7 @@ map:
 | `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
 
 A file that cannot be read gives an error with the line, for example
-`1-03.level, line 4: unknown computer strength 'medium' (easy, normal, hard, expert)`. The files
+`1-03.level, line 4: unknown computer strength 'medium' (beginner, easy, steady, normal, hard, expert)`. The files
 are kept in the exact form `LevelFormat.write` gives, and a test checks that each one is written
 back unchanged.
 
@@ -355,9 +356,9 @@ so it is fast enough to run inside the search). It is used three ways:
   safe one, and deeper search played worse, not better.
 - **Collecting** after the opponent stops (below).
 
-Tiers are `AiConfig`: search depth and breadth, how far ahead it looks for threats, a mistake
-rate and a variety margin. EASY is deliberately blind to threats and plays a random nearby move a
-third of the time.
+Tiers are `AiConfig`: search depth and breadth, how far it looks for threats, which part of the
+board it looks at, and a variety margin. Five tiers are the [strength steps](#strength-steps),
+from BEGINNER to HARD; EXPERT is kept for experiments.
 
 **Variety.** So that a position does not always get the same answer, every candidate move gets a
 random bonus of 0 to a small margin before the best is picked. A move that scores just below the
@@ -365,22 +366,24 @@ best is then played now and then, one a full margin below never. A captured dot 
 points and touching one more dot 2 or 3, so the margins never trade away a capture; they only
 choose between quiet moves.
 
-| Tier   | Margin |
-|--------|-------:|
-| EASY   | 0      |
-| NORMAL | 10     |
-| HARD   | 5      |
-| EXPERT | 5      |
+| Tier     | Margin |
+|----------|-------:|
+| BEGINNER | 10     |
+| EASY     | 10     |
+| STEADY   | 10     |
+| NORMAL   | 10     |
+| HARD     | 5      |
+| EXPERT   | 5      |
 
-EASY needs no margin: its random mistakes already vary every position. NORMAL, the weaker
-searching tier, gets the wider margin. The margins stay small because, once a capture is more than
+The steps below HARD get the wider margin: a weaker player picks among moves that look alike
+more loosely. The margins stay small because, once a capture is more than
 a few moves away, the only thing steering the computer towards it is that "touching one more dot"
 score. A larger margin drowns it out: with a margin of 10, HARD on level 7 failed to capture a
 player who only plays on the border in half its games.
 
 `cli bench variety <tier> [margin]` answers 20 fixed mid-game positions 10 times each and counts
 the different moves. HARD plays at least two different moves in 14 of the 20 positions (2 of 20
-without a margin), NORMAL in 16, EXPERT in 13, EASY in all 20. Over 80 paired games
+without a margin), BEGINNER in 19, EASY in 16, STEADY in 15, NORMAL in 17, EXPERT in 13. Over 80 paired games
 (`cli bench duel 80 10 24 3 8 3 2 3 8 3 2 5 0`), HARD with its margin against HARD without won
 9, lost 11 and drew 60 (sign test p=0.82): the variety costs no strength. With a seed fixed, as in
 the tests, the computer still plays the same game every time.
@@ -395,18 +398,21 @@ balance in a tier:
   (`attackWeights`), and so does a cell that stops the opponent walling in one of its own groups
   (`dangerWeights`). The closer the group is to capture, the bigger the bonus.
 
-| Tier   | Looks for attacks | Looks for danger | Attack weights (1, 2, 3, 4+ dots away) | Danger weights |
-|--------|------------------:|-----------------:|----------------------------------------|----------------|
-| EASY   | none              | none             | (not used)                             | (not used)     |
-| NORMAL | 2 dots            | 1 dot            | 3000, 600, 120, 30                     | the same       |
-| HARD   | 3 dots            | 2 dots           | 3000, 600, 120, 30                     | the same       |
-| EXPERT | 3 dots            | 3 dots           | 3000, 600, 120, 30                     | the same       |
+| Tier     | Looks for attacks | Looks for danger | Attack weights (1, 2, 3, 4+ dots away) | Danger weights      |
+|----------|------------------:|-----------------:|----------------------------------------|---------------------|
+| BEGINNER | none              | none             | (not used)                             | (not used)          |
+| EASY     | 2 dots            | 1 dot            | 3000, 600, 120, 30                     | 1500, 300, 60, 15   |
+| STEADY   | 2 dots            | 1 dot            | 3000, 600, 120, 30                     | 1500, 300, 60, 15   |
+| NORMAL   | 2 dots            | 1 dot            | 3000, 600, 120, 30                     | 1500, 300, 60, 15   |
+| HARD     | 3 dots            | 2 dots           | 3000, 600, 120, 30                     | the same            |
+| EXPERT   | 3 dots            | 3 dots           | 3000, 600, 120, 30                     | the same            |
 
-Defence and attack now have the same weights at every tier (`AiConfig.BALANCED`). Before, the
-danger weights were lower: 2500, 400, 80, 20.
+HARD and EXPERT weigh defence and attack alike (`AiConfig.BALANCED`). The steps below HARD lean
+to attack on purpose, as a weaker player does (`AiConfig.ATTACK_FIRST`, half the attack weights).
 
 `cli bench balance 40` measures what each tier does. Each tier plays 40 games against a casual
-stand-in: NORMAL that plays a random nearby move a quarter of the time. The games use the
+stand-in: a computer that thinks two moves ahead, looks at the whole board and plays a random
+nearby move a quarter of the time. The games use the
 testers' format: 15×15, four crosses, 33 dots each. Every move of the tier is sorted by its effect
 on groups at most three dots from capture:
 
@@ -424,37 +430,40 @@ The table also shows three more things:
   defend. *Lost* counts all the dots the tier lost.
 
 ```
-                  share of the tier's moves          threatened   defended   per game:
-tier    weights   attack  defend  both  neither      (moves)      of those   en prise  lost after attack  lost
-EASY    old/new    12.7%    7.0%  0.2%   80.1%        47.1%        10.3%      0.70      0.80               6.88
-NORMAL  old        23.9%    8.5%  0.3%   67.3%         6.6%        47.1%      0.10      0.68               1.70
-        new        23.9%    8.5%  0.3%   67.3%         6.6%        47.1%      0.10      0.68               1.70
-HARD    old        37.4%    8.3%  0.3%   54.0%         6.6%        51.7%      0.08      0.75               1.75
-        new        37.1%    8.3%  0.4%   54.2%         5.9%        59.0%      0.08      0.75               1.78
-EXPERT  old        32.5%    8.5%  0.4%   58.6%        10.7%        37.6%      0.13      0.70               1.53
-        new        31.4%    8.6%  0.5%   59.4%        10.2%        37.8%      0.13      0.68               1.50
+                share of the tier's moves          threatened   defended   per game:
+tier      attack  defend  both  neither      (moves)      of those   en prise  lost after attack  lost
+BEGINNER   14.8%   10.3%  0.2%   74.6%        35.2%        19.1%      0.45      0.88               6.70
+EASY       38.0%   15.0%  0.9%   46.1%        15.5%        56.4%      0.10      1.60               4.95
+STEADY     18.2%   11.5%  0.2%   70.1%        22.9%        29.8%      0.15      1.00               3.10
+NORMAL     19.3%    7.6%  0.1%   73.0%         2.7%        45.7%      0.05      0.43               1.03
+HARD       37.1%    8.3%  0.4%   54.2%         5.9%        59.0%      0.08      0.75               1.78
+EXPERT     31.4%    8.6%  0.5%   59.4%        10.2%        37.8%      0.13      0.68               1.50
 ```
 
 What this shows:
 
-- **The weights did not cause the lean.** With equal weights NORMAL plays exactly the same games,
-  and HARD's shares move by less than a point. Even danger weights two to three times the attack
-  weights (6000, 1800, 360, 90) leave HARD at 37% attack and 9% defence.
-- **The computer attacks often because there is often something to attack.** It rarely needs to
-  defend: one of its own groups is within two dots of capture on only 6% to 10% of its moves
-  (EASY, which ignores threats: almost half). It almost never leaves a group one dot from capture
-  to attack elsewhere (0.1 times per game or less).
+- **The weights did not cause HARD's lean.** With lower danger weights (2500, 400, 80, 20) its
+  shares move by less than a point: 37.4% attack, 8.3% defence. Even danger weights two to three
+  times the attack weights (6000, 1800, 360, 90) leave HARD at 37% attack and 9% defence.
+- **HARD attacks often because there is often something to attack.** It rarely needs to defend:
+  one of its own groups is within two dots of capture on only 6% of its moves (EXPERT 10%). It
+  almost never leaves a group one dot from capture to attack elsewhere (0.1 times per game or
+  less).
+- **The weaker steps show their blind spots.** BEGINNER, which sees no threats, has a group within
+  two dots of capture on a third of its moves and loses almost 7 dots a game. EASY attacks as
+  often as HARD but does not check the answer: it loses the most dots right after attacking (1.6
+  a game). STEADY checks the answer but weighs few moves, and loses 3 dots a game. NORMAL looks
+  only near the last dots, so it attacks less than HARD; against this stand-in it also loses
+  fewer dots, yet it loses to HARD (see [Strength steps](#strength-steps)).
 - **Looking as far for danger as for attacks made HARD passive.** With danger 3 dots out, HARD
   failed to capture players who only defend. Over 60 games per level, against a player who only
-  plays on the border, it won level 7 in 27 games instead of 44. Against the NORMAL stand-in it
-  won level 8 in 23 games instead of 42. Against itself it was no stronger (81-68-11 over 160
-  games, p=0.33). So HARD looks for danger one dot less far than for attacks.
-- **NORMAL sees danger only one dot away on purpose.** It stands for a weaker player, and a
-  weaker player notices too late that a group of theirs is being walled in.
+  plays on the border, it won level 7 in 27 games instead of 44. Against a stand-in that thinks
+  two moves ahead it won level 8 in 23 games instead of 42. Against itself it was no stronger
+  (81-68-11 over 160 games, p=0.33). So HARD looks for danger one dot less far than for attacks.
 
 Equal weights cost HARD no strength. Over 80 paired games (`cli bench duel`, weights given as
-`dangerWeightsB=2500,400,80,20` and so on), HARD with each set of new danger weights against
-HARD with the old ones:
+`dangerWeightsB=2500,400,80,20` and so on), HARD with each set of danger weights against HARD
+with 2500, 400, 80, 20:
 
 ```
 danger weights               15×15, four crosses, 33 dots    10×10, a cross, 24 dots
@@ -462,9 +471,6 @@ danger weights               15×15, four crosses, 33 dots    10×10, a cross, 2
 3600, 900, 180, 45           35-37- 8  p=0.91
 6000, 1800, 360, 90          37-38- 5  p=1.00
 ```
-
-Nothing else in this README changed with the new weights: the tier and level tables and the
-variety numbers come out the same.
 
 Endgame behaviour follows the grounding rule:
 
@@ -476,43 +482,114 @@ Endgame behaviour follows the grounding rule:
   gap: a group already inside the computer's own closed chain would need a dividing wall, which
   the planner doesn't try.
 
+### Strength steps
+
+A weaker step plays like a weaker person: someone with less strategy who does not plan far ahead.
+It does not play like a strong player who now and then plays at random. Every step below HARD
+has the same three blind spots:
+
+- **It looks only where the game just happened** (`focus` 2): it considers only points at most 2
+  steps from the last dot each side placed. A ring closing elsewhere on the board goes unseen,
+  whether it is the computer's chance or its danger. The blind spot holds while it thinks ahead,
+  too: it expects its opponent to answer near the same dots.
+- **It overlooks a ring that needs 2 more dots** around its own groups (`dangerReach` 1). It
+  notices a group in danger only when one more dot would capture it.
+- **It would rather attack than defend** (`dangerWeights` 1500, 300, 60, 15, half the attack
+  weights). Between building its own ring and blocking one, it leans to building.
+
+What sets the steps apart is how far ahead they think and how many moves they weigh:
+
+| Step | Tier     | Thinks ahead               | Moves it weighs, at most (answers to each) | Looks for rings to close   |
+|-----:|----------|----------------------------|--------------------------------------------|----------------------------|
+| 1    | BEGINNER | its own move only          | 24                                | only one it can close now  |
+| 2    | EASY     | its own move only          | 24                                | up to 2 dots from closing  |
+| 3    | STEADY   | its move and the answer    | 4 (2)                             | up to 2 dots from closing  |
+| 4    | NORMAL   | its move and the answer    | 20 (10)                           | up to 2 dots from closing  |
+| 5    | HARD     | three moves                | 16 (8)                            | up to 3 dots from closing  |
+
+HARD has none of the blind spots: it looks at the whole board, sees danger 2 dots away and weighs
+attack and defence alike. BEGINNER sees no threats at all, its own or the opponent's: it plays
+next to other dots and closes a ring when one more dot closes it. No step plays random moves
+(`mistakeRate` 0); only the benchmarks' stand-in players use that.
+
+**Each step beats the one before it.** `cli bench steps 160`: each step plays the next one, 160
+games per pair in the testers' format (15×15, four random crosses, 33 dots each). The games are
+played in pairs with the same random seeds and the sides swapped, so luck cancels out. W-L-D is
+for the weaker step; *p* is a two-sided sign test on the decisive games (below 0.05 the
+difference is unlikely to be chance).
+
+```
+                         15×15, four crosses, 33 dots     10×10, four crosses, 24 dots
+                         (bench steps 160)                (bench steps 160 10 24)
+1 BEGINNER vs 2 EASY      20-129-11  p<0.001               37-108-15  p<0.001
+2 EASY     vs 3 STEADY    28-109-23  p<0.001               21-115-24  p<0.001
+3 STEADY   vs 4 NORMAL    25- 96-39  p<0.001               20- 87-53  p<0.001
+4 NORMAL   vs 5 HARD      44- 80-36  p=0.002               30- 93-37  p<0.001
+```
+
+With 80 games per pair (`cli bench steps 80`) every gap holds too; the closest is NORMAL against
+HARD, 20-44-16 (p=0.004). The weaker step still wins some games: from about 1 in 8 to about 1 in 4.
+
+Some weaknesses that sound human made no measurable difference, so no step relies on them alone
+(80 paired games each, `cli bench duel`, in the format above):
+
+- **Shorter sight for a computer that thinks two moves ahead.** Looking for attacks only one dot
+  from closing and not looking for danger at all won 24 and lost 25 against looking 2 and 1 dots
+  out: the search sees those captures anyway.
+- **A focus alone.** Two moves ahead, looking 2 points around the last dots won 27 and lost 32
+  against looking at the whole board; 3 points, 31 and 30. Only 1 point made a difference
+  (16-32, p=0.03). But the blind spots add up: against HARD, two-move NORMAL with the whole board
+  and equal weights won 32 and lost 42 (p=0.30), with its blind spots 20 and 44 (p=0.004).
+- **Caring less about its own losses than its gains** (tried, not kept as a setting). Counting a
+  dot it may lose at half, a quarter, a tenth or 2% of a dot it may win changed nothing: any loss
+  still outweighs a quiet move. Ignoring losses completely made a two-move computer play like a
+  one-move one.
+
 ### How strong is it, and how hard are the levels?
 
-**Tiers.** `cli bench tiers 40 10 24`: 40 games per pairing on 10×10 from a cross, 24 dots each.
-Games are played in pairs with the same random seeds and the sides swapped, so luck cancels out.
-W-L-D is for the first-named tier; *p* is a two-sided sign test on the decisive games (below
-about 0.05 the difference is unlikely to be chance).
+**Tiers.** `cli bench tiers 40 10 24`: every tier against every other, 40 paired games on 10×10
+from a single cross, 24 dots each. W-L-D is for the first-named tier.
 
 ```
-EASY   vs NORMAL   2-34- 4  p=0.000      NORMAL vs HARD     1-17-22  p=0.000
-EASY   vs HARD     0-40- 0  p=0.000      NORMAL vs EXPERT   1-14-25  p=0.001
-EASY   vs EXPERT   0-39- 1  p=0.000      HARD   vs EXPERT   2- 9-29  p=0.065
+BEGINNER vs EASY     11-25- 4  p=0.029      EASY   vs NORMAL   0-36- 4  p<0.001
+BEGINNER vs STEADY    4-34- 2  p<0.001      EASY   vs HARD     0-38- 2  p<0.001
+BEGINNER vs NORMAL    1-30- 9  p<0.001      EASY   vs EXPERT   0-38- 2  p<0.001
+BEGINNER vs HARD      0-37- 3  p<0.001      STEADY vs NORMAL   2-11-27  p=0.022
+BEGINNER vs EXPERT    1-34- 5  p<0.001      STEADY vs HARD     1-19-20  p<0.001
+EASY     vs STEADY    7-28- 5  p=0.001      STEADY vs EXPERT   2-16-22  p=0.001
+NORMAL   vs HARD      0- 7-33  p=0.016      NORMAL vs EXPERT   4-10-26  p=0.180
+HARD     vs EXPERT    2- 9-29  p=0.065
 ```
 
-So there are three strength levels, **EASY ≪ NORMAL < HARD**. **EXPERT is no stronger than HARD**
-and thinks about three times as long, so the campaign does not use it; it is kept for experiments
-with deeper search. Most games between the stronger tiers are still draws: equals rarely force a
-capture. Two identical configurations come out exactly even by construction.
+From a single cross the steps keep their order, but most games between the stronger tiers are
+draws: equals rarely force a capture, so this format separates them less well than four crosses.
+**EXPERT is no stronger than HARD** and thinks about three times as long, so the campaign does
+not use it; it is kept for experiments with deeper search. Two identical configurations come out
+exactly even by construction.
 
 **Levels.** `cli bench levels 20 <stand-in>`: a stand-in plays red on each level, 20 games;
 W-L-D in captures for the stand-in, and how many games passed the level's mission (for `win`,
-the same as the wins). Each game stops when the mission is decided. EASY stands for a weak player,
-NORMAL for a strong one, border for someone who only plays on the border.
+the same as the wins). Each game stops when the mission is decided. The EASY step stands for a
+weak player, the NORMAL step for a strong one, border for someone who only plays on the border.
+Levels 1 to 3 have an easy computer, 4 and 5 a normal one, 6 to 8 a hard one.
 
 ```
                      EASY stand-in    NORMAL stand-in    border-only
-1 Warm-up            9- 4- 7          18- 0- 2           0-19- 1
-2 Open Field        11- 5- 4          19- 0- 1           0-20- 0
-3 Scout              8- 8- 4          14- 0- 6           0-19- 1
-4 Outpost            0-20- 0           3- 2-15           0-20- 0
-5 Rescue             0-20- 0           2- 5-13           0-20- 0
-6 Pincer             0-20- 0           1-10- 9           0-20- 0
-7 Siege              0-17- 3           2- 4-14           0-15- 5
-8 Grandmaster        0-20- 0           2-15- 3           0-20- 0
+1 Warm-up           15- 2- 3          16- 0- 4           0-20- 0
+2 Open Field        17- 2- 1          18- 0- 2           0-20- 0
+3 Scout              9- 7- 4          13- 3- 4           0-20- 0
+4 Outpost            0-13- 7           1- 0-19           0-18- 2
+5 Rescue             0-14- 6           1- 1-18           0- 0-20
+6 Pincer             0-17- 3           2- 7-11           0-20- 0
+7 Siege              1-14- 5           1- 5-14           0-15- 5
+8 Grandmaster        0-20- 0           3-13- 4           0-20- 0
 ```
 
 Difficulty rises for both stand-ins, but not smoothly for a weak player: level 4 is a wall,
-because that is where the computer starts looking at threats. The stand-ins are computers, not
+because there the computer jumps from step 2 to step 4 and starts checking the answer to its
+moves. Against a player who only plays on the border, the normal computer of level 5 draws every
+game: with its focus on the last dots it does not go after the human's starting dots. A draw
+does not pass a `win` level, so border play still passes none. The stand-ins are computers, not
 people, and nobody has played the levels yet, so treat the curve as a first draft.
 
 **Speed.** On a laptop, a HARD move on a 14×14 board takes about 40 ms (EXPERT about 130 ms).
@@ -521,7 +598,8 @@ Not yet measured on a phone.
 ### Which game format has the most action?
 
 `cli bench variants 20`: each format played 20 times between two equal stand-ins, a *casual*
-one (NORMAL that plays a random nearby move 25% of the time) and a *strong* one (HARD). It
+one (a computer that thinks two moves ahead, looks at the whole board and plays a random nearby
+move 25% of the time) and a *strong* one (HARD). It
 measures whether things happen in a game, not whether people enjoy it. Selected rows:
 
 ```

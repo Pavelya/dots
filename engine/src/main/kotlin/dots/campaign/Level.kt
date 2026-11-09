@@ -153,7 +153,9 @@ enum class Holes(val text: String) {
 
 /** How strongly the computer plays a level. */
 enum class Strength(val config: AiConfig) {
+    BEGINNER(AiConfig.BEGINNER),
     EASY(AiConfig.EASY),
+    STEADY(AiConfig.STEADY),
     NORMAL(AiConfig.NORMAL),
     HARD(AiConfig.HARD),
     EXPERT(AiConfig.EXPERT),

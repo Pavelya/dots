@@ -193,20 +193,31 @@ class SearchAi(
     private fun weight(table: IntArray, threat: Threat): Int =
         table[min(threat.cost, table.size) - 1] * min(threat.points, MAX_GROUP_WEIGHT)
 
-    /** Without threat guidance every cell near a dot; with it the threat cells plus the busiest few. */
+    /**
+     * Without threat guidance every cell near a dot; with it the threat cells plus the busiest few.
+     * With a [AiConfig.focus], only threat cells the computer is looking at.
+     */
     private fun movesToTry(state: GameState, bonus: IntArray?): List<Pos> {
         val near = candidates(state)
         if (bonus == null) return near
         val mover = state.toMove
         val chosen = LinkedHashSet<Pos>()
         near.sortedByDescending { neighbourhood(state, it, mover) }.take(config.breadth + EXTRA_NEIGHBOURS).forEach { chosen += it }
+        val focus = focusPoints(state)
         for (i in bonus.indices) {
             if (bonus[i] <= 0) continue
             val pos = Pos(i % state.width, i / state.width)
-            if (state.isLegal(pos)) chosen += pos
+            if (state.isLegal(pos) && inFocus(pos.x, pos.y, focus)) chosen += pos
         }
         return chosen.toList()
     }
+
+    /** The dots a computer with a [AiConfig.focus] looks around; empty when it sees the whole board. */
+    private fun focusPoints(state: GameState): List<Pos> =
+        if (config.focus == 0) emptyList() else Player.entries.mapNotNull { state.lastPlaced(it) }
+
+    private fun inFocus(x: Int, y: Int, focus: List<Pos>): Boolean =
+        focus.isEmpty() || focus.any { max(abs(it.x - x), abs(it.y - y)) <= config.focus }
 
     /**
      * The value of a position where the search stops.
@@ -301,13 +312,16 @@ class SearchAi(
             return listOf(Pos(cx, cy)).filter { state.isLegal(it) }.ifEmpty { state.legalMoves() }
         }
 
+        val focus = focusPoints(state)
         val result = ArrayList<Pos>()
+        val outOfFocus = ArrayList<Pos>()
         for (y in 0 until height) {
             for (x in 0 until width) {
-                if (near[y * width + x] && state.isLegal(x, y)) result += Pos(x, y)
+                if (!near[y * width + x] || !state.isLegal(x, y)) continue
+                if (inFocus(x, y, focus)) result += Pos(x, y) else outOfFocus += Pos(x, y)
             }
         }
-        return result.ifEmpty { state.legalMoves() }
+        return result.ifEmpty { outOfFocus }.ifEmpty { state.legalMoves() }
     }
 
     private companion object {

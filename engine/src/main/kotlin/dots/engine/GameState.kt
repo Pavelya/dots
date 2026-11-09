@@ -39,6 +39,8 @@ class GameState private constructor(
     private val liveDots: IntArray,
     private val dotsLeft: IntArray,
     private val placed: IntArray,
+    /** The cell of the dot each player placed last, by [Player.ordinal]; -1 before their first. */
+    private val lastPlaced: IntArray,
     private val blocked: BooleanArray,
     /** Holes: no point there. Shared between states, never changed. */
     private val hole: BooleanArray,
@@ -150,6 +152,9 @@ class GameState private constructor(
 
     /** Dots [player] has placed in this game, collecting after a [stop] included; starting dots are not counted. */
     fun dotsPlaced(player: Player): Int = placed[player.ordinal]
+
+    /** Where [player] placed their last dot, or null if they have not placed one; starting dots do not count. */
+    fun lastPlaced(player: Player): Pos? = lastPlaced[player.ordinal].takeIf { it >= 0 }?.let { Pos(it % width, it / width) }
 
     fun inBounds(x: Int, y: Int): Boolean = x in 0 until width && y in 0 until height
 
@@ -397,7 +402,7 @@ class GameState private constructor(
 
     private fun copy() = GameState(
         width, height, owner.clone(), captured.clone(), dead.clone(), enclosedBy.clone(), scores.clone(),
-        liveDots.clone(), dotsLeft.clone(), placed.clone(), blocked.clone(), hole, bonus, edge, holesAreBorder,
+        liveDots.clone(), dotsLeft.clone(), placed.clone(), lastPlaced.clone(), blocked.clone(), hole, bonus, edge, holesAreBorder,
         boosters.clone(), playableCells, toMove,
         passesInRow, moveCount, cleaner, finished, boosterUsed, doubleDots, turnRules, turns.clone(), half,
     )
@@ -438,6 +443,7 @@ class GameState private constructor(
         owner[index] = mover.code
         liveDots[mover.ordinal]++
         placed[mover.ordinal]++
+        lastPlaced[mover.ordinal] = index
         playableCells--
         if (!isCleanup && dotsLeft[mover.ordinal] > 0) dotsLeft[mover.ordinal]--
 
@@ -688,7 +694,7 @@ class GameState private constructor(
             val dead = BooleanArray(n) { hole[it] || blockedCells[it] }
             val state = GameState(
                 width, height, ByteArray(n), BooleanArray(n), dead, ByteArray(n), IntArray(2),
-                IntArray(2), budgets, IntArray(2), blockedCells, hole, bonusCells, edge, holesAreBorder, stock,
+                IntArray(2), budgets, IntArray(2), IntArray(2) { -1 }, blockedCells, hole, bonusCells, edge, holesAreBorder, stock,
                 n - dead.count { it }, first, 0, 0, null, false, false, 0,
                 Array(2) { turnRules[Player.entries[it]] }, IntArray(2), NO_HALF,
             )

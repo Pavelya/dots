@@ -109,7 +109,7 @@ class LevelFormatTest {
     @Test
     fun `a bad file names the line and the problem`() {
         val cases = listOf(
-            Triple("computer: normal", "computer: medium", "line 4: unknown computer strength 'medium' (easy, normal, hard, expert)"),
+            Triple("computer: normal", "computer: medium", "line 4: unknown computer strength 'medium' (beginner, easy, steady, normal, hard, expert)"),
             Triple("dots: 12", "dots: twelve", "line 5: 'twelve' is not a whole number"),
             Triple("dots: 12", "dots: 0", "line 5: 0 is not between 1 and 9999"),
             Triple("level: 7", "level: 100", "line 2: 100 is not between 1 and 99"),

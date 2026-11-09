@@ -23,17 +23,11 @@ class SearchAiTest {
         .....
     """
 
-    private val steady = listOf(
-        AiConfig.EASY.copy(mistakeRate = 0.0),
-        AiConfig.NORMAL.copy(mistakeRate = 0.0),
-        AiConfig.HARD,
-    )
-
     @Test
-    fun `every tier takes a capture that is on offer`() {
+    fun `every strength step takes a capture that is on offer`() {
         val state = GameState.fromAscii(almostDiamond)
 
-        for (config in steady) {
+        for (config in AiConfig.STEPS) {
             assertEquals(Pos(2, 3), SearchAi(config, Random(1)).chooseMove(state), "depth ${config.depth}")
         }
     }
@@ -42,7 +36,7 @@ class SearchAiTest {
     fun `looking two plies ahead saves a dot that is about to be captured`() {
         val state = GameState.fromAscii(almostDiamond, first = Player.BLUE)
 
-        for (config in steady.filter { it.depth >= 2 }) {
+        for (config in AiConfig.STEPS.filter { it.depth >= 2 }) {
             val move = SearchAi(config, Random(1)).chooseMove(state)!!
             val after = state.play(move).state
             val losingReplies = after.legalMoves().filter { after.play(it).captures.isNotEmpty() }
@@ -81,6 +75,42 @@ class SearchAiTest {
         assertTrue(defend in defendCells, "leaning to defence, it played $defend")
     }
 
+    /** The [almostDiamond] in the top left corner, red to move after a red and a blue dot far away. */
+    private fun diamondOutOfSight(): GameState {
+        val start = GameState.fromAscii(
+            """
+            ............
+            ..R.........
+            .RBR........
+            ............
+            ............
+            ............
+            ............
+            ............
+            ............
+            ............
+            ............
+            ............
+            """,
+        )
+        return start.play(Pos(9, 9)).state.play(Pos(10, 10)).state
+    }
+
+    @Test
+    fun `a computer with a focus misses a capture far from the last dots`() {
+        val state = diamondOutOfSight()
+        val capture = Pos(2, 3)
+
+        assertEquals(capture, SearchAi(AiConfig.NORMAL.copy(focus = 0), Random(1)).chooseMove(state))
+        val focused = SearchAi(AiConfig.NORMAL, Random(1)).chooseMove(state)!!
+        assertTrue(focused.x >= 7 && focused.y >= 7, "with focus 2 it played $focused, away from the last dots")
+    }
+
+    @Test
+    fun `no strength step plays random moves`() {
+        assertTrue(AiConfig.STEPS.all { it.mistakeRate == 0.0 })
+    }
+
     @Test
     fun `the first move on an empty board is near the centre`() {
         val move = SearchAi(AiConfig.EASY.copy(mistakeRate = 0.0), Random(1)).chooseMove(GameState.start(9, 9))
@@ -98,7 +128,7 @@ class SearchAiTest {
     @Test
     fun `computers play complete legal games`() {
         for (seed in 1..3) {
-            for (config in listOf(AiConfig.EASY, AiConfig.NORMAL)) {
+            for (config in AiConfig.STEPS - AiConfig.HARD) {
                 val start = GameState.start(8, 8, dotsPerPlayer = 10)
                 val end = Match.playOut(start, SearchAi(config, Random(seed)), SearchAi(config, Random(seed + 100)))
 
