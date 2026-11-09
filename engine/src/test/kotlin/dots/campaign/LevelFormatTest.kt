@@ -17,6 +17,7 @@ class LevelFormatTest {
         computer: normal
         dots: 12
         mission: win
+        solutions: few
         boosters: none
         rule: none
         stars: none
@@ -52,6 +53,7 @@ class LevelFormatTest {
             boosters = mapOf(Booster.WALL to 2, Booster.HINT to 1, Booster.BOMB to 3, Booster.DOUBLE_DOT to 1),
             rule = SpecialRule.DoubleMove(every = 5),
             stars = Stars(two = 3, three = 6),
+            solutions = Solutions.OPEN,
         )
         val text = LevelFormat.write(level)
 
@@ -96,7 +98,7 @@ class LevelFormatTest {
     @Test
     fun `fields can come in any order before the map`() {
         val lines = sample.lines()
-        val shuffled = (lines.take(9).reversed() + lines.drop(9)).joinToString("\n")
+        val shuffled = (lines.take(10).reversed() + lines.drop(10)).joinToString("\n")
 
         assertEquals(LevelFormat.parse(sample), LevelFormat.parse(shuffled))
     }
@@ -130,22 +132,23 @@ class LevelFormatTest {
                 "mission: win", "mission: capture 15 in 12 moves",
                 "line 6: the mission 'capture 15 in 12 moves' is already decided before the first move",
             ),
-            Triple("boosters: none", "boosters: wall 2, shield 1", "line 7: unknown booster 'shield' (wall, hint, bomb, double-dot)"),
-            Triple("boosters: none", "boosters: wall", "line 7: write each booster as a name and a count, like 'wall 2', not 'wall'"),
-            Triple("boosters: none", "boosters: hint 1, hint 2", "line 7: 'hint' appears twice"),
-            Triple("rule: none", "rule: double move every 1 turns", "line 8: 1 is not between 2 and 999"),
-            Triple("rule: none", "rule: fog", "line 8: unknown special rule 'fog'"),
-            Triple("stars: none", "stars: 6 3", "line 9: the three-star score (3) must be higher than the two-star score (6)"),
-            Triple("stars: none", "stars: 3", "line 9: stars are 'none' or two scores"),
-            Triple("rule: none", "rules: none", "line 8: unknown field 'rules'"),
-            Triple("rule: none", "rule none", "line 8: expected 'field: value' or 'map:', found 'rule none'"),
-            Triple("stars: none", "stars: none\ndots: 3", "line 10: 'dots' appears twice (first on line 5)"),
-            Triple(".R...\n", ".R..\n", "line 12: this row has 4 points, the first row has 5"),
-            Triple("..B..\n", "..B.X\n", "line 14: unknown map symbol 'X' in column 5"),
-            Triple("..B..\n.....\n", "..B..\n.....\nstars: 3 6\n", "line 16: fields must come before 'map:'"),
-            Triple("map:\n", "map: .....\n", "line 10: the map's rows start on the line after 'map:'"),
-            Triple("..RB.\n..B..\n.....\n", "", "line 10: the board is 5x2; boards are 3 to 99 points in each direction"),
-            Triple("..RB.\n..B..\n.....\n", "..RB.\n.RBR.\n..R..\n", "line 10: The starting position already encloses an enemy dot"),
+            Triple("solutions: few", "solutions: many", "line 7: unknown solutions 'many' (few, open)"),
+            Triple("boosters: none", "boosters: wall 2, shield 1", "line 8: unknown booster 'shield' (wall, hint, bomb, double-dot)"),
+            Triple("boosters: none", "boosters: wall", "line 8: write each booster as a name and a count, like 'wall 2', not 'wall'"),
+            Triple("boosters: none", "boosters: hint 1, hint 2", "line 8: 'hint' appears twice"),
+            Triple("rule: none", "rule: double move every 1 turns", "line 9: 1 is not between 2 and 999"),
+            Triple("rule: none", "rule: fog", "line 9: unknown special rule 'fog'"),
+            Triple("stars: none", "stars: 6 3", "line 10: the three-star score (3) must be higher than the two-star score (6)"),
+            Triple("stars: none", "stars: 3", "line 10: stars are 'none' or two scores"),
+            Triple("rule: none", "rules: none", "line 9: unknown field 'rules'"),
+            Triple("rule: none", "rule none", "line 9: expected 'field: value' or 'map:', found 'rule none'"),
+            Triple("stars: none", "stars: none\ndots: 3", "line 11: 'dots' appears twice (first on line 5)"),
+            Triple(".R...\n", ".R..\n", "line 13: this row has 4 points, the first row has 5"),
+            Triple("..B..\n", "..B.X\n", "line 15: unknown map symbol 'X' in column 5"),
+            Triple("..B..\n.....\n", "..B..\n.....\nstars: 3 6\n", "line 17: fields must come before 'map:'"),
+            Triple("map:\n", "map: .....\n", "line 11: the map's rows start on the line after 'map:'"),
+            Triple("..RB.\n..B..\n.....\n", "", "line 11: the board is 5x2; boards are 3 to 99 points in each direction"),
+            Triple("..RB.\n..B..\n.....\n", "..RB.\n.RBR.\n..R..\n", "line 11: The starting position already encloses an enemy dot"),
             Triple("dots: 12\n", "", "level: missing 'dots:'"),
         )
         for ((find, replace, expected) in cases) {

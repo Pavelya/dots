@@ -11,7 +11,8 @@ import dots.engine.Pos
  * stored as text files; [LevelFormat] reads and writes them.
  *
  * Difficulty comes from the computer's [strength], the [map] it starts with (`B` dots are its head
- * start, `R` dots are the human's), the [dotsPerPlayer] budget and the [mission].
+ * start, `R` dots are the human's), the [dotsPerPlayer] budget and the [mission]. [solutions] says
+ * how many first moves may pass a puzzle mission (see [Solver]).
  */
 data class Level(
     val world: Int,
@@ -24,6 +25,7 @@ data class Level(
     val boosters: Map<Booster, Int> = emptyMap(),
     val rule: SpecialRule? = null,
     val stars: Stars? = null,
+    val solutions: Solutions = Solutions.FEW,
 ) {
     init {
         require(world >= 1) { "world must be 1 or more" }
@@ -99,6 +101,18 @@ data class Level(
         }
         require(!status(start()).isDecided) { "$what is already decided before the first move" }
     }
+}
+
+/**
+ * How many first moves may pass a level's mission, as `cli check-levels` checks it. Only puzzle
+ * missions are checked ([Solver.isPuzzle]).
+ */
+enum class Solutions(val text: String) {
+    /** At most three: the player has to find the answer. */
+    FEW("few"),
+
+    /** Any number: a teaching level, where any sensible move should work. */
+    OPEN("open"),
 }
 
 /** How strongly the computer plays a level. */

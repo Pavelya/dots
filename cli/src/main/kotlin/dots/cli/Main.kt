@@ -34,6 +34,8 @@ private const val USAGE = """Dots - terminal prototype
   bench duel ...                        two custom configurations play each other (run it for help)
   bench variants [games]                how much happens in each game format (draws, captures, ...)
   bench variety [tier] [margin]         how often a tier answers the same position differently
+  check-levels [file...] [--seconds N]  solve every puzzle level (or the files); fails on one that is
+                                        unsolvable, undecided in N seconds, or has over 3 winning first moves
   log-check <file>...                   replay the games in logs exported from the app, check their results
   poc-report <file>...                  the POC test week's numbers, one shared log per tester
 
@@ -54,6 +56,7 @@ fun main(args: Array<String>) {
         "pvp" -> pvp(args.drop(1))
         "watch" -> watch(args.drop(1))
         "bench" -> Bench.run(args.drop(1))
+        "check-levels" -> if (CheckLevels.run(args.drop(1)) > 0) exitProcess(1)
         "log-check" -> if (LogCheck.run(args.drop(1)) > 0) exitProcess(1)
         "poc-report" -> if (PocReport.run(args.drop(1)) > 0) exitProcess(1)
         else -> println(USAGE)

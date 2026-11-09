@@ -4,6 +4,7 @@ name: Grandmaster
 computer: hard
 dots: 24
 mission: win
+solutions: open
 boosters: none
 rule: none
 stars: none
