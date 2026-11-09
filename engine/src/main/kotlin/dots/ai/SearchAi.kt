@@ -50,7 +50,7 @@ class SearchAi(
     override fun choose(state: GameState, isCancelled: () -> Boolean): Action {
         if (state.isOver) return Action.Pass
         if (state.isCleanup) return Cleanup.next(state)
-        if (shouldStop(state)) return Action.Stop
+        if (state.isLegal(Action.Stop) && shouldStop(state)) return Action.Stop
         return chooseMove(state, isCancelled)?.let { Action.Place(it) } ?: Action.Pass
     }
 

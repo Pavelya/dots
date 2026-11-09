@@ -65,6 +65,9 @@ object CheckLevels {
             }
             return Check(level, Result.NOT_CHECKED, "not checked: $why")
         }
+        level.rule?.takeIf { it.turnRule != null }?.let {
+            return Check(level, Result.NOT_CHECKED, "not checked: the solver does not play the rule '${it.text}'")
+        }
 
         val started = System.nanoTime()
         val solution = solver.solve(level)

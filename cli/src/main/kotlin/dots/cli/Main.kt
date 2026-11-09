@@ -11,6 +11,7 @@ import dots.campaign.Mission
 import dots.campaign.MissionStatus
 import dots.campaign.Outcome
 import dots.campaign.Reason
+import dots.campaign.SpecialRule
 import dots.engine.Action
 import dots.engine.GameState
 import dots.engine.MoveResult
@@ -115,9 +116,12 @@ private fun playLevel(level: Level) {
     level.unplayable?.let { exitWith("Level ${level.code} cannot be played: $it") }
     println("Level ${level.code}: ${level.name} - computer is ${level.strength.text}, head start ${level.headStart}")
     println("Mission: ${goal(level)}")
+    level.rule?.let { println("Boss rule: ${announce(it)}") }
     val computer = SearchAi(level.ai)
     val seats = mapOf(level.human to null, level.computer to computer)
-    val end = loop(level.newGame(), seats, level::isOver) { progress(level.mission, level.status(it)) } ?: return
+    val end = loop(level.newGame(), seats, level::isOver) { state ->
+        listOfNotNull(progress(level.mission, level.status(state)), countdown(level, state)).joinToString("\n    ")
+    } ?: return
     val status = level.status(end)
     val verdict = if (status.outcome == Outcome.PASSED) "Level passed!" else "Try again."
     println("${outcome(level, status)} $verdict")
@@ -134,6 +138,25 @@ private fun goal(level: Level): String = when (val mission = level.mission) {
     is Mission.Rescue ->
         "keep your dot at ${name(mission.dot)} from being captured. Join it to the edge in a straight line to make it safe."
     is Mission.Target -> "capture the computer's dot at ${name(mission.dot)} before it reaches the edge."
+}
+
+/** A boss level's rule in a sentence, as the level opens. */
+private fun announce(rule: SpecialRule): String = when (rule) {
+    is SpecialRule.DoubleMove ->
+        "the computer places two dots on its turns ${rule.every}, ${2 * rule.every}, ${3 * rule.every} and so on."
+    is SpecialRule.Fortress -> "the computer starts with a fortress of ${dots(rule.dots)}."
+    SpecialRule.TwoGroups -> "every turn, the computer places two dots: one on the left half of the board, one on the right."
+}
+
+/** The countdown to the computer's next double move, for the double-move rule. */
+private fun countdown(level: Level, state: GameState): String? {
+    if (level.rule !is SpecialRule.DoubleMove) return null
+    return when (val turns = state.doubleMoveIn(level.computer)) {
+        null -> null
+        0 -> "Double move: now"
+        1 -> "Double move: on the computer's next turn"
+        else -> "Double move: in $turns of the computer's turns"
+    }
 }
 
 /** One line under the board while the mission is open. */

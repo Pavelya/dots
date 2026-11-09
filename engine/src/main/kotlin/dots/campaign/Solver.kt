@@ -102,7 +102,9 @@ class Solver(
     }
 
     /**
-     * Searches [level] from its first position, which must be the player's move. The shortest
+     * Searches [level] from its first position, which must be the player's move. A level whose
+     * [Level.rule] gives the computer two-dot turns is refused: the search and its lower bounds
+     * count one computer dot per turn. The shortest
      * pass is found by searching one more move at a time (in "survive" the mission always takes
      * all its moves); the passing first moves are then counted with every move the mission allows
      * (at most [maxMoves]).
@@ -110,6 +112,7 @@ class Solver(
     fun solve(level: Level): Solution {
         val start = level.newGame()
         require(start.toMove == level.human) { "Level ${level.code} does not start with the player's move" }
+        require(level.rule?.turnRule == null) { "Level ${level.code} has the rule '${level.rule?.text}', which the solver does not play" }
         val depth = depth(level.mission)
         val deadline = TimeSource.Monotonic.markNow() + timeLimit
         val pass = Search(level, Outcome.PASSED, deadline)
