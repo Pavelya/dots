@@ -40,7 +40,8 @@ internal object Variants {
 
     fun run(games: Int) {
         val players = linkedMapOf(
-            "casual" to AiConfig.NORMAL.copy(mistakeRate = 0.25),
+            // Spelled out rather than built from a tier, so retuning a tier keeps the stand-in.
+            "casual" to AiConfig(depth = 2, breadth = 10, mistakeRate = 0.25, variety = 10, attackReach = 2, dangerReach = 1),
             "strong" to AiConfig.HARD,
         )
         val formats = buildList {
@@ -50,7 +51,7 @@ internal object Variants {
             add(Format(20, 15, "cross"))
         }
         println("$games games per row; both sides are the same stand-in")
-        println("casual = NORMAL that plays a random nearby move 25% of the time; strong = HARD")
+        println("casual = two moves ahead, whole board, a random nearby move 25% of the time; strong = HARD")
         println("columns: draws, captures/game, dots captured/game, lead changes/game, games won from behind,")
         println("         median move of the first capture, first player's share of wins, moves/game")
         for ((name, config) in players) {

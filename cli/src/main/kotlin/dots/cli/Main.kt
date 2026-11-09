@@ -31,6 +31,7 @@ private const val USAGE = """Dots - terminal prototype
   pvp [width height] [opening] [dots]   two players on one keyboard (traditional size: 39 32)
   watch [tierA] [tierB] [size] [dots]   two computers play each other (A is red)
   bench tiers [games] [size] [dots]     round-robin of the AI difficulty tiers
+  bench steps [games] [size] [dots]     each strength step against the next, from four crosses
   bench levels [games] [stand-in]       a stand-in player (a tier, or border) plays every level
   bench duel ...                        two custom configurations play each other (run it for help)
   bench variants [games]                how much happens in each game format (draws, captures, ...)
@@ -40,7 +41,7 @@ private const val USAGE = """Dots - terminal prototype
   log-check <file>...                   replay the games in logs exported from the app, check their results
   poc-report <file>...                  the POC test week's numbers, one shared log per tester
 
-  tier: easy, normal, hard, expert        opening: cross (default), double, crosses, empty
+  tier: beginner, easy, steady, normal, hard, expert   opening: cross (default), double, crosses, empty
   boards are 3 to 99 in each direction; columns after z are aa, ab, ...
 
 Moves are a column letter and a row number, e.g. e5. Other commands:
@@ -98,7 +99,9 @@ private fun checkSize(width: Int, height: Int) {
 }
 
 internal val TIERS = linkedMapOf(
+    "BEGINNER" to AiConfig.BEGINNER,
     "EASY" to AiConfig.EASY,
+    "STEADY" to AiConfig.STEADY,
     "NORMAL" to AiConfig.NORMAL,
     "HARD" to AiConfig.HARD,
     "EXPERT" to AiConfig.EXPERT,

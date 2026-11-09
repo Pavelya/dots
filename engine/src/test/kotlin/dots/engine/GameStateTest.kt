@@ -285,6 +285,23 @@ class GameStateTest {
     }
 
     @Test
+    fun `each player's last dot is remembered, starting dots are not`() {
+        val start = GameState.fromAscii(almostDiamond)
+        assertNull(start.lastPlaced(Player.RED))
+        assertNull(start.lastPlaced(Player.BLUE))
+
+        val afterRed = start.play(Pos(0, 0)).state
+        val afterBlue = afterRed.play(Pos(4, 4)).state
+        val afterRedAgain = afterBlue.play(Pos(4, 0)).state
+
+        assertEquals(Pos(0, 0), afterRed.lastPlaced(Player.RED))
+        assertNull(afterRed.lastPlaced(Player.BLUE))
+        assertEquals(Pos(4, 4), afterBlue.lastPlaced(Player.BLUE))
+        assertEquals(Pos(4, 0), afterRedAgain.lastPlaced(Player.RED))
+        assertEquals(Pos(0, 0), afterBlue.lastPlaced(Player.RED), "an earlier state keeps its own last dots")
+    }
+
+    @Test
     fun `states are immutable`() {
         val before = GameState.start(5, 5)
         val after = before.play(Pos(2, 2)).state

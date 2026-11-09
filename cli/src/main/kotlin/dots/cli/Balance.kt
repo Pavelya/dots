@@ -35,7 +35,8 @@ internal object Balance {
     private const val REACH = 3
 
     /**
-     * The opponent: a NORMAL-like computer that plays a random nearby move a quarter of the time.
+     * The opponent: a computer that thinks two moves ahead, looks at the whole board and plays a
+     * random nearby move a quarter of the time.
      * Spelled out rather than built from NORMAL, so retuning a tier keeps the opponent.
      */
     private val person = AiConfig(

@@ -16,7 +16,8 @@ internal object Bench {
     private const val DEFAULT_GAMES = 10
     private const val DUEL_USAGE =
         "bench duel games size dots depthA breadthA attackA dangerA depthB breadthB attackB dangerB [varietyA varietyB]\n" +
-            "           [attackWeightsA=3000,600,120,30] [dangerWeightsA=...] [attackWeightsB=...] [dangerWeightsB=...] [opening=cross|crosses]"
+            "           [attackWeightsA=3000,600,120,30] [dangerWeightsA=...] [attackWeightsB=...] [dangerWeightsB=...] [focusA=0] [focusB=0]\n" +
+            "           [opening=cross|crosses]"
     private const val POSITIONS = 20
     private const val RUNS = 10
 
@@ -24,6 +25,7 @@ internal object Bench {
         val games = args.getOrNull(1)?.toIntOrNull() ?: DEFAULT_GAMES
         when (args.firstOrNull()) {
             "tiers" -> tiers(games, args.getOrNull(2)?.toIntOrNull() ?: 10, args.getOrNull(3)?.toIntOrNull() ?: 16)
+            "steps" -> steps(games, args.getOrNull(2)?.toIntOrNull() ?: 15, args.getOrNull(3)?.toIntOrNull() ?: 33)
             "levels" -> levels(games, args.getOrNull(2)?.uppercase() ?: "NORMAL")
             "duel" -> duel(args.drop(1))
             "variety" -> variety(
@@ -37,7 +39,8 @@ internal object Bench {
                 args.getOrNull(3)?.let(::weights),
             )
             else -> exitWith(
-                "usage: bench tiers [games] [size] [dots each] | bench levels [games] [tier] | bench variants [games] |\n" +
+                "usage: bench tiers [games] [size] [dots each] | bench steps [games] [size] [dots each] |\n" +
+                    "       bench levels [games] [tier] | bench variants [games] |\n" +
                     "       bench variety [tier] [margin] | bench balance [games] [attack weights] [danger weights] |\n" +
                     "       $DUEL_USAGE",
             )
@@ -86,8 +89,8 @@ internal object Bench {
      * come out even. The games start from one cross, or with [crosses] from four random crosses.
      */
     private fun pairedGames(a: AiConfig, b: AiConfig, games: Int, size: Int, dots: Int, crosses: Boolean = false): Tally {
-        val tally = Tally()
-        for (g in 0 until games) {
+        // Games run in parallel; each has its own computers and seeds, so the result is the same.
+        val scores = (0 until games).toList().parallelStream().map { g ->
             val aIsRed = g % 2 == 0
             val pair = g / 2
             val opening = if (crosses) Openings.randomCrosses(size, size, random = Random(pair)) else Openings.cross(size, size)
@@ -97,8 +100,10 @@ internal object Bench {
                 SearchAi(if (aIsRed) b else a, Random(2000 + pair)),
             )
             val aSide = if (aIsRed) Player.RED else Player.BLUE
-            tally.add(end.score(aSide), end.score(aSide.opponent))
-        }
+            end.score(aSide) to end.score(aSide.opponent)
+        }.toList()
+        val tally = Tally()
+        for ((own, other) in scores) tally.add(own, other)
         return tally
     }
 
@@ -116,6 +121,22 @@ internal object Bench {
     }
 
     /**
+     * Each strength step ([AiConfig.STEPS]) plays the next stronger one, [games] paired games (see
+     * [pairedGames]) on a [size] board from four random crosses, the format the testers played. The
+     * steps are distinct if the stronger side wins every pairing with a sign test below 0.05.
+     */
+    private fun steps(games: Int, size: Int, dots: Int) {
+        val names = AiConfig.STEPS.map { step -> TIERS.entries.first { it.value == step }.key }
+        println("Strength steps, each against the next, $games games per pair, ${size}x$size from four crosses, $dots dots each")
+        println("(W-L-D from the weaker step's side)")
+        for (i in 0 until names.size - 1) {
+            val started = System.nanoTime()
+            val tally = pairedGames(AiConfig.STEPS[i], AiConfig.STEPS[i + 1], games, size, dots, crosses = true)
+            println("%d %-8s vs %d %-8s %s  [%d s]".format(i + 1, names[i], i + 2, names[i + 1], tally, (System.nanoTime() - started) / 1_000_000_000))
+        }
+    }
+
+    /**
      * Two hand-made configurations play each other; for tuning. The optional last two numbers are
      * each side's [AiConfig.variety] (default 0). Settings written as name=value may follow: each
      * side's threat weights ([AiConfig.attackWeights], [AiConfig.dangerWeights]; default
@@ -124,19 +145,20 @@ internal object Bench {
     private fun duel(args: List<String>) {
         val (named, positional) = args.partition { '=' in it }
         val settings = named.associate { it.substringBefore('=') to it.substringAfter('=') }
-        val unknown = settings.keys - setOf("attackWeightsA", "dangerWeightsA", "attackWeightsB", "dangerWeightsB", "opening")
+        val unknown = settings.keys - setOf("attackWeightsA", "dangerWeightsA", "attackWeightsB", "dangerWeightsB", "focusA", "focusB", "opening")
         if (unknown.isNotEmpty()) exitWith("unknown setting ${unknown.first()}\nusage: $DUEL_USAGE")
         val n = positional.map { it.toIntOrNull() ?: exitWith("not a number: $it") }
         if (n.size != 11 && n.size != 13) exitWith("usage: $DUEL_USAGE")
         val (games, size, dots) = n
         fun weights(name: String) = settings[name]?.let(::weights) ?: AiConfig.BALANCED
+        fun focus(name: String) = settings[name]?.let { it.toIntOrNull()?.takeIf { f -> f >= 0 } ?: exitWith("not a focus: $it") } ?: 0
         val a = AiConfig(
             depth = n[3], breadth = n[4], attackReach = n[5], dangerReach = n[6], variety = n.getOrElse(11) { 0 },
-            attackWeights = weights("attackWeightsA"), dangerWeights = weights("dangerWeightsA"),
+            attackWeights = weights("attackWeightsA"), dangerWeights = weights("dangerWeightsA"), focus = focus("focusA"),
         )
         val b = AiConfig(
             depth = n[7], breadth = n[8], attackReach = n[9], dangerReach = n[10], variety = n.getOrElse(12) { 0 },
-            attackWeights = weights("attackWeightsB"), dangerWeights = weights("dangerWeightsB"),
+            attackWeights = weights("attackWeightsB"), dangerWeights = weights("dangerWeightsB"), focus = focus("focusB"),
         )
         val crosses = when (val opening = settings["opening"] ?: "cross") {
             "cross" -> false
@@ -166,7 +188,7 @@ internal object Bench {
     }
 
     /**
-     * Mid-game positions for [variety]: two casual players (a NORMAL-like computer that plays a
+     * Mid-game positions for [variety]: two casual players (a two-move computer that plays a
      * random nearby move a quarter of the time) play from a cross on 10x10, 24 dots each, for 8 to
      * 20 moves. Spelled out rather than built from NORMAL, so retuning a tier keeps the positions.
      */
