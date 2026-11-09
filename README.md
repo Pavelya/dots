@@ -127,9 +127,9 @@ Implemented from the Wikipedia article
 ## Campaign
 
 Levels against the computer, with a dot budget each, grouped in worlds. Difficulty comes from the
-computer's tier, its head start (dots already on the board) and the board size.
+computer's tier, its head start (dots already on the board), the board size and the mission.
 
-- **Only a win passes a level** (`Level.isPassed`); a draw is not enough.
+- **A level is passed when its mission is** (`Level.isPassed`). In `win`, a draw is not enough.
 - **Every level starts the human with dots in the middle.** Otherwise placing every dot on the
   border would be a safe way never to lose, which is exactly the forced draw the article warns
   about. A border-only stand-in now loses every level (`bench levels 20 border`).
@@ -170,19 +170,45 @@ map:
 | `name` | The name players see. |
 | `computer` | The computer's strength: `easy`, `normal`, `hard` or `expert`. |
 | `dots` | Dots each side may place. |
-| `mission` | What passes the level: `win` (more captures than the computer), `win by 3`, `win with fewer dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` (keep the group holding your dot at e5), `target e5` (capture the computer's dot at e5). |
+| `mission` | What passes the level: `win`, `win by 3`, `win with 8 dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` or `target e5`. See [Missions](#missions). |
 | `boosters` | `none`, or the boosters allowed and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. |
 | `rule` | A rule the computer bends: `none`, or `double move every 5 turns`. |
 | `stars` | `none`, or the scores for two and for three stars: `3 6`. What is counted depends on the mission. |
 | `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
 
-The rules play only the `win` mission, no special rule, and maps without holes, blocked or bonus
-points. A level that uses more can be written and read, but refuses to start.
+The rules play every mission, but no special rule and no map with holes, blocked or bonus
+points. A level that uses those can be written and read, but refuses to start.
 
 A file that cannot be read gives an error with the line, for example
 `1-03.level, line 4: unknown computer strength 'medium' (easy, normal, hard, expert)`. The files
 are kept in the exact form `LevelFormat.write` gives, and a test checks that each one is written
 back unchanged.
+
+### Missions
+
+A move is one dot placed; a pass is not a move. After every move, `Level.status` says where the
+mission stands (playing, passed or failed), what decided it, and the numbers a player follows:
+dots captured, dots lost and moves left. The app turns these into words.
+
+| Mission | Passes | Fails |
+|---------|--------|-------|
+| `win` | At the end of the game, with more captures than the computer. | At the end otherwise, or as soon as capturing every computer dot that is not safe would not be enough. |
+| `win by 3` | As `win`, but 3 or more captures ahead. | As `win`. |
+| `win with 8 dots` | As `win`. The player has 8 dots to place; the computer has the level's `dots`, which must be more. | As `win`. |
+| `capture 5 in 8 moves` | On the move that captures the 5th dot, within the player's first 8 moves. | After the 8th move, or as soon as too few computer dots are left to capture. |
+| `survive 6 moves` | Once the computer has placed 6 dots without a capture, or can capture nothing more. | On the move that captures one of the player's dots. |
+| `rescue e5` | Once the player's dot at e5 is safe, or at the end of the game if it is still there. | On the move that captures it. |
+| `target e5` | On the move that captures the computer's dot at e5. | Once that dot is safe, or at the end of the game. |
+
+Capture, survive, rescue and target end the level the moment they are decided. The three win
+missions play on to the end even once won, because the margin counts for stars.
+
+A dot is **safe** when a chain of its side's dots joins it to the border, stepping only up, down,
+left or right (`Grounding.safe`). Such a chain cannot be crossed. An enemy ring can cross a diagonal
+step, so a dot joined to the border only diagonally is not safe.
+
+A level is refused if its mission is decided before the first move, or asks for more moves than
+that side has dots. The computer plays for captures only, not against the mission.
 
 ## Computer opponent
 
@@ -341,8 +367,9 @@ with deeper search. Most games between the stronger tiers are still draws: equal
 capture. Two identical configurations come out exactly even by construction.
 
 **Levels.** `cli bench levels 20 <stand-in>`: a stand-in plays red on each level, 20 games;
-W-L-D for the stand-in. EASY stands for a weak player, NORMAL for a strong one, border for
-someone who only plays on the border.
+W-L-D in captures for the stand-in, and how many games passed the level's mission (for `win`,
+the same as the wins). Each game stops when the mission is decided. EASY stands for a weak player,
+NORMAL for a strong one, border for someone who only plays on the border.
 
 ```
                      EASY stand-in    NORMAL stand-in    border-only

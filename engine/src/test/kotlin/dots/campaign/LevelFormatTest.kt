@@ -66,7 +66,8 @@ class LevelFormatTest {
         val missions = listOf(
             Mission.Win,
             Mission.WinBy(3),
-            Mission.WinWithFewerDots,
+            Mission.WinWithFewerDots(1),
+            Mission.WinWithFewerDots(8),
             Mission.Capture(dots = 1, moves = 1),
             Mission.Capture(dots = 4, moves = 9),
             Mission.Survive(1),
@@ -82,6 +83,7 @@ class LevelFormatTest {
         }
         assertEquals("rescue c3", Mission.Rescue(Pos(2, 2)).text)
         assertEquals("capture 1 in 1 move", Mission.Capture(1, 1).text)
+        assertEquals("win with 1 dot", Mission.WinWithFewerDots(1).text)
     }
 
     @Test
@@ -111,6 +113,23 @@ class LevelFormatTest {
             Triple("mission: win", "mission: rescue d3", "line 6: d3 must hold a human dot ('R' on the map)"),
             Triple("mission: win", "mission: target z9", "line 6: z9 must hold a computer dot ('B' on the map)"),
             Triple("mission: win", "mission: target 9", "line 6: '9' is not a point like e5"),
+            Triple("mission: win", "mission: win with fewer dots", "line 6: 'fewer' is not a whole number"),
+            Triple(
+                "mission: win", "mission: win with 12 dots",
+                "line 6: the mission 'win with 12 dots' must give the player fewer dots than the computer's 12",
+            ),
+            Triple(
+                "mission: win", "mission: capture 1 in 13 moves",
+                "line 6: the mission 'capture 1 in 13 moves' has more moves than the 12 dots the player may place",
+            ),
+            Triple(
+                "mission: win", "mission: survive 13 moves",
+                "line 6: the mission 'survive 13 moves' has more moves than the 12 dots the computer may place",
+            ),
+            Triple(
+                "mission: win", "mission: capture 15 in 12 moves",
+                "line 6: the mission 'capture 15 in 12 moves' is already decided before the first move",
+            ),
             Triple("boosters: none", "boosters: wall 2, shield 1", "line 7: unknown booster 'shield' (wall, hint, bomb, double-dot)"),
             Triple("boosters: none", "boosters: wall", "line 7: write each booster as a name and a count, like 'wall 2', not 'wall'"),
             Triple("boosters: none", "boosters: hint 1, hint 2", "line 7: 'hint' appears twice"),
@@ -150,7 +169,6 @@ class LevelFormatTest {
     fun `levels with rules the engine does not play refuse to start`() {
         val level = LevelFormat.parse(sample)
         val unplayable = listOf(
-            level.copy(mission = Mission.Survive(5)) to "its mission is 'survive 5 moves'",
             level.copy(rule = SpecialRule.DoubleMove(4)) to "the special rule 'double move every 4 turns'",
             level.copy(map = LevelMap(level.map.rows.map { it.replace('.', '+') })) to "bonus points",
         )

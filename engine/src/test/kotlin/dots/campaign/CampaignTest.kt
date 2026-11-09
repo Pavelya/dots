@@ -48,7 +48,7 @@ class CampaignTest {
 
             assertFalse(game.isOver, level.name)
             assertEquals(Player.RED, game.toMove, level.name)
-            assertEquals(level.dotsPerPlayer, game.dotsLeft(Player.RED), level.name)
+            assertEquals(level.humanDots, game.dotsLeft(Player.RED), level.name)
             assertEquals(0, game.score(Player.RED) + game.score(Player.BLUE), level.name)
             assertTrue(game.legalMoves().isNotEmpty(), level.name)
         }

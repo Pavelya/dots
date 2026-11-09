@@ -7,6 +7,10 @@ import dots.campaign.Campaign
 import dots.campaign.Level
 import dots.campaign.LevelFormat
 import dots.campaign.LevelFormatException
+import dots.campaign.Mission
+import dots.campaign.MissionStatus
+import dots.campaign.Outcome
+import dots.campaign.Reason
 import dots.engine.Action
 import dots.engine.GameState
 import dots.engine.MoveResult
@@ -107,16 +111,58 @@ private fun openingDots(name: String, width: Int, height: Int): Map<Pos, Player>
 private fun playLevel(level: Level) {
     level.unplayable?.let { exitWith("Level ${level.code} cannot be played: $it") }
     println("Level ${level.code}: ${level.name} - computer is ${level.strength.text}, head start ${level.headStart}")
+    println("Mission: ${goal(level)}")
     val computer = SearchAi(level.ai)
-    val end = loop(level.newGame(), mapOf(level.human to null, level.computer to computer)) ?: return
-    println(
-        when (end.winner) {
-            level.human -> "You win ${end.score(level.human)} to ${end.score(level.computer)} - level passed!"
-            level.computer -> "The computer wins ${end.score(level.computer)} to ${end.score(level.human)}. Try again."
-            else -> "A draw at ${end.score(level.human)} each - not enough: you need more captures than the computer."
-        },
-    )
+    val seats = mapOf(level.human to null, level.computer to computer)
+    val end = loop(level.newGame(), seats, level::isOver) { progress(level.mission, level.status(it)) } ?: return
+    val status = level.status(end)
+    val verdict = if (status.outcome == Outcome.PASSED) "Level passed!" else "Try again."
+    println("${outcome(level, status)} $verdict")
 }
+
+/** The mission in a sentence, as the level opens. */
+private fun goal(level: Level): String = when (val mission = level.mission) {
+    Mission.Win -> "capture more dots than the computer."
+    is Mission.WinBy -> "capture at least ${mission.margin} more dots than the computer."
+    is Mission.WinWithFewerDots ->
+        "capture more dots than the computer, with ${dots(mission.dots)} against its ${level.dotsPerPlayer}."
+    is Mission.Capture -> "capture ${dots(mission.dots)} in your first ${moves(mission.moves)}."
+    is Mission.Survive -> "lose no dot while the computer places its next ${dots(mission.moves)}."
+    is Mission.Rescue ->
+        "keep your dot at ${name(mission.dot)} from being captured. Join it to the edge in a straight line to make it safe."
+    is Mission.Target -> "capture the computer's dot at ${name(mission.dot)} before it reaches the edge."
+}
+
+/** One line under the board while the mission is open. */
+private fun progress(mission: Mission, status: MissionStatus): String = "Mission: " + when (mission) {
+    Mission.Win, is Mission.WinBy, is Mission.WinWithFewerDots ->
+        "${status.captured - status.lost} ahead" + ((mission as? Mission.WinBy)?.let { " (you need ${it.margin})" } ?: "")
+    is Mission.Capture -> "${status.captured} of ${mission.dots} captured, ${moves(status.movesLeft!!)} left"
+    is Mission.Survive -> "no dot lost, ${dots(status.movesLeft!!)} of the computer's to go"
+    is Mission.Rescue -> "${name(mission.dot)} is not safe yet"
+    is Mission.Target -> "capture ${name(mission.dot)}"
+}
+
+/** What decided the level. */
+private fun outcome(level: Level, status: MissionStatus): String {
+    val score = "${status.captured} to ${status.lost}"
+    return when (status.reason) {
+        Reason.CAPTURED_ENOUGH -> "You captured ${dots(status.captured)}."
+        Reason.OUT_OF_MOVES -> "Out of moves: you captured ${status.captured} of ${(level.mission as Mission.Capture).dots}."
+        Reason.OUT_OF_REACH -> "Too few computer dots are left to capture for the mission (score $score)."
+        Reason.SURVIVED -> "You lost no dot."
+        Reason.LOST_A_DOT -> "The computer captured your dot."
+        Reason.DOT_SAFE -> "Your dot is joined to the edge and safe."
+        Reason.DOT_CAPTURED -> "Your dot was captured."
+        Reason.TARGET_CAPTURED -> "You captured the target."
+        Reason.TARGET_SAFE -> "The target is joined to the edge and can no longer be captured."
+        Reason.GAME_OVER, null -> "The game is over, $score."
+    }
+}
+
+private fun dots(n: Int) = if (n == 1) "1 dot" else "$n dots"
+
+private fun moves(n: Int) = if (n == 1) "1 move" else "$n moves"
 
 private fun versus(args: List<String>) {
     val tier = args.firstOrNull { it.toIntOrNull() == null && it.lowercase() in TIERS.keys.map(String::lowercase) } ?: "normal"
@@ -169,12 +215,21 @@ private sealed interface Command {
     data object Quit : Command
 }
 
-/** Runs a game; a null entry in [seats] is a human at the keyboard. Returns null if the player quit. */
-private fun loop(start: GameState, seats: Map<Player, Ai?>): GameState? {
+/**
+ * Runs a game until [isOver]; a null entry in [seats] is a human at the keyboard, and [note] adds a
+ * line under the board. Returns null if the player quit.
+ */
+private fun loop(
+    start: GameState,
+    seats: Map<Player, Ai?>,
+    isOver: (GameState) -> Boolean = { it.isOver },
+    note: (GameState) -> String? = { null },
+): GameState? {
     var state = start
     var last: Pos? = null
-    while (!state.isOver) {
+    while (!isOver(state)) {
         print(render(state, last))
+        note(state)?.let { println("    $it\n") }
         val mover = state.toMove
         val ai = seats.getValue(mover)
         val action: Action
