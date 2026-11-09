@@ -180,7 +180,7 @@ map:
 | `dots` | Dots each side may place. |
 | `mission` | What passes the level: `win`, `win by 3`, `win with 8 dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` or `target e5`. See [Missions](#missions). |
 | `solutions` | `few` or `open`: how many first moves may pass a puzzle. `few` allows at most 3; `open` any number, for teaching levels where any sensible move should work. See [Checking puzzles](#checking-puzzles). |
-| `boosters` | `none`, or the boosters allowed and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. |
+| `boosters` | `none`, or the boosters the player may use and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. See [Boosters](#boosters). |
 | `rule` | A rule the computer bends: `none`, or `double move every 5 turns`. |
 | `stars` | `none`, or the scores for two and for three stars: `3 6`. What is counted depends on the mission. |
 | `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
@@ -218,6 +218,31 @@ step, so a dot joined to the border only diagonally is not safe.
 
 A level is refused if its mission is decided before the first move, or asks for more moves than
 that side has dots. The computer plays for captures only, not against the mission.
+
+### Boosters
+
+Boosters exist only in the campaign, and only the player has them (decision 0006). A level's
+`boosters` line says which ones the player may use and how many times in that level.
+
+| Booster | What it does |
+|---------|--------------|
+| `wall` | Blocks one empty point that is in play. Nobody may place a dot there for the rest of the game. A ring passes over a wall as over an empty point, so a wall on the point that would close a ring stops that ring there, but a wider ring round the wall still captures. |
+| `hint` | Shows the player the computer's best move for them (`Hints.hint`, the hard computer without its random choice, within 1.5 seconds). The board does not change. |
+| `bomb` | Removes the computer's dots on a point and the four points next to it, up, down, left and right. Points off the board and points out of play (inside a capture) are not touched, so a bomb never undoes a capture. It needs at least one dot to hit. The points become empty and playable; scores and dots left do not change. |
+| `double-dot` | The player places two dots this turn. It needs 2 dots left. No pass or stop between the two; if the board fills up after the first, the turn ends there. |
+
+- A booster does not use up the turn: the player still places their dot afterwards.
+- At most one booster per turn, and none after a stop.
+- A "target" mission cannot allow the bomb, which would remove the target instead of capturing
+  it.
+- A double dot's two dots both count as moves, and both come out of the dots left.
+
+A level game is saved as a `LevelRecord`: the level and every action, boosters included, on one
+line. It replays to exactly the same position against the level as its file is now.
+
+```
+level/1 2-5 | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3 hint:b2 b2 c2 bomb:d3 d3 e2
+```
 
 ### Checking puzzles
 
