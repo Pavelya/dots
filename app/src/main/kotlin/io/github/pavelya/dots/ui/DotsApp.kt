@@ -61,8 +61,8 @@ object Routes {
     const val MAP = "map"
 
     /** Over the map: a level's card, with Start (A-03). */
-    const val LEVEL = "level/{number}"
-    fun level(number: Int) = "level/$number"
+    const val LEVEL = "level/{world}/{number}"
+    fun level(world: Int, number: Int) = "level/$world/$number"
 
     /** Over the Level card: the boosters the player has. */
     const val BOOSTERS = "boosters"
@@ -114,9 +114,11 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     LoadingScreen()
                 }
                 composable(Routes.MAP) {
+                    val map by app.progress.map.collectAsStateWithLifecycle()
                     MapScreen(
+                        map,
                         MapActions(
-                            onLevel = { navController.navigate(Routes.level(it)) },
+                            onLevel = { navController.navigate(Routes.level(it.world, it.number)) },
                             onDaily = { navController.navigate(Routes.DAILY) },
                             onPlay = { navController.navigate(Routes.PLAY) },
                             onRules = { navController.navigate(Routes.RULES) },
@@ -126,9 +128,13 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         ),
                     )
                 }
-                dialog(Routes.LEVEL, arguments = listOf(navArgument("number") { type = NavType.IntType })) { entry ->
+                dialog(
+                    Routes.LEVEL,
+                    arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
+                ) { entry ->
+                    val world = entry.arguments?.getInt("world") ?: 1
                     val number = entry.arguments?.getInt("number") ?: 1
-                    StandInNote(stringResource(R.string.map_level, number), "A-03", onClose = back) {
+                    StandInNote(stringResource(R.string.map_level, "$world-$number"), "A-03", onClose = back) {
                         TextButton(onClick = { navController.navigate(Routes.BOOSTERS) }) { Text(stringResource(R.string.screen_boosters)) }
                     }
                 }
@@ -228,6 +234,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         DeveloperScreen(
                             settings = it,
                             onChange = model::change,
+                            onProgress = { progress -> scope.launch { app.progress.replace(progress) } },
                             loggedGames = loggedGames,
                             onShareLog = { scope.launch { shareLog(context, app) } },
                             onBack = back,
