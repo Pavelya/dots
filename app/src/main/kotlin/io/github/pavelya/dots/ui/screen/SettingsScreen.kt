@@ -31,11 +31,13 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import dots.campaign.Progress
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.Difficulty
 import io.github.pavelya.dots.data.GameLength
+import io.github.pavelya.dots.data.SampleProgress
 
 /** The number of taps on the version line that opens the developer menu, as Android's "Build number" does. */
 const val DEVELOPER_TAPS = 7
@@ -112,6 +114,7 @@ fun SettingsScreen(
 fun DeveloperScreen(
     settings: AppSettings,
     onChange: (AppSettings) -> Unit,
+    onProgress: (Progress) -> Unit,
     loggedGames: Int,
     onShareLog: () -> Unit,
     onBack: () -> Unit,
@@ -157,6 +160,20 @@ fun DeveloperScreen(
             },
             onSelect = { onChange(settings.copy(difficulty = it)) },
         )
+
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Section(R.string.developer_progress)
+        Text(stringResource(R.string.developer_progress_note), style = MaterialTheme.typography.bodyMedium)
+        for ((label, progress) in listOf(
+            R.string.developer_progress_none to { Progress.NONE },
+            R.string.developer_progress_world_needs_stars to { SampleProgress.worldNeedsStars },
+            R.string.developer_progress_mid_world to { SampleProgress.midWorld },
+            R.string.developer_progress_everything to { SampleProgress.everything },
+        )) {
+            OutlinedButton(onClick = { onProgress(progress()) }, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(label))
+            }
+        }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Section(R.string.log_title)

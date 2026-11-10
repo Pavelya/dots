@@ -14,6 +14,12 @@ object Campaign {
 
     val levels: List<Level> by lazy { load(::resource) }
 
+    /** The [levels] grouped into worlds, with each world's name and the stars that open it. */
+    val worlds: List<World> by lazy { World.of(levels) }
+
+    /** What the world map shows for [progress]. */
+    fun map(progress: Progress): CampaignMap = CampaignMap.of(worlds, progress)
+
     fun level(world: Int, number: Int): Level = levels.firstOrNull { it.world == world && it.number == number }
         ?: throw NoSuchElementException("No level $world-$number (see the files in $FOLDER/)")
 

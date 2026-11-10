@@ -16,15 +16,20 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.espresso.Espresso
+import dots.campaign.Progress
 import dots.engine.GameSettings
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.DotsApplication
+import io.github.pavelya.dots.data.SampleProgress
 import io.github.pavelya.dots.ui.screen.DEVELOPER_TAPS
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.After
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -71,7 +76,8 @@ class NavigationTest {
     private fun gone(text: String) =
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isEmpty() }
 
-    private fun tap(text: String) = compose.onNodeWithText(text).performClick()
+    /** Taps what shows [text], or an icon labelled with it. */
+    private fun tap(text: String) = compose.onNode(hasText(text) or hasContentDescription(text)).performClick()
 
     private fun back() {
         Espresso.pressBack()
@@ -100,14 +106,17 @@ class NavigationTest {
 
         visit("Today’s puzzle", Routes.DAILY)
         visit("Play a game", Routes.PLAY)
-        visit("How to play", Routes.RULES)
+        visit("Rules", Routes.RULES)
         visit("Stats", Routes.STATS)
         visit("Shop", Routes.SHOP)
         visit("Settings", Routes.SETTINGS)
 
         // Level card, then Boosters over it: Back closes Boosters first.
-        tap("Level 1")
+        compose.onNodeWithContentDescription("Level 1-1, next").performClick()
         at(Routes.LEVEL)
+        assertEquals(1, nav.currentBackStackEntry?.arguments?.getInt("world"))
+        assertEquals(1, nav.currentBackStackEntry?.arguments?.getInt("number"))
+        waitFor("Level 1-1")
         visit("Boosters", Routes.BOOSTERS, returnTo = Routes.LEVEL)
         back()
         at(Routes.MAP)
@@ -210,6 +219,42 @@ class NavigationTest {
         waitFor("Red to move · 33 dots left")
         assertNotSame(first, app.games.current.value)
     }
+
+    @Test
+    fun `the map opens the card of the level tapped, at the player's progress`() {
+        launch()
+        openDeveloperMenu()
+        compose.onNodeWithText("Halfway through World 2").performScrollTo().performClick()
+        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.progress.progress.first() } == SampleProgress.midWorld }
+        back()
+        back()
+        at(Routes.MAP)
+
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodes(hasContentDescription("Level 2-10, next")).fetchSemanticsNodes().isNotEmpty()
+        }
+        compose.onNodeWithContentDescription("Level 2-10, next").performClick()
+        at(Routes.LEVEL)
+        waitFor("Level 2-10")
+        back()
+        at(Routes.MAP)
+
+        compose.onNodeWithContentDescription("Level 2-9", substring = true).performClick()
+        at(Routes.LEVEL)
+        waitFor("Level 2-9")
+        back()
+        at(Routes.MAP)
+
+        // A locked level says what opens it, over the map.
+        compose.onNodeWithContentDescription("Level 2-11, locked").performClick()
+        waitFor("Pass level 2-10 to open this one.")
+        tap("Close")
+        gone("Pass level 2-10 to open this one.")
+        assertEquals(Routes.MAP, nav.currentDestination?.route)
+    }
+
+    @After
+    fun `forget the progress`() = runBlocking { app.progress.replace(Progress.NONE) }
 
     @Test
     fun `the developer menu holds the test settings and shares the game log`() {

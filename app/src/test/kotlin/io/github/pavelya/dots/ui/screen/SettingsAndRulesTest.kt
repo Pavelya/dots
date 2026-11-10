@@ -35,7 +35,7 @@ class SettingsAndRulesTest {
         var latest = AppSettings()
         compose.setContent {
             var settings by remember { mutableStateOf(AppSettings()) }
-            DeveloperScreen(settings, onChange = { settings = it; latest = it }, loggedGames = 0, onShareLog = {}, onBack = {})
+            DeveloperScreen(settings, onChange = { settings = it; latest = it }, onProgress = {}, loggedGames = 0, onShareLog = {}, onBack = {})
         }
         compose.onNodeWithText("Short: 33 dots each").assertIsDisplayed()
 

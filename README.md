@@ -160,6 +160,11 @@ computer's tier, its head start (dots already on the board), the board size and 
   | 3 Night sky | 20 | Holes: lakes whose shore is border, open holes, round boards; the bomb and double dot boosters | Comet: a double move every 3rd turn, and 3 dots more | [`world-3.md`](docs/design/world-3.md) |
   | 4 Sea | 20 | Rocks (blocked points) and pearls (bonus points) | Kraken: two dots every turn, one in each half, and the normal computer | [`world-4.md`](docs/design/world-4.md) |
 
+- **Worlds open with the boss and stars** (decision 0022). A world opens when the previous world's
+  last level, its boss, is passed and the player has enough stars in total: World 2 at 20, World 3
+  at 45, World 4 at 75. Inside a world, each level opens when the one before it is passed.
+  `Progress` holds the best stars of each passed level; `Campaign.map(progress)` gives what the
+  world map shows: each world and level open, locked or passed, and the next level.
 - **A saw-tooth curve.** From World 2 on, levels 3, 6, 9, 12, 15 and 18 of a world are the hard
   ones and the two after each are easier; the first whole game of a world is easier than the
   last boss.
