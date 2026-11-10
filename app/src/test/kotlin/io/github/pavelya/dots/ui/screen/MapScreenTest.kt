@@ -60,7 +60,7 @@ class MapScreenTest {
         show(Progress.NONE)
 
         compose.onNodeWithContentDescription("Level 1-1, next").assertIsDisplayed()
-        compose.onNodeWithText("World 1 · Notebook").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 1, Notebook, 0 of 45 stars").assertIsDisplayed()
         capture("map_new_player")
     }
 
@@ -70,6 +70,7 @@ class MapScreenTest {
 
         compose.onNodeWithContentDescription("Level 2-10, next").assertIsDisplayed()
         compose.onNodeWithContentDescription("Level 2-9, 1 star").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 2, Garden", substring = true).assertIsDisplayed()
         capture("map_mid_world")
     }
 
@@ -78,7 +79,8 @@ class MapScreenTest {
         show(SampleProgress.worldComplete)
 
         compose.onNodeWithContentDescription("Level 2-1, next").assertIsDisplayed()
-        compose.onNodeWithText("World 2 · Garden").assertIsDisplayed()
+        compose.onNodeWithText("Garden").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Level 1-15, Ink Bottle, 3 stars").assertIsDisplayed()
         capture("map_world_complete")
     }
 
@@ -89,9 +91,30 @@ class MapScreenTest {
         compose.onNodeWithText("Stars needed: 20. You have 15.").assertIsDisplayed()
         capture("map_world_needs_stars")
 
-        compose.onNodeWithText("World 2 · Garden").performClick()
+        compose.onNodeWithText("Garden").performClick()
         compose.onAllNodes(hasText("Stars needed: 20. You have 15.")).fetchSemanticsNodes().let { assertEquals(2, it.size) }
         assertTrue(opened.isEmpty())
+    }
+
+    @Test
+    fun `the entries over the map lead where the flows say`() {
+        val tapped = mutableListOf<String>()
+        val actions = MapActions(
+            onLevel = {},
+            onDaily = { tapped += "daily" }, onPlay = { tapped += "play" }, onRules = { tapped += "rules" },
+            onStats = { tapped += "stats" }, onShop = { tapped += "shop" }, onSettings = { tapped += "settings" },
+        )
+        val map = Campaign.map(Progress.NONE)
+        compose.setContent { MaterialTheme(colorScheme = lightColorScheme()) { Surface { MapScreen(map, actions) } } }
+
+        compose.onNodeWithText("Today’s puzzle").performClick()
+        compose.onNodeWithText("Play a game").performClick()
+        compose.onNodeWithText("Rules").performClick()
+        compose.onNodeWithText("Stats").performClick()
+        compose.onNodeWithText("Shop").performClick()
+        compose.onNodeWithContentDescription("Settings").performClick()
+
+        assertEquals(listOf("daily", "play", "rules", "stats", "shop", "settings"), tapped)
     }
 
     @Test

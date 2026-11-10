@@ -76,7 +76,8 @@ class NavigationTest {
     private fun gone(text: String) =
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isEmpty() }
 
-    private fun tap(text: String) = compose.onNodeWithText(text).performClick()
+    /** Taps what shows [text], or an icon labelled with it. */
+    private fun tap(text: String) = compose.onNode(hasText(text) or hasContentDescription(text)).performClick()
 
     private fun back() {
         Espresso.pressBack()
@@ -105,7 +106,7 @@ class NavigationTest {
 
         visit("Today’s puzzle", Routes.DAILY)
         visit("Play a game", Routes.PLAY)
-        visit("How to play", Routes.RULES)
+        visit("Rules", Routes.RULES)
         visit("Stats", Routes.STATS)
         visit("Shop", Routes.SHOP)
         visit("Settings", Routes.SETTINGS)
