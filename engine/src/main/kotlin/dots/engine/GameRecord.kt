@@ -6,11 +6,13 @@ package dots.engine
  *
  *     dots/1 15x15 dots=33 opening=crosses seed=42 first=R | e5 f6 pass stop a1 done
  */
-data class GameRecord(val settings: GameSettings, val actions: List<Action>) {
+data class GameRecord(val settings: GameSettings, override val actions: List<Action>) : PlayRecord {
 
-    fun replay(): GameState = actions.fold(settings.newGame()) { state, action -> state.apply(action).state }
+    override fun start(): GameState = settings.newGame()
 
-    fun toText(): String = buildString {
+    override fun withActions(actions: List<Action>): GameRecord = copy(actions = actions)
+
+    override fun toText(): String = buildString {
         append("$FORMAT ${settings.width}x${settings.height}")
         append(" dots=${settings.dotsPerPlayer ?: "none"}")
         append(" opening=${settings.opening.name.lowercase()}")
@@ -19,7 +21,7 @@ data class GameRecord(val settings: GameSettings, val actions: List<Action>) {
     }
 
     companion object {
-        private const val FORMAT = "dots/1"
+        const val FORMAT = "dots/1"
 
         fun parse(text: String): GameRecord {
             val (head, body) = text.split('|', limit = 2).let { it[0].trim() to it.getOrElse(1) { "" }.trim() }

@@ -20,7 +20,7 @@ class LogCheckTest {
             val moves = game.state.legalMoves()
             game.apply(Action.Place(moves[random.nextInt(moves.size)]))
         }
-        return GameLogEntry.start(game.settings, "easy", threatHighlight = false, now = 0)
+        return GameLogEntry.start(game.record, "easy", threatHighlight = false, now = 0)
             .copy(outcome = Outcome.FINISHED, red = game.state.score(Player.RED), blue = game.state.score(Player.BLUE), record = game.record)
     }
 

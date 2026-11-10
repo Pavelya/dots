@@ -114,6 +114,22 @@ class ProgressTest {
     }
 
     @Test
+    fun `a pass says which levels and worlds it opened`() {
+        val before = Campaign.map(passedUpTo("1-6"))
+        val after = Campaign.map(passedUpTo("1-6").record(level("1-7"), 2))
+
+        assertEquals(CampaignMap.Opened(emptyList(), listOf(level("1-8"))), after.openedSince(before))
+        assertTrue(before.openedSince(before).isEmpty)
+        // A replay for more stars opens nothing.
+        assertTrue(Campaign.map(passedUpTo("1-7").record(level("1-7"), 3)).openedSince(Campaign.map(passedUpTo("1-7"))).isEmpty)
+
+        val boss = Campaign.map(passedUpTo("1-14", stars = 2))
+        val opened = Campaign.map(passedUpTo("1-15", stars = 2)).openedSince(boss)
+        assertEquals(listOf(worlds[1]), opened.worlds)
+        assertEquals(listOf(level("2-1")), opened.levels)
+    }
+
+    @Test
     fun `with every level passed there is no next level`() {
         val map = Campaign.map(passedUpTo(Campaign.levels.last().code, stars = 3))
 

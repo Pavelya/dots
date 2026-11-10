@@ -14,6 +14,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import dots.ai.Danger
 import dots.engine.GameState
+import dots.engine.Player
 import dots.engine.Pos
 
 /**
@@ -21,7 +22,8 @@ import dots.engine.Pos
  * and captured dots, the last move, and a placement preview. It decides nothing about the game;
  * a tap is reported as the board point it hit (or null when off the board). [showLinks] draws the
  * links between neighbouring dots of one colour, which makes chains and rings visible (used to
- * teach the rules). [dangers] marks groups close to capture (the threat highlight).
+ * teach the rules). [dangers] marks groups close to capture (the threat highlight). [marked] is
+ * the dot a level's mission is about (rescue or target), circled twice in the player's ink.
  */
 @Composable
 fun BoardView(
@@ -33,6 +35,7 @@ fun BoardView(
     preview: Pos? = null,
     showLinks: Boolean = false,
     dangers: List<Danger> = emptyList(),
+    marked: Pos? = null,
     onTap: ((Pos?) -> Unit)? = null,
 ) {
     val tapModifier = if (onTap == null) Modifier else Modifier.pointerInput(state.width, state.height) {
@@ -53,6 +56,11 @@ fun BoardView(
         if (showLinks) drawLinks(state, geometry, style)
         drawDots(state, geometry, style)
         drawDangers(state, dangers, geometry, style)
+        marked?.let {
+            val ink = style.color(Player.RED)
+            drawRing(geometry.center(it), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
+            drawRing(geometry.center(it), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
+        }
         lastMove?.let { drawRing(geometry.center(it), geometry.spacing * 0.42f, style.grid, geometry.spacing * 0.06f) }
         preview?.let {
             val color = style.color(state.toMove)

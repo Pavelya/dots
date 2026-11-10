@@ -26,14 +26,20 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.ui.window.DialogProperties
+import dots.campaign.Campaign
+import dots.campaign.LevelRecord
+import dots.log.GameLogEntry
 import io.github.pavelya.dots.BuildConfig
 import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.computerFor
+import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.screen.DeveloperScreen
 import io.github.pavelya.dots.ui.screen.GameScreen
+import io.github.pavelya.dots.ui.screen.LevelCard
 import io.github.pavelya.dots.ui.screen.LoadingScreen
 import io.github.pavelya.dots.ui.screen.MapActions
 import io.github.pavelya.dots.ui.screen.MapScreen
@@ -60,7 +66,7 @@ object Routes {
     /** Home. Back here leaves the app. */
     const val MAP = "map"
 
-    /** Over the map: a level's card, with Start (A-03). */
+    /** Over the map: a level's card, with Start or Resume. */
     const val LEVEL = "level/{world}/{number}"
     fun level(world: Int, number: Int) = "level/$world/$number"
 
@@ -131,11 +137,34 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 dialog(
                     Routes.LEVEL,
                     arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
+                    dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
                 ) { entry ->
                     val world = entry.arguments?.getInt("world") ?: 1
                     val number = entry.arguments?.getInt("number") ?: 1
-                    StandInNote(stringResource(R.string.map_level, "$world-$number"), "A-03", onClose = back) {
-                        TextButton(onClick = { navController.navigate(Routes.BOOSTERS) }) { Text(stringResource(R.string.screen_boosters)) }
+                    val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
+                    val current by app.games.current.collectAsStateWithLifecycle()
+                    val scope = rememberCoroutineScope()
+                    if (level == null) {
+                        LaunchedEffect(Unit) { back() }
+                    } else {
+                        LevelCard(
+                            level = level,
+                            saved = current?.levelCode == level.code,
+                            // Resume plays the saved game of this level; Start writes a new one to the
+                            // store before the board opens, as Play a game does.
+                            onStart = {
+                                scope.launch {
+                                    app.games.loaded.first { it }
+                                    if (app.games.current.value?.levelCode != level.code) {
+                                        val settings = app.settings.settings.first()
+                                        app.games.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis()))
+                                    }
+                                    navController.navigate(Routes.GAME) { popUpTo(Routes.MAP) }
+                                }
+                            },
+                            onBooster = { navController.navigate(Routes.BOOSTERS) },
+                            onClose = back,
+                        )
                     }
                 }
                 dialog(Routes.BOOSTERS) {
@@ -152,11 +181,11 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     val current by app.games.current.collectAsStateWithLifecycle()
                     // A card resumes the saved game of its kind, or writes a new game to the store
                     // before the board opens: the board always plays the store's current game, also
-                    // after Android restarts the app. Until A-08, both kinds share one saved game.
+                    // after Android restarts the app. Until A-08, every mode shares one saved game.
                     fun play(vsComputer: Boolean) {
                         scope.launch {
                             app.games.loaded.first { it }
-                            if (app.games.current.value?.vsComputer != vsComputer) {
+                            if (app.games.current.value?.freeGameVsComputer != vsComputer) {
                                 val settings = app.settings.settings.first()
                                 app.games.start(settings.newGame(vsComputer, now = System.currentTimeMillis()))
                             }
@@ -164,7 +193,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         }
                     }
                     PlayAGameNote(
-                        saved = current?.vsComputer,
+                        saved = current?.freeGameVsComputer,
                         onFreePlay = { play(vsComputer = true) },
                         onTwoPlayers = { play(vsComputer = false) },
                         onClose = back,
@@ -183,10 +212,14 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 GameViewModel(
                                     start = start,
                                     nextGame = {
-                                        (settings.value ?: AppSettings()).newGame(start.vsComputer, now = System.currentTimeMillis())
+                                        val now = System.currentTimeMillis()
+                                        val chosen = settings.value ?: AppSettings()
+                                        val level = (start.record as? LevelRecord)?.level
+                                        if (level != null) levelGame(level, chosen.threatHighlight, now) else chosen.newGame(start.vsComputer, now)
                                     },
                                     computerFor = ::computerFor,
                                     journal = app.games,
+                                    campaign = app.progress,
                                 )
                             }
                             val scope = rememberCoroutineScope()
@@ -196,6 +229,11 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 onRules = { navController.navigate(Routes.RULES) },
                                 sound = settings.value?.sound ?: AppSettings().sound,
                                 onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
+                                // Next goes back to the map, which opens the next level's card.
+                                onNext = { next ->
+                                    toMap()
+                                    if (next != null) navController.navigate(Routes.level(next.world, next.number))
+                                },
                             )
                         }
                     }
@@ -252,6 +290,12 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
         }
     }
 }
+
+/** The level of a saved campaign game, as its code (`1-7`); null for any other game. */
+private val GameLogEntry.levelCode: String? get() = (record as? LevelRecord)?.level?.code
+
+/** For a saved free game: true against the computer, false between two people; null for any other game. */
+private val GameLogEntry.freeGameVsComputer: Boolean? get() = if (record is LevelRecord) null else vsComputer
 
 /** Opens the share sheet with the game log file, for the tester to send it (docs/poc/test-protocol.md). */
 private suspend fun shareLog(context: Context, app: DotsApplication) {

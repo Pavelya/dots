@@ -99,7 +99,7 @@ class PocReportTest {
                 val moves = game.state.legalMoves()
                 game.apply(Action.Place(moves[random.nextInt(moves.size)]))
             }
-            GameLogEntry.start(game.settings, "hard", threatHighlight = false, now = seed * day)
+            GameLogEntry.start(game.record, "hard", threatHighlight = false, now = seed * day)
                 .copy(outcome = Outcome.FINISHED, red = game.state.score(Player.RED), blue = game.state.score(Player.BLUE), record = game.record)
                 .toJson()
         }

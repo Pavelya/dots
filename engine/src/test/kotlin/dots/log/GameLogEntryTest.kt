@@ -1,5 +1,8 @@
 package dots.log
 
+import dots.ai.SearchAi
+import dots.campaign.Campaign
+import dots.campaign.LevelRecord
 import dots.engine.Action
 import dots.engine.Game
 import dots.engine.GameSettings
@@ -23,7 +26,7 @@ class GameLogEntryTest {
             game.apply(Action.Place(moves[random.nextInt(moves.size)]))
         }
         val end = game.state
-        return GameLogEntry.start(game.settings, opponent = "normal", threatHighlight = true, now = 1_762_300_000_000, appVersion = "0.1-poc")
+        return GameLogEntry.start(game.record, opponent = "normal", threatHighlight = true, now = 1_762_300_000_000, appVersion = "0.1-poc")
             .copy(updatedAt = 1_762_300_400_000, playMillis = 395_000, undos = 2, outcome = Outcome.FINISHED,
                 red = end.score(Player.RED), blue = end.score(Player.BLUE), record = game.record)
     }
@@ -50,6 +53,26 @@ class GameLogEntryTest {
     }
 
     @Test
+    fun `a campaign level's game is logged with its level record`() {
+        val level = Campaign.level(1, 7)
+        val game = Game(LevelRecord(level, emptyList()))
+        while (!game.isOver) {
+            val state = game.state
+            val move = if (state.toMove == level.human) Action.Place(state.legalMoves().first()) else SearchAi(level.ai, Random(1)).choose(state)
+            game.apply(move)
+        }
+        val entry = GameLogEntry.start(game.record, level.strength.text, threatHighlight = false, now = 5)
+            .copy(outcome = Outcome.FINISHED, red = game.state.score(Player.RED), blue = game.state.score(Player.BLUE), record = game.record)
+
+        assertTrue(entry.toJson().contains("\"record\":\"level/1 1-7 |"), entry.toJson())
+        assertEquals(entry, GameLogEntry.parse(entry.toJson()))
+        assertNull(entry.check(), "a level is over when its mission is decided")
+        assertNotNull(entry.copy(outcome = Outcome.PLAYING).check())
+        // A level that no longer exists cannot be read back; the app then forgets the saved game.
+        assertFailsWith<NoSuchElementException> { GameLogEntry.parse(entry.toJson().replace("level/1 1-7", "level/1 9-99")) }
+    }
+
+    @Test
     fun `text with quotes and control characters is escaped`() {
         val entry = finishedGame(1).copy(appVersion = "a \"quoted\" \\ name\n\u0001")
         assertEquals(entry, GameLogEntry.parse(entry.toJson()))
@@ -60,7 +83,7 @@ class GameLogEntryTest {
         val entry = finishedGame(3)
         assertNotNull(entry.copy(red = entry.red + 1).check())
         assertNotNull(entry.copy(outcome = Outcome.ABANDONED).check())
-        val unfinished = entry.copy(record = entry.record.copy(actions = entry.record.actions.take(10)))
+        val unfinished = entry.copy(record = entry.record.withActions(entry.record.actions.take(10)))
         assertNotNull(unfinished.check(), "logged as finished after 10 moves")
     }
 

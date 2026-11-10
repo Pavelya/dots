@@ -20,7 +20,10 @@ enum class StarMeasure(val text: String) {
     /** Dots saved: the player's dots on the map at the start (`R`) that are not captured. */
     SAVED("saved"),
 
-    /** Boosters unused: the level's boosters the player has left, all kinds together. */
+    /**
+     * Boosters unused: the level's boosters the player has left, all kinds together. Boosters
+     * given on top of the level's own (a gift) do not count.
+     */
     BOOSTERS("boosters"),
 }
 
@@ -109,5 +112,5 @@ internal fun count(stars: Stars, level: Level, state: GameState): Int = when (st
         else -> state.dotsLeft(level.human) ?: 0
     }
     StarMeasure.SAVED -> level.map.points(LevelMap.HUMAN).count { !state.isCaptured(it) }
-    StarMeasure.BOOSTERS -> level.boosters.keys.sumOf { state.boostersLeft(level.human, it) }
+    StarMeasure.BOOSTERS -> level.boosters.entries.sumOf { (booster, count) -> minOf(state.boostersLeft(level.human, booster), count) }
 }

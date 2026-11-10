@@ -1,5 +1,7 @@
 package dots.cli
 
+import dots.campaign.LevelRecord
+import dots.engine.Player
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import java.io.File
@@ -47,23 +49,26 @@ object LogCheck {
     }
 
     private fun describe(entry: GameLogEntry): String {
-        val settings = entry.record.settings
+        val start = entry.record.start()
+        val record = entry.record
         val result = when (entry.outcome) {
             Outcome.FINISHED -> entry.winner?.let { "${it.name.lowercase()} wins" } ?: "draw"
             else -> entry.outcome.name.lowercase()
         }
-        return "%s UTC  %-6s  %dx%d %2d dots  %-9s  red %2d - blue %2d  %3d moves  %4.1f min  %d undos".format(
+        val level = if (record is LevelRecord) "  level ${record.level.code}" else ""
+        return "%s UTC  %-6s  %dx%d %2d dots  %-9s  red %2d - blue %2d  %3d moves  %4.1f min  %d undos%s".format(
             time.format(Instant.ofEpochMilli(entry.startedAt)),
             entry.opponent,
-            settings.width,
-            settings.height,
-            settings.dotsPerPlayer ?: 0,
+            start.width,
+            start.height,
+            start.dotsLeft(Player.RED) ?: 0,
             result,
             entry.red,
             entry.blue,
             entry.record.actions.size,
             entry.playMillis / 60_000.0,
             entry.undos,
+            level,
         )
     }
 }

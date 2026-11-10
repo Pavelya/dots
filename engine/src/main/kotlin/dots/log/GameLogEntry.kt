@@ -1,8 +1,10 @@
 package dots.log
 
+import dots.campaign.LevelRecord
 import dots.engine.GameRecord
 import dots.engine.GameSettings
 import dots.engine.Player
+import dots.engine.PlayRecord
 
 /** Where a game stands when its entry was written. */
 enum class Outcome {
@@ -26,10 +28,11 @@ enum class Outcome {
  * @property updatedAt when the entry was last written: the end of the game once it is over
  * @property playMillis time spent playing, not counting pauses of over [IDLE_CAP_MILLIS] between moves
  * @property opponent [HUMAN] for two players on one phone, else the computer's difficulty
- *   ("easy", "normal", "hard")
+ *   ("easy", "normal", "hard") or, in a campaign level, its strength ("steady")
  * @property threatHighlight whether threats were shown
  * @property undos how often the player took a move back
  * @property red dots captured by red at the time of writing; [blue] likewise
+ * @property record a free game's [GameRecord] or a campaign level's [LevelRecord]
  */
 data class GameLogEntry(
     val appVersion: String,
@@ -42,7 +45,7 @@ data class GameLogEntry(
     val outcome: Outcome,
     val red: Int,
     val blue: Int,
-    val record: GameRecord,
+    val record: PlayRecord,
 ) {
     val vsComputer: Boolean get() = opponent != HUMAN
 
@@ -81,13 +84,15 @@ data class GameLogEntry(
             return "the record does not replay: ${e.message}"
         } catch (e: IllegalStateException) {
             return "the record does not replay: ${e.message}"
+        } catch (e: NoSuchElementException) {
+            return "the record does not replay: ${e.message}"
         }
         val problems = buildList {
             if (end.score(Player.RED) != red || end.score(Player.BLUE) != blue) {
                 add("logged $red-$blue, replay gives ${end.score(Player.RED)}-${end.score(Player.BLUE)}")
             }
-            if (outcome == Outcome.FINISHED && !end.isOver) add("logged as finished, but the game is not over")
-            if (outcome != Outcome.FINISHED && end.isOver) add("the game is over, but logged as ${outcome.name.lowercase()}")
+            if (outcome == Outcome.FINISHED && !record.isOver(end)) add("logged as finished, but the game is not over")
+            if (outcome != Outcome.FINISHED && record.isOver(end)) add("the game is over, but logged as ${outcome.name.lowercase()}")
         }
         return problems.takeIf { it.isNotEmpty() }?.joinToString("; ")
     }
@@ -98,8 +103,12 @@ data class GameLogEntry(
         /** A pause between moves longer than this counts as this long (the player left). */
         const val IDLE_CAP_MILLIS = 120_000L
 
-        /** A new game, before its first move. */
+        /** A new free game in [settings], before its first move. */
         fun start(settings: GameSettings, opponent: String, threatHighlight: Boolean, now: Long, appVersion: String = "") =
+            start(GameRecord(settings, emptyList()), opponent, threatHighlight, now, appVersion)
+
+        /** A new game from where [record] starts, before its first move. */
+        fun start(record: PlayRecord, opponent: String, threatHighlight: Boolean, now: Long, appVersion: String = "") =
             GameLogEntry(
                 appVersion = appVersion,
                 startedAt = now,
@@ -111,7 +120,7 @@ data class GameLogEntry(
                 outcome = Outcome.PLAYING,
                 red = 0,
                 blue = 0,
-                record = GameRecord(settings, emptyList()),
+                record = record.withActions(emptyList()),
             )
 
         /** Reads one line written by [toJson]. Throws [IllegalArgumentException] if it is not one. */
@@ -133,9 +142,17 @@ data class GameLogEntry(
                 outcome = outcome,
                 red = number("red").toInt(),
                 blue = number("blue").toInt(),
-                record = GameRecord.parse(text("record")),
+                record = parseRecord(text("record")),
             )
         }
+
+        /**
+         * Reads a record of either kind: a level's (`level/1 ...`) or a free game's (`dots/1 ...`).
+         * A level record names a level of the campaign; if there is no such level any more, it
+         * throws [NoSuchElementException].
+         */
+        fun parseRecord(text: String): PlayRecord =
+            if (text.trimStart().startsWith(LevelRecord.FORMAT + " ")) LevelRecord.parse(text) else GameRecord.parse(text)
 
         /** Reads a whole log, skipping blank lines. Lines that cannot be read go to [onBadLine]. */
         fun parseLog(text: String, onBadLine: (lineNumber: Int, problem: String) -> Unit = { _, _ -> }): List<GameLogEntry> =

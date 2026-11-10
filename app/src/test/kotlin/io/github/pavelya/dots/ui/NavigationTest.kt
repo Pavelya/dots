@@ -11,7 +11,10 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.click
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -22,6 +25,8 @@ import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.data.SampleProgress
+import io.github.pavelya.dots.ui.board.BoardGeometry
+import io.github.pavelya.dots.ui.screen.BOARD_TAG
 import io.github.pavelya.dots.ui.screen.DEVELOPER_TAPS
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -120,8 +125,12 @@ class NavigationTest {
         at(Routes.LEVEL)
         assertEquals(1, nav.currentBackStackEntry?.arguments?.getInt("world"))
         assertEquals(1, nav.currentBackStackEntry?.arguments?.getInt("number"))
-        waitFor("Level 1-1")
-        visit("Boosters", Routes.BOOSTERS, returnTo = Routes.LEVEL)
+        waitFor("World 1 · Level 1")
+        // Level 1-1 allows no boosters; a level that does opens Boosters from its chips (LevelCardTest).
+        compose.runOnUiThread { nav.navigate(Routes.BOOSTERS) }
+        at(Routes.BOOSTERS)
+        back()
+        at(Routes.LEVEL)
         back()
         at(Routes.MAP)
 
@@ -239,13 +248,13 @@ class NavigationTest {
         }
         compose.onNodeWithContentDescription("Level 2-10, next").performClick()
         at(Routes.LEVEL)
-        waitFor("Level 2-10")
+        waitFor("World 2 · Level 10")
         back()
         at(Routes.MAP)
 
         compose.onNodeWithContentDescription("Level 2-9", substring = true).performClick()
         at(Routes.LEVEL)
-        waitFor("Level 2-9")
+        waitFor("World 2 · Level 9")
         back()
         at(Routes.MAP)
 
@@ -255,6 +264,61 @@ class NavigationTest {
         tap("Close")
         gone("Pass level 2-10 to open this one.")
         assertEquals(Routes.MAP, nav.currentDestination?.route)
+    }
+
+    /** Taps board point ([x], [y]) twice, choose then place, on a board of [size] points across. */
+    private fun place(x: Int, y: Int, size: Int) {
+        repeat(2) {
+            compose.onNodeWithTag(BOARD_TAG).performTouchInput {
+                click(BoardGeometry(size, size, width.toFloat(), height.toFloat()).center(x, y))
+            }
+        }
+    }
+
+    @Test
+    fun `a level is chosen, played and passed in two taps, its stars are saved, and Next opens the next level's card`() {
+        launch()
+        compose.onNodeWithContentDescription("Level 1-1, next").performClick()
+        at(Routes.LEVEL)
+        waitFor("First Dot")
+        tap("Start")
+        at(Routes.GAME)
+        waitForSide("You, score 0, to move")
+
+        // Level 1-1: the ring around the computer's dot needs one more dot, below it.
+        place(3, 4, size = 7)
+        waitFor("You won!")
+        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.progress.progress.first() }.stars["1-1"] == 3 }
+        waitFor("Level 1-2 is open")
+        compose.onNodeWithContentDescription("3 of 3 stars").assertExists()
+
+        tap("Next")
+        at(Routes.LEVEL)
+        assertEquals(2, nav.currentBackStackEntry?.arguments?.getInt("number"))
+        waitFor("World 1 · Level 2")
+        back()
+        at(Routes.MAP)
+    }
+
+    @Test
+    fun `a level left for the map is resumed from its card`() {
+        launch()
+        compose.onNodeWithContentDescription("Level 1-1, next").performClick()
+        at(Routes.LEVEL)
+        tap("Start")
+        at(Routes.GAME)
+        waitForSide("You, score 0, to move")
+        val saved = app.games.current.value
+        compose.onNodeWithContentDescription("Pause").performClick()
+        tap("To the map")
+        at(Routes.MAP)
+
+        compose.onNodeWithContentDescription("Level 1-1, next").performClick()
+        at(Routes.LEVEL)
+        waitFor("Resume")
+        tap("Resume")
+        at(Routes.GAME)
+        assertSame(saved, app.games.current.value)
     }
 
     @After

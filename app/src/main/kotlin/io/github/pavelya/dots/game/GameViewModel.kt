@@ -5,7 +5,13 @@ import androidx.lifecycle.viewModelScope
 import dots.ai.Ai
 import dots.ai.Danger
 import dots.ai.Hints
+import dots.campaign.CampaignMap
+import dots.campaign.Level
+import dots.campaign.LevelRecord
+import dots.campaign.MissionStatus
+import dots.campaign.Outcome as MissionOutcome
 import dots.engine.Action
+import dots.engine.Booster
 import dots.engine.Game
 import dots.engine.GameState
 import dots.engine.MoveResult
@@ -13,7 +19,9 @@ import dots.engine.Player
 import dots.engine.Pos
 import dots.log.GameLogEntry
 import dots.log.Outcome
+import io.github.pavelya.dots.data.CampaignJournal
 import io.github.pavelya.dots.data.GameJournal
+import io.github.pavelya.dots.data.LevelEnd
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -39,7 +47,22 @@ data class GameUiState(
     val dangers: List<Danger> = emptyList(),
     /** The computer's face and speech bubble; null between two people. */
     val opponent: OpponentLook? = null,
-)
+    /** True once the game is over: no move is left or, in a campaign level, its mission is decided. */
+    val isOver: Boolean = state.isOver,
+    /** The campaign level being played; null in free play and between two people. */
+    val level: Level? = null,
+    /** Where the level's mission stands; null outside the campaign. */
+    val mission: MissionStatus? = null,
+    /** A finished level's end, once its stars are saved; Result opens then. Null until then, and outside the campaign. */
+    val levelEnd: LevelEnd? = null,
+    /** True before the game's first action: a level then opens by showing its mission. */
+    val fresh: Boolean = false,
+    /** Counts the games played on this screen, so that each new one opens afresh. */
+    val round: Int = 0,
+) {
+    /** True when Result can open: the game is over and, in a level, its end is saved. */
+    val showsResult: Boolean get() = isOver && (level == null || levelEnd != null)
+}
 
 /**
  * Holds one game and turns screen events into game actions. The screen sends events ([onTap],
@@ -47,7 +70,8 @@ data class GameUiState(
  *
  * A game is described by a [GameLogEntry]: a new one, or the saved one when the app was closed
  * mid-game (its moves are replayed). Every change is reported to the [journal], which saves it
- * and logs the game once it is over.
+ * and logs the game once it is over. A campaign level's game ends as soon as its mission is
+ * decided; its stars and failures then go to the [campaign], and Result opens once they are saved.
  *
  * Against the computer the human is red and moves first. The computer thinks on
  * [computerDispatcher], never on the main thread, and its thinking is cancelled by undo, a new
@@ -55,7 +79,7 @@ data class GameUiState(
  * their own dot land before the reply.
  *
  * @param start the game to play: new, or resumed
- * @param nextGame the game "play again" starts (a fresh seed every time)
+ * @param nextGame the game "play again" starts (a fresh seed every time; the same level again)
  * @param computerFor the computer opponent of a game, or null for two players on one phone
  * @param clock the time now in milliseconds, for the log
  */
@@ -64,6 +88,7 @@ class GameViewModel(
     private val nextGame: () -> GameLogEntry,
     private val computerFor: (GameLogEntry) -> Ai?,
     private val journal: GameJournal? = null,
+    private val campaign: CampaignJournal? = null,
     private val computerDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val replyDelayMillis: Long = 400,
     private val clock: () -> Long = System::currentTimeMillis,
@@ -74,6 +99,8 @@ class GameViewModel(
     private var game = Game.from(start.record)
     private var computer: Ai? = computerFor(start)
     private var thinking: Job? = null
+    private var levelEnd: LevelEnd? = null
+    private var round = 0
 
     /** When the game last changed (or was opened), to add up the time spent playing. */
     private var lastActive = clock()
@@ -81,10 +108,15 @@ class GameViewModel(
     /** How often the human took a move back in this game. */
     val undoCount: Int get() = entry.undos
 
+    /** The campaign level being played, or null. */
+    private val level: Level? get() = (entry.record as? LevelRecord)?.level
+
     private val _ui = MutableStateFlow(snapshot(lastMove = lastPlaced()))
     val ui: StateFlow<GameUiState> = _ui.asStateFlow()
 
     init {
+        // A resumed level may have been closed between its last move and the saving of its stars.
+        if (game.isOver) levelOver()
         letComputerMove() // a resumed game may have been closed while the computer was to move
     }
 
@@ -92,7 +124,7 @@ class GameViewModel(
     fun onTap(point: Pos?) {
         val current = _ui.value
         val state = game.state
-        if (current.thinking || state.isOver) return
+        if (current.thinking || game.isOver) return
         if (computer != null && state.toMove != human) return
         val result = Placement.onTap(current.preview, point) { state.isLegal(it) }
         val placed = result.placed
@@ -108,7 +140,7 @@ class GameViewModel(
 
     /** Takes back the human's last move and the computer's reply. */
     fun undo() {
-        if (computer == null) return
+        if (computer == null || game.isOver) return
         thinking?.cancel()
         if (game.undo(human)) {
             entry = entry.copy(undos = entry.undos + 1)
@@ -117,12 +149,28 @@ class GameViewModel(
         _ui.value = snapshot(lastMove = lastPlaced())
     }
 
-    /** Starts a new game with fresh settings (a new seed, so new crosses). An unfinished game is logged as abandoned. */
-    fun playAgain() {
+    /**
+     * Starts a new game: free play with fresh settings (a new seed, so new crosses), or the same
+     * level again. An unfinished game is logged as abandoned.
+     */
+    fun playAgain() = begin(nextGame())
+
+    /**
+     * Plays the same level again with [booster] given on top of the level's own: the help Result
+     * offers after the third failure in a row. Outside the campaign it is [playAgain].
+     */
+    fun retryWith(booster: Booster) {
+        val level = level ?: return playAgain()
+        begin(levelGame(level, entry.threatHighlight, clock(), gift = mapOf(booster to 1)))
+    }
+
+    private fun begin(next: GameLogEntry) {
         thinking?.cancel()
-        entry = nextGame()
+        entry = next
         game = Game.from(entry.record)
         computer = computerFor(entry)
+        levelEnd = null
+        round++
         lastActive = clock()
         journal?.start(entry)
         _ui.value = snapshot(lastMove = null)
@@ -131,7 +179,7 @@ class GameViewModel(
     private fun letComputerMove() {
         val ai = computer ?: return
         val position = game.state
-        if (position.isOver || position.toMove == human) return
+        if (game.isOver || position.toMove == human) return
         _ui.value = _ui.value.copy(thinking = true)
         thinking = viewModelScope.launch {
             delay(replyDelayMillis)
@@ -152,16 +200,35 @@ class GameViewModel(
     private fun changed() {
         val now = clock()
         val state = game.state
+        val over = game.isOver
         entry = entry.copy(
             updatedAt = now,
             playMillis = entry.playMillis + (now - lastActive).coerceIn(0, GameLogEntry.IDLE_CAP_MILLIS),
-            outcome = if (state.isOver) Outcome.FINISHED else Outcome.PLAYING,
+            outcome = if (over) Outcome.FINISHED else Outcome.PLAYING,
             red = state.score(Player.RED),
             blue = state.score(Player.BLUE),
             record = game.record,
         )
         lastActive = now
-        if (state.isOver) journal?.finish(entry) else journal?.save(entry)
+        if (over) {
+            journal?.finish(entry)
+            levelOver()
+        } else {
+            journal?.save(entry)
+        }
+    }
+
+    /** Saves a finished level's stars and failures, then lets Result open. */
+    private fun levelOver() {
+        val level = level ?: return
+        val result = level.result(game.state)
+        val thisRound = round
+        viewModelScope.launch {
+            val end = campaign?.finished(level, result) ?: LevelEnd(result, CampaignMap.Opened.NOTHING, failed = 0, next = null)
+            if (round != thisRound) return@launch // another game has started meanwhile
+            levelEnd = end
+            _ui.value = _ui.value.copy(levelEnd = end)
+        }
     }
 
     private fun lastPlaced(): Pos? = game.record.actions.lastOrNull { it is Action.Place }?.let { (it as Action.Place).pos }
@@ -169,7 +236,10 @@ class GameViewModel(
     /** What the screen draws now; [captured] is the move just played, if any, for the computer's face. */
     private fun snapshot(lastMove: Pos?, captured: MoveResult? = null): GameUiState {
         val state = game.state
-        val dangers = if (entry.threatHighlight) Player.entries.flatMap { Hints.dangers(state, it) } else emptyList()
+        val level = level
+        val mission = level?.status(state)
+        val over = game.isOver
+        val dangers = if (entry.threatHighlight && !over) Player.entries.flatMap { Hints.dangers(state, it) } else emptyList()
         val opponent = computer?.let {
             val lastCapture = captured?.captures?.takeIf { it.isNotEmpty() }?.let { captures ->
                 LastCapture(captures.first().by, captures.sumOf { c -> c.points })
@@ -177,17 +247,29 @@ class GameViewModel(
             val inDanger = if (entry.threatHighlight) {
                 dangers.any { it.dotsNeeded <= 1 && state.ownerAt(it.group.first()) == human }
             } else {
-                Hints.dangers(state, human, maxDots = 1).isNotEmpty()
+                !over && Hints.dangers(state, human, maxDots = 1).isNotEmpty()
             }
-            OpponentLook.of(state, human, lastCapture, inDanger)
+            val ending = when {
+                !over -> null
+                mission == null -> OpponentLook.endingOf(state, human)
+                mission.outcome == MissionOutcome.PASSED -> Ending.WON
+                else -> Ending.LOST
+            }
+            OpponentLook.of(state, human, lastCapture, inDanger, ending)
         }
         return GameUiState(
             state = state,
             lastMove = lastMove,
-            canUndo = computer != null && !state.isOver && game.canUndo(human),
+            canUndo = computer != null && level == null && !over && game.canUndo(human),
             vsComputer = computer != null,
             dangers = dangers,
             opponent = opponent,
+            isOver = over,
+            level = level,
+            mission = mission,
+            levelEnd = levelEnd,
+            fresh = game.record.actions.isEmpty(),
+            round = round,
         )
     }
 }

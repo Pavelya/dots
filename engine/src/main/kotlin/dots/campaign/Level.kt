@@ -68,7 +68,8 @@ data class Level(
      */
     val fortress: List<Pos> get() = if (rule is SpecialRule.Fortress) map.groups(LevelMap.COMPUTER).first() else emptyList()
 
-    fun newGame(): GameState = start()
+    /** A new game of this level; [gift] gives the player boosters on top of the level's own. */
+    fun newGame(gift: Map<Booster, Int> = emptyMap()): GameState = start(gift)
 
     /** Where the mission stands in [state], a position of this level's game. */
     fun status(state: GameState): MissionStatus = judge(mission, state, human)
@@ -98,11 +99,12 @@ data class Level(
     }
 
     /**
-     * The human has the level's [boosters]; the computer has none (decision 0006). The computer
-     * has the [rule]'s turn rule, if any.
+     * The human has the level's [boosters], plus any [gift]; the computer has none (decision 0006).
+     * The computer has the [rule]'s turn rule, if any.
      */
-    private fun start() = map.start(
-        holes, dotsPerPlayer, human, dotsFor = mapOf(human to humanDots), boosters = mapOf(human to boosters),
+    private fun start(gift: Map<Booster, Int> = emptyMap()) = map.start(
+        holes, dotsPerPlayer, human, dotsFor = mapOf(human to humanDots),
+        boosters = mapOf(human to (boosters.keys + gift.keys).associateWith { (boosters[it] ?: 0) + (gift[it] ?: 0) }),
         turnRules = rule?.turnRule?.let { mapOf(computer to it) } ?: emptyMap(),
     )
 

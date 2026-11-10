@@ -1,21 +1,26 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import dots.ai.Hints
+import dots.campaign.Level
+import dots.campaign.LevelMap
+import dots.campaign.Mission
+import dots.campaign.StarMeasure
+import dots.campaign.Stars
+import dots.campaign.Strength
 import dots.engine.GameSettings
 import dots.engine.GameState
 import dots.engine.MoveResult
@@ -36,8 +41,9 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The game board in the moments of the canvas game frames (docs/design/canvas: `game-start`,
- * `game-threat`, `game-big-capture`), in free play, between two people, and in Pause. Each is
+ * The game board in the moments of the canvas game frames (docs/design/canvas: `game-start`, with
+ * the level opening, `game-threat` and `game-big-capture`, with the mission note), in free play,
+ * between two people, and in Pause. Each is
  * shown next to its frame in the PR. Reference images in app/src/test/screenshots; they are
  * recorded in CI (CLAUDE.md, "Recording screenshots").
  *
@@ -65,7 +71,12 @@ class GameScreenshotTest {
 
     @Test
     fun levelOpens() {
-        show { Board(ui(CanvasGame.opening, lastMove = null)) }
+        show {
+            BoxWithConstraints {
+                Board(ui(CanvasGame.opening, lastMove = null), campaign = CanvasGame.parts(CanvasGame.opening.state, note = false))
+                LevelOpening(CanvasGame.level, Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp))
+            }
+        }
         capture("game_start")
     }
 
@@ -129,21 +140,9 @@ class GameScreenshotTest {
     }
 
     @Composable
-    private fun Board(ui: GameUiState, campaign: CampaignParts? = level7) {
+    private fun Board(ui: GameUiState, campaign: CampaignParts? = CanvasGame.parts(ui.state)) {
         GameBoard(ui, human, campaign, onTap = {}, onUndo = {}, onPause = {})
     }
-
-    /** Level 7's name and a stand-in for its mission note, whose content A-03 builds. The boosters are A-05's. */
-    private val level7 = CampaignParts(
-        title = "Level 7",
-        mission = {
-            Column {
-                Text("Mission", style = MaterialTheme.typography.labelSmall)
-                Text("Capture 8 dots", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
-            }
-        },
-        boosters = {},
-    )
 
     /** What the screen shows against the computer after [move], with the threat highlight on, as the view model makes it. */
     private fun ui(move: MoveResult, lastMove: Pos? = move.state.lastPlaced(move.state.toMove.opponent)): GameUiState {
@@ -174,6 +173,24 @@ private object CanvasGame {
 
     private val openingRed = points(6, 7, 8, 7)
     private val openingBlue = points(7, 6, 7, 8, 4, 4, 10, 4, 4, 10, 10, 10, 2, 7, 12, 7)
+
+    /** The canvas's Level 7, Siege: capture 8 dots, against a computer six dots ahead. */
+    val level: Level by lazy {
+        val rows = List(15) { y ->
+            String(CharArray(15) { x -> if (Pos(x, y) in openingRed) 'R' else if (Pos(x, y) in openingBlue) 'B' else '.' })
+        }
+        Level(1, 7, "Siege", Strength.HARD, 30, LevelMap(rows), Mission.Capture(8, 30), stars = Stars(StarMeasure.MOVES, 8, 14))
+    }
+
+    /** Level 7's name and its mission note, as it stands in [state]; while the level opens there is no [note]. The boosters are A-05's. */
+    fun parts(state: GameState, note: Boolean = true): CampaignParts {
+        val status = level.status(state)
+        return CampaignParts(
+            title = "Level 7",
+            mission = if (note) @Composable { MissionNoteContent(level, status) } else null,
+            boosters = {},
+        )
+    }
 
     /** The level opens: Red's two dots and Blue's eight, 30 dots each to place. */
     val opening: MoveResult

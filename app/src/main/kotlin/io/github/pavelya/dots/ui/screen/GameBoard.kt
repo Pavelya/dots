@@ -64,6 +64,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dots.campaign.Mission
 import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.R
@@ -130,7 +131,7 @@ internal fun GameBoard(
         }
         Column(Modifier.fillMaxSize()) {
             val title = campaign?.title ?: stringResource(if (ui.vsComputer) R.string.play_free else R.string.play_two)
-            TopRow(showPause = !state.isOver, style = style, onPause = onPause) {
+            TopRow(showPause = !ui.isOver, style = style, onPause = onPause) {
                 if (compact) {
                     Box(Modifier.align(Alignment.CenterStart).padding(start = 52.dp)) { opponentLine(true) }
                 } else {
@@ -168,6 +169,7 @@ internal fun GameBoard(
                 lastMove = ui.lastMove,
                 preview = ui.preview,
                 dangers = ui.dangers,
+                marked = ui.level?.mission?.let(::missionDot)?.takeUnless { ui.isOver },
                 onTap = onTap,
             )
             Row(
@@ -183,16 +185,19 @@ internal fun GameBoard(
                     modifier = Modifier.fillMaxWidth().height(TOOL_BAR).padding(start = 18.dp, end = 18.dp, bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    if (campaign != null) {
-                        campaign.boosters(this)
-                    } else {
-                        UndoTool(enabled = ui.canUndo && !ui.thinking, style = style, onClick = onUndo, modifier = Modifier.weight(1f))
-                        repeat(3) { Spacer(Modifier.weight(1f)) }
+                    // At the end the tools leave, and Result takes their place (motion.md, End of game).
+                    when {
+                        ui.isOver -> Spacer(Modifier.weight(1f))
+                        campaign != null -> campaign.boosters(this)
+                        else -> {
+                            UndoTool(enabled = ui.canUndo && !ui.thinking, style = style, onClick = onUndo, modifier = Modifier.weight(1f))
+                            repeat(3) { Spacer(Modifier.weight(1f)) }
+                        }
                     }
                 }
             }
         }
-        campaign?.let { MissionNote(style, Modifier.align(Alignment.TopEnd), if (compact) 120.dp else 136.dp, it.mission) }
+        campaign?.mission?.let { MissionNote(style, Modifier.align(Alignment.TopEnd), if (compact) 120.dp else 136.dp, it) }
         turnBanner?.let { TurnBanner(it, style, Modifier.offset(y = maxHeight * 0.38f)) }
     }
 }
@@ -222,7 +227,14 @@ private val OPPONENT_WITH_PHOTO = OPPONENT_LINE + PHOTO_HEIGHT + 8.dp
 internal fun boardSpacing(width: Dp, height: Dp, columns: Int, rows: Int): Dp =
     floor(min(width.value / columns, height.value / rows)).coerceAtLeast(1f).dp
 
-private fun isToMove(ui: GameUiState, player: Player): Boolean = !ui.state.isOver && ui.state.toMove == player
+private fun isToMove(ui: GameUiState, player: Player): Boolean = !ui.isOver && ui.state.toMove == player
+
+/** The dot a mission is about, circled on the board: the one to rescue or to capture. */
+private fun missionDot(mission: Mission): Pos? = when (mission) {
+    is Mission.Rescue -> mission.dot
+    is Mission.Target -> mission.dot
+    else -> null
+}
 
 /**
  * Between two people, the side whose turn has just begun, for as long as the banner shows
@@ -319,7 +331,7 @@ private fun bubbleText(bubble: Bubble): String = stringResource(
 )
 
 /** Handwriting, until the Notebook theme brings Caveat (V-03). */
-private val HAND = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)
+internal val HAND = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)
 
 @Composable
 private fun SpeechBubble(text: String, style: GameStyle, modifier: Modifier) {
@@ -496,7 +508,7 @@ internal fun Modifier.toolOutline(ink: Color, dashed: Boolean, shape: Shape): Mo
     }
 }
 
-/** The campaign's mission note, taped in the top right corner. A-03 fills it. */
+/** The campaign's mission note, taped in the top right corner; [MissionNoteContent] fills it. */
 @Composable
 private fun MissionNote(style: GameStyle, modifier: Modifier, width: Dp, content: @Composable () -> Unit) {
     Box(modifier.padding(top = 6.dp, end = 12.dp).rotate(2f)) {

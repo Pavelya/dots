@@ -9,6 +9,9 @@ enum class Mood { HAPPY, SMUG, UPSET, DETERMINED, SULKY }
 /** What the computer says in its speech bubble (the canvas and the wireframes, D-06 and D-07). */
 enum class Bubble { GOOD_LUCK, YOUR_MOVE, HEY, OUCH, WELL_PLAYED, AGAIN }
 
+/** How a game ended for the human: won (a level passed), lost (a level failed) or a draw. */
+enum class Ending { WON, LOST, DRAW }
+
 /** Points [by] won with the last move: one capture or several closed by the same dot. */
 data class LastCapture(val by: Player, val points: Int)
 
@@ -25,13 +28,20 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
         /**
          * The look for [state], against a [human] who plays the other colour. [lastCapture] is what
          * the last move won, if anything; [humanInDanger] is true when one more computer dot would
-         * capture some of the human's dots.
+         * capture some of the human's dots. [ending] is how the game ended, or null while it goes
+         * on; by default it follows the score of a finished game, and a level passes it its mission.
          */
-        fun of(state: GameState, human: Player, lastCapture: LastCapture?, humanInDanger: Boolean): OpponentLook = when {
-            state.isOver -> when (state.winner) {
-                human -> OpponentLook(Mood.SULKY, Bubble.WELL_PLAYED)
-                null -> OpponentLook(Mood.DETERMINED)
-                else -> OpponentLook(Mood.SMUG, Bubble.AGAIN)
+        fun of(
+            state: GameState,
+            human: Player,
+            lastCapture: LastCapture?,
+            humanInDanger: Boolean,
+            ending: Ending? = endingOf(state, human),
+        ): OpponentLook = when {
+            ending != null -> when (ending) {
+                Ending.WON -> OpponentLook(Mood.SULKY, Bubble.WELL_PLAYED)
+                Ending.DRAW -> OpponentLook(Mood.DETERMINED)
+                Ending.LOST -> OpponentLook(Mood.SMUG, Bubble.AGAIN)
             }
             lastCapture?.by == human && lastCapture.points >= BIG_CAPTURE -> OpponentLook(Mood.UPSET, Bubble.OUCH)
             lastCapture?.by == human -> OpponentLook(Mood.UPSET, Bubble.HEY)
@@ -39,6 +49,14 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
             state.dotsPlaced(human) == 0 -> OpponentLook(Mood.HAPPY, Bubble.GOOD_LUCK)
             lastCapture != null -> OpponentLook(Mood.SMUG)
             else -> OpponentLook(Mood.DETERMINED)
+        }
+
+        /** How a finished game ended for [human] by the score; null while it goes on. */
+        fun endingOf(state: GameState, human: Player): Ending? = when {
+            !state.isOver -> null
+            state.winner == human -> Ending.WON
+            state.winner == null -> Ending.DRAW
+            else -> Ending.LOST
         }
     }
 }
