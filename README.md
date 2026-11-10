@@ -156,7 +156,8 @@ computer's tier, its head start (dots already on the board), the board size and 
   last boss.
 - **Every level starts the human with dots in the middle.** Otherwise placing every dot on the
   border would be a safe way never to lose, which is exactly the forced draw the article warns
-  about. A border-only stand-in passes no level (`bench levels 40 border`).
+  about. A border-only stand-in passes no level (`bench levels 40 border`), except now and then
+  2-2, whose answer is itself a border point.
 
 ### Level files
 
@@ -526,7 +527,9 @@ has the same three blind spots:
 - **It looks only where the game just happened** (`focus` 2): it considers only points at most 2
   steps from the last dot each side placed. A ring closing elsewhere on the board goes unseen,
   whether it is the computer's chance or its danger. The blind spot holds while it thinks ahead,
-  too: it expects its opponent to answer near the same dots.
+  too: it expects its opponent to answer near the same dots. Until it has placed its first dot it
+  sees the whole board, so a danger already on the board at the start of a level is never missed
+  because the player opened far from it.
 - **It overlooks a ring that needs 2 more dots** around its own groups (`dangerReach` 1). It
   notices a group in danger only when one more dot would capture it.
 - **It would rather attack than defend** (`dangerWeights` 1500, 300, 60, 15, half the attack
@@ -614,24 +617,24 @@ tables for Worlds 2 to 4 are in their design docs, and the whole games of every 
 level               mission                EASY stand-in   NORMAL stand-in   border-only
 1-1  First Dot      capture 1 in 3 moves   40              40                0
 1-2  Two Rings      capture 1 in 4 moves   40              40                0
-1-3  First Capture  capture 1 in 8 moves   35              33                0
-1-4  Door           capture 2 in 4 moves   12               8                0
-1-5  Edge           capture 2 in 5 moves   10               7                0
-1-6  Marked Dot     target d4              15               9                0
-1-7  Chase          capture 2 in 5 moves   31              23                0
-1-8  Cut            target d5              22              26                0
-1-9  Three in a Row capture 3 in 5 moves    9              21                0
-1-10 Long Chase     target f4              27               1                0
-1-11 First Game     win                    29              32                0
-1-12 Two Crosses    win                    20              34                0
+1-3  First Capture  capture 1 in 8 moves   34              34                0
+1-4  Door           capture 2 in 4 moves   11               7                0
+1-5  Edge           capture 2 in 5 moves    5               5                0
+1-6  Marked Dot     target d4              19              28                0
+1-7  Chase          capture 2 in 5 moves   33              32                0
+1-8  Cut            target d5              21              26                0
+1-9  Three in a Row capture 3 in 5 moves    5              12                0
+1-10 Long Chase     target f4              40              22                0
+1-11 First Game     win                    28              34                0
+1-12 Two Crosses    win                    17              36                0
 1-13 Head Start     win                    18              24                0
 1-14 Four Crosses   win                    16              26                0
-1-15 Ink Bottle     win                    14              23                0
+1-15 Ink Bottle     win                    14              21                0
 ```
 
-- **The whole games (11 to 15) get harder step by step** for a weak player: 29, 20, 18, 16 and
-  14 passes of 40. A strong player passes most of them; the mini-boss is the one the weak player
-  passes least.
+- **The whole games (11 to 15) get harder step by step** for a weak player: 28, 17, 18, 16 and
+  14 passes of 40 (17 and 18 are equal within the noise of 40 games). A strong player passes
+  most of them; the mini-boss is the one the weak player passes least.
 - **The puzzles (4 to 10) look harder here than they are.** The stand-ins play for captures and
   do not read the mission, so they often capture one dot and run out of moves, or never cut the
   target off. A person reads the mission. That every puzzle can be passed against any defence is
@@ -648,36 +651,36 @@ only:
 ```
                                              dots  passed of 80
 level              mission           computer each  EASY stand-in  NORMAL stand-in
-1-11  First Game   win               easy     10    54             62
-1-12  Two Crosses  win               easy     12    38             72
-1-13  Head Start   win               easy     12    35             53
-1-14  Four Crosses win               steady   16    30             53
-1-15  Ink Bottle   win               steady   18    29             45
-2-6   Flower Beds  win               steady   18    33             58
-2-12  Hedge        win               steady   20    24             54
-2-18  Few Seeds    win with 18 dots  steady   20    21             30
-2-20  Mole         win with 20 dots  steady   22    17             30
-3-6   Full Moon    win               steady   22    24             56
-3-12  Crater       win with 20 dots  steady   24    18             27
-3-18  Twin Stars   win with 19 dots  steady   24    17             35
-3-20  Comet        win with 22 dots  steady   26    13             19
-4-6   Rocky Shore  win               steady   26    22             40
-4-12  Pearls       win               steady   26    16             46
-4-18  Reef         win with 19 dots  steady   28    17             28
-4-20  Kraken       win               normal   30    14             20
+1-11  First Game   win               easy     10    58             65
+1-12  Two Crosses  win               easy     12    40             74
+1-13  Head Start   win               easy     12    41             56
+1-14  Four Crosses win               steady   16    30             55
+1-15  Ink Bottle   win               steady   18    29             46
+2-6   Flower Beds  win               steady   18    33             59
+2-12  Hedge        win               steady   20    24             52
+2-18  Few Seeds    win with 18 dots  steady   20    21             28
+2-20  Mole         win with 20 dots  steady   22    17             27
+3-6   Full Moon    win               steady   22    24             54
+3-12  Crater       win with 20 dots  steady   24    18             31
+3-18  Twin Stars   win with 19 dots  steady   24    17             39
+3-20  Comet        win with 22 dots  steady   26    13             13
+4-6   Rocky Shore  win               steady   26    22             45
+4-12  Pearls       win               steady   26    16             37
+4-18  Reef         win with 19 dots  steady   28    21             24
+4-20  Kraken       win               normal   30     8             26
 ```
 
 - **Within each world the whole games get harder** for a weak player, and the boss is the one
-  passed least: 33, 24, 21, 17 in World 2; 24, 18, 17, 13 in World 3; 22, 16, 17, 14 in World 4
-  (16 and 17 are equal within the noise of 80 games).
+  passed least: 33, 24, 21, 17 in World 2; 24, 18, 17, 13 in World 3; 22, 16, 21, 8 in World 4
+  (16 and 21 are equal within the noise of 80 games).
 - **Each world opens with a dip:** its first whole game is easier than the boss before it.
 - **A larger head start does not make a level harder** for these stand-ins: extra computer dots
   scattered on the board are also extra targets. Worlds 2 to 4 make whole games harder with fewer
   dots for the player (`win with 18 dots` against the computer's 20), faster boss rules and,
   for the last boss, the normal computer.
-- **Border play passes some survive and rescue levels** of Worlds 2 to 4. Before its first dot
-  the computer looks only near the player's last dot, so a player who opens far from the danger
-  is not attacked; task G-21 makes it look at the whole board until then.
+- **Border play passes no level of Worlds 2 to 4** but 2-2, 4 times in 40, whose answer is
+  itself a border point. Before its first dot the computer looks at the whole board, so a danger
+  already on the board is attacked even when the player opens far from it.
 
 **Stars.** `cli bench stars 200`: four stand-ins, the EASY, NORMAL, HARD and EXPERT computers,
 play each level 200 times; how many of the 800 games earned 0, 1, 2 and 3 stars. In the whole
@@ -686,20 +689,20 @@ games the star targets are set so that three stars are reached, but more rarely 
 ```
                      stars        0     1     2     3
 1-1  First Dot       moves 1 2      0     0     0   800
-1-2  Two Rings       moves 1 2      0     0    10   790
-1-3  First Capture   moves 4 6    160   142   145   353
-1-4  Door            moves 1 2    334    21     0   445
-1-5  Edge            moves 1 2    320    27    47   406
-1-6  Marked Dot      moves 1 2    277    28    33   462
-1-7  Chase           moves 1 2    108    43   132   517
-1-8  Cut             moves 1 2    249    25    13   513
-1-9  Three in a Row  moves 1 2    246    39   235   280
-1-10 Long Chase      moves 1 2    337    55    70   338
-1-11 First Game      margin 2 4   204   307   249    40
-1-12 Two Crosses     margin 2 4   145   162   365   128
-1-13 Head Start      margin 2 4   303   215   199    83
-1-14 Four Crosses    margin 2 4   189   199   294   118
-1-15 Ink Bottle      margin 2 5   267   125   343    65
+1-2  Two Rings       moves 1 2      0     0     8   792
+1-3  First Capture   moves 4 6    183   138   118   361
+1-4  Door            moves 1 2    338    43    41   378
+1-5  Edge            moves 1 2    570     5     5   220
+1-6  Marked Dot      moves 1 2    134    11    64   591
+1-7  Chase           moves 1 2     84    10    73   633
+1-8  Cut             moves 1 2    216    22    31   531
+1-9  Three in a Row  moves 1 2    419    19   164   198
+1-10 Long Chase      moves 1 2    150    83    66   501
+1-11 First Game      margin 2 4   184   328   246    42
+1-12 Two Crosses     margin 2 4   124   160   404   112
+1-13 Head Start      margin 2 4   276   244   207    73
+1-14 Four Crosses    margin 2 4   194   198   289   119
+1-15 Ink Bottle      margin 2 5   266   117   349    68
 ```
 
 In the puzzles and the first three levels, three stars mean the shortest answer: each puzzle
@@ -712,18 +715,18 @@ each):
 
 ```
                     stars            0     1     2     3
-2-6   Flower Beds   margin 2 4      95    90   136    79
-2-12  Hedge         margin 2 4     130    86   122    62
-2-18  Few Seeds     margin 2 4     198    87    81    34
-2-20  Mole          margin 2 5     209    77    99    15
-3-6   Full Moon     margin 2 5     107    71   166    56
-3-12  Crater        margin 2 4     204    78    96    22
-3-18  Twin Stars    margin 2 4     182    80   101    37
-3-20  Comet         margin 2 5     225    53    95    27
-4-6   Rocky Shore   margin 2 4     157    90   104    49
-4-12  Pearls        margin 3 5     148   144    66    42
-4-18  Reef          margin 2 4     250    37    80    33
-4-20  Kraken        margin 3 8     226    50    96    28
+2-6   Flower Beds   margin 2 4      96    88   140    76
+2-12  Hedge         margin 2 4     134    81   122    63
+2-18  Few Seeds     margin 2 4     197    93    78    32
+2-20  Mole          margin 2 5     210    75    99    16
+3-6   Full Moon     margin 2 5     106    68   170    56
+3-12  Crater        margin 2 4     190    84   102    24
+3-18  Twin Stars    margin 2 4     169    80   106    45
+3-20  Comet         margin 2 5     231    54    89    26
+4-6   Rocky Shore   margin 2 4     152    89   101    58
+4-12  Pearls        margin 3 5     158   126    70    46
+4-18  Reef          margin 2 4     249    52    66    33
+4-20  Kraken        margin 3 8     209    63    91    37
 ```
 
 The puzzles of Worlds 2 to 4 follow World 1's rule (`moves 1 2`), except survive, whose stars

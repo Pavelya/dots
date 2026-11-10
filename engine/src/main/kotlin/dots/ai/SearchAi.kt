@@ -212,9 +212,14 @@ class SearchAi(
         return chosen.toList()
     }
 
-    /** The dots a computer with a [AiConfig.focus] looks around; empty when it sees the whole board. */
+    /**
+     * The dots a computer with a [AiConfig.focus] looks around; empty when it sees the whole board.
+     * The side to move sees the whole board until it has placed a dot of its own, so a danger
+     * already on the board at the start is not missed because the opponent opened far from it.
+     */
     private fun focusPoints(state: GameState): List<Pos> =
-        if (config.focus == 0) emptyList() else Player.entries.mapNotNull { state.lastPlaced(it) }
+        if (config.focus == 0 || state.lastPlaced(state.toMove) == null) emptyList()
+        else Player.entries.mapNotNull { state.lastPlaced(it) }
 
     private fun inFocus(x: Int, y: Int, focus: List<Pos>): Boolean =
         focus.isEmpty() || focus.any { max(abs(it.x - x), abs(it.y - y)) <= config.focus }

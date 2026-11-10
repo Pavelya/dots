@@ -47,8 +47,8 @@ block a ring.
 
 The [README](../../README.md#how-strong-is-it-and-how-hard-are-the-levels) has the numbers from
 `cli bench levels` and `cli bench stars`. In short: a weak computer player passes the whole games
-11 to 15 in 29, 20, 18, 16 and 14 of 40 games, so they get harder step by step and the mini-boss
-is the hardest. Computer players do not read missions, so the puzzles need people to judge how
+11 to 15 in 28, 17, 18, 16 and 14 of 40 games, so they get harder step by step (17 and 18 are
+equal within the noise) and the mini-boss is the hardest. Computer players do not read missions, so the puzzles need people to judge how
 hard they feel.
 
 ## Trying the levels

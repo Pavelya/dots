@@ -52,26 +52,26 @@ strong one, border-only for someone who only plays on the border. The README exp
 ```
                                              passed of 80   passed of 80     passed of 40
 level                 mission                EASY stand-in  NORMAL stand-in  border-only
-2-1   Weeds           survive 2 moves         80             80              13
-2-2   Path Home       rescue b4               80             80              17
-2-3   Snail           survive 4 moves          9             55               3
-2-4   Ladybug         target e4                8              9               0
-2-5   Fence Line      rescue c3               72             80               1
-2-6   Flower Beds     win                     33             58               0
-2-7   Bramble         survive 3 moves          0             80              23
-2-8   Seedling        capture 1 in 4 moves     9             14               0
-2-9   Side Step       rescue d5               43             80               1
-2-10  Rose Bush       target d4                1              2               0
-2-11  Watering Can    survive 3 moves         21             65              11
-2-12  Hedge           win                     24             54               0
-2-13  Greenhouse      target g6                5              6               0
+2-1   Weeds           survive 2 moves         80             80               0
+2-2   Path Home       rescue b4               80             80               4
+2-3   Snail           survive 4 moves         10             80               0
+2-4   Ladybug         target e4                5              4               0
+2-5   Fence Line      rescue c3               72             80               0
+2-6   Flower Beds     win                     33             59               0
+2-7   Bramble         survive 3 moves          0             80               0
+2-8   Seedling        capture 1 in 4 moves    11             11               0
+2-9   Side Step       rescue d5               43             80               0
+2-10  Rose Bush       target d4                0              0               0
+2-11  Watering Can    survive 3 moves          1             80               0
+2-12  Hedge           win                     24             52               0
+2-13  Greenhouse      target g6                9              6               0
 2-14  Stepping Stone  rescue c4               43             80               0
-2-15  Thorns          survive 4 moves         15             59               4
-2-16  Tulips          target e6               76              2               0
+2-15  Thorns          survive 4 moves          8             80               0
+2-16  Tulips          target e6               74             33               0
 2-17  Garden Gate     rescue d3                0             80               0
-2-18  Few Seeds       win with 18 dots        21             30               0
-2-19  Trellis         survive 3 moves         55             80               8
-2-20  Mole            win with 20 dots        17             30               0
+2-18  Few Seeds       win with 18 dots        21             28               0
+2-19  Trellis         survive 3 moves          0             79               0
+2-20  Mole            win with 20 dots        17             27               0
 ```
 
 - **Whole games get harder through the world** for a weak player: 33, 24, 21 and 17 passes of 80
@@ -80,11 +80,9 @@ level                 mission                EASY stand-in  NORMAL stand-in  bor
 - **The puzzles look harder here than they are,** as in World 1: the stand-ins play for captures
   and do not read the mission. That every puzzle can be passed is what `check-levels` proves; how
   hard each feels needs people.
-- **Border-only play passes some survive and rescue levels.** Before its first dot, the computer
-  looks only near the player's last dot, so a player who opens far from the danger is not
-  attacked. Task G-21 makes it look at the whole board until it has placed a dot. In a trial of
-  that change, border-only play passed no level of the world but 2-2 (4 of 40),
-  whose answer is itself a border point.
+- **Border-only play passes no level of the world but 2-2** (4 of 40), whose answer is itself a
+  border point. Before its first dot, the computer looks at the whole board, so a danger already
+  on the board is attacked even when the player opens far from it.
 - These are stand-ins, not people, and nobody has played these levels yet: treat the numbers as a
   first draft.
 
