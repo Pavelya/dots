@@ -9,7 +9,7 @@ boosters: double-dot 1
 rule: none
 stars: moves 1 2
 holes: border
-note: Target: shut the way to the lake first, then answer the runs.
+note: Wall: the only first move is a quiet one, three moves before the ring closes; shut the way to the lake first, then answer the runs.
 map:
 ...B.....
 ....RRR..

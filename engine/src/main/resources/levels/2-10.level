@@ -9,7 +9,7 @@ boosters: wall 1
 rule: none
 stars: moves 1 2
 holes: none
-note: Target: close above the marked dot, then follow its run to the right and up.
+note: Wall: the only first move is a quiet one, three moves before the ring closes; close above the marked dot, then follow its run to the right and up.
 map:
 .........
 .........

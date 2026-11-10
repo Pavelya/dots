@@ -142,6 +142,56 @@ class Solver(
         }
     }
 
+    /**
+     * A move for someone who reads [level]'s mission [moves] of their own moves ahead, in [state]
+     * with the player to move:
+     *  - a move that passes the mission within [moves] moves whatever the computer does, the
+     *    quickest one found;
+     *  - else, in "survive" and "rescue", [preferred] unless the computer could then fail the
+     *    mission before the player has made [moves] moves (counting this one); if it could, the
+     *    first move found that avoids that;
+     *  - else, in "capture" and "target", [preferred] unless the computer's reply to it could put
+     *    the mission out of reach: no ring the player could still close in the moves left, by the
+     *    lower bounds of [WallCost] (for example, the target runs to the border). If it could, the
+     *    first move found after which no reply does;
+     *  - else [preferred].
+     *
+     * Each search looks at no more than [positionLimit] positions, so the answer is the same on
+     * every run and every machine; a search that runs out counts as finding nothing. Whole-game
+     * missions, and levels whose rule gives the computer two-dot turns, always get [preferred].
+     */
+    fun lookAhead(level: Level, state: GameState, moves: Int, preferred: Action, positionLimit: Long = LOOK_AHEAD_POSITIONS): Action {
+        require(moves >= 1) { "moves must be 1 or more" }
+        if (!isPuzzle(level.mission) || level.rule?.turnRule != null) return preferred
+        if (state.toMove != level.human || level.isOver(state)) return preferred
+        val deadline = TimeSource.Monotonic.markNow() + timeLimit
+        val pass = Search(level, Outcome.PASSED, deadline, positionLimit)
+        val children = pass.childrenOf(state, moves)
+        try {
+            for (depth in 1..moves) {
+                children.firstOrNull { pass.forces(it.state, depth - 1) }?.let { return it.step.action }
+            }
+        } catch (_: TimeUp) {
+            // Nothing found within the budget: go on as if no passing move was seen.
+        }
+        if (level.mission is Mission.Capture || level.mission is Mission.Target) {
+            val left = state.dotsLeft(level.human) ?: maxMoves
+            fun spoilt(after: GameState): Boolean {
+                if (level.isOver(after)) return false
+                return pass.outOfReach(after, left - 1) || pass.childrenOf(after, left - 1).any { pass.outOfReach(it.state, left - 1) }
+            }
+            if (!spoilt(state.apply(preferred).state)) return preferred
+            return children.firstOrNull { !spoilt(it.state) }?.step?.action ?: preferred
+        }
+        val fail = Search(level, Outcome.FAILED, deadline, positionLimit)
+        return try {
+            if (!fail.forces(state.apply(preferred).state, moves - 1)) return preferred
+            children.firstOrNull { !fail.forces(it.state, moves - 1) }?.step?.action ?: preferred
+        } catch (_: TimeUp) {
+            preferred
+        }
+    }
+
     private fun depth(mission: Mission): Int = when (mission) {
         is Mission.Capture -> min(mission.moves, maxMoves)
         // The player moves before each of the computer's dots.
@@ -156,7 +206,7 @@ class Solver(
         else -> true
     }
 
-    /** Thrown inside the search once the time cap has run out; never leaves [solve]. */
+    /** Thrown inside the search once the time cap or the position limit has run out; never leaves the solver. */
     private class TimeUp : RuntimeException(null, null, false, false)
 
     /** A move to try; the position after it is only worked out when the search gets to it. */
@@ -191,6 +241,7 @@ class Solver(
         private val level: Level,
         private val goal: Outcome,
         private val deadline: TimeSource.Monotonic.ValueTimeMark,
+        private val positionLimit: Long = Long.MAX_VALUE,
     ) {
         private val human = level.human
         private val computer = level.computer
@@ -355,6 +406,12 @@ class Solver(
             }
             return true
         }
+
+        /** True if a lower bound shows that [goal] can no longer be forced with [moves] of the player's moves. */
+        fun outOfReach(state: GameState, moves: Int): Boolean = bound(state, moves) == false
+
+        /** The moves to try in [state], most promising first; [moves] is the player's moves still allowed. */
+        fun childrenOf(state: GameState, moves: Int): List<Child> = children(state, moves)
 
         /**
          * The first moves that force the goal within [moves] of the player's moves, until [limit]
@@ -544,6 +601,7 @@ class Solver(
             hashes?.takeIf { it.cells == state.width * state.height } ?: Hashes(state.width * state.height).also { hashes = it }
 
         private fun tick() {
+            if (positions >= positionLimit) throw TimeUp()
             if (positions++ % CHECK_EVERY == 0L && deadline.hasPassedNow()) throw TimeUp()
         }
     }
@@ -601,6 +659,9 @@ class Solver(
 
         /** How long one level may take before the solver gives up. */
         val TIME_LIMIT: Duration = 20.seconds
+
+        /** How many positions each search of [lookAhead] may look at. */
+        const val LOOK_AHEAD_POSITIONS = 20_000L
 
         private const val REACH = 2
         private const val CHECK_EVERY = 256L

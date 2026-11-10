@@ -67,7 +67,8 @@ Benchmarks (computer against computer; see "How strong is it" below):
 ```sh
 cli/build/install/cli/bin/cli bench steps 160          # each strength step against the next: games [board size] [dots each]
 cli/build/install/cli/bin/cli bench tiers 40 10 24      # every tier against every other: games, board size, dots each
-cli/build/install/cli/bin/cli bench levels 40 normal    # a stand-in plays each level: a tier, or "border"
+cli/build/install/cli/bin/cli bench levels 200         # the difficulty curve (docs/design/difficulty.md); [level...]
+cli/build/install/cli/bin/cli bench levels 40 normal    # one stand-in plays each level: weak, average, strong, a tier, or "border"
 cli/build/install/cli/bin/cli bench stars 200           # stars earned on each level by four stand-ins; [stand-in...] [level...]
 cli/build/install/cli/bin/cli bench duel                # two custom configurations; prints its arguments
 cli/build/install/cli/bin/cli bench variety hard        # how often a tier answers the same position differently
@@ -148,7 +149,7 @@ computer's tier, its head start (dots already on the board), the board size and 
   |-------|-------:|-----------|------|------------|
   | 1 Notebook | 15 | The rules from zero: placing, chains, the first capture; capture and target puzzles; whole games | Ink Bottle: a double move every 5th turn | [`world-1.md`](docs/design/world-1.md) |
   | 2 Garden | 20 | Survive and rescue missions; the wall booster | Mole: a double move every 4th turn, and 2 dots more | [`world-2.md`](docs/design/world-2.md) |
-  | 3 Night sky | 20 | Holes: lakes whose shore is border, open holes, round boards; the bomb and double dot boosters | Comet: a double move every 3rd turn, and 4 dots more | [`world-3.md`](docs/design/world-3.md) |
+  | 3 Night sky | 20 | Holes: lakes whose shore is border, open holes, round boards; the bomb and double dot boosters | Comet: a double move every 3rd turn, and 3 dots more | [`world-3.md`](docs/design/world-3.md) |
   | 4 Sea | 20 | Rocks (blocked points) and pearls (bonus points) | Kraken: two dots every turn, one in each half, and the normal computer | [`world-4.md`](docs/design/world-4.md) |
 
 - **A saw-tooth curve.** From World 2 on, levels 3, 6, 9, 12, 15 and 18 of a world are the hard
@@ -202,7 +203,7 @@ map:
 | `rule` | A rule the computer bends on a boss level: `none`, `double move every 5 turns`, `fortress of 12 dots` or `two groups at once`. See [Boss rules](#boss-rules). |
 | `stars` | What earns two and three stars: what is counted, then the score for two stars and for three, `margin 2 5`. See [Stars](#stars). |
 | `holes` | Whether the edge of the map's holes counts as border: `border` or `open`, or `none` for a map without holes. See [Board shapes and special points](#board-shapes-and-special-points). |
-| `note` | One line for designers: what the level teaches or why it is there. Players never see it. `none` for no note; every campaign level has one, and a test checks it. |
+| `note` | One line for designers: what the level teaches or why it is there. Players never see it. `none` for no note; every campaign level has one, and a test checks it. A note that starts with `Wall:` marks a deliberate wall, a level much harder than its neighbours ([difficulty curve](docs/design/difficulty.md)). |
 | `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
 
 A file that cannot be read gives an error with the line, for example
@@ -608,9 +609,11 @@ exactly even by construction.
 **Levels.** `cli bench levels 40 <stand-in>`: a stand-in plays red on each level, 40 games, and
 the table shows how many passed the level's mission. Each game stops when the mission is decided.
 The EASY step stands for a weak player, the NORMAL step for a strong one, border for someone who
-only plays on the border. The computer of levels 1 to 3 is the beginner, of 4 to 13 the easy
-step, of 1-14 to 4-19 the steady step, and of 4-20 the normal step. The table shows World 1; the
-tables for Worlds 2 to 4 are in their design docs, and the whole games of every world are below.
+only plays on the border. These stand-ins play for captures and do not read the mission; the
+[difficulty curve](docs/design/difficulty.md) uses stand-ins that do, on every level. The
+computer of levels 1 to 3 is the beginner, of 4 to 13 the easy step, of 1-14 to 4-19 the steady
+step, and of 4-20 the normal step. The table shows World 1; the tables for Worlds 2 to 4 are in
+their design docs, and the whole games of every world are below.
 
 ```
                                                 passed of 40
@@ -663,16 +666,17 @@ level              mission           computer each  EASY stand-in  NORMAL stand-
 3-6   Full Moon    win               steady   22    24             54
 3-12  Crater       win with 20 dots  steady   24    18             31
 3-18  Twin Stars   win with 19 dots  steady   24    17             39
-3-20  Comet        win with 22 dots  steady   26    13             13
+3-20  Comet        win with 23 dots  steady   26    18             18
 4-6   Rocky Shore  win               steady   26    22             45
 4-12  Pearls       win               steady   26    16             37
 4-18  Reef         win with 19 dots  steady   28    21             24
 4-20  Kraken       win               normal   30     8             26
 ```
 
-- **Within each world the whole games get harder** for a weak player, and the boss is the one
-  passed least: 33, 24, 21, 17 in World 2; 24, 18, 17, 13 in World 3; 22, 16, 21, 8 in World 4
-  (16 and 21 are equal within the noise of 80 games).
+- **Within each world the whole games get harder** for a weak player, and the boss is passed
+  least or as little as the hardest before it: 33, 24, 21, 17 in World 2; 24, 18, 17, 18 in
+  World 3; 22, 16, 21, 8 in World 4 (18 and 17, 16 and 21 are equal within the noise of 80
+  games).
 - **Each world opens with a dip:** its first whole game is easier than the boss before it.
 - **A larger head start does not make a level harder** for these stand-ins: extra computer dots
   scattered on the board are also extra targets. Worlds 2 to 4 make whole games harder with fewer
@@ -722,7 +726,7 @@ each):
 3-6   Full Moon     margin 2 5     106    68   170    56
 3-12  Crater        margin 2 4     190    84   102    24
 3-18  Twin Stars    margin 2 4     169    80   106    45
-3-20  Comet         margin 2 5     231    54    89    26
+3-20  Comet         margin 2 5     207    48   105    40
 4-6   Rocky Shore   margin 2 4     152    89   101    58
 4-12  Pearls        margin 3 5     158   126    70    46
 4-18  Reef          margin 2 4     249    52    66    33
