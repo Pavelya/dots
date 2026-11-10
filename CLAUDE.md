@@ -66,14 +66,22 @@ One session works on one issue. Given "Work on B-02" (a task ID):
    depends on an open issue, or is labelled `blocked`, stop and say so.
 2. **Branch** `task/<ID>-<slug>` from the latest `main`, e.g. `task/F-3-safe-to-publish`
    (`git fetch origin && git switch -c task/F-3-safe-to-publish origin/main`).
-3. **Stay within the issue.** Anything else you notice (a bug, a stale doc, a better idea) becomes
+3. **Open the design first.** Before writing code, open every item in the issue's "Design inputs":
+   canvas frames (PNGs in `docs/design/canvas/`), wireframes (linked from `flows.md`, Wireframes),
+   `flows.md`, `game-screens.md`, `motion.md`, `sound.md`, `illustrations.md`, and the theme and
+   piece pages (`theme-notebook.md`, `pieces.md`). All are in `docs/design/`. Build what they show.
+   If a task changes what the player sees or hears and has no "Design inputs", stop and ask the
+   owner which ones apply.
+4. **Stay within the issue.** Anything else you notice (a bug, a stale doc, a better idea) becomes
    a new issue (`gh issue create`, using the task template, titled with a new ID), not an extra
    change in this PR.
-4. **Run the CI command** before pushing.
-5. **Open a PR** with `gh pr create`, following `.github/pull_request_template.md`: `Closes #<number>`,
+5. **Run the CI command** before pushing.
+6. **Open a PR** with `gh pr create`, following `.github/pull_request_template.md`: `Closes #<number>`,
    what changed, and the issue's "Done when" checklist copied with each item ticked or explained.
-   Items that only a person can check stay unticked, with a note on what they should do.
-6. **The owner merges.** Never run `gh pr merge`, never push to `main`, never force-push.
+   Items that only a person can check stay unticked, with a note on what they should do. If the
+   player sees something new, put each screenshot next to the design frame it was built from, and
+   list every difference.
+7. **The owner merges.** Never run `gh pr merge`, never push to `main`, never force-push.
    After review comments, add commits to the same branch.
 
 Labels: `agent` (checkable from the repository, CI or a script), `human` (needs the owner's eyes,

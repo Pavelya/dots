@@ -22,4 +22,16 @@ Closes #
 
 ## Screenshots
 
-<!-- If the UI changed: before and after. Otherwise delete this section. -->
+<!-- If the player sees something new or changed: each new screenshot next to the canvas or
+     wireframe frame it was built from. A canvas frame is a PNG in docs/design/canvas/; for a
+     frame that is only on a design canvas, link the canvas and name the frame.
+     Then one line for every difference: what differs, and the task that closes it or why it is
+     deliberate. If the player sees no change, delete this section. -->
+
+| Built | Design |
+| --- | --- |
+|  |  |
+
+**Differences from the design**
+
+-
