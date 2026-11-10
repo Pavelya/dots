@@ -229,8 +229,14 @@ class NavigationTest {
         back()
         at(Routes.MAP)
 
-        compose.waitUntil(timeoutMillis = 5_000) {
-            compose.onAllNodes(hasContentDescription("Level 2-10, next")).fetchSemanticsNodes().isNotEmpty()
+        try {
+            compose.waitUntil(timeoutMillis = 5_000) {
+                compose.onAllNodes(hasContentDescription("Level 2-10, next")).fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: Throwable) {
+            val shown = compose.onAllNodes(hasContentDescription("Level", substring = true)).fetchSemanticsNodes()
+                .map { it.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.ContentDescription) }
+            throw AssertionError("DEBUG map=${app.progress.map.value?.next?.code} shown=$shown", e)
         }
         compose.onNodeWithContentDescription("Level 2-10, next").performClick()
         at(Routes.LEVEL)
