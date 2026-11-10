@@ -67,7 +67,7 @@ Benchmarks (computer against computer; see "How strong is it" below):
 ```sh
 cli/build/install/cli/bin/cli bench steps 160          # each strength step against the next: games [board size] [dots each]
 cli/build/install/cli/bin/cli bench tiers 40 10 24      # every tier against every other: games, board size, dots each
-cli/build/install/cli/bin/cli bench levels 20 normal    # a stand-in plays each level: a tier, or "border"
+cli/build/install/cli/bin/cli bench levels 40 normal    # a stand-in plays each level: a tier, or "border"
 cli/build/install/cli/bin/cli bench stars 200           # stars earned on each level by four stand-ins; [stand-in...] [level...]
 cli/build/install/cli/bin/cli bench duel                # two custom configurations; prints its arguments
 cli/build/install/cli/bin/cli bench variety hard        # how often a tier answers the same position differently
@@ -141,9 +141,12 @@ Levels against the computer, with a dot budget each, grouped in worlds. Difficul
 computer's tier, its head start (dots already on the board), the board size and the mission.
 
 - **A level is passed when its mission is** (`Level.isPassed`). In `win`, a draw is not enough.
+- **World 1** has 15 levels that teach the game from zero: placing, chains and the first capture,
+  then capture and target puzzles, then whole games up to a mini-boss. Each level and what it
+  teaches: [`docs/design/world-1.md`](docs/design/world-1.md).
 - **Every level starts the human with dots in the middle.** Otherwise placing every dot on the
   border would be a safe way never to lose, which is exactly the forced draw the article warns
-  about. A border-only stand-in passes no level (`bench levels 20 border`).
+  about. A border-only stand-in passes no level (`bench levels 40 border`).
 
 ### Level files
 
@@ -154,27 +157,26 @@ without gaps.
 
 ```
 world: 1
-level: 3
-name: Scout
+level: 7
+name: Chase
 computer: easy
-dots: 14
-mission: win
-solutions: open
+dots: 5
+mission: capture 2 in 5 moves
+solutions: few
 boosters: none
 rule: none
-stars: margin 2 5
+stars: moves 1 2
 holes: none
+note: Chase: close the bottom, let the computer run up into your wall, then close behind it.
 map:
-..........
-..........
-..........
-......B...
-....RB....
-....BR....
-...B......
-..........
-..........
-..........
+........
+........
+....RR..
+........
+...RBBR.
+....R...
+........
+........
 ```
 
 | Field | What it holds |
@@ -189,6 +191,7 @@ map:
 | `rule` | A rule the computer bends on a boss level: `none`, `double move every 5 turns`, `fortress of 12 dots` or `two groups at once`. See [Boss rules](#boss-rules). |
 | `stars` | What earns two and three stars: what is counted, then the score for two stars and for three, `margin 2 5`. See [Stars](#stars). |
 | `holes` | Whether the edge of the map's holes counts as border: `border` or `open`, or `none` for a map without holes. See [Board shapes and special points](#board-shapes-and-special-points). |
+| `note` | One line for designers: what the level teaches or why it is there. Players never see it. `none` for no note; every campaign level has one, and a test checks it. |
 | `map` | The board, one row per line from the top. `.` empty point, `R` your dot, `B` a computer dot, `-` a hole (no point; shapes the board), `#` a blocked point, `+` a bonus point. The `R` and `B` dots are the opening; extra `B` dots are the computer's head start. |
 
 A file that cannot be read gives an error with the line, for example
@@ -338,7 +341,7 @@ and `rescue` and `target`. `cli check-levels` solves each puzzle with `Solver` a
 A passing puzzle shows its shortest answer, the computer's replies in brackets:
 
 ```
-1-9   Fork         capture 1 in 2 moves   ok      passes in 2 moves: d3 (c4) e4; 1 first move passes: d3  (0.0 s, 66 positions)
+1-4   Door         capture 2 in 4 moves   ok      passes in 2 moves: e2 (d3) d2; 1 first move passes: e2  (0.1 s, 2,267 positions)
 ```
 
 The win missions, and capture or survive with more than 5 moves, are whole games, not puzzles,
@@ -589,49 +592,72 @@ draws: equals rarely force a capture, so this format separates them less well th
 not use it; it is kept for experiments with deeper search. Two identical configurations come out
 exactly even by construction.
 
-**Levels.** `cli bench levels 20 <stand-in>`: a stand-in plays red on each level, 20 games;
-W-L-D in captures for the stand-in, and how many games passed the level's mission (for `win`,
-the same as the wins). Each game stops when the mission is decided. The EASY step stands for a
-weak player, the NORMAL step for a strong one, border for someone who only plays on the border.
-Levels 1 to 3 have an easy computer, 4 and 5 a normal one, 6 to 8 a hard one.
+**Levels.** `cli bench levels 40 <stand-in>`: a stand-in plays red on each level, 40 games, and
+the table shows how many passed the level's mission. Each game stops when the mission is decided.
+The EASY step stands for a weak player, the NORMAL step for a strong one, border for someone who
+only plays on the border. The computer of levels 1 to 3 is the beginner, of 4 to 13 the easy
+step, of 14 and 15 the steady step.
 
 ```
-                     EASY stand-in    NORMAL stand-in    border-only
-1 Warm-up           15- 2- 3          16- 0- 4           0-20- 0
-2 Open Field        17- 2- 1          18- 0- 2           0-20- 0
-3 Scout              9- 7- 4          13- 3- 4           0-20- 0
-4 Outpost            0-13- 7           1- 0-19           0-18- 2
-5 Rescue             0-14- 6           1- 1-18           0- 0-20
-6 Pincer             0-17- 3           2- 7-11           0-20- 0
-7 Siege              1-14- 5           1- 5-14           0-15- 5
-8 Grandmaster        0-20- 0           3-13- 4           0-20- 0
+                                                passed of 40
+level               mission                EASY stand-in   NORMAL stand-in   border-only
+1-1  First Dot      capture 1 in 3 moves   40              40                0
+1-2  Two Rings      capture 1 in 4 moves   40              40                0
+1-3  First Capture  capture 1 in 8 moves   35              33                0
+1-4  Door           capture 2 in 4 moves   12               8                0
+1-5  Edge           capture 2 in 5 moves   10               7                0
+1-6  Marked Dot     target d4              15               9                0
+1-7  Chase          capture 2 in 5 moves   31              23                0
+1-8  Cut            target d5              22              26                0
+1-9  Three in a Row capture 3 in 5 moves    9              21                0
+1-10 Long Chase     target f4              27               1                0
+1-11 First Game     win                    29              32                0
+1-12 Two Crosses    win                    20              34                0
+1-13 Head Start     win                    18              24                0
+1-14 Four Crosses   win                    16              26                0
+1-15 Ink Bottle     win                    14              23                0
 ```
 
-Difficulty rises for both stand-ins, but not smoothly for a weak player: level 4 is a wall,
-because there the computer jumps from step 2 to step 4 and starts checking the answer to its
-moves. Against a player who only plays on the border, the normal computer of level 5 draws every
-game: with its focus on the last dots it does not go after the human's starting dots. A draw
-does not pass a `win` level, so border play still passes none. The stand-ins are computers, not
-people, and nobody has played the levels yet, so treat the curve as a first draft.
+- **The whole games (11 to 15) get harder step by step** for a weak player: 29, 20, 18, 16 and
+  14 passes of 40. A strong player passes most of them; the mini-boss is the one the weak player
+  passes least.
+- **The puzzles (4 to 10) look harder here than they are.** The stand-ins play for captures and
+  do not read the mission, so they often capture one dot and run out of moves, or never cut the
+  target off. A person reads the mission. That every puzzle can be passed against any defence is
+  what `check-levels` proves; how hard each feels needs people (the newcomer check of G-09 and
+  the play-tests).
+- **Border play passes nothing**, so every level asks the player to fight.
+
+The stand-ins are computers, not people, and nobody has played these levels yet, so treat the
+curve as a first draft.
 
 **Stars.** `cli bench stars 200`: four stand-ins, the EASY, NORMAL, HARD and EXPERT computers,
-play each level 200 times; how many of the 800 games earned 0, 1, 2 and 3 stars. A level's star
-targets are set so that three stars are reached, but more rarely than one.
+play each level 200 times; how many of the 800 games earned 0, 1, 2 and 3 stars. In the whole
+games the star targets are set so that three stars are reached, but more rarely than one.
 
 ```
-                    stars        0     1     2     3
-1 Warm-up           margin 2 4   191   310   247    52
-2 Open Field        margin 2 5   158   295   304    43
-3 Scout             margin 2 5   292   206   247    55
-4 Outpost           margin 2 3   770    21     8     1
-5 Rescue            margin 2 4   758    30     8     4
-6 Pincer            margin 2 4   736    36    21     7
-7 Siege             margin 2 4   744    40    13     3
-8 Grandmaster       margin 3 5   609   113    54    24
+                     stars        0     1     2     3
+1-1  First Dot       moves 1 2      0     0     0   800
+1-2  Two Rings       moves 1 2      0     0    10   790
+1-3  First Capture   moves 4 6    160   142   145   353
+1-4  Door            moves 1 2    334    21     0   445
+1-5  Edge            moves 1 2    320    27    47   406
+1-6  Marked Dot      moves 1 2    277    28    33   462
+1-7  Chase           moves 1 2    108    43   132   517
+1-8  Cut             moves 1 2    249    25    13   513
+1-9  Three in a Row  moves 1 2    246    39   235   280
+1-10 Long Chase      moves 1 2    337    55    70   338
+1-11 First Game      margin 2 4   204   307   249    40
+1-12 Two Crosses     margin 2 4   145   162   365   128
+1-13 Head Start      margin 2 4   303   215   199    83
+1-14 Four Crosses    margin 2 4   189   199   294   118
+1-15 Ink Bottle      margin 2 5   267   125   343    65
 ```
 
-On level 4 the EASY, NORMAL and HARD stand-ins never won by more than 1 in 200 games each;
-only EXPERT did. Like the curve above, these are computers standing in for people.
+In the puzzles and the first three levels, three stars mean the shortest answer: each puzzle
+gives two moves to spare, and `moves 1 2` asks for both. A stand-in that passes a puzzle at all
+usually finds the shortest answer, so three stars are common here; people will often take a
+longer way. Level 1 always gives three stars to a player who closes the ring on the first tap.
 
 **Speed.** On a laptop, a HARD move on a 14×14 board takes about 40 ms (EXPERT about 130 ms).
 Not yet measured on a phone.

@@ -1,0 +1,21 @@
+world: 1
+level: 9
+name: Three in a Row
+computer: easy
+dots: 5
+mission: capture 3 in 5 moves
+solutions: few
+boosters: none
+rule: none
+stars: moves 1 2
+holes: none
+note: A wider net: close the far end first, then answer each run until the ring takes all of them.
+map:
+.........
+.........
+....RR...
+......R..
+...RBBB..
+.....RR..
+....R....
+.........

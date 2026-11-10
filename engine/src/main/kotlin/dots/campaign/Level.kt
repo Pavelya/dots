@@ -18,7 +18,7 @@ import dots.engine.TurnRule
  * computer bends. [stars] are the targets for two and three stars. [solutions] says how many first
  * moves may pass a puzzle mission (see [Solver]).
  * The map may have holes, blocked points and bonus points; [holes] says whether the edge of a hole
- * counts as border.
+ * counts as border. [note] is the designer's one line on what the level is for; players never see it.
  */
 data class Level(
     val world: Int,
@@ -33,11 +33,13 @@ data class Level(
     val stars: Stars? = null,
     val solutions: Solutions = Solutions.FEW,
     val holes: Holes = Holes.NONE,
+    val note: String? = null,
 ) {
     init {
         require(world >= 1) { "world must be 1 or more" }
         require(number in 1..99) { "level number must be 1 to 99" }
         require(name.isNotBlank() && name.lines().size == 1 && name == name.trim()) { "name must be one line of text" }
+        require(note == null || (note.isNotBlank() && note.lines().size == 1 && note == note.trim())) { "note must be one line of text" }
         require(dotsPerPlayer >= 1) { "dotsPerPlayer must be 1 or more" }
         require(boosters.values.all { it >= 1 }) { "booster counts must be 1 or more" }
         rule?.problem(map, dotsPerPlayer)?.let { throw IllegalArgumentException(it) }

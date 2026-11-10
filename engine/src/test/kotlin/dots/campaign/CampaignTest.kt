@@ -55,19 +55,34 @@ class CampaignTest {
     }
 
     @Test
-    fun `the computer never gets weaker or the game shorter as the levels go on`() {
+    fun `the computer never gets weaker as the levels go on`() {
         for ((easier, harder) in Campaign.levels.zipWithNext()) {
             assertTrue(harder.strength >= easier.strength, "${harder.name} has a weaker computer than ${easier.name}")
+        }
+    }
+
+    // Puzzle missions last a few moves whatever the budget, so length and head start are compared
+    // between whole games only.
+    private val wholeGames get() = Campaign.levels.filter { it.mission == Mission.Win || it.mission is Mission.WinBy }
+
+    @Test
+    fun `whole games never get shorter as the levels go on`() {
+        for ((easier, harder) in wholeGames.zipWithNext()) {
             assertTrue(harder.dotsPerPlayer >= easier.dotsPerPlayer, "${harder.name} is shorter than ${easier.name}")
         }
     }
 
     @Test
-    fun `the head start grows as the levels get harder`() {
-        val headStarts = Campaign.levels.map { it.headStart }
+    fun `the head start of whole games grows as the levels get harder`() {
+        val headStarts = wholeGames.map { it.headStart }
 
         assertEquals(0, headStarts.first())
         assertTrue(headStarts.last() > headStarts.first())
+    }
+
+    @Test
+    fun `every level has a design note`() {
+        for (level in Campaign.levels) assertTrue(level.note != null, "level ${level.code} has 'note: none'")
     }
 
     @Test

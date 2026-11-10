@@ -1,0 +1,24 @@
+world: 1
+level: 14
+name: Four Crosses
+computer: steady
+dots: 16
+mission: win
+solutions: open
+boosters: none
+rule: none
+stars: margin 2 4
+holes: none
+note: Four places to fight, and the first computer that checks the answer to its own moves.
+map:
+...........
+...........
+..RB...BR..
+..BR...RB..
+...........
+...........
+...........
+..BR...RB..
+..RB...BR..
+...........
+...........
