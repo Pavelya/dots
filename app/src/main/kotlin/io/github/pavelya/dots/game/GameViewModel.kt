@@ -100,9 +100,9 @@ class GameViewModel(
             _ui.value = current.copy(preview = result.preview)
             return
         }
-        val result = game.apply(Action.Place(placed))
+        val move = game.apply(Action.Place(placed))
         changed()
-        _ui.value = snapshot(lastMove = placed, captured = result)
+        _ui.value = snapshot(lastMove = placed, captured = move)
         letComputerMove()
     }
 
