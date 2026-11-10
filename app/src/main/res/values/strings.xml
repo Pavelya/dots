@@ -33,6 +33,9 @@
     <string name="pause_resume">Resume</string>
     <string name="pause_restart">Restart</string>
     <string name="pause_to_map">To the map</string>
+    <string name="paused">Paused</string>
+    <string name="pause_sound_on">Sound on</string>
+    <string name="pause_sound_off">Sound off</string>
     <string name="restart_question">Start a new game? This one will be lost.</string>
     <string name="restart_cancel">Keep playing</string>
     <string name="result_map">Map</string>
@@ -58,7 +61,6 @@
     <string name="back">Back</string>
     <string name="player_red">Red</string>
     <string name="player_blue">Blue</string>
-    <string name="game_score">%1$s %2$d · %3$s %4$d</string>
     <string name="game_to_move">%1$s to move</string>
     <string name="game_won">%1$s wins %2$d to %3$d</string>
     <string name="game_draw">A draw, %1$d to %1$d</string>
@@ -69,6 +71,15 @@
     <string name="game_you_win">You win, %1$d to %2$d!</string>
     <string name="game_computer_wins">The computer wins, %1$d to %2$d</string>
     <string name="game_undo">Undo</string>
+    <string name="side_to_move">%1$s, score %2$d, to move</string>
+    <string name="side_waiting">%1$s, score %2$d</string>
+    <string name="turn_banner">%1$s’s turn</string>
+    <string name="bubble_good_luck">Good luck!</string>
+    <string name="bubble_your_move">Your move…</string>
+    <string name="bubble_hey">Hey!</string>
+    <string name="bubble_ouch">Ouch!</string>
+    <string name="bubble_well_played">Well played.</string>
+    <string name="bubble_again">Again?</string>
     <string name="game_play_again">Play again</string>
     <string name="game_hint">Tap a point to choose it, tap it again to place your dot.</string>
     <string name="board_description">Board, %1$d × %2$d. %3$s.</string>
@@ -116,6 +127,14 @@
     <plurals name="settings_length_long">
         <item quantity="one">Long: %1$d dot each</item>
         <item quantity="other">Long: %1$d dots each</item>
+    </plurals>
+    <plurals name="game_dots_left">
+        <item quantity="one">%1$d dot left</item>
+        <item quantity="other">%1$d dots left</item>
+    </plurals>
+    <plurals name="game_dots_left_label">
+        <item quantity="one">dot left</item>
+        <item quantity="other">dots left</item>
     </plurals>
     <plurals name="game_your_turn_dots">
         <item quantity="one">Your turn · %1$d dot left</item>

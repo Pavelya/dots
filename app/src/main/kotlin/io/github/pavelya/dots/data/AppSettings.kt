@@ -18,6 +18,8 @@ data class AppSettings(
     val length: GameLength = GameLength.SHORT,
     val difficulty: Difficulty = Difficulty.NORMAL,
     val threatHighlight: Boolean = false,
+    /** Sound on or off, from the icon in Pause. A-09 adds it to Settings; the sounds come later (V-08, V-09). */
+    val sound: Boolean = true,
 ) {
     val dotsPerPlayer: Int get() = dotsFor(boardSize, length)
 
