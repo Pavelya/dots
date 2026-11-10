@@ -139,8 +139,8 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 | Level opening | silent |
 | Notes and cards | silent |
 
-If X-11 makes Undo a booster, or G-06 adds special points with their own animation, they need a
-row here too.
+Undo is a booster too (decision 0023); D-14 adds its row. If G-06 adds special points with their
+own animation, they need a row here too.
 
 ## The three source sounds
 
