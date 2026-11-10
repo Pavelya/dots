@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -178,13 +179,20 @@ private val NODE_SIZE = 56.dp
 @Composable
 private fun MapPath(map: CampaignMap, onLevel: (LevelStop) -> Unit, onLockedWorld: (WorldStop) -> Unit, modifier: Modifier) {
     val rows = remember(map) { rows(map) }
-    // The list is drawn from the bottom up; one row below the start keeps it off the screen's edge.
+    // The list is drawn from the bottom up. One level below the start keeps it off the screen's
+    // edge; under a world's first level, that is the boss just passed, below the world's banner.
     // The place the player scrolled to is kept until the start changes, for example when a level
     // is passed and the next one is further up.
-    val first = (startRow(rows) - 1).coerceAtLeast(0)
+    val start = startRow(rows)
+    val first = (if (rows.getOrNull(start - 1) is MapRow.Banner) start - 2 else start - 1).coerceAtLeast(0)
     // (A key, not an input of rememberSaveable: a saved place is restored whatever the inputs say.)
     val state: LazyListState = key(first) { rememberLazyListState(initialFirstVisibleItemIndex = first) }
-    LazyColumn(state = state, reverseLayout = true, modifier = modifier.testTag(MAP_PATH_TAG)) {
+    LazyColumn(
+        state = state,
+        reverseLayout = true,
+        contentPadding = PaddingValues(top = 8.dp, bottom = 16.dp),
+        modifier = modifier.testTag(MAP_PATH_TAG),
+    ) {
         items(rows.size, key = { rows[it].key }, contentType = { rows[it]::class }) { i ->
             when (val row = rows[i]) {
                 is MapRow.Banner -> Banner(row.world, onLocked = { onLockedWorld(row.world) })

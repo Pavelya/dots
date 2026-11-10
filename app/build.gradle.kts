@@ -102,7 +102,6 @@ roborazzi {
 }
 
 tasks.withType<Test>().configureEach {
-    testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL; showStandardStreams = false }
     // Robolectric reaches into JDK internals for file descriptors; newer JDKs must allow it.
     jvmArgs("--add-opens=java.base/jdk.internal.access=ALL-UNNAMED", "--add-exports=java.base/jdk.internal.access=ALL-UNNAMED")
     // Robolectric downloads its Android runtime itself, outside Gradle. Where Maven Central is
