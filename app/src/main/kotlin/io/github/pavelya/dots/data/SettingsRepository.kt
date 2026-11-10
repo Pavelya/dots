@@ -20,6 +20,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs[LENGTH] = next.length.name
             prefs[DIFFICULTY] = next.difficulty.name
             prefs[THREATS] = next.threatHighlight
+            prefs[SOUND] = next.sound
         }
     }
 
@@ -30,6 +31,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             length = enumOrNull<GameLength>(prefs[LENGTH]) ?: defaults.length,
             difficulty = enumOrNull<Difficulty>(prefs[DIFFICULTY]) ?: defaults.difficulty,
             threatHighlight = prefs[THREATS] ?: defaults.threatHighlight,
+            sound = prefs[SOUND] ?: defaults.sound,
         )
     }
 
@@ -41,5 +43,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val LENGTH = stringPreferencesKey("game_length")
         val DIFFICULTY = stringPreferencesKey("difficulty")
         val THREATS = booleanPreferencesKey("threat_highlight")
+        val SOUND = booleanPreferencesKey("sound")
     }
 }

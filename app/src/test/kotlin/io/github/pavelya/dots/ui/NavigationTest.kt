@@ -73,6 +73,10 @@ class NavigationTest {
     private fun waitFor(text: String, substring: Boolean = false) =
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text, substring = substring)).fetchSemanticsNodes().isNotEmpty() }
 
+    /** A side's line on the board, as TalkBack reads it. */
+    private fun waitForSide(description: String) =
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasContentDescription(description)).fetchSemanticsNodes().isNotEmpty() }
+
     private fun gone(text: String) =
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isEmpty() }
 
@@ -148,7 +152,7 @@ class NavigationTest {
         tap("Play a game")
         tap("Free play")
         at(Routes.GAME)
-        waitFor("Your turn · 33 dots left")
+        waitForSide("You, 0 captured, to move")
         compose.onNodeWithContentDescription("Pause").performClick()
         tap("To the map")
         at(Routes.MAP)
@@ -162,7 +166,7 @@ class NavigationTest {
         tap("Play a game")
         tap("Two players")
         at(Routes.GAME)
-        waitFor("Red to move · 33 dots left")
+        waitForSide("Red, 0 captured, to move")
 
         back()
         waitFor("Resume")
@@ -199,7 +203,7 @@ class NavigationTest {
         tap("Play a game")
         tap("Free play")
         at(Routes.GAME)
-        waitFor("Your turn · 33 dots left")
+        waitForSide("You, 0 captured, to move")
         val first = app.games.current.value
         compose.onNodeWithContentDescription("Pause").performClick()
         tap("To the map")
@@ -216,7 +220,7 @@ class NavigationTest {
         at(Routes.MAP)
         tap("Play a game")
         tap("Two players")
-        waitFor("Red to move · 33 dots left")
+        waitForSide("Red, 0 captured, to move")
         assertNotSame(first, app.games.current.value)
     }
 

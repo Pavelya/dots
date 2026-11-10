@@ -189,7 +189,14 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                     journal = app.games,
                                 )
                             }
-                            GameScreen(game, onToMap = toMap, onRules = { navController.navigate(Routes.RULES) })
+                            val scope = rememberCoroutineScope()
+                            GameScreen(
+                                game,
+                                onToMap = toMap,
+                                onRules = { navController.navigate(Routes.RULES) },
+                                sound = settings.value?.sound ?: AppSettings().sound,
+                                onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
+                            )
                         }
                     }
                 }

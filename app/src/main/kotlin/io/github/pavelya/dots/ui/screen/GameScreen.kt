@@ -1,22 +1,12 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -24,15 +14,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.LiveRegionMode
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -42,72 +27,68 @@ import dots.engine.Player
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
-import io.github.pavelya.dots.ui.board.BoardStyle
-import io.github.pavelya.dots.ui.board.BoardView
 
 /**
- * The game board. The pause icon, or Back, opens Pause over the board; when the game ends, Result
- * opens over the final board (docs/design/flows.md, "Around the board").
+ * What only a campaign level adds to the board: the level's [title] in the top row, the
+ * [mission] note's content (A-03) and the [boosters] in the tool bar (A-05, with Undo among them,
+ * decision 0023). Free play and two players leave it out.
+ */
+class CampaignParts(
+    val title: String,
+    val mission: @Composable () -> Unit,
+    val boosters: @Composable RowScope.() -> Unit,
+)
+
+/**
+ * The game board, laid out as the canvas game frames (docs/design/canvas): see [GameBoard]. The
+ * pause icon, or Back, opens Pause over the board; when the game ends, Result opens over the final
+ * board (docs/design/flows.md, "Around the board"). [sound] is the setting the sound icon in Pause
+ * turns on or off through [onSound].
  */
 @Composable
-fun GameScreen(viewModel: GameViewModel, onToMap: () -> Unit, onRules: () -> Unit) {
+fun GameScreen(
+    viewModel: GameViewModel,
+    onToMap: () -> Unit,
+    onRules: () -> Unit,
+    sound: Boolean = true,
+    onSound: (Boolean) -> Unit = {},
+    campaign: CampaignParts? = null,
+) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val state = ui.state
     val names = Names(ui.vsComputer, viewModel.human)
     // Saved, so Pause is still open after Rules, opened from it, closes.
     var paused by rememberSaveable { mutableStateOf(false) }
-    BackHandler(enabled = !state.isOver) { paused = true }
-    Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            Text(
-                stringResource(R.string.game_score, names.of(Player.RED), state.score(Player.RED), names.of(Player.BLUE), state.score(Player.BLUE)),
-                style = MaterialTheme.typography.titleLarge,
-            )
-            if (!state.isOver) {
-                PauseButton(onClick = { paused = true }, modifier = Modifier.align(Alignment.CenterEnd))
-            }
-        }
-        Text(
-            status(ui, names),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
-        )
-        BoardView(
-            state = state,
-            style = BoardStyle.plain(MaterialTheme.colorScheme, isSystemInDarkTheme()),
-            description = stringResource(R.string.board_description, state.width, state.height, status(ui, names)),
-            modifier = Modifier.fillMaxWidth().weight(1f, fill = false).testTag(BOARD_TAG),
-            lastMove = ui.lastMove,
-            preview = ui.preview,
-            dangers = ui.dangers,
+    BackHandler(enabled = !state.isOver) { paused = !paused }
+    Box {
+        GameBoard(
+            ui = ui,
+            human = viewModel.human,
+            campaign = campaign,
             onTap = viewModel::onTap,
+            onUndo = viewModel::undo,
+            onPause = { paused = true },
+            // Behind Pause, the board is out of reach, also for TalkBack.
+            modifier = if (paused && !state.isOver) Modifier.clearAndSetSemantics {} else Modifier,
         )
-        if (!state.isOver) {
-            Text(stringResource(R.string.game_hint), style = MaterialTheme.typography.bodySmall)
-            if (ui.vsComputer) {
-                OutlinedButton(onClick = viewModel::undo, enabled = ui.canUndo) { Text(stringResource(R.string.game_undo)) }
-            }
+        if (paused && !state.isOver) {
+            PauseNote(
+                sound = sound,
+                onSound = onSound,
+                onResume = { paused = false },
+                onRestart = { paused = false; viewModel.playAgain() },
+                onToMap = onToMap,
+                onRules = onRules,
+            )
         }
     }
-    when {
-        state.isOver -> Result(state, names, onPlayAgain = { paused = false; viewModel.playAgain() }, onMap = onToMap)
-        paused -> Pause(
-            onResume = { paused = false },
-            onRestart = { paused = false; viewModel.playAgain() },
-            onToMap = onToMap,
-            onRules = onRules,
-        )
-    }
+    if (state.isOver) Result(state, names, onPlayAgain = { paused = false; viewModel.playAgain() }, onMap = onToMap)
 }
 
 const val BOARD_TAG = "board"
 
 /** How players are called: "You" and "Computer" against the computer, colours between two people. */
-private class Names(val vsComputer: Boolean, val human: Player) {
+internal class Names(val vsComputer: Boolean, val human: Player) {
     @Composable
     fun of(player: Player): String = when {
         !vsComputer -> playerName(player)
@@ -116,33 +97,7 @@ private class Names(val vsComputer: Boolean, val human: Player) {
     }
 }
 
-/** Over the board: Resume, Restart after asking, To the map, and How to play. Back resumes. */
-@Composable
-private fun Pause(onResume: () -> Unit, onRestart: () -> Unit, onToMap: () -> Unit, onRules: () -> Unit) {
-    var asking by rememberSaveable { mutableStateOf(false) }
-    if (asking) {
-        AlertDialog(
-            onDismissRequest = { asking = false },
-            text = { Text(stringResource(R.string.restart_question)) },
-            confirmButton = { TextButton(onClick = onRestart) { Text(stringResource(R.string.pause_restart)) } },
-            dismissButton = { TextButton(onClick = { asking = false }) { Text(stringResource(R.string.restart_cancel)) } },
-        )
-        return
-    }
-    Dialog(onDismissRequest = onResume) {
-        Note {
-            Text(stringResource(R.string.pause), style = MaterialTheme.typography.headlineSmall)
-            Button(onClick = onResume, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-                Text(stringResource(R.string.pause_resume))
-            }
-            TextButton(onClick = { asking = true }) { Text(stringResource(R.string.pause_restart)) }
-            TextButton(onClick = onToMap) { Text(stringResource(R.string.pause_to_map)) }
-            TextButton(onClick = onRules) { Text(stringResource(R.string.map_rules)) }
-        }
-    }
-}
-
-/** Over the final board: the outcome, Play again, and a small Map. Back goes to the map. */
+/** Over the final board: the outcome, Play again, and a small Map. Back goes to the map. A-03, A-07 and A-08 build the designed Result. */
 @Composable
 private fun Result(state: GameState, names: Names, onPlayAgain: () -> Unit, onMap: () -> Unit) {
     Dialog(onDismissRequest = onMap, properties = DialogProperties(dismissOnClickOutside = false)) {
@@ -152,18 +107,6 @@ private fun Result(state: GameState, names: Names, onPlayAgain: () -> Unit, onMa
                 Text(stringResource(R.string.game_play_again))
             }
             TextButton(onClick = onMap) { Text(stringResource(R.string.result_map)) }
-        }
-    }
-}
-
-/** Two bars, drawn here until the hand-drawn icons arrive (V-03). */
-@Composable
-private fun PauseButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val label = stringResource(R.string.pause)
-    IconButton(onClick = onClick, modifier = modifier.semantics { contentDescription = label }) {
-        val ink = MaterialTheme.colorScheme.onSurface
-        Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            repeat(2) { Box(Modifier.size(width = 5.dp, height = 18.dp).background(ink)) }
         }
     }
 }
@@ -180,8 +123,9 @@ private fun outcome(state: GameState, names: Names): String {
     }
 }
 
+/** The state of the game in one sentence, for TalkBack: the board's description. */
 @Composable
-private fun status(ui: GameUiState, names: Names): String {
+internal fun status(ui: GameUiState, names: Names): String {
     val state = ui.state
     if (state.isOver) return outcome(state, names)
     if (ui.thinking) return stringResource(R.string.game_thinking)

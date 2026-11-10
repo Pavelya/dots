@@ -8,6 +8,7 @@ import dots.ai.Hints
 import dots.engine.Action
 import dots.engine.Game
 import dots.engine.GameState
+import dots.engine.MoveResult
 import dots.engine.Player
 import dots.engine.Pos
 import dots.log.GameLogEntry
@@ -36,6 +37,8 @@ data class GameUiState(
     val vsComputer: Boolean = false,
     /** Groups close to capture, for both players; empty unless the threat highlight is on. */
     val dangers: List<Danger> = emptyList(),
+    /** The computer's face and speech bubble; null between two people. */
+    val opponent: OpponentLook? = null,
 )
 
 /**
@@ -97,9 +100,9 @@ class GameViewModel(
             _ui.value = current.copy(preview = result.preview)
             return
         }
-        game.apply(Action.Place(placed))
+        val result = game.apply(Action.Place(placed))
         changed()
-        _ui.value = snapshot(lastMove = placed)
+        _ui.value = snapshot(lastMove = placed, captured = result)
         letComputerMove()
     }
 
@@ -138,9 +141,9 @@ class GameViewModel(
             }
             ensureActive()
             if (game.state !== position) return@launch // the position changed meanwhile (undo)
-            game.apply(action)
+            val result = game.apply(action)
             changed()
-            _ui.value = snapshot(lastMove = (action as? Action.Place)?.pos ?: lastPlaced())
+            _ui.value = snapshot(lastMove = (action as? Action.Place)?.pos ?: lastPlaced(), captured = result)
             letComputerMove() // the engine skips the human's turn if they have no dots left
         }
     }
@@ -163,11 +166,28 @@ class GameViewModel(
 
     private fun lastPlaced(): Pos? = game.record.actions.lastOrNull { it is Action.Place }?.let { (it as Action.Place).pos }
 
-    private fun snapshot(lastMove: Pos?) = GameUiState(
-        state = game.state,
-        lastMove = lastMove,
-        canUndo = computer != null && !game.state.isOver && game.canUndo(human),
-        vsComputer = computer != null,
-        dangers = if (entry.threatHighlight) Player.entries.flatMap { Hints.dangers(game.state, it) } else emptyList(),
-    )
+    /** What the screen draws now; [captured] is the move just played, if any, for the computer's face. */
+    private fun snapshot(lastMove: Pos?, captured: MoveResult? = null): GameUiState {
+        val state = game.state
+        val dangers = if (entry.threatHighlight) Player.entries.flatMap { Hints.dangers(state, it) } else emptyList()
+        val opponent = computer?.let {
+            val lastCapture = captured?.captures?.takeIf { it.isNotEmpty() }?.let { captures ->
+                LastCapture(captures.first().by, captures.sumOf { c -> c.points })
+            }
+            val inDanger = if (entry.threatHighlight) {
+                dangers.any { it.dotsNeeded <= 1 && state.ownerAt(it.group.first()) == human }
+            } else {
+                Hints.dangers(state, human, maxDots = 1).isNotEmpty()
+            }
+            OpponentLook.of(state, human, lastCapture, inDanger)
+        }
+        return GameUiState(
+            state = state,
+            lastMove = lastMove,
+            canUndo = computer != null && !state.isOver && game.canUndo(human),
+            vsComputer = computer != null,
+            dangers = dangers,
+            opponent = opponent,
+        )
+    }
 }
