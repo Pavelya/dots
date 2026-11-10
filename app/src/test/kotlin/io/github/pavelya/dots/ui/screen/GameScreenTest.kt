@@ -4,10 +4,12 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.test.espresso.Espresso
 import dots.ai.Ai
 import dots.engine.Action
 import dots.engine.GameSettings
@@ -17,6 +19,7 @@ import io.github.pavelya.dots.game.gameViewModel
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,22 +50,59 @@ class GameScreenTest {
 
     @Test
     fun `a whole game against the computer ends on the result screen, and play again restarts`() {
-        val vm = gameViewModel(
-            newSettings = { settings },
-            newComputer = { firstFreePoint },
-            computerDispatcher = Dispatchers.Default,
-            replyDelayMillis = 0,
-        )
-        compose.setContent { DotsTheme { GameScreen(vm, onBack = {}) } }
+        val vm = computerGame()
+        compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}) } }
         waitFor("Your turn · 2 dots left")
 
-        place(4, 4)
-        waitFor("Your turn · 1 dot left")
-        place(4, 3)
-
-        waitFor("A draw, 0 to 0")
+        playToTheEnd()
         compose.onNodeWithText("Play again").assertIsDisplayed().performClick()
         waitFor("Your turn · 2 dots left")
         compose.onNodeWithText("Undo").assertIsDisplayed()
+    }
+
+    private fun playToTheEnd() {
+        place(4, 4)
+        waitFor("Your turn · 1 dot left")
+        place(4, 3)
+        waitFor("A draw, 0 to 0")
+    }
+
+    private fun computerGame() = gameViewModel(
+        newSettings = { settings },
+        newComputer = { firstFreePoint },
+        computerDispatcher = Dispatchers.Default,
+        replyDelayMillis = 0,
+    )
+
+    @Test
+    fun `Map and Back on the result both go to the map`() {
+        var toMap = 0
+        compose.setContent { DotsTheme { GameScreen(computerGame(), onToMap = { toMap++ }, onRules = {}) } }
+        playToTheEnd()
+
+        compose.onNodeWithText("Map").performClick()
+        Espresso.pressBack()
+        compose.waitForIdle()
+
+        assertEquals(2, toMap)
+    }
+
+    @Test
+    fun `Restart asks first, then starts a new game`() {
+        val vm = computerGame()
+        compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}) } }
+        place(4, 4)
+        waitFor("Your turn · 1 dot left")
+
+        compose.onNodeWithContentDescription("Pause").performClick()
+        compose.onNodeWithText("Restart").performClick()
+        compose.onNodeWithText("Keep playing").performClick()
+        waitFor("Resume") // back in Pause, the game unchanged
+        compose.onNodeWithText("Your turn · 1 dot left").assertExists()
+
+        compose.onNodeWithText("Restart").performClick()
+        compose.onNodeWithText("Start a new game? This one will be lost.").assertIsDisplayed()
+        compose.onNodeWithText("Restart").performClick()
+        waitFor("Your turn · 2 dots left")
     }
 }

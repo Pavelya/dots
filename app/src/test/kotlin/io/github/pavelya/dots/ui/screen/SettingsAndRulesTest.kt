@@ -31,11 +31,11 @@ class SettingsAndRulesTest {
     val compose = createComposeRule()
 
     @Test
-    fun `choosing a bigger board updates the dot counts shown`() {
+    fun `in the developer menu, choosing a bigger board updates the dot counts shown`() {
         var latest = AppSettings()
         compose.setContent {
             var settings by remember { mutableStateOf(AppSettings()) }
-            SettingsScreen(settings, onChange = { settings = it; latest = it }, loggedGames = 0, onShareLog = {}, onBack = {})
+            DeveloperScreen(settings, onChange = { settings = it; latest = it }, loggedGames = 0, onShareLog = {}, onBack = {})
         }
         compose.onNodeWithText("Short: 33 dots each").assertIsDisplayed()
 
@@ -51,11 +51,26 @@ class SettingsAndRulesTest {
         var latest = AppSettings()
         compose.setContent {
             var settings by remember { mutableStateOf(AppSettings()) }
-            SettingsScreen(settings, onChange = { settings = it; latest = it }, loggedGames = 0, onShareLog = {}, onBack = {})
+            SettingsScreen(settings, onChange = { settings = it; latest = it }, version = "1.0", onDetails = {}, onDeveloperMenu = {}, onBack = {})
         }
         compose.onNodeWithText("Show threats").performClick()
 
         assertTrue(latest.threatHighlight)
+    }
+
+    @Test
+    fun `seven taps on the version open the developer menu, fewer do not`() {
+        var opened = 0
+        compose.setContent {
+            SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onDetails = {}, onDeveloperMenu = { opened++ }, onBack = {})
+        }
+        val version = compose.onNodeWithText("Version 1.0")
+        repeat(DEVELOPER_TAPS - 1) { version.performClick() }
+        assertEquals(0, opened)
+
+        version.performClick()
+        assertEquals(1, opened)
+        compose.onNodeWithText("Board").assertDoesNotExist()
     }
 
     @Test

@@ -22,7 +22,7 @@ Layers, each depending only on the ones below it:
 
 | Layer | Package | What it holds | Kept in the full version? |
 |---|---|---|---|
-| Screens | `ui.screen` | Compose screens: home, game, settings, rules, result | Layout replaced by the designed screens; routes follow [`docs/design/flows.md`](../design/flows.md) |
+| Screens | `ui.screen` | Compose screens: the map, game, settings, rules, the developer menu | Layout replaced by the designed screens; routes follow [`docs/design/flows.md`](../design/flows.md) |
 | Board view | `ui.board` | Draws the board on a Canvas; turns a touch into a grid cell; reads colours and shapes from a `BoardStyle` | Kept; the themes become new `BoardStyle`s |
 | Game control | `game` | One `GameViewModel` per game: holds the `GameState`, runs the computer on a background thread with a time limit, exposes one immutable `GameUiState` | Kept |
 | Data | `data` | Settings (DataStore), saved game, game log file | Kept; the log feeds future analytics |
@@ -62,12 +62,12 @@ Files, in the app's private folder (`files/games/`, excluded from backups):
 - `current-game.json`: the unfinished game, rewritten after every move and undo (to a temporary
   file first, then renamed, so a kill mid-write keeps the previous version). A new game is
   written here *before* its screen opens; the game screen always plays this game, so after
-  Android kills and restarts the app it comes back to the same position, and "Continue game" on
-  the home screen opens it too. A damaged file is ignored rather than crashing the app.
+  Android kills and restarts the app it comes back to the same position, and its card in "Play a
+  game" opens it too. A damaged file is ignored rather than crashing the app.
 - `game-log.txt`: one line per finished or abandoned game (abandoned only if it had moves).
 
 `GameStore` writes both on one background thread, in order, so the main thread never waits for
-the disk. Testers share the log from Settings, "Share the game log" (Android share sheet, through
+the disk. Testers share the log from the developer menu, "Share the game log" (Android share sheet, through
 a `FileProvider` that exposes only this folder). No network access and no identifiers: the
 tester's name is known from who sends the file.
 

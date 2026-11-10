@@ -9,7 +9,9 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "io.github.pavelya.dots"
+        // The store app's ID (decision 0016); it can never change once the app is on Google Play.
+        // The code's package, `namespace` above, stays io.github.pavelya.dots: players never see it.
+        applicationId = "io.github.pavelya.pinfold"
         minSdk = 24
         targetSdk = 37
         // Release builds on a poc-v* tag set these (.github/workflows/poc-release.yml), so each test
@@ -83,6 +85,7 @@ dependencies {
     debugImplementation(libs.compose.ui.test.manifest)
 
     testImplementation(libs.junit4)
+    testImplementation(libs.espresso.core) // presses Back in the navigation test, also on dialogs
     testImplementation(libs.robolectric)
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)

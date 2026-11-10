@@ -90,7 +90,7 @@ cli/build/install/cli/bin/cli daily 2027-03-14          # print one day's puzzle
 cli/build/install/cli/bin/cli daily 2028 engine/src/main/resources/daily/2028.txt   # make a whole year
 ```
 
-Game logs shared by testers from the app (Settings, "Share the game log"; format in
+Game logs shared by testers from the app (the developer menu, "Share the game log"; format in
 [`docs/poc/architecture.md`](docs/poc/architecture.md)):
 
 ```sh
