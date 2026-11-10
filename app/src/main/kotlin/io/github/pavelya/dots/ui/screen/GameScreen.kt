@@ -1,49 +1,56 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.material3.Button
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dots.campaign.Level
+import dots.campaign.MissionStatus
+import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Player
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
+import kotlinx.coroutines.delay
 
 /**
  * What only a campaign level adds to the board: the level's [title] in the top row, the
- * [mission] note's content (A-03) and the [boosters] in the tool bar (A-05, with Undo among them,
- * decision 0023). Free play and two players leave it out.
+ * [mission] note's content ([MissionNoteContent]; null while the level opening shows the mission
+ * big) and the [boosters] in the tool bar (A-05, with Undo among them, decision 0023). Free play
+ * and two players leave it out.
  */
 class CampaignParts(
     val title: String,
-    val mission: @Composable () -> Unit,
+    val mission: (@Composable () -> Unit)?,
     val boosters: @Composable RowScope.() -> Unit,
 )
 
+/** How long the level opening shows the mission big over the board (motion.md, Level opening: 1200 ms, then 300 ms to shrink). */
+internal const val OPENING_MILLIS = 1_500L
+
 /**
- * The game board, laid out as the canvas game frames (docs/design/canvas): see [GameBoard]. The
- * pause icon, or Back, opens Pause over the board; when the game ends, Result opens over the final
- * board (docs/design/flows.md, "Around the board"). [sound] is the setting the sound icon in Pause
- * turns on or off through [onSound].
+ * The game board, laid out as the canvas game frames (docs/design/canvas): see [GameBoard]. A
+ * campaign level opens with its mission big over the board for a moment, then the mission sits in
+ * the corner note. The pause icon, or Back, opens Pause over the board; when the game ends, Result
+ * opens over the final board (docs/design/flows.md, "Around the board"). [sound] is the setting the
+ * sound icon in Pause turns on or off through [onSound].
+ *
+ * Result's buttons: Retry and Play again start the next game here; Map goes to [onToMap]; Next, in
+ * the campaign, goes to [onNext] with the level whose card the map should open.
  */
 @Composable
 fun GameScreen(
@@ -52,15 +59,30 @@ fun GameScreen(
     onRules: () -> Unit,
     sound: Boolean = true,
     onSound: (Boolean) -> Unit = {},
-    campaign: CampaignParts? = null,
+    onNext: (Level?) -> Unit = { onToMap() },
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
-    val state = ui.state
     val names = Names(ui.vsComputer, viewModel.human)
     // Saved, so Pause is still open after Rules, opened from it, closes.
     var paused by rememberSaveable { mutableStateOf(false) }
-    BackHandler(enabled = !state.isOver) { paused = !paused }
-    Box {
+    BackHandler(enabled = !ui.isOver) { paused = !paused }
+    val level = ui.level
+    // Each new game of a level opens with its mission; the first move, or a moment, ends it.
+    var opening by rememberSaveable(ui.round) { mutableStateOf(level != null && ui.fresh) }
+    LaunchedEffect(ui.round, ui.fresh) {
+        if (!ui.fresh) {
+            opening = false
+        } else if (opening) {
+            delay(OPENING_MILLIS)
+            opening = false
+        }
+    }
+    val campaign = level?.let { playing ->
+        val mission = ui.mission
+        val note = if (opening || mission == null) null else missionNote(playing, mission)
+        CampaignParts(title = stringResource(R.string.level_number, playing.number), mission = note, boosters = {})
+    }
+    BoxWithConstraints {
         GameBoard(
             ui = ui,
             human = viewModel.human,
@@ -69,9 +91,12 @@ fun GameScreen(
             onUndo = viewModel::undo,
             onPause = { paused = true },
             // Behind Pause, the board is out of reach, also for TalkBack.
-            modifier = if (paused && !state.isOver) Modifier.clearAndSetSemantics {} else Modifier,
+            modifier = if (paused && !ui.isOver) Modifier.clearAndSetSemantics {} else Modifier,
         )
-        if (paused && !state.isOver) {
+        if (opening && level != null) {
+            LevelOpening(level, Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp))
+        }
+        if (paused && !ui.isOver) {
             PauseNote(
                 sound = sound,
                 onSound = onSound,
@@ -81,9 +106,21 @@ fun GameScreen(
                 onRules = onRules,
             )
         }
+        if (ui.showsResult) {
+            ResultNote(
+                ui = ui,
+                names = names,
+                onNext = { onNext(ui.levelEnd?.next) },
+                onAgain = { paused = false; viewModel.playAgain() },
+                onAgainWithHint = { paused = false; viewModel.retryWith(Booster.HINT) },
+                onMap = onToMap,
+            )
+        }
     }
-    if (state.isOver) Result(state, names, onPlayAgain = { paused = false; viewModel.playAgain() }, onMap = onToMap)
 }
+
+/** The mission note's content for [level] where its mission stands at [status]. */
+internal fun missionNote(level: Level, status: MissionStatus): @Composable () -> Unit = { MissionNoteContent(level, status) }
 
 const val BOARD_TAG = "board"
 
@@ -97,22 +134,9 @@ internal class Names(val vsComputer: Boolean, val human: Player) {
     }
 }
 
-/** Over the final board: the outcome, Play again, and a small Map. Back goes to the map. A-03, A-07 and A-08 build the designed Result. */
+/** The end of a free game in one sentence, for TalkBack: "You win, 8 to 3!". */
 @Composable
-private fun Result(state: GameState, names: Names, onPlayAgain: () -> Unit, onMap: () -> Unit) {
-    Dialog(onDismissRequest = onMap, properties = DialogProperties(dismissOnClickOutside = false)) {
-        Note {
-            Text(outcome(state, names), style = MaterialTheme.typography.headlineSmall)
-            Button(onClick = onPlayAgain, modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp)) {
-                Text(stringResource(R.string.game_play_again))
-            }
-            TextButton(onClick = onMap) { Text(stringResource(R.string.result_map)) }
-        }
-    }
-}
-
-@Composable
-private fun outcome(state: GameState, names: Names): String {
+internal fun outcome(state: GameState, names: Names): String {
     val winner = state.winner ?: return stringResource(R.string.game_draw, state.score(Player.RED))
     val score = state.score(winner)
     val other = state.score(winner.opponent)
@@ -127,7 +151,12 @@ private fun outcome(state: GameState, names: Names): String {
 @Composable
 internal fun status(ui: GameUiState, names: Names): String {
     val state = ui.state
-    if (state.isOver) return outcome(state, names)
+    val level = ui.level
+    val mission = ui.mission
+    if (ui.isOver && level != null && mission != null) {
+        return if (ui.levelEnd?.result?.isPassed ?: level.isPassed(state)) stringResource(R.string.mission_done) else failureText(level, mission)
+    }
+    if (ui.isOver) return outcome(state, names)
     if (ui.thinking) return stringResource(R.string.game_thinking)
     val left = state.dotsLeft(state.toMove)
     val mover = state.toMove

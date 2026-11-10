@@ -112,6 +112,31 @@ class LevelRecordTest {
     }
 
     @Test
+    fun `a gift of boosters is written in the record and replayed`() {
+        val record = LevelRecord(level, listOf(Action.Place(Notation.parse("c3")!!)), gift = mapOf(Booster.HINT to 1))
+
+        assertEquals("level/1 2-5 +hint | c3", record.toText())
+        assertEquals(record, LevelRecord.parse(record.toText()) { _, _ -> level })
+        assertEquals(boosters.getValue(Booster.HINT) + 1, record.start().boostersLeft(level.human, Booster.HINT))
+        assertEquals(mapOf(Booster.WALL to 2), LevelRecord.parse("level/1 2-5 +wall +wall |") { _, _ -> level }.gift)
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-5 +boom |") { _, _ -> level } }
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-5 hint |") { _, _ -> level } }
+    }
+
+    @Test
+    fun `a level game ends when its mission is decided, before the board is full`() {
+        val capture = level.copy(mission = Mission.Capture(dots = 1, moves = 1))
+        val game = dots.engine.Game(LevelRecord(capture, emptyList()))
+        assertTrue(!game.isOver)
+
+        game.apply(Action.Place(Notation.parse("a1")!!)) // the one move, and no capture
+        assertTrue(game.isOver)
+        assertTrue(!game.state.isOver)
+        assertEquals(LevelRecord(capture, game.record.actions), game.record)
+        assertEquals(game.state.toAscii(), dots.engine.Game.from(game.record).state.toAscii())
+    }
+
+    @Test
     fun `the level's boosters go to the player and none to the computer`() {
         val start = level.newGame()
 

@@ -4,15 +4,23 @@ package dots.engine
  * A game in progress with its history: what an app screen holds. Each action is applied to the
  * immutable [GameState], and every state is kept, so undo is exact and the [record] can be
  * saved or logged at any time. Not thread-safe; one owner (for example a ViewModel) uses it.
+ *
+ * The game starts where its record starts: a free game's settings, or a campaign level.
  */
-class Game private constructor(val settings: GameSettings, private val states: MutableList<GameState>) {
+class Game private constructor(private val origin: PlayRecord, private val states: MutableList<GameState>) {
     private val actions = ArrayList<Action>()
 
-    constructor(settings: GameSettings) : this(settings, mutableListOf(settings.newGame()))
+    constructor(settings: GameSettings) : this(GameRecord(settings, emptyList()))
+
+    /** A new game from where [start] starts; its actions are not played. */
+    constructor(start: PlayRecord) : this(start.withActions(emptyList()), mutableListOf(start.start()))
 
     val state: GameState get() = states.last()
 
-    val record: GameRecord get() = GameRecord(settings, actions.toList())
+    val record: PlayRecord get() = origin.withActions(actions.toList())
+
+    /** True when the game is over: no move is left or, in a level, its mission is decided. */
+    val isOver: Boolean get() = origin.isOver(state)
 
     fun apply(action: Action): MoveResult {
         val result = state.apply(action)
@@ -41,8 +49,8 @@ class Game private constructor(val settings: GameSettings, private val states: M
 
     companion object {
         /** Rebuilds a game, history included, from its record. */
-        fun from(record: GameRecord): Game {
-            val game = Game(record.settings)
+        fun from(record: PlayRecord): Game {
+            val game = Game(record)
             for (action in record.actions) game.apply(action)
             return game
         }

@@ -122,6 +122,20 @@ class StarsTest {
     }
 
     @Test
+    fun `boosters given on top of the level's own do not count`() {
+        val level = level(
+            Mission.Win, dots = 3, twoAtOnce, Stars(StarMeasure.BOOSTERS, two = 1, three = 2),
+            boosters = mapOf(Booster.WALL to 1, Booster.HINT to 1),
+        )
+        val start = level.newGame(gift = mapOf(Booster.HINT to 1, Booster.BOMB to 1))
+
+        assertEquals(2, start.boostersLeft(level.human, Booster.HINT))
+        assertEquals(1, start.boostersLeft(level.human, Booster.BOMB))
+        assertEquals(2, level.starScore(start))
+        assertEquals(2, level.starScore(start.apply(Action.Hint(pos("a1"))).state), "the gift is used first")
+    }
+
+    @Test
     fun `a level without star targets earns one star when passed`() {
         val level = level(Mission.Capture(dots = 1, moves = 2), dots = 3, twoAtOnce, stars = null)
         val passed = level.result(level.newGame().then("d3"))

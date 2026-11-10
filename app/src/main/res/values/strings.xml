@@ -104,6 +104,122 @@
     <string name="log_share">Share the game log</string>
     <string name="log_share_subject">Pinfold game log</string>
     <string name="log_empty">No games in the log yet. Finished games are kept on this phone until you share them.</string>
+    <string name="level_title">World %1$d · Level %2$d</string>
+    <string name="level_number">Level %1$d</string>
+    <string name="level_start">Start</string>
+    <string name="level_resume">Resume</string>
+    <string name="level_boss">Boss level</string>
+    <string name="level_boss_rule">Its rule:</string>
+    <string name="level_boosters">Boosters:</string>
+    <string name="level_board_picture">The board at the start</string>
+    <string name="level_even">starts level with you</string>
+    <string name="opening_even">The computer starts level with you.</string>
+    <string name="strength_beginner">is just learning</string>
+    <string name="strength_easy">plays gently</string>
+    <string name="strength_steady">plays steady</string>
+    <string name="strength_normal">plays well</string>
+    <string name="strength_hard">plays sharp</string>
+    <string name="strength_expert">plays like a master</string>
+    <string name="booster_wall">Wall</string>
+    <string name="booster_hint">Hint</string>
+    <string name="booster_bomb">Bomb</string>
+    <string name="booster_double_dot">Double dot</string>
+    <string name="mission_win">Win</string>
+    <string name="mission_win_by">Win by %1$s</string>
+    <string name="mission_win_fewer">Win with only %1$s</string>
+    <string name="mission_capture">Capture %1$s in %2$s</string>
+    <string name="mission_survive">Keep all your dots for %1$s</string>
+    <string name="mission_rescue">Save the circled dot</string>
+    <string name="mission_target">Capture the circled dot</string>
+    <string name="mission_head">Mission</string>
+    <string name="mission_done">Mission done</string>
+    <string name="target_lead">Lead by %1$s</string>
+    <string name="target_spare">With %1$s to spare</string>
+    <string name="target_saved">Keep %1$s safe</string>
+    <string name="target_boosters">With %1$s unused</string>
+    <string name="score_lead">a lead of %1$s</string>
+    <string name="score_spare">%1$s to spare</string>
+    <string name="score_saved">%1$s kept safe</string>
+    <string name="score_boosters">%1$s unused</string>
+    <string name="stars_row">%1$d of 3 stars: %2$s</string>
+    <string name="rule_two_groups">Every turn it places two dots, one in each half of the board.</string>
+    <string name="result_won">You won!</string>
+    <string name="result_so_close">So close!</string>
+    <string name="result_not_this_time">Not this time</string>
+    <string name="result_draw">A draw</string>
+    <string name="result_computer_won">The computer won</string>
+    <string name="result_side_wins">%1$s wins!</string>
+    <string name="result_score">%1$d to %2$d</string>
+    <string name="result_line">%1$s · %2$s</string>
+    <string name="result_two_stars_need">Two stars need %1$s</string>
+    <string name="result_three_stars_need">Three stars need %1$s</string>
+    <string name="result_stars">%1$d of 3 stars</string>
+    <string name="result_lost_a_dot">The computer captured one of your dots.</string>
+    <string name="result_dot_captured">The circled dot was captured.</string>
+    <string name="result_target_safe">The circled dot is safe now.</string>
+    <string name="result_target_missed">The circled dot was not captured.</string>
+    <string name="result_level_open">Level %1$s is open</string>
+    <string name="result_world_open">World %1$d, %2$s, is open!</string>
+    <string name="result_next">Next</string>
+    <string name="result_retry">Retry</string>
+    <string name="result_free_hint">Retry with a free Hint</string>
+    <string name="result_progress">Captured %1$d of %2$d</string>
+    <plurals name="count_dots">
+        <item quantity="one">%1$d dot</item>
+        <item quantity="other">%1$d dots</item>
+    </plurals>
+    <plurals name="count_moves">
+        <item quantity="one">%1$d move</item>
+        <item quantity="other">%1$d moves</item>
+    </plurals>
+    <plurals name="count_boosters">
+        <item quantity="one">%1$d booster</item>
+        <item quantity="other">%1$d boosters</item>
+    </plurals>
+    <plurals name="level_ahead">
+        <item quantity="one">starts %1$d dot ahead</item>
+        <item quantity="other">starts %1$d dots ahead</item>
+    </plurals>
+    <plurals name="level_behind">
+        <item quantity="one">starts %1$d dot behind</item>
+        <item quantity="other">starts %1$d dots behind</item>
+    </plurals>
+    <plurals name="opening_ahead">
+        <item quantity="one">The computer starts %1$d dot ahead.</item>
+        <item quantity="other">The computer starts %1$d dots ahead.</item>
+    </plurals>
+    <plurals name="opening_behind">
+        <item quantity="one">The computer starts %1$d dot behind.</item>
+        <item quantity="other">The computer starts %1$d dots behind.</item>
+    </plurals>
+    <plurals name="level_your_dots">
+        <item quantity="one">You have %1$d dot.</item>
+        <item quantity="other">You have %1$d dots.</item>
+    </plurals>
+    <plurals name="booster_chip">
+        <item quantity="one">%1$s, %2$d. What it does</item>
+        <item quantity="other">%1$s, %2$d. What it does</item>
+    </plurals>
+    <plurals name="mission_moves_left">
+        <item quantity="one">%1$d move left</item>
+        <item quantity="other">%1$d moves left</item>
+    </plurals>
+    <plurals name="rule_double_move">
+        <item quantity="one">Every turn it places two dots. The counter above the board shows when.</item>
+        <item quantity="other">Every %1$d turns it places two dots. The counter above the board shows when.</item>
+    </plurals>
+    <plurals name="rule_fortress">
+        <item quantity="one">It starts with a fortress of %1$d dot.</item>
+        <item quantity="other">It starts with a fortress of %1$d dots.</item>
+    </plurals>
+    <plurals name="result_captured">
+        <item quantity="one">%1$d captured</item>
+        <item quantity="other">%1$d captured</item>
+    </plurals>
+    <plurals name="result_missed_by">
+        <item quantity="one">Missed by %1$d capture</item>
+        <item quantity="other">Missed by %1$d captures</item>
+    </plurals>
     <plurals name="log_detail">
         <item quantity="one">%1$d game in the log, kept on this phone until you share it. It holds your moves and results, nothing else.</item>
         <item quantity="other">%1$d games in the log, kept on this phone until you share it. It holds your moves and results, nothing else.</item>

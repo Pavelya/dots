@@ -82,7 +82,7 @@ class GameScreenTest {
         waitFor(hasContentDescription("1 dot left"))
         waitFor(side("You, score 0, to move"))
         place(4, 3)
-        waitFor("A draw, 0 to 0")
+        waitFor("A draw")
     }
 
     private fun computerGame(computer: Ai = firstFreePoint) = gameViewModel(
@@ -107,7 +107,7 @@ class GameScreenTest {
         compose.setContent { DotsTheme { GameScreen(computerGame(), onToMap = { toMap++ }, onRules = {}) } }
         playToTheEnd()
 
-        compose.onNodeWithText("Map").performClick()
+        compose.onNodeWithContentDescription("Map").performClick()
         Espresso.pressBack()
         compose.waitForIdle()
 

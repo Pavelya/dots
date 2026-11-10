@@ -117,6 +117,26 @@ class CampaignMap(val worlds: List<WorldStop>, val totalStars: Int) {
         data class WorldClosed(val world: WorldStop) : Lock
     }
 
+    /**
+     * What this map opens that [before] kept locked: the worlds that opened and the levels that
+     * became playable, in campaign order. Result shows them after a level is passed.
+     */
+    fun openedSince(before: CampaignMap): Opened {
+        val worlds = this.worlds.filter { it.isOpen && before.worlds.getOrNull(it.world.number - 1)?.isOpen == false }
+        val levels = this.worlds.flatMap { it.levels }
+            .filter { it.state == LevelState.OPEN && before.stop(it.level).state == LevelState.LOCKED }
+        return Opened(worlds.map { it.world }, levels.map { it.level })
+    }
+
+    /** Worlds and levels a pass has just opened (see [openedSince]). */
+    data class Opened(val worlds: List<World>, val levels: List<Level>) {
+        val isEmpty: Boolean get() = worlds.isEmpty() && levels.isEmpty()
+
+        companion object {
+            val NOTHING = Opened(emptyList(), emptyList())
+        }
+    }
+
     companion object {
         fun of(worlds: List<World>, progress: Progress): CampaignMap {
             val total = progress.total

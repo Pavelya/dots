@@ -92,7 +92,7 @@ internal fun PauseNote(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 )
-                BigButton(stringResource(R.string.pause_restart), style, onRestart)
+                BigButton(stringResource(R.string.pause_restart), style, onRestart, Modifier.fillMaxWidth())
                 SmallButton(stringResource(R.string.restart_cancel), style, { asking = false }, Modifier.fillMaxWidth())
             } else {
                 Text(
@@ -104,7 +104,7 @@ internal fun PauseNote(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().semantics { heading() },
                 )
-                BigButton(stringResource(R.string.pause_resume), style, onResume)
+                BigButton(stringResource(R.string.pause_resume), style, onResume, Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SmallButton(stringResource(R.string.pause_restart), style, { asking = true }, Modifier.weight(1f))
                     SmallButton(stringResource(R.string.pause_to_map), style, onToMap, Modifier.weight(1f))
@@ -125,10 +125,10 @@ internal fun PauseNote(
     }
 }
 
-/** A note taped over the board: a card turned a little, with a strip of tape at the top. */
+/** A note taped over the board: a card turned a little ([angle] degrees), with a strip of tape at the top. */
 @Composable
-private fun TapedNote(style: GameStyle, modifier: Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Box(modifier.rotate(-1f), contentAlignment = Alignment.TopCenter) {
+internal fun TapedNote(style: GameStyle, modifier: Modifier, angle: Float = -1f, content: @Composable ColumnScope.() -> Unit) {
+    Box(modifier.rotate(angle), contentAlignment = Alignment.TopCenter) {
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier
@@ -142,15 +142,58 @@ private fun TapedNote(style: GameStyle, modifier: Modifier, content: @Composable
     }
 }
 
+/**
+ * The one big button of a note: 56 dp, in blue ink, with the Title style (canvas README). An icon
+ * may come [before] or [after] the text, as path data from [Doodles].
+ */
 @Composable
-private fun BigButton(text: String, style: GameStyle, onClick: () -> Unit) {
+internal fun BigButton(
+    text: String,
+    style: GameStyle,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    before: String? = null,
+    after: String? = null,
+) {
     Button(
         onClick = onClick,
         shape = BIG_BUTTON_SHAPE,
         colors = ButtonDefaults.buttonColors(containerColor = style.blue, contentColor = style.paper),
-        modifier = Modifier.fillMaxWidth().height(56.dp),
+        modifier = modifier.height(56.dp),
     ) {
+        before?.let { ButtonIcon(it, style.paper) }
         Text(text, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        after?.let { ButtonIcon(it, style.paper) }
+    }
+}
+
+@Composable
+private fun ButtonIcon(path: String, ink: Color) {
+    Icon(
+        remember(path, ink) { Doodles.icon(path, ink, width = 2.2f) },
+        contentDescription = null,
+        tint = Color.Unspecified,
+        modifier = Modifier.padding(horizontal = 8.dp).size(22.dp),
+    )
+}
+
+/**
+ * A small square button beside the big one, 56 dp, with only an icon ([path]) and its [label]
+ * for TalkBack: Retry or Map on Result.
+ */
+@Composable
+internal fun SquareButton(path: String, label: String, style: GameStyle, onClick: () -> Unit) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(56.dp)
+            .clip(BIG_BUTTON_SHAPE)
+            .background(style.card)
+            .toolOutline(style.graphite, dashed = false, BIG_BUTTON_SHAPE)
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics { contentDescription = label },
+    ) {
+        Icon(remember(path, style) { Doodles.icon(path, style.pencil) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(26.dp))
     }
 }
 
