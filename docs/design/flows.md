@@ -160,7 +160,7 @@ over the map or the board, which stay visible around it.
 | Cosmetic preview | An item in Shop | The item on a sample board, its price or how to earn it, and whether it is owned or in use. Buy or Use. | C-02 |
 | Settings | Settings on the map | The controls listed under [Settings](#settings). | A-09 |
 | Settings details | A row in Settings | Language, privacy (the policy and ad choices), Play Games backup, credits and licences. | A-09, A-10 |
-| Developer menu | Hidden; A-01 picks how it opens | The POC's difficulty picker and test-only settings. Not for players, so it is left out of the two-tap check. | A-01 |
+| Developer menu | Seven taps on the version line at the bottom of Settings | The POC's difficulty picker and test-only settings. Not for players, so it is left out of the two-tap check. | A-01 |
 | Android screens | An action in the game | Not drawn by us: the share screen, the feedback email, the review prompt (A-12), Play Games sign-in, Google Play purchase, a rewarded ad, the ad consent form. Closing one returns to the screen that opened it. | A-07, A-12, O-02, C-02, C-03 |
 
 ### After launch

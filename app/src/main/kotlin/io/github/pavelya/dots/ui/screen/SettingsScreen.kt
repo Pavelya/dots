@@ -1,6 +1,7 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,10 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -32,8 +37,79 @@ import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.Difficulty
 import io.github.pavelya.dots.data.GameLength
 
+/** The number of taps on the version line that opens the developer menu, as Android's "Build number" does. */
+const val DEVELOPER_TAPS = 7
+
+/**
+ * Settings for players: the threat highlight now; A-09 adds sound, vibration and the rest. Tapping
+ * the version line [DEVELOPER_TAPS] times opens the developer menu.
+ */
 @Composable
 fun SettingsScreen(
+    settings: AppSettings,
+    onChange: (AppSettings) -> Unit,
+    version: String,
+    onDetails: () -> Unit,
+    onDeveloperMenu: () -> Unit,
+    onBack: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        ScreenHeader(R.string.home_settings, onBack)
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .toggleable(
+                    value = settings.threatHighlight,
+                    role = Role.Switch,
+                    onValueChange = { onChange(settings.copy(threatHighlight = it)) },
+                ),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.settings_threats), style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.settings_threats_detail), style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(checked = settings.threatHighlight, onCheckedChange = null)
+        }
+
+        HorizontalDivider(Modifier.padding(vertical = 8.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClick = onDetails),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(stringResource(R.string.settings_credits), style = MaterialTheme.typography.titleMedium)
+        }
+
+        var taps by rememberSaveable { mutableIntStateOf(0) }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clickable(interactionSource = null, indication = null) {
+                    taps += 1
+                    if (taps >= DEVELOPER_TAPS) {
+                        taps = 0
+                        onDeveloperMenu()
+                    }
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(stringResource(R.string.settings_version, version), style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+/**
+ * The developer menu: the POC's test settings, hidden from players (decision 0003 removes the
+ * difficulty picker). Opens from the version line in Settings.
+ */
+@Composable
+fun DeveloperScreen(
     settings: AppSettings,
     onChange: (AppSettings) -> Unit,
     loggedGames: Int,
@@ -44,7 +120,8 @@ fun SettingsScreen(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ScreenHeader(R.string.home_settings, onBack)
+        ScreenHeader(R.string.developer_title, onBack)
+        Text(stringResource(R.string.developer_note), style = MaterialTheme.typography.bodyMedium)
 
         Section(R.string.settings_board)
         Choices(
@@ -80,25 +157,6 @@ fun SettingsScreen(
             },
             onSelect = { onChange(settings.copy(difficulty = it)) },
         )
-
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .toggleable(
-                    value = settings.threatHighlight,
-                    role = Role.Switch,
-                    onValueChange = { onChange(settings.copy(threatHighlight = it)) },
-                ),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.settings_threats), style = MaterialTheme.typography.titleMedium)
-                Text(stringResource(R.string.settings_threats_detail), style = MaterialTheme.typography.bodySmall)
-            }
-            Switch(checked = settings.threatHighlight, onCheckedChange = null)
-        }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Section(R.string.log_title)
