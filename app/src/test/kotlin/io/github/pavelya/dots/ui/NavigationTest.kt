@@ -3,7 +3,7 @@ package io.github.pavelya.dots.ui
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.ComponentActivity
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.espresso.Espresso
@@ -44,18 +45,24 @@ class NavigationTest {
     private fun launch() {
         compose.setContent {
             val controller = rememberNavController()
-            remember(controller) {
+            DisposableEffect(controller) {
                 nav = controller
-                controller.addOnDestinationChangedListener { _, destination, _ -> destination.route?.let { visited += it } }
+                val listener = NavController.OnDestinationChangedListener { _, destination, _ -> destination.route?.let { visited += it } }
+                controller.addOnDestinationChangedListener(listener)
+                onDispose { controller.removeOnDestinationChangedListener(listener) }
             }
             DotsApp(controller)
         }
         at(Routes.MAP)
     }
 
-    /** Waits until the screen on top is [route]. */
+    /**
+     * Waits until the screen on top is [route] and drawn: a dialog's window open, a screen's
+     * transition over. Only then does Back reach it.
+     */
     private fun at(route: String) {
         compose.waitUntil(timeoutMillis = 5_000) { nav.currentDestination?.route == route }
+        compose.waitForIdle()
     }
 
     private fun waitFor(text: String, substring: Boolean = false) =

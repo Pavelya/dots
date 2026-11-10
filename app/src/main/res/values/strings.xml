@@ -25,7 +25,6 @@
     <string name="restart_cancel">Keep playing</string>
     <string name="result_map">Map</string>
     <string name="stand_in">A stand-in. %1$s builds this screen.</string>
-    <string name="screen_level_card">Level card</string>
     <string name="screen_boosters">Boosters</string>
     <string name="screen_chest">Chest</string>
     <string name="screen_daily">Today’s puzzle</string>
