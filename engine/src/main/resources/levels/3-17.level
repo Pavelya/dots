@@ -1,0 +1,22 @@
+world: 3
+level: 17
+name: Dusk
+computer: steady
+dots: 4
+mission: target d4
+solutions: few
+boosters: double-dot 1
+rule: none
+stars: moves 1 2
+holes: border
+note: Close the right side; the dot runs down, and one more dot shuts it in.
+map:
+--.....--
+-.......-
+..BR.....
+..RB.....
+..R......
+.BBR.....
+..RBB....
+-..R....-
+--.....--

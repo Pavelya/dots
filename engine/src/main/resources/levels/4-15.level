@@ -1,0 +1,23 @@
+world: 4
+level: 15
+name: Whirlpool
+computer: steady
+dots: 5
+mission: capture 1 in 5 moves
+solutions: few
+boosters: hint 1, double-dot 1
+rule: none
+stars: moves 1 2
+holes: none
+note: Hard: close below first; the computer attacks on the right, and you close above while it runs.
+map:
+..........
+..........
+...#..+...
+......R...
+..+.R..#..
+..#..BR+..
+...RBRB...
+...+..#R..
+......R...
+..........

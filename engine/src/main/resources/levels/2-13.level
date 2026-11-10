@@ -1,0 +1,22 @@
+world: 2
+level: 13
+name: Greenhouse
+computer: steady
+dots: 5
+mission: target g6
+solutions: few
+boosters: wall 1
+rule: none
+stars: moves 1 2
+holes: none
+note: Target: the block right next to the marked dot fails; the answer is a point further out that covers both ways it can run.
+map:
+.........
+.........
+.........
+....RBB..
+...RRBRR.
+...BBRB..
+.....R...
+.........
+.........

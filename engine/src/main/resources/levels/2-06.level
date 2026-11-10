@@ -1,0 +1,24 @@
+world: 2
+level: 6
+name: Flower Beds
+computer: steady
+dots: 18
+mission: win
+solutions: open
+boosters: wall 2
+rule: none
+stars: margin 2 4
+holes: none
+note: World 2's first whole game: four crosses on 11x11, the steady computer, two walls to block its rings.
+map:
+...........
+...........
+..RB...BR..
+..BR...RB..
+...........
+...........
+...........
+..BR...RB..
+..RB...BR..
+...........
+...........

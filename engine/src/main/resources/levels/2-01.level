@@ -1,0 +1,20 @@
+world: 2
+level: 1
+name: Weeds
+computer: steady
+dots: 2
+mission: survive 2 moves
+solutions: few
+boosters: wall 2
+rule: none
+stars: boosters 1 2
+holes: none
+note: Survive: lose no dot. One dot fills the last gap; a wall there works too, which is what the wall booster is for.
+map:
+.......
+.......
+...B...
+..BRB..
+.......
+.......
+.......

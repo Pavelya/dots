@@ -1,0 +1,22 @@
+world: 3
+level: 8
+name: Owl
+computer: steady
+dots: 5
+mission: target f6
+solutions: few
+boosters: double-dot 1
+rule: none
+stars: moves 1 2
+holes: border
+note: Target: close above the marked dot, then follow it left and up.
+map:
+--.....--
+-.......-
+.........
+..BR.....
+..RB.....
+.....BRR.
+....RRBR.
+-.....BB-
+--.....--

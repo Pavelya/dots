@@ -1,0 +1,23 @@
+world: 2
+level: 16
+name: Tulips
+computer: steady
+dots: 5
+mission: target e6
+solutions: few
+boosters: wall 1
+rule: none
+stars: moves 1 2
+holes: none
+note: Target: close above the marked dot, then follow it as it runs to the right and down.
+map:
+..........
+..........
+......BR..
+......RBB.
+......BRR.
+...RB.BR..
+...BR.RB..
+..........
+..........
+..........

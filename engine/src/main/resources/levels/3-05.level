@@ -1,0 +1,22 @@
+world: 3
+level: 5
+name: Lantern
+computer: steady
+dots: 4
+mission: survive 4 moves
+solutions: few
+boosters: bomb 1, double-dot 1
+rule: none
+stars: boosters 1 2
+holes: border
+note: A lone dot with the computer on three sides: run up, and keep stepping away from the ring.
+map:
+--.....--
+-.......-
+.........
+.........
+...BRB...
+.B..B....
+.........
+-.......-
+--.....--
