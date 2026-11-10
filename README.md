@@ -838,3 +838,6 @@ engine and CLI tests, app tests and screenshot tests, lint, and the debug APK. L
 ```sh
 ./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
 ```
+
+The reference screenshots are recorded on GitHub too, by `.github/workflows/screenshots.yml`
+(decision 0021); `CLAUDE.md` says how.
