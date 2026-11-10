@@ -39,6 +39,21 @@ Needs JDK 21 and, for `app`, the Android SDK. The Gradle wrapper fetches everyth
 Lint treats warnings as errors. If a change alters what the app draws, record new screenshots,
 look at them, and commit them with the change.
 
+**Recording screenshots** (decision 0021). The committed screenshots come from CI, which runs
+Linux; a Mac may draw them slightly differently, so the local `recordRoborazziDebug` is only for a
+first look. Push the branch, then:
+
+```sh
+gh workflow run screenshots.yml --ref <branch>                         # record them on GitHub
+gh run list --workflow screenshots.yml --branch <branch> --limit 1     # the run's ID
+gh run watch <run-id>                                                  # wait for it
+gh run download <run-id> -n screenshots -D app/src/test/screenshots/   # overwrite the local ones
+```
+
+The run's summary lists which screenshots changed. Look at every changed image, then commit them
+with the normal identity. Delete any the summary marks as no longer drawn. The workflow never
+pushes: a push made with its token would not start CI.
+
 If the machine has no JDK or Android SDK, push anyway and rely on CI, and say in the PR that the
 command was not run locally.
 

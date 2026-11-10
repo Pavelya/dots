@@ -11,8 +11,6 @@ name: record screenshots
 # workflow on the new commit.
 on:
   workflow_dispatch:
-  push: # temporary: lets F-12 try the workflow before it is on main
-    branches: [task/F-12-record-screenshots-in-ci]
 
 permissions:
   contents: read
