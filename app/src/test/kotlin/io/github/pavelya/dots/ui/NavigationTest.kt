@@ -152,7 +152,7 @@ class NavigationTest {
         tap("Play a game")
         tap("Free play")
         at(Routes.GAME)
-        waitForSide("You, 0 captured, to move")
+        waitForSide("You, score 0, to move")
         compose.onNodeWithContentDescription("Pause").performClick()
         tap("To the map")
         at(Routes.MAP)
@@ -166,7 +166,7 @@ class NavigationTest {
         tap("Play a game")
         tap("Two players")
         at(Routes.GAME)
-        waitForSide("Red, 0 captured, to move")
+        waitForSide("Red, score 0, to move")
 
         back()
         waitFor("Resume")
@@ -203,7 +203,7 @@ class NavigationTest {
         tap("Play a game")
         tap("Free play")
         at(Routes.GAME)
-        waitForSide("You, 0 captured, to move")
+        waitForSide("You, score 0, to move")
         val first = app.games.current.value
         compose.onNodeWithContentDescription("Pause").performClick()
         tap("To the map")
@@ -220,7 +220,7 @@ class NavigationTest {
         at(Routes.MAP)
         tap("Play a game")
         tap("Two players")
-        waitForSide("Red, 0 captured, to move")
+        waitForSide("Red, score 0, to move")
         assertNotSame(first, app.games.current.value)
     }
 

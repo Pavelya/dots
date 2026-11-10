@@ -67,12 +67,12 @@ class GameScreenTest {
     fun `a whole game against the computer ends on the result screen, and play again restarts`() {
         val vm = computerGame()
         compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}) } }
-        waitFor(side("You, 0 captured, to move"))
+        waitFor(side("You, score 0, to move"))
         compose.onNodeWithContentDescription("2 dots left").assertIsDisplayed()
 
         playToTheEnd()
         compose.onNodeWithText("Play again").assertIsDisplayed().performClick()
-        waitFor(side("You, 0 captured, to move"))
+        waitFor(side("You, score 0, to move"))
         compose.onNodeWithContentDescription("2 dots left").assertIsDisplayed()
         compose.onNodeWithText("Undo").assertIsDisplayed()
     }
@@ -80,7 +80,7 @@ class GameScreenTest {
     private fun playToTheEnd() {
         place(4, 4)
         waitFor(hasContentDescription("1 dot left"))
-        waitFor(side("You, 0 captured, to move"))
+        waitFor(side("You, score 0, to move"))
         place(4, 3)
         waitFor("A draw, 0 to 0")
     }
@@ -97,7 +97,7 @@ class GameScreenTest {
         compose.setContent { DotsTheme { GameScreen(computerGame(), onToMap = {}, onRules = {}) } }
 
         compose.onNodeWithText("Free play").assertIsDisplayed()
-        compose.onNode(side("Computer, 0 captured")).assertIsDisplayed()
+        compose.onNode(side("Computer, score 0")).assertIsDisplayed()
         compose.onNodeWithText("Good luck!").assertIsDisplayed()
     }
 
@@ -188,15 +188,15 @@ class GameScreenTest {
         compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}) } }
         place(4, 4)
 
-        waitFor(side("Computer, 0 captured, to move"))
-        compose.onNode(side("You, 0 captured")).assertIsDisplayed()
+        waitFor(side("Computer, score 0, to move"))
+        compose.onNode(side("You, score 0")).assertIsDisplayed()
         compose.onNodeWithText("Undo").assertIsNotEnabled()
         place(4, 3) // ignored: not the player's turn
         compose.onNodeWithContentDescription("1 dot left").assertExists()
 
         go.countDown()
-        waitFor(side("You, 0 captured, to move"))
-        compose.onNode(side("Computer, 0 captured")).assertIsDisplayed()
+        waitFor(side("You, score 0, to move"))
+        compose.onNode(side("Computer, score 0")).assertIsDisplayed()
     }
 
     @Test
@@ -207,16 +207,16 @@ class GameScreenTest {
         compose.mainClock.advanceTimeByFrame()
 
         compose.onNodeWithText("Two players").assertIsDisplayed()
-        compose.onNode(side("Red, 0 captured, to move")).assertIsDisplayed()
-        compose.onNode(side("Blue, 0 captured")).assertIsDisplayed()
+        compose.onNode(side("Red, score 0, to move")).assertIsDisplayed()
+        compose.onNode(side("Blue, score 0")).assertIsDisplayed()
         compose.onNodeWithText("Red’s turn").assertDoesNotExist() // no banner for the first turn
         compose.onNodeWithText("Undo").assertDoesNotExist() // no undo between two people (decision 0023)
 
         place(4, 4)
         compose.mainClock.advanceTimeBy(100) // the banner shows a frame after the turn changes
         compose.onNodeWithText("Blue’s turn").assertIsDisplayed()
-        compose.onNode(side("Blue, 0 captured, to move")).assertIsDisplayed()
-        compose.onNode(side("Red, 0 captured")).assertIsDisplayed()
+        compose.onNode(side("Blue, score 0, to move")).assertIsDisplayed()
+        compose.onNode(side("Red, score 0")).assertIsDisplayed()
 
         compose.mainClock.advanceTimeBy(BANNER_MILLIS)
         compose.onNodeWithText("Blue’s turn").assertDoesNotExist()
