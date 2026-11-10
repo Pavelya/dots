@@ -54,39 +54,37 @@ strong one, border-only for someone who only plays on the border. The README exp
 ```
                                              passed of 80   passed of 80     passed of 40
 level                 mission                EASY stand-in  NORMAL stand-in  border-only
-4-1   Rocks           capture 1 in 4 moves    14              6               0
-4-2   Oyster          capture 3 in 4 moves     1              1               0
-4-3   Tide Pool       survive 4 moves          0             80              21
-4-4   Anchor          target c5               25             80               0
-4-5   Rock Pool       capture 2 in 4 moves    18             21               0
-4-6   Rocky Shore     win                     22             40               0
-4-7   Seagull         survive 4 moves          0             80              40
-4-8   Coral           capture 2 in 4 moves    24             80               0
-4-9   Shipwreck       capture 2 in 5 moves    12             80               0
-4-10  Harbour         capture 1 in 4 moves    71              0               0
-4-11  Buoy            survive 4 moves         77             79              40
-4-12  Pearls          win                     16             46               0
-4-13  Starfish        capture 1 in 4 moves    34              0               0
-4-14  Lighthouse      survive 4 moves         58             80              25
-4-15  Whirlpool       capture 1 in 5 moves     0              3               0
-4-16  Sandbar         survive 4 moves         80             80              15
-4-17  Driftwood       target e6                7             80               0
-4-18  Reef            win with 19 dots        17             28               0
-4-19  Cove            capture 1 in 5 moves     2              3               0
-4-20  Kraken          win                     14             20               0
+4-1   Rocks           capture 1 in 4 moves    18              9               0
+4-2   Oyster          capture 3 in 4 moves     1              2               0
+4-3   Tide Pool       survive 4 moves          0             80               0
+4-4   Anchor          target c5               30             40               0
+4-5   Rock Pool       capture 2 in 4 moves    18             12               0
+4-6   Rocky Shore     win                     22             45               0
+4-7   Seagull         survive 4 moves          0             80               0
+4-8   Coral           capture 2 in 4 moves    24             20               0
+4-9   Shipwreck       capture 2 in 5 moves    18             80               0
+4-10  Harbour         capture 1 in 4 moves    71             61               0
+4-11  Buoy            survive 4 moves         77             80               0
+4-12  Pearls          win                     16             37               0
+4-13  Starfish        capture 1 in 4 moves    34             26               0
+4-14  Lighthouse      survive 4 moves         58             80               0
+4-15  Whirlpool       capture 1 in 5 moves     0             80               0
+4-16  Sandbar         survive 4 moves         80             80               0
+4-17  Driftwood       target e6                5             80               0
+4-18  Reef            win with 19 dots        21             24               0
+4-19  Cove            capture 1 in 5 moves     2             80               0
+4-20  Kraken          win                      8             26               0
 ```
 
-- **Whole games get harder through the world** for a weak player: 22, 16, 17 and 14 passes of 80
+- **Whole games get harder through the world** for a weak player: 22, 16, 21 and 8 passes of 80
   for Rocky Shore, Pearls, Reef and the Kraken. Rocky Shore is easier than the Comet, so the
-  world opens with a dip. Pearls and Reef are equal within the noise
-  of 80 games.
+  world opens with a dip. Pearls and Reef are equal within the noise of 80 games.
 - **The puzzles look harder here than they are,** as in World 1: the stand-ins play for captures
   and do not read the mission. That every puzzle can be passed is what `check-levels` proves; how
   hard each feels needs people.
-- **Border-only play passes some survive and rescue levels.** Before its first dot, the computer
-  looks only near the player's last dot, so a player who opens far from the danger is not
-  attacked. Task G-21 makes it look at the whole board until it has placed a dot. In a trial of
-  that change, border-only play passed no level of the world.
+- **Border-only play passes no level of the world.** Before its first dot, the computer looks at
+  the whole board, so a danger already on the board is attacked even when the player opens far
+  from it.
 - These are stand-ins, not people, and nobody has played these levels yet: treat the numbers as a
   first draft.
 

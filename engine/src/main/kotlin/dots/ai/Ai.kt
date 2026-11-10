@@ -32,7 +32,8 @@ interface Ai {
  * @param focus a person looks where the game just happened. With a focus, the computer considers
  *   only points at most this many steps (diagonals count as one step) from the last dot each side
  *   placed, at every ply it searches. Chances and dangers elsewhere on the board go unseen, for
- *   itself and for its opponent. 0 looks at the whole board.
+ *   itself and for its opponent. Before a side has placed its first dot, it sees the whole board.
+ *   0 looks at the whole board.
  * @param attackReach the computer looks for enemy groups it could capture with at most this many
  *   more dots and tries those cells first; 0 turns it off.
  * @param dangerReach the same for its own groups the opponent could capture: it considers

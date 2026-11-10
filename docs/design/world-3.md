@@ -54,26 +54,26 @@ strong one, border-only for someone who only plays on the border. The README exp
 ```
                                              passed of 80   passed of 80     passed of 40
 level                 mission                EASY stand-in  NORMAL stand-in  border-only
-3-1   Lake Shore      survive 3 moves         28             73              11
-3-2   Shoreline       target e3               46             73               0
-3-3   Night Swim      survive 4 moves         13             75               6
+3-1   Lake Shore      survive 3 moves          5             80               0
+3-2   Shoreline       target e3               31             80               0
+3-3   Night Swim      survive 4 moves         13             79               0
 3-4   Crescent        capture 2 in 4 moves    20             20               0
-3-5   Lantern         survive 4 moves         66             80              33
-3-6   Full Moon       win                     24             56               0
-3-7   Fireflies       survive 3 moves         49             77              11
-3-8   Owl             target f6                5              1               0
+3-5   Lantern         survive 4 moves         66             80               0
+3-6   Full Moon       win                     24             54               0
+3-7   Fireflies       survive 3 moves          4             80               0
+3-8   Owl             target f6                4              6               0
 3-9   Crater Rim      capture 2 in 5 moves    18              9               0
-3-10  Telescope       capture 1 in 4 moves     7              0               0
-3-11  Shooting Star   survive 4 moves         67             80               6
-3-12  Crater          win with 20 dots        18             27               0
+3-10  Telescope       capture 1 in 4 moves     7              4               0
+3-11  Shooting Star   survive 4 moves         67             80               0
+3-12  Crater          win with 20 dots        18             31               0
 3-13  Reflection      target f3                0              0               0
-3-14  Pole Star       capture 1 in 4 moves     7             60               0
-3-15  Black Pool      survive 4 moves         33             80              11
-3-16  Moon Bay        survive 4 moves         32             80               6
-3-17  Dusk            target d4               79             56               0
-3-18  Twin Stars      win with 19 dots        17             35               0
-3-19  Stargazer       capture 1 in 4 moves    27             26               0
-3-20  Comet           win with 22 dots        13             19               0
+3-14  Pole Star       capture 1 in 4 moves     1              7               0
+3-15  Black Pool      survive 4 moves         18             80               0
+3-16  Moon Bay        survive 4 moves         75             80               0
+3-17  Dusk            target d4               79             49               0
+3-18  Twin Stars      win with 19 dots        17             39               0
+3-19  Stargazer       capture 1 in 4 moves    28             27               0
+3-20  Comet           win with 22 dots        13             13               0
 ```
 
 - **Whole games get harder through the world** for a weak player: 24, 18, 17 and 13 passes of 80
@@ -82,10 +82,9 @@ level                 mission                EASY stand-in  NORMAL stand-in  bor
 - **The puzzles look harder here than they are,** as in World 1: the stand-ins play for captures
   and do not read the mission. That every puzzle can be passed is what `check-levels` proves; how
   hard each feels needs people.
-- **Border-only play passes some survive and rescue levels.** Before its first dot, the computer
-  looks only near the player's last dot, so a player who opens far from the danger is not
-  attacked. Task G-21 makes it look at the whole board until it has placed a dot. In a trial of
-  that change, border-only play passed no level of the world.
+- **Border-only play passes no level of the world.** Before its first dot, the computer looks at
+  the whole board, so a danger already on the board is attacked even when the player opens far
+  from it.
 - These are stand-ins, not people, and nobody has played these levels yet: treat the numbers as a
   first draft.
 
