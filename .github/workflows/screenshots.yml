@@ -1,0 +1,64 @@
+name: record screenshots
+
+# Records the reference screenshots (app/src/test/screenshots/) on a branch and uploads them as the
+# artifact "screenshots". The committed screenshots come from this workflow (decision 0021). Start it
+# for the branch whose change alters what the app draws:
+#
+#   gh workflow run screenshots.yml --ref task/A-01-navigation
+#
+# then download the artifact, look at every changed image and commit them (CLAUDE.md, Commands).
+# It never pushes to the branch: a push made with the workflow's token would not start the test
+# workflow on the new commit.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Record
+        # Starts from an empty folder, so a screenshot no test draws any more shows up as deleted.
+        run: |
+          rm -f app/src/test/screenshots/*.png
+          ./gradlew :app:recordRoborazziDebug
+      - name: Compare with the branch
+        run: |
+          changes=$(git status --porcelain -- app/src/test/screenshots/)
+          {
+            echo "## Screenshots on \`$GITHUB_REF_NAME\` ($(git rev-parse --short HEAD))"
+            echo
+            echo "$(ls app/src/test/screenshots/*.png | wc -l) screenshots recorded."
+            echo
+            if [ -z "$changes" ]; then
+              echo "All match the committed ones byte for byte."
+            else
+              echo "Different from the committed ones (M changed, ?? new, D no longer drawn):"
+              echo
+              echo '```'
+              echo "$changes"
+              echo '```'
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          cat "$GITHUB_STEP_SUMMARY"
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: screenshots
+          path: app/src/test/screenshots/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Reports, when something failed
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: reports
+          path: app/build/reports/
