@@ -241,6 +241,30 @@ class SolverTest {
     }
 
     @Test
+    fun `the position limit stops the search the same way every time`() {
+        val level = level(
+            Mission.Capture(dots = 1, moves = 2),
+            listOf(
+                "......",
+                "..R...",
+                ".RB...",
+                "..R.B.",
+                "......",
+                "......",
+            ),
+        )
+        val solved = Solver(timeLimit = Duration.INFINITE).solve(level)
+        assertEquals(Verdict.SOLVED, solved.verdict)
+
+        val cut = Solver(timeLimit = Duration.INFINITE, positionLimit = 3)
+        repeat(2) {
+            val solution = cut.solve(level)
+            assertEquals(Verdict.TIMED_OUT, solution.verdict)
+            assertEquals(3, solution.positions)
+        }
+    }
+
+    @Test
     fun `whole games and long missions are not puzzles`() {
         val solver = Solver()
 

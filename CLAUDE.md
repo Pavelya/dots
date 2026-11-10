@@ -9,7 +9,7 @@ explains the rules and how the computer opponent works.
 
 | Path | What it is |
 |------|------------|
-| `engine/` | Pure Kotlin/JVM library: rules, computer opponent (`dots.ai`), campaign, game log. No Android code. |
+| `engine/` | Pure Kotlin/JVM library: rules, computer opponent (`dots.ai`), campaign, daily puzzle, game log. No Android code. |
 | `cli/` | Terminal game, benchmarks, tester-log tools. Built on `engine`. |
 | `app/` | Android app (Jetpack Compose). Built on `engine`. Structure: `docs/poc/architecture.md`. |
 | `gradle/libs.versions.toml` | Every dependency version. Dependabot updates it; don't bump versions by hand unless the task asks for it. |

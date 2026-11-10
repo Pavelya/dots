@@ -24,7 +24,7 @@ enum class Verdict {
      */
     UNDECIDED,
 
-    /** The time cap ran out before the search was done. */
+    /** The time cap, or the [Solver.positionLimit], ran out before the search was done. */
     TIMED_OUT,
 }
 
@@ -83,11 +83,17 @@ class Solver(
     val timeLimit: Duration = TIME_LIMIT,
     /** The solver stops counting passing first moves once it has found this many. */
     val firstMovesLimit: Int = Int.MAX_VALUE,
+    /**
+     * The most positions each search of [solve] may look at before it gives up. Unlike the time
+     * cap, it gives the same answer on every machine.
+     */
+    val positionLimit: Long = Long.MAX_VALUE,
 ) {
     init {
         require(maxMoves >= 1) { "maxMoves must be 1 or more" }
         require(firstMovesLimit >= 1) { "firstMovesLimit must be 1 or more" }
         require(!timeLimit.isNegative()) { "timeLimit must not be negative" }
+        require(positionLimit >= 1) { "positionLimit must be 1 or more" }
     }
 
     /**
@@ -115,7 +121,7 @@ class Solver(
         require(level.rule?.turnRule == null) { "Level ${level.code} has the rule '${level.rule?.text}', which the solver does not play" }
         val depth = depth(level.mission)
         val deadline = TimeSource.Monotonic.markNow() + timeLimit
-        val pass = Search(level, Outcome.PASSED, deadline)
+        val pass = Search(level, Outcome.PASSED, deadline, positionLimit)
         var fail: Search? = null
         fun positions() = pass.positions + (fail?.positions ?: 0)
         return try {
@@ -133,7 +139,7 @@ class Solver(
                 // The mission is over by then, so not passing it means failing it.
                 !canOutlast(level.mission, depth) -> Solution(Verdict.UNSOLVABLE, depth, positions = positions())
                 else -> {
-                    val forcesFailure = Search(level, Outcome.FAILED, deadline).also { fail = it }.forces(start, depth)
+                    val forcesFailure = Search(level, Outcome.FAILED, deadline, positionLimit).also { fail = it }.forces(start, depth)
                     Solution(if (forcesFailure) Verdict.UNSOLVABLE else Verdict.UNDECIDED, depth, positions = positions())
                 }
             }
@@ -206,7 +212,7 @@ class Solver(
         else -> true
     }
 
-    /** Thrown inside the search once the time cap or the position limit has run out; never leaves the solver. */
+    /** Thrown inside the search once the time cap or a position limit has run out; never leaves the solver. */
     private class TimeUp : RuntimeException(null, null, false, false)
 
     /** A move to try; the position after it is only worked out when the search gets to it. */
