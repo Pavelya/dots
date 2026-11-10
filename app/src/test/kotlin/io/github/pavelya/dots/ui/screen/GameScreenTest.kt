@@ -213,16 +213,16 @@ class GameScreenTest {
         compose.onNodeWithText("Undo").assertDoesNotExist() // no undo between two people (decision 0023)
 
         place(4, 4)
-        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(100) // the banner shows a frame after the turn changes
         compose.onNodeWithText("Blue’s turn").assertIsDisplayed()
         compose.onNode(side("Blue, 0 captured, to move")).assertIsDisplayed()
         compose.onNode(side("Red, 0 captured")).assertIsDisplayed()
 
-        compose.mainClock.advanceTimeBy(BANNER_MILLIS + 100)
+        compose.mainClock.advanceTimeBy(BANNER_MILLIS)
         compose.onNodeWithText("Blue’s turn").assertDoesNotExist()
 
         place(0, 0)
-        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeBy(100)
         compose.onNodeWithText("Red’s turn").assertIsDisplayed()
     }
 }
