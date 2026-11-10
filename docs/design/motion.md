@@ -256,7 +256,7 @@ dashed and grey.
 | First dot lands, 0 to 250 | The dot lands as usual, and four short strokes spark out from it. The chip turns to "×1" and swells to 125% and back in 200 ms. | ease out |
 | Second dot lands, 0 to 250 | The same sparks. The chip shrinks away in 150 ms, and the turn passes. | ease in |
 
-If X-11 makes Undo a booster, it needs a row on this page too.
+Undo is a booster too (decision 0023); D-14 adds its row.
 
 ## End of game
 
