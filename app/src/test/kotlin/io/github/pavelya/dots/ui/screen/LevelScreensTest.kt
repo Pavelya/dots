@@ -12,7 +12,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import dots.ai.Ai
 import dots.campaign.Campaign
@@ -164,7 +163,7 @@ class LevelScreensTest {
 
             waitFor("So close!")
             compose.onNodeWithText("Missed by 1 capture").assertIsDisplayed()
-            compose.onNodeWithText("0 / 1").assertIsDisplayed()
+            compose.onNodeWithContentDescription("Captured 0 of 1").assertIsDisplayed()
             if (attempt < 3) {
                 compose.onNodeWithText("Retry with a free Hint").assertDoesNotExist()
                 compose.onNodeWithText("Retry").performClick()
@@ -199,7 +198,7 @@ class LevelScreensTest {
         compose.onNodeWithContentDescription("Wall, 2. What it does").performClick()
         assertEquals(listOf(Booster.WALL), boosters)
 
-        compose.onNodeWithText("Start").performScrollTo().performClick()
+        compose.onNodeWithText("Start").performClick()
         assertEquals(1, started)
         compose.onNodeWithContentDescription("Close").performClick()
         assertEquals(1, closed)
@@ -210,7 +209,7 @@ class LevelScreensTest {
         val boss = Campaign.level(1, 15)
         compose.setContent { DotsTheme { LevelCard(boss, saved = true, onStart = {}, onBooster = {}, onClose = {}) } }
 
-        compose.onNodeWithText("Resume").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Resume").assertIsDisplayed()
         compose.onNodeWithText("Start").assertDoesNotExist()
         compose.onNodeWithText("BOSS LEVEL").assertIsDisplayed()
         compose.onNode(hasText("Its rule: Every 5 turns it places two dots.", substring = true)).assertIsDisplayed()

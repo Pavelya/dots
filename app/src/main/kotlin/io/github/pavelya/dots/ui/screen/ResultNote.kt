@@ -221,10 +221,11 @@ private fun Opened(end: LevelEnd, style: GameStyle) {
 @Composable
 private fun CaptureBar(captured: Int, needed: Int, style: GameStyle) {
     val shown = captured.coerceIn(0, needed)
+    val description = stringResource(R.string.result_progress, shown, needed)
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth().clearAndSetSemantics { },
+        modifier = Modifier.fillMaxWidth().clearAndSetSemantics { contentDescription = description },
     ) {
         Box(Modifier.weight(1f).height(8.dp).clip(RoundedCornerShape(4.dp)).background(style.bluePale)) {
             if (shown > 0) Box(Modifier.fillMaxWidth(shown.toFloat() / needed).height(8.dp).background(style.red))
