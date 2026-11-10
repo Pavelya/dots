@@ -24,7 +24,8 @@ version that finds out whether people enjoy the game, before any visual work.
 | `app`    | Android app (Jetpack Compose, Material 3, Android 7+), built on `engine`. Structure: [`docs/poc/architecture.md`](docs/poc/architecture.md). |
 
 Packages in `engine`: `dots.engine` (rules, openings, grounding, game records), `dots.ai`
-(computer opponent), `dots.campaign` (levels), `dots.log` (the game log format). All versions
+(computer opponent), `dots.campaign` (levels), `dots.daily` (the daily puzzle), `dots.log` (the
+game log format). All versions
 live in `gradle/libs.versions.toml`. Keeping them up to date is Dependabot's job (`.github/dependabot.yml`): it opens update PRs every
 week, minor and patch updates grouped into one PR per ecosystem. Lint's "a newer version is
 available" checks are switched off so that an upstream release cannot fail the build.
@@ -80,6 +81,13 @@ Puzzle levels (see [Checking puzzles](#checking-puzzles)):
 ```sh
 cli/build/install/cli/bin/cli check-levels              # solve every puzzle level of the campaign
 cli/build/install/cli/bin/cli check-levels my.level     # or the given files; --seconds 60 sets the time cap
+```
+
+Daily puzzles (see [Daily puzzle](#daily-puzzle)):
+
+```sh
+cli/build/install/cli/bin/cli daily 2027-03-14          # print one day's puzzle
+cli/build/install/cli/bin/cli daily 2028 engine/src/main/resources/daily/2028.txt   # make a whole year
 ```
 
 Game logs shared by testers from the app (Settings, "Share the game log"; format in
@@ -375,6 +383,58 @@ this fast:
 - Positions reached by different move orders are solved once, and the points that settled
   earlier positions are tried first.
 - Counting stops at 4 passing first moves, which is already too many.
+
+### Daily puzzle
+
+Every day has one puzzle, the same for every player. The puzzles ship with the game, one file a
+year in `engine/src/main/resources/daily/` (`2027.txt` holds every day of 2027), so the daily
+puzzle works offline. Puzzle 1 is that of 1 January 2027; players see the number ("Puzzle #12").
+
+A daily puzzle is a small board (6 to 8 points each way) with a tangle of red and blue dots, and
+a mission: `capture 1` or `capture 2` in 2, 3 or 4 moves, or `survive` 2, 3 or 4 moves. Each side
+may place as many dots as the mission has moves. The computer defends at `hard`. A day's file
+block reads like a level file:
+
+```
+date: 2027-01-05
+computer: hard
+mission: capture 2 in 3 moves
+map:
+......
+..RBR.
+.RRR..
+.BRB..
+.B.RR.
+......
+```
+
+**How a puzzle is made.** `DailyGenerator` takes the day as the seed of its own random numbers
+(SplitMix64). From them it draws the mission: `capture 1` on 45 days in 100, `capture 2` on 15,
+`survive` on 40, and 2, 3 or 4 moves, each as often. Then it draws boards, one after another:
+7 to 12 dots, each placed next to one already there, red or blue at random, never on the border.
+It keeps the first board the [solver](#checking-puzzles) rates as fair: the player passes
+whatever the computer does, in exactly the mission's moves and no fewer, and only one first move
+does it. Each search stops after 100,000 positions instead of a time, so a day gives the same
+puzzle on every machine. A year takes about a minute and a half.
+
+`cli daily 2028 <file>` makes a year. Tests check that every shipped puzzle passes the solver, and
+that the generator, run again on the test machine, makes the shipped puzzle for a sample of days.
+Shipped puzzles never change, since players share and compare them; a change to the generator,
+the solver or the rules that makes a different puzzle for a shipped day fails that test, and
+then applies only to years not yet shipped.
+
+**Sharing.** `DailyShare.text` gives the text a player shares, without the board or the moves:
+
+```
+Pinfold #42 3/3
+⚪🔵 ❌
+⚪⚪🔴 ✅
+```
+
+The first line has the puzzle's number, the moves of the attempt that passed and the fewest that
+pass it (`X/3` if no attempt passed). Then one row per attempt, one symbol per move of the
+player's: 🔴 the player captured, 🔵 the computer captured in its reply, ⚪ neither. ✅ ends a
+passed attempt and ❌ a failed one.
 
 ## Computer opponent
 
