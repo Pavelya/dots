@@ -80,6 +80,7 @@ class MapScreenTest {
 
         compose.onNodeWithContentDescription("Level 2-1, next").assertIsDisplayed()
         compose.onNodeWithText("Garden").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 2, Garden, 0 of 60 stars").assertIsDisplayed()
         compose.onNodeWithContentDescription("Level 1-15, Ink Bottle, 3 stars").assertIsDisplayed()
         capture("map_world_complete")
     }
@@ -89,6 +90,7 @@ class MapScreenTest {
         show(SampleProgress.worldNeedsStars)
 
         compose.onNodeWithText("Stars needed: 20. You have 15.").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 1, Notebook, 15 of 45 stars").assertIsDisplayed()
         capture("map_world_needs_stars")
 
         compose.onNodeWithText("Garden").performClick()

@@ -125,10 +125,15 @@ fun MapScreen(map: CampaignMap?, actions: MapActions) {
                 onLevel = { stop -> map.lock(stop.level)?.let { lock = it } ?: actions.onLevel(stop.level) },
                 onLockedWorld = { lock = CampaignMap.Lock.WorldClosed(it) },
             )
-            val inView by remember(rows, state) {
+            // The header names the world of the next level while it is on the screen, otherwise the
+            // world in the middle of the screen; never a locked one, whose banner says what opens it.
+            val inView by remember(map, rows, state) {
                 derivedStateOf {
                     val visible = state.layoutInfo.visibleItemsInfo
-                    worldOf(rows, visible.getOrNull(visible.size / 2)?.index ?: first)
+                    val next = visible.firstOrNull { (rows[it.index] as? MapRow.Stop)?.isNext == true }
+                    var world = worldOf(rows, next?.index ?: visible.getOrNull(visible.size / 2)?.index ?: first)
+                    while (world > 1 && !map.worlds[world - 1].isOpen) world--
+                    world
                 }
             }
             Header(map.worlds[inView - 1], style)
@@ -575,7 +580,9 @@ private fun stopDescription(row: MapRow.Stop): String {
  */
 private fun DrawScope.drawPathTo(row: MapRow.Stop, nextX: Float, style: MapStyle) {
     val from = Offset(size.width * row.x, size.height / 2)
-    val to = Offset(size.width * nextX, -row.nextHeight.toPx() / 2)
+    // A boss's path ends under its castle's label, not through it.
+    val end = if (row.nextHeight == BOSS_HEIGHT) -row.nextHeight.toPx() / 2 + CASTLE_HEIGHT.toPx() / 2 else -row.nextHeight.toPx() / 2
+    val to = Offset(size.width * nextX, end)
     val bend = (from.y - to.y) / 2
     val path = Path().apply {
         moveTo(from.x, from.y)
