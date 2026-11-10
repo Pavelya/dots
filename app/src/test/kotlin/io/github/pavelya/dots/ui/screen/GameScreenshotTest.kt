@@ -9,9 +9,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -29,6 +26,7 @@ import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.LastCapture
 import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.game.OpponentLook
+import io.github.pavelya.dots.game.gameViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -108,13 +106,12 @@ class GameScreenshotTest {
 
     @Test
     fun twoPlayersTurnBanner() {
-        val start = GameSettings.POC.copy(seed = 1).newGame()
-        var ui by mutableStateOf(GameUiState(start))
+        val game = gameViewModel(newSettings = { GameSettings.POC.copy(seed = 1) })
+        val move = game.ui.value.state.near(7, 7)
         compose.mainClock.autoAdvance = false
-        show { Board(ui, campaign = null) }
+        show { GameScreen(game, onToMap = {}, onRules = {}) }
         compose.mainClock.advanceTimeByFrame()
-        val move = start.near(7, 7)
-        compose.runOnUiThread { ui = GameUiState(start.play(move).state, lastMove = move) }
+        compose.runOnUiThread { repeat(2) { game.onTap(move) } } // choose, then place
         compose.mainClock.advanceTimeBy(100) // the banner shows a frame after the turn changes
         capture("game_two_players_banner")
     }
