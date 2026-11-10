@@ -235,7 +235,7 @@ class NavigationTest {
             }
         } catch (e: Throwable) {
             val shown = compose.onAllNodes(hasContentDescription("Level", substring = true)).fetchSemanticsNodes()
-                .map { it.config.getOrNull(androidx.compose.ui.semantics.SemanticsProperties.ContentDescription) }
+                .map { node -> node.config.toString() }
             throw AssertionError("DEBUG map=${app.progress.map.value?.next?.code} shown=$shown", e)
         }
         compose.onNodeWithContentDescription("Level 2-10, next").performClick()
