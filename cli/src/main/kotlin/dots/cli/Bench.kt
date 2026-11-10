@@ -30,7 +30,11 @@ internal object Bench {
         when (args.firstOrNull()) {
             "tiers" -> tiers(games, args.getOrNull(2)?.toIntOrNull() ?: 10, args.getOrNull(3)?.toIntOrNull() ?: 16)
             "steps" -> steps(games, args.getOrNull(2)?.toIntOrNull() ?: 15, args.getOrNull(3)?.toIntOrNull() ?: 33)
-            "levels" -> levels(games, args.getOrNull(2)?.uppercase() ?: "NORMAL")
+            "levels" -> {
+                val (codes, names) = args.drop(2).partition { LEVEL_CODE.matches(it) }
+                val levels = pick(codes)
+                if (names.isEmpty()) Curve.run(games, levels) else levels(games, (names.singleOrNull() ?: exitWith("bench levels takes one stand-in at most")).uppercase(), levels)
+            }
             "stars" -> {
                 val (codes, names) = args.drop(2).partition { LEVEL_CODE.matches(it) }
                 stars(games, names.map { it.uppercase() }.ifEmpty { listOf("EASY", "NORMAL", "HARD", "EXPERT") }, codes)
@@ -48,7 +52,7 @@ internal object Bench {
             )
             else -> exitWith(
                 "usage: bench tiers [games] [size] [dots each] | bench steps [games] [size] [dots each] |\n" +
-                    "       bench levels [games] [tier] | bench stars [games] [stand-in...] [level...] | bench variants [games] |\n" +
+                    "       bench levels [games] [stand-in] [level...] | bench stars [games] [stand-in...] [level...] | bench variants [games] |\n" +
                     "       bench variety [tier] [margin] | bench balance [games] [attack weights] [danger weights] |\n" +
                     "       $DUEL_USAGE",
             )
@@ -216,13 +220,14 @@ internal object Bench {
     }
 
     /**
-     * A stand-in human plays each level as red against the level's own computer: a computer tier,
-     * or BORDER, which only ever plays on the border (where dots can never be captured).
+     * A stand-in human plays each level as red against the level's own computer: a person of the
+     * difficulty curve ([Person]), a computer tier, or BORDER, which only ever plays on the border
+     * (where dots can never be captured).
      */
-    private fun levels(games: Int, standInName: String) {
+    private fun levels(games: Int, standInName: String, levels: List<Level>) {
         val standIn = standIn(standInName)
         println("Stand-in human: $standInName, $games games per level (captures W-L-D from the human's side; levels passed)")
-        for (level in Campaign.levels) {
+        for (level in levels) {
             val started = System.nanoTime()
             val results = playLevel(level, games, standIn)
             val tally = Tally()
@@ -244,9 +249,7 @@ internal object Bench {
      */
     private fun stars(games: Int, standInNames: List<String>, codes: List<String>) {
         val standIns = standInNames.associateWith(::standIn)
-        val levels = if (codes.isEmpty()) Campaign.levels else codes.map { code ->
-            Campaign.levels.firstOrNull { it.code == code } ?: exitWith("No level $code in the campaign")
-        }
+        val levels = pick(codes)
         println("Stars: $games games per level for each stand-in; games with 0/1/2/3 stars, then the star scores of passes (score x games)")
         for (level in levels) {
             val started = System.nanoTime()
@@ -271,11 +274,19 @@ internal object Bench {
         }
     }
 
-    /** A stand-in human by name: a computer tier, or BORDER (see [BorderOnly]). */
-    private fun standIn(name: String): (Random) -> Ai {
+    /** The campaign levels with the given [codes] (like `1-4`); every level when there are none. */
+    private fun pick(codes: List<String>): List<Level> = if (codes.isEmpty()) Campaign.levels else codes.map { code ->
+        Campaign.levels.firstOrNull { it.code == code } ?: exitWith("No level $code in the campaign")
+    }
+
+    /** A stand-in human by name: a [Person], a computer tier, or BORDER (see [BorderOnly]). */
+    private fun standIn(name: String): StandIn {
+        Person.entries.firstOrNull { it.name == name }?.let { return it::player }
         val config = TIERS[name]
-        if (config == null && name != "BORDER") exitWith("unknown stand-in $name (${TIERS.keys.joinToString()}, BORDER)")
-        return { random -> if (config == null) BorderOnly(random) else SearchAi(config, random) }
+        if (config == null && name != "BORDER") {
+            exitWith("unknown stand-in $name (${(Person.entries.map { it.name } + TIERS.keys).joinToString()}, BORDER)")
+        }
+        return { _, random -> if (config == null) BorderOnly(random) else SearchAi(config, random) }
     }
 
     /**
@@ -283,9 +294,9 @@ internal object Bench {
      * when the mission is decided. Games run in parallel; each has its own seeds, so the results
      * are the same every run.
      */
-    private fun playLevel(level: Level, games: Int, standIn: (Random) -> Ai): List<LevelResult> =
+    fun playLevel(level: Level, games: Int, standIn: StandIn): List<LevelResult> =
         (0 until games).toList().parallelStream().map { g ->
-            val end = Match.playOut(level.newGame(), standIn(Random(3000 + g)), SearchAi(level.ai, Random(4000 + g)), level::isOver)
+            val end = Match.playOut(level.newGame(), standIn(level, Random(3000 + g)), SearchAi(level.ai, Random(4000 + g)), level::isOver)
             level.result(end)
         }.toList()
 

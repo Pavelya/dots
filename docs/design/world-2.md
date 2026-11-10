@@ -287,7 +287,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 `target d4` · computer: steady · 5 dots each · boosters: `wall 1` · stars: `moves 1 2`
 
-*Target: close above the marked dot, then follow its run to the right and up.*
+*Wall: the only first move is a quiet one, three moves before the ring closes; close above the marked dot, then follow its run to the right and up.*
 
 ```
     a b c d e f g h i

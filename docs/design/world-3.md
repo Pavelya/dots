@@ -73,12 +73,13 @@ level                 mission                EASY stand-in  NORMAL stand-in  bor
 3-17  Dusk            target d4               79             49               0
 3-18  Twin Stars      win with 19 dots        17             39               0
 3-19  Stargazer       capture 1 in 4 moves    28             27               0
-3-20  Comet           win with 22 dots        13             13               0
+3-20  Comet           win with 23 dots        18             18               0
 ```
 
-- **Whole games get harder through the world** for a weak player: 24, 18, 17 and 13 passes of 80
-  for Full Moon, Crater, Twin Stars and the Comet. Full Moon is easier than the Mole, so the world
-  opens with a dip.
+- **Whole games get harder after the first** for a weak player: 24, 18, 17 and 18 passes of 80
+  for Full Moon, Crater, Twin Stars and the Comet; the last three are equal within the noise of
+  80 games. Full Moon is easier than the Mole, so the world opens with a dip. For the average
+  player of the [difficulty curve](difficulty.md), the Comet is the hardest level of the world.
 - **The puzzles look harder here than they are,** as in World 1: the stand-ins play for captures
   and do not read the mission. That every puzzle can be passed is what `check-levels` proves; how
   hard each feels needs people.
@@ -365,7 +366,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 `target f3` · computer: steady · 5 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
 
-*Target: shut the way to the lake first, then answer the runs.*
+*Wall: the only first move is a quiet one, three moves before the ring closes; shut the way to the lake first, then answer the runs.*
 
 ```
     a b c d e f g h i
@@ -513,9 +514,9 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-20 Comet
 
-`win with 22 dots` · computer: steady · 26 dots each · boosters: `bomb 1, double-dot 1` · rule: double move every 3 turns · stars: `margin 2 5` · holes: `border`
+`win with 23 dots` · computer: steady · 26 dots each · boosters: `bomb 1, double-dot 1` · rule: double move every 3 turns · stars: `margin 2 5` · holes: `border`
 
-*World 3's boss: every third turn it places two dots, and it has 26 dots to your 22, on a round board.*
+*World 3's boss: every third turn it places two dots, and it has 26 dots to your 23, on a round board.*
 
 ```
     a b c d e f g h i j k l m n

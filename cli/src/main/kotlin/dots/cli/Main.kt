@@ -34,7 +34,9 @@ private const val USAGE = """Dots - terminal prototype
   watch [tierA] [tierB] [size] [dots]   two computers play each other (A is red)
   bench tiers [games] [size] [dots]     round-robin of the AI difficulty tiers
   bench steps [games] [size] [dots]     each strength step against the next, from four crosses
-  bench levels [games] [stand-in]       a stand-in player (a tier, or border) plays every level
+  bench levels [games] [level...]       the difficulty curve: weak, average and strong stand-ins play
+                                        every level (or the given ones), then the curve's checks
+  bench levels [games] stand-in [level...]  one stand-in (weak, average, strong, a tier, or border)
   bench duel ...                        two custom configurations play each other (run it for help)
   bench variants [games]                how much happens in each game format (draws, captures, ...)
   bench variety [tier] [margin]         how often a tier answers the same position differently

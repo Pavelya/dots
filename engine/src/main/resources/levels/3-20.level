@@ -3,13 +3,13 @@ level: 20
 name: Comet
 computer: steady
 dots: 26
-mission: win with 22 dots
+mission: win with 23 dots
 solutions: open
 boosters: bomb 1, double-dot 1
 rule: double move every 3 turns
 stars: margin 2 5
 holes: border
-note: World 3's boss: every third turn it places two dots, and it has 26 dots to your 22, on a round board.
+note: World 3's boss: every third turn it places two dots, and it has 26 dots to your 23, on a round board.
 map:
 ---........---
 --..........--

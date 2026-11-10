@@ -275,4 +275,83 @@ class SolverTest {
         assertEquals(points("d5"), solution.winningFirstMoves)
         assertEquals(1, solution.shortest)
     }
+
+    private fun place(name: String) = Action.Place(Notation.parse(name)!!)
+
+    @Test
+    fun `look ahead two moves ahead plays the fork`() {
+        val level = level(
+            Mission.Capture(dots = 1, moves = 2),
+            listOf(
+                ".......",
+                "..R.R..",
+                ".RB.BR.",
+                ".......",
+                ".......",
+            ),
+        )
+
+        assertEquals(place("d3"), Solver().lookAhead(level, level.newGame(), 2, place("a5")))
+    }
+
+    @Test
+    fun `look ahead one move ahead does not let blue put the mission out of reach`() {
+        // After red a5, blue d3 joins both blue dots into a group red cannot ring with the one
+        // move left. Red d3 is the first move that leaves blue no such reply.
+        val level = level(
+            Mission.Capture(dots = 1, moves = 2),
+            listOf(
+                ".......",
+                "..R.R..",
+                ".RB.BR.",
+                ".......",
+                ".......",
+            ),
+        )
+
+        assertEquals(place("d3"), Solver().lookAhead(level, level.newGame(), 1, place("a5")))
+    }
+
+    @Test
+    fun `look ahead keeps a move that leaves the goal within reach`() {
+        // Two moves left after g5, and whatever blue replies, the lower bounds still allow a ring round c3.
+        val level = level(
+            Mission.Capture(dots = 1, moves = 3),
+            listOf(
+                ".......",
+                "..R....",
+                ".RB....",
+                ".......",
+                ".......",
+            ),
+        )
+
+        assertEquals(place("g5"), Solver().lookAhead(level, level.newGame(), 1, place("g5")))
+    }
+
+    @Test
+    fun `look ahead in survive keeps a safe move and replaces one that loses a dot`() {
+        // Blue d3 would close the ring round c3; only red d3 stops it.
+        val level = level(
+            Mission.Survive(3),
+            listOf(
+                ".....",
+                "..B..",
+                ".BR..",
+                "..B..",
+                ".....",
+            ),
+        )
+        val start = level.newGame()
+
+        assertEquals(place("d3"), Solver().lookAhead(level, start, 1, place("a5")))
+        assertEquals(place("d3"), Solver().lookAhead(level, start, 1, place("d3")))
+    }
+
+    @Test
+    fun `look ahead leaves whole games to the preferred move`() {
+        val level = level(Mission.Win, listOf(".....", "..R..", ".RB..", "..R..", "....."))
+
+        assertEquals(place("a5"), Solver().lookAhead(level, level.newGame(), 3, place("a5")))
+    }
 }
