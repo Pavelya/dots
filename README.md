@@ -141,9 +141,19 @@ Levels against the computer, with a dot budget each, grouped in worlds. Difficul
 computer's tier, its head start (dots already on the board), the board size and the mission.
 
 - **A level is passed when its mission is** (`Level.isPassed`). In `win`, a draw is not enough.
-- **World 1** has 15 levels that teach the game from zero: placing, chains and the first capture,
-  then capture and target puzzles, then whole games up to a mini-boss. Each level and what it
-  teaches: [`docs/design/world-1.md`](docs/design/world-1.md).
+- **75 levels in 4 worlds.** Each world brings new ideas and ends with a boss. Each level and
+  what it teaches is in the world's design doc.
+
+  | World | Levels | New ideas | Boss | Design doc |
+  |-------|-------:|-----------|------|------------|
+  | 1 Notebook | 15 | The rules from zero: placing, chains, the first capture; capture and target puzzles; whole games | Ink Bottle: a double move every 5th turn | [`world-1.md`](docs/design/world-1.md) |
+  | 2 Garden | 20 | Survive and rescue missions; the wall booster | Mole: a double move every 4th turn, and 2 dots more | [`world-2.md`](docs/design/world-2.md) |
+  | 3 Night sky | 20 | Holes: lakes whose shore is border, open holes, round boards; the bomb and double dot boosters | Comet: a double move every 3rd turn, and 4 dots more | [`world-3.md`](docs/design/world-3.md) |
+  | 4 Sea | 20 | Rocks (blocked points) and pearls (bonus points) | Kraken: two dots every turn, one in each half, and the normal computer | [`world-4.md`](docs/design/world-4.md) |
+
+- **A saw-tooth curve.** From World 2 on, levels 3, 6, 9, 12, 15 and 18 of a world are the hard
+  ones and the two after each are easier; the first whole game of a world is easier than the
+  last boss.
 - **Every level starts the human with dots in the middle.** Otherwise placing every dot on the
   border would be a safe way never to lose, which is exactly the forced draw the article warns
   about. A border-only stand-in passes no level (`bench levels 40 border`).
@@ -596,7 +606,8 @@ exactly even by construction.
 the table shows how many passed the level's mission. Each game stops when the mission is decided.
 The EASY step stands for a weak player, the NORMAL step for a strong one, border for someone who
 only plays on the border. The computer of levels 1 to 3 is the beginner, of 4 to 13 the easy
-step, of 14 and 15 the steady step.
+step, of 1-14 to 4-19 the steady step, and of 4-20 the normal step. The table shows World 1; the
+tables for Worlds 2 to 4 are in their design docs, and the whole games of every world are below.
 
 ```
                                                 passed of 40
@@ -626,10 +637,47 @@ level               mission                EASY stand-in   NORMAL stand-in   bor
   target off. A person reads the mission. That every puzzle can be passed against any defence is
   what `check-levels` proves; how hard each feels needs people (the newcomer check of G-09 and
   the play-tests).
-- **Border play passes nothing**, so every level asks the player to fight.
+- **Border play passes no level of World 1**, so every level there asks the player to fight.
 
 The stand-ins are computers, not people, and nobody has played these levels yet, so treat the
 curve as a first draft.
+
+**The whole games of every world.** `cli bench levels 80 EASY` and `80 NORMAL`, the whole games
+only:
+
+```
+                                             dots  passed of 80
+level              mission           computer each  EASY stand-in  NORMAL stand-in
+1-11  First Game   win               easy     10    54             62
+1-12  Two Crosses  win               easy     12    38             72
+1-13  Head Start   win               easy     12    35             53
+1-14  Four Crosses win               steady   16    30             53
+1-15  Ink Bottle   win               steady   18    29             45
+2-6   Flower Beds  win               steady   18    33             58
+2-12  Hedge        win               steady   20    24             54
+2-18  Few Seeds    win with 18 dots  steady   20    21             30
+2-20  Mole         win with 20 dots  steady   22    17             30
+3-6   Full Moon    win               steady   22    24             56
+3-12  Crater       win with 20 dots  steady   24    18             27
+3-18  Twin Stars   win with 19 dots  steady   24    17             35
+3-20  Comet        win with 22 dots  steady   26    13             19
+4-6   Rocky Shore  win               steady   26    22             40
+4-12  Pearls       win               steady   26    16             46
+4-18  Reef         win with 19 dots  steady   28    17             28
+4-20  Kraken       win               normal   30    14             20
+```
+
+- **Within each world the whole games get harder** for a weak player, and the boss is the one
+  passed least: 33, 24, 21, 17 in World 2; 24, 18, 17, 13 in World 3; 22, 16, 17, 14 in World 4
+  (16 and 17 are equal within the noise of 80 games).
+- **Each world opens with a dip:** its first whole game is easier than the boss before it.
+- **A larger head start does not make a level harder** for these stand-ins: extra computer dots
+  scattered on the board are also extra targets. Worlds 2 to 4 make whole games harder with fewer
+  dots for the player (`win with 18 dots` against the computer's 20), faster boss rules and,
+  for the last boss, the normal computer.
+- **Border play passes some survive and rescue levels** of Worlds 2 to 4. Before its first dot
+  the computer looks only near the player's last dot, so a player who opens far from the danger
+  is not attacked; task G-21 makes it look at the whole board until then.
 
 **Stars.** `cli bench stars 200`: four stand-ins, the EASY, NORMAL, HARD and EXPERT computers,
 play each level 200 times; how many of the 800 games earned 0, 1, 2 and 3 stars. In the whole
@@ -658,6 +706,29 @@ In the puzzles and the first three levels, three stars mean the shortest answer:
 gives two moves to spare, and `moves 1 2` asks for both. A stand-in that passes a puzzle at all
 usually finds the shortest answer, so three stars are common here; people will often take a
 longer way. Level 1 always gives three stars to a player who closes the ring on the first tap.
+
+The whole games of Worlds 2 to 4, `cli bench stars 100` with the same four stand-ins (400 games
+each):
+
+```
+                    stars            0     1     2     3
+2-6   Flower Beds   margin 2 4      95    90   136    79
+2-12  Hedge         margin 2 4     130    86   122    62
+2-18  Few Seeds     margin 2 4     198    87    81    34
+2-20  Mole          margin 2 5     209    77    99    15
+3-6   Full Moon     margin 2 5     107    71   166    56
+3-12  Crater        margin 2 4     204    78    96    22
+3-18  Twin Stars    margin 2 4     182    80   101    37
+3-20  Comet         margin 2 5     225    53    95    27
+4-6   Rocky Shore   margin 2 4     157    90   104    49
+4-12  Pearls        margin 3 5     148   144    66    42
+4-18  Reef          margin 2 4     250    37    80    33
+4-20  Kraken        margin 3 8     226    50    96    28
+```
+
+The puzzles of Worlds 2 to 4 follow World 1's rule (`moves 1 2`), except survive, whose stars
+count the boosters left (`boosters 1 2`). The stand-ins never use a booster, so they earn three
+stars whenever they pass a survive level; for people, each booster used costs a star.
 
 **Speed.** On a laptop, a HARD move on a 14×14 board takes about 40 ms (EXPERT about 130 ms).
 Not yet measured on a phone.

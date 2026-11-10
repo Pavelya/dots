@@ -1,0 +1,26 @@
+world: 3
+level: 18
+name: Twin Stars
+computer: steady
+dots: 24
+mission: win with 19 dots
+solutions: open
+boosters: bomb 1, double-dot 1
+rule: none
+stars: margin 2 4
+holes: border
+note: Hard: two round halves joined in the middle, three computer dots in the neck, and 19 dots against its 24.
+map:
+---...---...---
+--....---....--
+-.....---.....-
+..RB..---..BR..
+..BR.......RB..
+.......B.......
+.......B.......
+.......B.......
+...BR.....RB...
+...RB.---.BR...
+-.....---.....-
+--....---....--
+---...---...---

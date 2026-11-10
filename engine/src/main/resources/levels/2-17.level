@@ -1,0 +1,20 @@
+world: 2
+level: 17
+name: Garden Gate
+computer: steady
+dots: 5
+mission: rescue d3
+solutions: few
+boosters: wall 1
+rule: none
+stars: moves 1 2
+holes: none
+note: Rescue: the top edge is closer than it looks, because your dot at f1 is already on it.
+map:
+.....R.
+.......
+..BRB..
+...B...
+.......
+.......
+.......

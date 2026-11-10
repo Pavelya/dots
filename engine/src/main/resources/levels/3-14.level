@@ -1,0 +1,22 @@
+world: 3
+level: 14
+name: Pole Star
+computer: steady
+dots: 4
+mission: capture 1 in 4 moves
+solutions: few
+boosters: double-dot 1
+rule: none
+stars: moves 1 2
+holes: border
+note: Close one side; when the dot runs, follow it and close the far end.
+map:
+--.....--
+-BRR....-
+..B......
+..RR.R...
+.....B...
+...B.....
+.........
+-.......-
+--.....--

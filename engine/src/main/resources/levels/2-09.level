@@ -1,0 +1,20 @@
+world: 2
+level: 9
+name: Side Step
+computer: steady
+dots: 5
+mission: rescue d5
+solutions: few
+boosters: wall 1
+rule: none
+stars: moves 1 2
+holes: none
+note: Hard: the way down is one move too slow, so the dot steps sideways first, next to its friend, and runs from there.
+map:
+.......
+.......
+.......
+...B...
+...RB..
+..RB...
+.......

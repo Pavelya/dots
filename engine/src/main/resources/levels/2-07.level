@@ -1,0 +1,22 @@
+world: 2
+level: 7
+name: Bramble
+computer: steady
+dots: 3
+mission: survive 3 moves
+solutions: few
+boosters: wall 2
+rule: none
+stars: boosters 1 2
+holes: none
+note: Your dot at e6 is one move from capture: block its last gap, or capture the attacker next to it first.
+map:
+.........
+......B..
+.....RBR.
+.....BR..
+.....R...
+...BRB...
+....BR...
+.........
+.........

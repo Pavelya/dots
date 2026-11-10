@@ -1,0 +1,22 @@
+world: 2
+level: 11
+name: Watering Can
+computer: steady
+dots: 3
+mission: survive 3 moves
+solutions: few
+boosters: wall 2
+rule: none
+stars: boosters 1 2
+holes: none
+note: Survive: your dot at f3 has three attackers; fill its last gap first, then keep blocking.
+map:
+.........
+.........
+....BRB..
+....RBB..
+...RRBRR.
+...BBRB..
+.....R...
+.........
+.........

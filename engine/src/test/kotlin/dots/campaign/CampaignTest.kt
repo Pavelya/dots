@@ -93,7 +93,8 @@ class CampaignTest {
             val end = Match.playOut(level.newGame(), SearchAi(easy, Random(seed)), SearchAi(easy, Random(seed + 50)))
 
             assertTrue(end.isOver, level.name)
-            assertEquals(level.dotsPerPlayer * 2, end.moveCount, level.name)
+            // In "win with fewer dots" the player has fewer dots than the computer.
+            assertEquals(level.humanDots + level.dotsPerPlayer, end.moveCount, level.name)
         }
     }
 

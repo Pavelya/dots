@@ -1,0 +1,22 @@
+world: 2
+level: 10
+name: Rose Bush
+computer: steady
+dots: 5
+mission: target d4
+solutions: few
+boosters: wall 1
+rule: none
+stars: moves 1 2
+holes: none
+note: Target: close above the marked dot, then follow its run to the right and up.
+map:
+.........
+.........
+.........
+..RB.BRR.
+..BRRRBR.
+......BB.
+.........
+.........
+.........

@@ -1,0 +1,22 @@
+world: 3
+level: 11
+name: Shooting Star
+computer: steady
+dots: 4
+mission: survive 4 moves
+solutions: few
+boosters: bomb 1, double-dot 1
+rule: none
+stars: boosters 1 2
+holes: border
+note: A lone dot near the top: run for the edge, stepping sideways when the computer blocks.
+map:
+--.....--
+-.......-
+...BRB...
+....B....
+.........
+.........
+.........
+-.......-
+--.....--

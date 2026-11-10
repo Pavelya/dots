@@ -1,0 +1,22 @@
+world: 3
+level: 13
+name: Reflection
+computer: steady
+dots: 5
+mission: target f3
+solutions: few
+boosters: double-dot 1
+rule: none
+stars: moves 1 2
+holes: border
+note: Target: shut the way to the lake first, then answer the runs.
+map:
+...B.....
+....RRR..
+.....BR..
+......R.R
+....-....
+...R.....
+.........
+.........
+.........

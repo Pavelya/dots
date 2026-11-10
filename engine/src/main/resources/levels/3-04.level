@@ -1,0 +1,22 @@
+world: 3
+level: 4
+name: Crescent
+computer: steady
+dots: 4
+mission: capture 2 in 4 moves
+solutions: few
+boosters: double-dot 1
+rule: none
+stars: moves 1 2
+holes: border
+note: A round board, its corners cut off. Close below the pair; when it runs right, one more dot closes round both.
+map:
+--.....--
+-.R.....-
+....RR...
+...RB....
+...RBR...
+...B.....
+.........
+-.......-
+--.....--
