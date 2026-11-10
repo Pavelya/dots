@@ -290,7 +290,16 @@ class GameState private constructor(
         Action.Pass -> MoveResult(pass(), emptyList())
         Action.Stop -> MoveResult(stop(), emptyList())
         Action.Finish -> MoveResult(finish(), emptyList())
-        is Action.UseBooster -> MoveResult(useBooster(action), emptyList())
+        is Action.UseBooster -> {
+            val pos = when (action) {
+                is Action.Wall -> action.pos
+                is Action.Hint -> action.pos
+                is Action.Bomb -> action.pos
+                Action.DoubleDot -> null
+            }
+            val removed = if (action is Action.Bomb) bombHits(action.pos) else emptyList()
+            MoveResult(useBooster(action), emptyList(), BoosterEffect(toMove, action.booster, pos, removed))
+        }
     }
 
     fun play(pos: Pos): MoveResult {
@@ -544,11 +553,11 @@ class GameState private constructor(
                     break
                 }
             }
-            if (holdsEnemy) claim(buffer, starts[k], ends[k], player, out)
+            if (holdsEnemy) claim(buffer, starts[k], ends[k], player, Pos(px, py), out)
         }
     }
 
-    private fun claim(cells: IntArray, from: Int, to: Int, by: Player, out: MutableList<Capture>) {
+    private fun claim(cells: IntArray, from: Int, to: Int, by: Player, closing: Pos, out: MutableList<Capture>) {
         val enemy = by.opponent
         val dots = ArrayList<Pos>()
         var points = 0
@@ -570,7 +579,7 @@ class GameState private constructor(
             }
         }
         scores[by.ordinal] += points
-        out += Capture(by, dots, region, points)
+        out += Capture(by, dots, region, closing, points)
     }
 
     /** True if [player]'s dots already enclose a live enemy dot; used to vet starting positions. */
