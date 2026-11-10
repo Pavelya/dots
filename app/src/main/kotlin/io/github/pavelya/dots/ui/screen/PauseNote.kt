@@ -92,7 +92,7 @@ internal fun PauseNote(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 )
-                BigButton(stringResource(R.string.pause_restart), style, onRestart)
+                BigButton(stringResource(R.string.pause_restart), style, onRestart, Modifier.fillMaxWidth())
                 SmallButton(stringResource(R.string.restart_cancel), style, { asking = false }, Modifier.fillMaxWidth())
             } else {
                 Text(
@@ -104,7 +104,7 @@ internal fun PauseNote(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth().semantics { heading() },
                 )
-                BigButton(stringResource(R.string.pause_resume), style, onResume)
+                BigButton(stringResource(R.string.pause_resume), style, onResume, Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                     SmallButton(stringResource(R.string.pause_restart), style, { asking = true }, Modifier.weight(1f))
                     SmallButton(stringResource(R.string.pause_to_map), style, onToMap, Modifier.weight(1f))
@@ -151,7 +151,7 @@ internal fun BigButton(
     text: String,
     style: GameStyle,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier.fillMaxWidth(),
+    modifier: Modifier = Modifier,
     before: String? = null,
     after: String? = null,
 ) {

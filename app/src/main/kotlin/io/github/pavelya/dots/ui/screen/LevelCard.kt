@@ -145,7 +145,7 @@ fun LevelCard(
                 }
             }
             StarTargets(level, style)
-            BigButton(stringResource(if (saved) R.string.level_resume else R.string.level_start), style, onStart)
+            BigButton(stringResource(if (saved) R.string.level_resume else R.string.level_start), style, onStart, Modifier.fillMaxWidth())
         }
     }
 }
