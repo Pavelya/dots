@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -31,9 +32,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -181,7 +182,8 @@ private fun MapPath(map: CampaignMap, onLevel: (LevelStop) -> Unit, onLockedWorl
     // The place the player scrolled to is kept until the start changes, for example when a level
     // is passed and the next one is further up.
     val first = (startRow(rows) - 1).coerceAtLeast(0)
-    val state: LazyListState = rememberSaveable(first, saver = LazyListState.Saver) { LazyListState(first) }
+    // (A key, not an input of rememberSaveable: a saved place is restored whatever the inputs say.)
+    val state: LazyListState = key(first) { rememberLazyListState(initialFirstVisibleItemIndex = first) }
     LazyColumn(state = state, reverseLayout = true, modifier = modifier.testTag(MAP_PATH_TAG)) {
         items(rows.size, key = { rows[it].key }, contentType = { rows[it]::class }) { i ->
             when (val row = rows[i]) {
