@@ -187,7 +187,7 @@ private object CanvasGame {
         val status = level.status(state)
         return CampaignParts(
             title = "Level 7",
-            mission = if (note) @Composable { MissionNoteContent(level, status) } else null,
+            mission = if (note) missionNote(level, status) else null,
             boosters = {},
         )
     }

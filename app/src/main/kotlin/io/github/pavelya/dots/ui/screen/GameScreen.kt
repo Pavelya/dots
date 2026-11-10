@@ -18,6 +18,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dots.campaign.Level
+import dots.campaign.MissionStatus
 import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Player
@@ -78,7 +79,7 @@ fun GameScreen(
     }
     val campaign = level?.let { playing ->
         val mission = ui.mission
-        val note: (@Composable () -> Unit)? = if (opening || mission == null) null else @Composable { MissionNoteContent(playing, mission) }
+        val note = if (opening || mission == null) null else missionNote(playing, mission)
         CampaignParts(title = stringResource(R.string.level_number, playing.number), mission = note, boosters = {})
     }
     BoxWithConstraints {
@@ -117,6 +118,9 @@ fun GameScreen(
         }
     }
 }
+
+/** The mission note's content for [level] where its mission stands at [status]. */
+internal fun missionNote(level: Level, status: MissionStatus): @Composable () -> Unit = { MissionNoteContent(level, status) }
 
 const val BOARD_TAG = "board"
 

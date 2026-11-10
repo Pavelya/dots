@@ -91,6 +91,7 @@ fun LevelCard(
             .fillMaxSize()
             .semantics { paneTitle = "$title, ${level.name}" },
     ) {
+        val picture = if (maxHeight < 700.dp) 96.dp else 120.dp
         // A tap on the map around the card closes it; the card above takes its own taps.
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
         Column(
@@ -136,7 +137,7 @@ fun LevelCard(
             }
             MissionLine(level, style)
             Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                BoardPicture(level, Modifier.width(if (maxHeight < 700.dp) 96.dp else 120.dp))
+                BoardPicture(level, Modifier.width(picture))
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Opponent(level, style)
                     Allowance(level, style)
