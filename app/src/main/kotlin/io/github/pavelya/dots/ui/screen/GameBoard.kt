@@ -123,14 +123,16 @@ internal fun GameBoard(
         val spacing = boardSpacing(maxWidth, maxHeight - TOP_ROW - bottom, state.width, state.height)
         val boardHeight = spacing * state.height
         val spare = maxHeight - TOP_ROW - bottom - boardHeight
-        val opponentLine = @Composable { compact: Boolean ->
-            SideLine(above, names.of(above), state.score(above), toMove = isToMove(ui, above), style, compact)
+        // On a small phone the opponent's line moves into the top row, and the mission note narrows to make room.
+        val compact = spare < OPPONENT_LINE
+        val opponentLine = @Composable { inTopRow: Boolean ->
+            SideLine(above, names.of(above), state.score(above), toMove = isToMove(ui, above), style, inTopRow)
         }
         Column(Modifier.fillMaxSize()) {
             val title = campaign?.title ?: stringResource(if (ui.vsComputer) R.string.play_free else R.string.play_two)
             TopRow(showPause = !state.isOver, style = style, onPause = onPause) {
-                if (spare < OPPONENT_LINE) {
-                    Box(Modifier.align(Alignment.CenterStart).padding(start = 60.dp)) { opponentLine(true) }
+                if (compact) {
+                    Box(Modifier.align(Alignment.CenterStart).padding(start = 52.dp)) { opponentLine(true) }
                 } else {
                     Text(
                         title,
@@ -190,7 +192,7 @@ internal fun GameBoard(
                 }
             }
         }
-        campaign?.let { MissionNote(style, Modifier.align(Alignment.TopEnd), it.mission) }
+        campaign?.let { MissionNote(style, Modifier.align(Alignment.TopEnd), if (compact) 120.dp else 136.dp, it.mission) }
         turnBanner?.let { TurnBanner(it, style, Modifier.offset(y = maxHeight * 0.38f)) }
     }
 }
@@ -351,7 +353,7 @@ private fun SideLine(player: Player, name: String, score: Int, toMove: Boolean, 
     val description = stringResource(if (toMove) R.string.side_to_move else R.string.side_waiting, name, score)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (compact) 4.dp else 8.dp),
         modifier = Modifier
             .height(40.dp)
             .clearAndSetSemantics {
@@ -496,11 +498,11 @@ internal fun Modifier.toolOutline(ink: Color, dashed: Boolean, shape: Shape): Mo
 
 /** The campaign's mission note, taped in the top right corner. A-03 fills it. */
 @Composable
-private fun MissionNote(style: GameStyle, modifier: Modifier, content: @Composable () -> Unit) {
+private fun MissionNote(style: GameStyle, modifier: Modifier, width: Dp, content: @Composable () -> Unit) {
     Box(modifier.padding(top = 6.dp, end = 12.dp).rotate(2f)) {
         Box(
             Modifier
-                .width(136.dp)
+                .width(width)
                 .shadow(4.dp, RectangleShape, clip = false)
                 .background(style.card)
                 .padding(start = 10.dp, end = 10.dp, top = 8.dp, bottom = 9.dp),

@@ -114,9 +114,8 @@ class GameScreenshotTest {
         show { Board(ui, campaign = null) }
         compose.mainClock.advanceTimeByFrame()
         val move = start.near(7, 7)
-        ui = GameUiState(start.play(move).state, lastMove = move)
-        compose.mainClock.advanceTimeByFrame()
-        compose.mainClock.advanceTimeByFrame()
+        compose.runOnUiThread { ui = GameUiState(start.play(move).state, lastMove = move) }
+        compose.mainClock.advanceTimeBy(100) // the banner shows a frame after the turn changes
         capture("game_two_players_banner")
     }
 
