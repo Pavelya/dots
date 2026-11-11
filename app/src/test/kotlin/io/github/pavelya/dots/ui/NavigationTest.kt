@@ -19,6 +19,8 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.printToLog
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -134,6 +136,7 @@ class NavigationTest {
         tap("Settings")
         at(Routes.SETTINGS)
         waitFor("Version", substring = true)
+        compose.onNode(hasText("Version", substring = true)).performScrollTo()
         repeat(DEVELOPER_TAPS) { compose.onNode(hasText("Version", substring = true)).performClick() }
         at(Routes.DEVELOPER)
     }
@@ -248,6 +251,9 @@ class NavigationTest {
 
         // The map is under the tutorial.
         back()
+        compose.waitForIdle()
+        println("A06DBG route=${nav.currentDestination?.route} ui=${app.games.current.value?.record?.toText()}")
+        compose.onRoot().printToLog("A06DBG")
         waitFor("To the map")
         tap("To the map")
         at(Routes.MAP)

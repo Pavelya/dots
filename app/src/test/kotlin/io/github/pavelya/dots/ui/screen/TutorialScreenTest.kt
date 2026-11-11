@@ -63,9 +63,18 @@ class TutorialScreenTest {
     )
 
     /** Waits for the player's turn with a point to tap, or for Result. */
-    private fun waitForTurn(vm: GameViewModel) = compose.waitUntil(timeoutMillis = 10_000) {
+    private fun waitForTurn(vm: GameViewModel) = try {
+        compose.waitUntil(timeoutMillis = 10_000) {
+            val ui = vm.ui.value
+            ui.showsResult || (!ui.thinking && ui.state.toMove == Player.RED && ui.guide?.point != null)
+        }
+    } catch (e: Throwable) {
         val ui = vm.ui.value
-        ui.showsResult || (!ui.thinking && ui.state.toMove == Player.RED && ui.guide?.point != null)
+        throw AssertionError(
+            "no turn: guide=${ui.guide} thinking=${ui.thinking} over=${ui.isOver} preview=${ui.preview} " +
+                "level=${ui.level?.code} toMove=${ui.state.toMove}\n${ui.state.toAscii()}",
+            e,
+        )
     }
 
     private fun waitFor(text: String) =
