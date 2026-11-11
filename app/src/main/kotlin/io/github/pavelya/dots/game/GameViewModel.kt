@@ -9,6 +9,7 @@ import dots.campaign.CampaignMap
 import dots.campaign.Level
 import dots.campaign.LevelRecord
 import dots.campaign.MissionStatus
+import dots.campaign.Tutorial
 import dots.campaign.Outcome as MissionOutcome
 import dots.engine.Action
 import dots.engine.Booster
@@ -60,6 +61,19 @@ data class GameUiState(
     val fresh: Boolean = false,
     /** Counts the games played on this screen, so that each new one opens afresh. */
     val round: Int = 0,
+    /**
+     * The tutorial's guided step (A-06): what to do now and the point to tap. Null outside the
+     * tutorial's levels, once the player skipped it, and at the end. On the computer's turn the
+     * last step stays, without a point.
+     */
+    val guide: Tutorial.Step? = null,
+    /**
+     * True for the whole of a tutorial level whose steps are not skipped: the board is laid out for
+     * the step note, whether or not a step shows at the moment.
+     */
+    val guided: Boolean = false,
+    /** True for a practice game, such as a replay of the tutorial: its end changes no campaign progress. */
+    val practice: Boolean = false,
 ) {
     /** True when Result can open: the game is over and, in a level, its end is saved. */
     val showsResult: Boolean get() = isOver && (level == null || levelEnd != null)
@@ -109,6 +123,15 @@ class GameViewModel(
     /** When the game last changed (or was opened), to add up the time spent playing. */
     private var lastActive = clock()
 
+    /** True once the player skipped the tutorial's guided steps on this screen. */
+    private var skipped = false
+
+    /**
+     * The last guided step for the position itself, with no dot shown: on the computer's turn it
+     * stays, without its point.
+     */
+    private var shownGuide: Tutorial.Step? = null
+
     /** How often the human took a move back in this game. */
     val undoCount: Int get() = entry.undos
 
@@ -134,7 +157,7 @@ class GameViewModel(
         val result = Placement.onTap(_ui.value.preview, point) { game.state.isLegal(it) }
         val placed = result.placed
         if (placed == null) {
-            _ui.value = _ui.value.copy(preview = result.preview)
+            showPreview(result.preview)
         } else {
             put(placed)
         }
@@ -148,7 +171,7 @@ class GameViewModel(
     fun aim(point: Pos?) {
         if (!humanToMove()) return
         val preview = point?.takeIf { game.state.isLegal(it) }
-        if (preview != _ui.value.preview) _ui.value = _ui.value.copy(preview = preview)
+        if (preview != _ui.value.preview) showPreview(preview)
     }
 
     /**
@@ -160,10 +183,14 @@ class GameViewModel(
         if (!humanToMove()) return
         touched()
         if (point == null || !game.state.isLegal(point)) {
-            _ui.value = _ui.value.copy(preview = null)
+            showPreview(null)
         } else {
             put(point)
         }
+    }
+
+    private fun showPreview(preview: Pos?) {
+        _ui.value = _ui.value.copy(preview = preview, guide = guideFor(game.state, preview))
     }
 
     /** True when a touch on the board may place a dot: not while the computer thinks or after the end. */
@@ -196,9 +223,25 @@ class GameViewModel(
 
     /**
      * Starts a new game: free play with fresh settings (a new seed, so new crosses), or the same
-     * level again. An unfinished game is logged as abandoned.
+     * level again, as practice if this game is. An unfinished game is logged as abandoned.
      */
-    fun playAgain() = begin(nextGame())
+    fun playAgain() {
+        val level = level
+        begin(if (entry.practice && level != null) levelGame(level, entry.threatHighlight, clock(), practice = true) else nextGame())
+    }
+
+    /** In a practice game of the tutorial, plays its next level, also as practice; else does nothing. */
+    fun practiceNext() {
+        val next = level?.takeIf { entry.practice }?.let(Tutorial::next) ?: return
+        begin(levelGame(next, entry.threatHighlight, clock(), practice = true))
+    }
+
+    /** Hides the tutorial's guided steps on this screen, also in the levels played after this one. */
+    fun skipGuides() {
+        skipped = true
+        shownGuide = null
+        _ui.value = _ui.value.copy(guide = null, guided = false)
+    }
 
     /**
      * Plays the same level again with [booster] given on top of the level's own: the help Result
@@ -206,7 +249,7 @@ class GameViewModel(
      */
     fun retryWith(booster: Booster) {
         val level = level ?: return playAgain()
-        begin(levelGame(level, entry.threatHighlight, clock(), gift = mapOf(booster to 1)))
+        begin(levelGame(level, entry.threatHighlight, clock(), gift = mapOf(booster to 1), practice = entry.practice))
     }
 
     private fun begin(next: GameLogEntry) {
@@ -215,6 +258,7 @@ class GameViewModel(
         game = Game.from(entry.record)
         computer = computerFor(entry)
         levelEnd = null
+        shownGuide = null
         round++
         lastActive = clock()
         journal?.start(entry)
@@ -264,17 +308,36 @@ class GameViewModel(
         }
     }
 
-    /** Saves a finished level's stars and failures, then lets Result open. */
+    /**
+     * Saves a finished level's stars and failures, then lets Result open. A practice game saves
+     * nothing; in the tutorial, Next then plays its next level.
+     */
     private fun levelOver() {
         val level = level ?: return
         val result = level.result(game.state)
         val thisRound = round
+        val practice = entry.practice
         viewModelScope.launch {
-            val end = campaign?.finished(level, result) ?: LevelEnd(result, CampaignMap.Opened.NOTHING, failed = 0, next = null)
+            val end = when {
+                practice -> LevelEnd(result, CampaignMap.Opened.NOTHING, failed = 0, next = Tutorial.next(level))
+                else -> campaign?.finished(level, result) ?: LevelEnd(result, CampaignMap.Opened.NOTHING, failed = 0, next = null)
+            }
             if (round != thisRound) return@launch // another game has started meanwhile
             levelEnd = end
             _ui.value = _ui.value.copy(levelEnd = end)
         }
+    }
+
+    /** The guided step for [state] with a dot shown at [preview]; see [GameUiState.guide]. */
+    private fun guideFor(state: GameState, preview: Pos?): Tutorial.Step? {
+        val level = level
+        if (level == null || skipped || game.isOver || Tutorial.lesson(level) == null) {
+            shownGuide = null
+            return null
+        }
+        val step = Tutorial.step(level, state, preview)
+        if (preview == null || step == null) shownGuide = step ?: shownGuide?.copy(point = null)
+        return step ?: shownGuide
     }
 
     private fun lastPlaced(): Pos? = game.record.actions.lastOrNull { it is Action.Place }?.let { (it as Action.Place).pos }
@@ -316,6 +379,9 @@ class GameViewModel(
             levelEnd = levelEnd,
             fresh = game.record.actions.isEmpty(),
             round = round,
+            guide = guideFor(state, preview = null),
+            guided = level != null && Tutorial.lesson(level) != null && !skipped,
+            practice = entry.practice,
         )
     }
 }

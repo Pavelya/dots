@@ -44,8 +44,9 @@ import io.github.pavelya.dots.data.SampleProgress
 const val DEVELOPER_TAPS = 7
 
 /**
- * Settings for players: the threat highlight and how a dot is placed now; A-09 adds sound,
- * vibration and the rest. Tapping the version line [DEVELOPER_TAPS] times opens the developer menu.
+ * Settings for players: the threat highlight, how a dot is placed, and Replay the tutorial
+ * ([onReplayTutorial]) under Help; A-09 adds sound, vibration and the rest. Tapping the version
+ * line [DEVELOPER_TAPS] times opens the developer menu.
  */
 @Composable
 fun SettingsScreen(
@@ -54,6 +55,7 @@ fun SettingsScreen(
     version: String,
     onDetails: () -> Unit,
     onDeveloperMenu: () -> Unit,
+    onReplayTutorial: () -> Unit,
     onBack: () -> Unit,
 ) {
     Column(
@@ -94,6 +96,14 @@ fun SettingsScreen(
             },
             onSelect = { onChange(settings.copy(placing = it)) },
         )
+
+        Section(R.string.settings_help)
+        Row(
+            modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).clickable(onClick = onReplayTutorial),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(stringResource(R.string.settings_replay_tutorial), style = MaterialTheme.typography.titleMedium)
+        }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Row(

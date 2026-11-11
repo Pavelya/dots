@@ -34,6 +34,8 @@ data class AppSettings(
     val sound: Boolean = true,
     /** How a dot is placed (decision 0024). */
     val placing: PlacingMethod = PlacingMethod.TWO_TAPS,
+    /** True once the player skipped the tutorial's guided steps; replaying the tutorial shows them again (A-06). */
+    val tutorialSkipped: Boolean = false,
 ) {
     val dotsPerPlayer: Int get() = dotsFor(boardSize, length)
 

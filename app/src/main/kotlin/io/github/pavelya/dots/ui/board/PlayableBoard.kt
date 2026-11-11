@@ -43,7 +43,8 @@ class BoardInput(
  *   preview's row and column are drawn across the board, so they show around the finger. Lifting
  *   it off the board places nothing.
  *
- * It decides nothing about the game: which points are playable comes back as the [preview].
+ * It decides nothing about the game: which points are playable comes back as the [preview]. The
+ * tutorial's [pointer] is drawn as [BoardView] draws it.
  */
 @Composable
 fun PlayableBoard(
@@ -56,6 +57,7 @@ fun PlayableBoard(
     lastMove: Pos? = null,
     dangers: List<Danger> = emptyList(),
     marked: Pos? = null,
+    pointer: Pos? = null,
 ) {
     val method = input.method
     var fingerDown by remember { mutableStateOf(false) }
@@ -102,5 +104,6 @@ fun PlayableBoard(
         dangers = dangers,
         marked = marked,
         guides = method == PlacingMethod.DRAG && fingerDown,
+        pointer = pointer,
     )
 }

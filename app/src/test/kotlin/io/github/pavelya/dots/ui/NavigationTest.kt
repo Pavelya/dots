@@ -134,6 +134,7 @@ class NavigationTest {
         tap("Settings")
         at(Routes.SETTINGS)
         waitFor("Version", substring = true)
+        compose.onNode(hasText("Version", substring = true)).performScrollTo()
         repeat(DEVELOPER_TAPS) { compose.onNode(hasText("Version", substring = true)).performClick() }
         at(Routes.DEVELOPER)
     }
@@ -224,6 +225,53 @@ class NavigationTest {
         compose.onNode(hasContentDescription("Pause")).performClick()
         tap("To the map")
         at(Routes.MAP)
+    }
+
+    @Test
+    fun `Play the tutorial on How to play starts Level 1 as practice, which changes no progress, and Next plays Level 2`() {
+        launch()
+        visited.clear()
+        tap("Rules")
+        at(Routes.RULES)
+        tap("Play the tutorial")
+        at(Routes.GAME)
+        assertEquals("1-1", savedLevel)
+        assertTrue(app.games.current.value!!.practice)
+        waitFor("Tap the circled point.")
+
+        place(3, 4, size = 7)
+        waitFor("You won!")
+        tap("Next")
+        compose.waitUntil(timeoutMillis = 5_000) { savedLevel == "1-2" }
+        assertTrue(app.games.current.value!!.practice)
+        assertEquals(Routes.GAME, nav.currentDestination?.route)
+        assertEquals(LEVEL_1_PASSED, runBlocking { app.progress.progress.first() })
+
+        // The map is under the tutorial: Back opens Pause, once Result has gone.
+        gone("You won!")
+        back()
+        waitFor("To the map")
+        tap("To the map")
+        at(Routes.MAP)
+        assertEquals(setOf(Routes.RULES, Routes.GAME, Routes.MAP), visited)
+    }
+
+    @Test
+    fun `Replay the tutorial in Settings shows the skipped steps again`() {
+        runBlocking { app.settings.update { it.copy(tutorialSkipped = true) } }
+        launch()
+        tap("Settings")
+        at(Routes.SETTINGS)
+        compose.onNodeWithText("Replay the tutorial").performScrollTo().performClick()
+        at(Routes.GAME)
+        waitFor("Tap the circled point.")
+        assertEquals("1-1", savedLevel)
+        assertTrue(app.games.current.value!!.practice)
+        assertEquals(false, runBlocking { app.settings.settings.first() }.tutorialSkipped)
+
+        tap("Skip")
+        gone("Tap the circled point.")
+        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.settings.settings.first() }.tutorialSkipped }
     }
 
     @Test

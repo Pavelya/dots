@@ -48,7 +48,7 @@ class GameLogEntryTest {
         val entry = GameLogEntry.start(GameSettings.POC.copy(seed = 42), GameLogEntry.HUMAN, threatHighlight = false, now = 5, appVersion = "0.1")
         assertEquals(
             """{"app":"0.1","started":5,"updated":5,"play_ms":0,"opponent":"human","threats":false,"undos":0,""" +
-                """"outcome":"playing","red":0,"blue":0,"placing":"","touches":0,"placed":0,""" +
+                """"outcome":"playing","red":0,"blue":0,"placing":"","touches":0,"placed":0,"practice":false,""" +
                 """"record":"dots/1 15x15 dots=33 opening=crosses seed=42 first=R |"}""",
             entry.toJson(),
         )
@@ -62,6 +62,16 @@ class GameLogEntryTest {
         assertEquals(0, entry.touches)
         assertEquals(0, entry.placed)
         assertEquals(finishedGame(2).copy(placing = "", touches = 0, placed = 0), entry)
+    }
+
+    @Test
+    fun `a practice game says so, and a line written before practice games reads as not practice`() {
+        val practice = GameLogEntry.start(LevelRecord(Campaign.level(1, 1), emptyList()), "beginner", threatHighlight = true, now = 5).copy(practice = true)
+        assertTrue("\"practice\":true" in practice.toJson())
+        assertEquals(practice, GameLogEntry.parse(practice.toJson()))
+
+        val old = finishedGame(2).toJson().replace("\"practice\":false,", "")
+        assertEquals(finishedGame(2), GameLogEntry.parse(old))
     }
 
     @Test

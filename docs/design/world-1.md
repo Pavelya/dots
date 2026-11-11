@@ -22,6 +22,30 @@ Levels 1 to 3 are the levels the tutorial runs with guided steps (A-06). They wo
 guidance too: their computer, the beginner, does not see threats, so it does not hurry to
 block a ring.
 
+## The tutorial's steps
+
+Each tutorial level teaches one lesson: 1-1 placing, 1-2 linking, 1-3 capturing. On the
+player's turn, a note above the board says what to do in one sentence, and the board circles the
+point to tap, with a hand pointing at it. Threat highlights are on in these levels. The steps are
+in `dots.campaign.Tutorial`, worked out from the position, so they follow whatever the computer
+does:
+
+1. A dot shown but not placed yet: place it (tap it again, or lift the finger).
+2. Level 1: place the dot that closes the ring.
+3. A ring that closes with one dot: close it.
+4. A ring the computer closes next turn around the player's dots: block it.
+5. Level 2: the dot that leaves two rings one dot from closing, so the computer can block only one.
+6. Otherwise: start a ring, at the dot after which a second one captures.
+
+Level 1 also says that drag can be chosen in Settings, when the player places dots by two taps.
+Skip hides the steps in the tutorial's levels until the tutorial is replayed. Play the tutorial
+(How to play) and Replay the tutorial (Settings) play levels 1 to 3 as practice: Next goes from
+one to the next, and nothing is saved to the campaign.
+
+Following the steps passes levels 1 and 2 in every game against their own computer, and level 3
+in 497 of 500 (the engine's `TutorialTest` plays 20); in the other three the computer blocks
+every ring by chance, and Retry plays it again.
+
 ## How the levels are built
 
 - **Every puzzle has an answer that works against any defence.** `cli check-levels` proves it

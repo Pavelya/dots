@@ -22,6 +22,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs[THREATS] = next.threatHighlight
             prefs[SOUND] = next.sound
             prefs[PLACING] = next.placing.name
+            prefs[TUTORIAL_SKIPPED] = next.tutorialSkipped
         }
     }
 
@@ -34,6 +35,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             threatHighlight = prefs[THREATS] ?: defaults.threatHighlight,
             sound = prefs[SOUND] ?: defaults.sound,
             placing = enumOrNull<PlacingMethod>(prefs[PLACING]) ?: defaults.placing,
+            tutorialSkipped = prefs[TUTORIAL_SKIPPED] ?: defaults.tutorialSkipped,
         )
     }
 
@@ -47,5 +49,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val THREATS = booleanPreferencesKey("threat_highlight")
         val SOUND = booleanPreferencesKey("sound")
         val PLACING = stringPreferencesKey("placing")
+        val TUTORIAL_SKIPPED = booleanPreferencesKey("tutorial_skipped")
     }
 }

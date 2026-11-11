@@ -5,6 +5,7 @@ import dots.ai.AiConfig
 import dots.ai.SearchAi
 import dots.campaign.Level
 import dots.campaign.LevelRecord
+import dots.campaign.Tutorial
 import dots.engine.Booster
 import dots.log.GameLogEntry
 import io.github.pavelya.dots.data.Difficulty
@@ -36,6 +37,18 @@ fun Difficulty.computer(random: Random = Random.Default): Ai {
 /**
  * A new game of [level], before its first move, against the computer at the level's strength.
  * [gift] gives the player boosters on top of the level's own (the free Hint after three failures).
+ * Threats show when [threatHighlight] is on, and always in the tutorial's levels (A-06). A
+ * [practice] game, such as a replay of the tutorial, changes no campaign progress.
  */
-fun levelGame(level: Level, threatHighlight: Boolean, now: Long, gift: Map<Booster, Int> = emptyMap()): GameLogEntry =
-    GameLogEntry.start(LevelRecord(level, emptyList(), gift), level.strength.text, threatHighlight, now)
+fun levelGame(
+    level: Level,
+    threatHighlight: Boolean,
+    now: Long,
+    gift: Map<Booster, Int> = emptyMap(),
+    practice: Boolean = false,
+): GameLogEntry = GameLogEntry.start(
+    LevelRecord(level, emptyList(), gift),
+    level.strength.text,
+    threatHighlight = threatHighlight || Tutorial.lesson(level) != null,
+    now = now,
+).copy(practice = practice)
