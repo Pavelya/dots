@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paper from the Notebook theme (docs/design/theme-notebook.md): behind Android's own
+         start-up screen and the loading screen, so one hands over to the other without a change. -->
+    <color name="paper">#FBF8F1</color>
+</resources>

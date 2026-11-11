@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The loading screen's icon before its red ring is drawn: the app icon
+     (docs/design/brand/pinfold-icon.svg) as a 148 dp tile, the ring's track dashed, three of the
+     four red dots. Android's start-up screen shows it in a 288 dp square, clipped to a circle
+     192 dp across, so the tile's corners stay inside that circle. LoadingScreen.kt draws the ring
+     and the fourth dot over it, in the same place. Its size is the one Android sets for this icon,
+     above lint's usual limit for vector icons. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:width="288dp"
+    android:height="288dp"
+    android:viewportWidth="288"
+    android:viewportHeight="288"
+    tools:ignore="VectorRaster">
+    <!-- The tile: 72 icon units across, 148 dp, centred. -->
+    <group
+        android:scaleX="2.0555556"
+        android:scaleY="2.0555556"
+        android:translateX="70"
+        android:translateY="70">
+        <path
+            android:pathData="M13,0 H59 A13,13 0 0 1 72,13 V59 A13,13 0 0 1 59,72 H13 A13,13 0 0 1 0,59 V13 A13,13 0 0 1 13,0 Z"
+            android:fillColor="#1F4E9C" />
+        <!-- The icon's own coordinates: its 108-unit canvas, of which phones show the middle 72. -->
+        <group
+            android:translateX="-18"
+            android:translateY="-18">
+            <path
+                android:pathData="M33,30 H67 L78,41 V75 A3,3 0 0 1 75,78 H33 A3,3 0 0 1 30,75 V33 A3,3 0 0 1 33,30 Z"
+                android:fillColor="#FBF8F1" />
+            <path
+                android:pathData="M41,33 L41,75 M33,41 L75,41 M54,33 L54,75 M33,54 L75,54 M67,33 L67,75 M33,67 L75,67"
+                android:strokeColor="#BCCBEA"
+                android:strokeWidth="1.25"
+                android:strokeLineCap="round" />
+            <path
+                android:pathData="M67,30 V39.5 A1.5,1.5 0 0 0 68.5,41 H78 Z"
+                android:fillColor="#DCE4F4"
+                android:strokeColor="#1F4E9C"
+                android:strokeWidth="1.5"
+                android:strokeLineJoin="round" />
+            <!-- The ring's track: the ring's path dashed 2 on, 3 off, from the top dot. -->
+            <path
+                android:pathData="M54,41 L55.414,42.414 M57.536,44.536 L58.95,45.95 M61.071,48.071 L62.485,49.485 M64.607,51.607 L66.021,53.021 M65.858,55.142 L64.444,56.556 M62.322,58.678 L60.908,60.092 M58.787,62.213 L57.373,63.627 M55.251,65.749 L54,67 L53.837,66.837 M51.716,64.716 L50.302,63.302 M48.18,61.18 L46.766,59.766 M44.645,57.645 L43.23,56.23 M41.109,54.109 L41,54 L42.305,52.695 M44.426,50.574 L45.841,49.159 M47.962,47.038 L49.376,45.624 M51.497,43.503 L52.912,42.088"
+                android:strokeColor="#ECBEB7"
+                android:strokeWidth="2.75"
+                android:strokeLineJoin="round" />
+            <path
+                android:pathData="M49.75,41 A4.25,4.25 0 1 1 58.25,41 A4.25,4.25 0 1 1 49.75,41 Z M62.75,54 A4.25,4.25 0 1 1 71.25,54 A4.25,4.25 0 1 1 62.75,54 Z M49.75,67 A4.25,4.25 0 1 1 58.25,67 A4.25,4.25 0 1 1 49.75,67 Z"
+                android:fillColor="#C0392B" />
+            <path
+                android:pathData="M50.25,54 A3.75,3.75 0 1 1 57.75,54 A3.75,3.75 0 1 1 50.25,54 Z"
+                android:fillColor="#1F4E9C" />
+        </group>
+    </group>
+</vector>

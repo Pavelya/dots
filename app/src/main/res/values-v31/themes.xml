@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 12 and later draw their own start-up screen: the loading screen's icon on paper,
+         at the same size and place, so the loading screen takes over without a jump. -->
+    <style name="Theme.Dots" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/paper</item>
+        <item name="android:windowSplashScreenBackground">@color/paper</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/loading_icon</item>
+    </style>
+</resources>

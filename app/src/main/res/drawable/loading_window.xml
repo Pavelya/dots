@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The window before Android 12, which has no start-up screen of its own: the loading screen's
+     icon on paper, in the middle of the screen, where the loading screen draws it. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/paper" />
+    <item android:drawable="@drawable/loading_icon" android:gravity="center" />
+</layer-list>
