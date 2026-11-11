@@ -23,13 +23,17 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.espresso.Espresso
+import dots.campaign.Campaign
 import dots.campaign.LevelRecord
 import dots.campaign.Progress
+import dots.engine.Action
 import dots.engine.GameSettings
+import dots.engine.Pos
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.data.SampleProgress
+import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.screen.BOARD_TAG
 import io.github.pavelya.dots.ui.screen.DEVELOPER_TAPS
@@ -327,15 +331,13 @@ class NavigationTest {
 
     @Test
     fun `a return before Level 1 is passed opens it where the player left off`() {
-        launch(Progress.NONE, route = Routes.GAME)
-        waitForSide("You, score 0, to move")
-        // A dot away from the ring, then the computer's reply.
-        place(0, 0, size = 7)
-        compose.waitUntil(timeoutMillis = 5_000) { (app.games.current.value?.record?.actions?.size ?: 0) >= 2 }
-        waitForSide("You, score 0, to move")
-        val saved = app.games.current.value!!
+        // Level 1 left after a dot away from the ring and the computer's reply.
+        val first = Campaign.levels.first()
+        val start = levelGame(first, threatHighlight = false, now = 0)
+        val saved = start.copy(record = start.record.withActions(listOf(Action.Place(Pos(0, 0)), Action.Place(Pos(6, 6)))))
+        app.games.start(saved)
 
-        reopen(Routes.GAME)
+        launch(Progress.NONE, route = Routes.GAME)
 
         assertEquals(setOf(Routes.LOADING, Routes.GAME), visited)
         val resumed = app.games.current.value!!
