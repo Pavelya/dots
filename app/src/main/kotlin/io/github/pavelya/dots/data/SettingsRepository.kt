@@ -21,6 +21,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs[DIFFICULTY] = next.difficulty.name
             prefs[THREATS] = next.threatHighlight
             prefs[SOUND] = next.sound
+            prefs[PLACING] = next.placing.name
         }
     }
 
@@ -32,6 +33,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             difficulty = enumOrNull<Difficulty>(prefs[DIFFICULTY]) ?: defaults.difficulty,
             threatHighlight = prefs[THREATS] ?: defaults.threatHighlight,
             sound = prefs[SOUND] ?: defaults.sound,
+            placing = enumOrNull<PlacingMethod>(prefs[PLACING]) ?: defaults.placing,
         )
     }
 
@@ -44,5 +46,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val DIFFICULTY = stringPreferencesKey("difficulty")
         val THREATS = booleanPreferencesKey("threat_highlight")
         val SOUND = booleanPreferencesKey("sound")
+        val PLACING = stringPreferencesKey("placing")
     }
 }

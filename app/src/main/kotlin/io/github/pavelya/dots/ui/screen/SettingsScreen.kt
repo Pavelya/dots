@@ -37,6 +37,7 @@ import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.Difficulty
 import io.github.pavelya.dots.data.GameLength
+import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.data.SampleProgress
 
 /** The number of taps on the version line that opens the developer menu, as Android's "Build number" does. */
@@ -159,6 +160,25 @@ fun DeveloperScreen(
                 )
             },
             onSelect = { onChange(settings.copy(difficulty = it)) },
+        )
+
+        Section(R.string.developer_placing)
+        Text(stringResource(R.string.developer_placing_note), style = MaterialTheme.typography.bodyMedium)
+        Choices(
+            options = PlacingMethod.entries,
+            selected = settings.placing,
+            label = {
+                stringResource(
+                    when (it) {
+                        PlacingMethod.TWO_TAPS -> R.string.placing_two_taps
+                        PlacingMethod.ZOOM -> R.string.placing_zoom
+                        PlacingMethod.MAGNIFIER -> R.string.placing_magnifier
+                        PlacingMethod.DRAG -> R.string.placing_drag
+                        PlacingMethod.LONG_PRESS -> R.string.placing_long_press
+                    },
+                )
+            },
+            onSelect = { onChange(settings.copy(placing = it)) },
         )
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))

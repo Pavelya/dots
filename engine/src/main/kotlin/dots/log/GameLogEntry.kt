@@ -33,6 +33,12 @@ enum class Outcome {
  * @property undos how often the player took a move back
  * @property red dots captured by red at the time of writing; [blue] likewise
  * @property record a free game's [GameRecord] or a campaign level's [LevelRecord]
+ * @property placing how the players placed their dots (the app's placing method, e.g. "two-taps"),
+ *   so that methods can be compared; empty in logs written before it was recorded
+ * @property touches the touches on the board that ended on the players' turns: taps, presses and
+ *   releases, whether or not they placed a dot
+ * @property placed the dots the players placed by touch, undone ones included; [touches] / [placed]
+ *   is the taps per dot
  */
 data class GameLogEntry(
     val appVersion: String,
@@ -46,6 +52,9 @@ data class GameLogEntry(
     val red: Int,
     val blue: Int,
     val record: PlayRecord,
+    val placing: String = "",
+    val touches: Int = 0,
+    val placed: Int = 0,
 ) {
     val vsComputer: Boolean get() = opponent != HUMAN
 
@@ -69,6 +78,9 @@ data class GameLogEntry(
         field("outcome", outcome.name.lowercase()).append(',')
         field("red", red).append(',')
         field("blue", blue).append(',')
+        field("placing", placing).append(',')
+        field("touches", touches).append(',')
+        field("placed", placed).append(',')
         field("record", record.toText())
         append('}')
     }
@@ -128,6 +140,7 @@ data class GameLogEntry(
             val fields = FlatJson.parse(line)
             fun text(name: String) = fields[name] as? String ?: throw IllegalArgumentException("'$name' missing or not text in: $line")
             fun number(name: String) = fields[name] as? Long ?: throw IllegalArgumentException("'$name' missing or not a number in: $line")
+            fun optionalNumber(name: String) = fields[name]?.let { it as? Long ?: throw IllegalArgumentException("'$name' not a number in: $line") }
             fun flag(name: String) = fields[name] as? Boolean ?: throw IllegalArgumentException("'$name' missing or not true/false in: $line")
             val outcome = Outcome.entries.firstOrNull { it.name.lowercase() == text("outcome") }
                 ?: throw IllegalArgumentException("unknown outcome in: $line")
@@ -143,6 +156,10 @@ data class GameLogEntry(
                 red = number("red").toInt(),
                 blue = number("blue").toInt(),
                 record = parseRecord(text("record")),
+                // Logs from before placing methods were compared have none of these three.
+                placing = fields["placing"]?.let { it as? String ?: throw IllegalArgumentException("'placing' not text in: $line") } ?: "",
+                touches = optionalNumber("touches")?.toInt() ?: 0,
+                placed = optionalNumber("placed")?.toInt() ?: 0,
             )
         }
 

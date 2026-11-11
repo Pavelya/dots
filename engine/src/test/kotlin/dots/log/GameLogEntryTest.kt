@@ -28,6 +28,7 @@ class GameLogEntryTest {
         val end = game.state
         return GameLogEntry.start(game.record, opponent = "normal", threatHighlight = true, now = 1_762_300_000_000, appVersion = "0.1-poc")
             .copy(updatedAt = 1_762_300_400_000, playMillis = 395_000, undos = 2, outcome = Outcome.FINISHED,
+                placing = "magnifier", touches = 40, placed = 34,
                 red = end.score(Player.RED), blue = end.score(Player.BLUE), record = game.record)
     }
 
@@ -47,9 +48,20 @@ class GameLogEntryTest {
         val entry = GameLogEntry.start(GameSettings.POC.copy(seed = 42), GameLogEntry.HUMAN, threatHighlight = false, now = 5, appVersion = "0.1")
         assertEquals(
             """{"app":"0.1","started":5,"updated":5,"play_ms":0,"opponent":"human","threats":false,"undos":0,""" +
-                """"outcome":"playing","red":0,"blue":0,"record":"dots/1 15x15 dots=33 opening=crosses seed=42 first=R |"}""",
+                """"outcome":"playing","red":0,"blue":0,"placing":"","touches":0,"placed":0,""" +
+                """"record":"dots/1 15x15 dots=33 opening=crosses seed=42 first=R |"}""",
             entry.toJson(),
         )
+    }
+
+    @Test
+    fun `a line written before placing was recorded still reads, with no method and no touches`() {
+        val old = finishedGame(2).toJson().replace(Regex(""""placing":"[^"]*","touches":\d+,"placed":\d+,"""), "")
+        val entry = GameLogEntry.parse(old)
+        assertEquals("", entry.placing)
+        assertEquals(0, entry.touches)
+        assertEquals(0, entry.placed)
+        assertEquals(finishedGame(2).copy(placing = "", touches = 0, placed = 0), entry)
     }
 
     @Test

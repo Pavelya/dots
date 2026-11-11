@@ -61,6 +61,13 @@
     <string name="settings_version">Version %1$s</string>
     <string name="developer_title">Developer menu</string>
     <string name="developer_note">Test settings from the proof of concept. Not for players.</string>
+    <string name="developer_placing">Placing a dot</string>
+    <string name="developer_placing_note">The ways of placing a dot that A-13 compares. The game log records which one each game used.</string>
+    <string name="placing_two_taps">Two taps: tap to preview, tap again to place</string>
+    <string name="placing_zoom">Zoom: the first tap zooms in, the next places</string>
+    <string name="placing_magnifier">Magnifier: a magnifier shows the point, lift to place</string>
+    <string name="placing_drag">Drag: press, drag to the point, lift to place</string>
+    <string name="placing_long_press">Long press: hold the point to place</string>
     <string name="developer_progress">Campaign progress</string>
     <string name="developer_progress_note">Replaces the stars on the world map, to try it at different points of the campaign.</string>
     <string name="developer_progress_none">A new player</string>

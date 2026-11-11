@@ -32,6 +32,7 @@ import io.github.pavelya.dots.game.LastCapture
 import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.game.OpponentLook
 import io.github.pavelya.dots.game.gameViewModel
+import io.github.pavelya.dots.ui.board.BoardInput
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -141,7 +142,7 @@ class GameScreenshotTest {
 
     @Composable
     private fun Board(ui: GameUiState, campaign: CampaignParts? = CanvasGame.parts(ui.state)) {
-        GameBoard(ui, human, campaign, onTap = {}, onUndo = {}, onPause = {})
+        GameBoard(ui, human, campaign, input = BoardInput.NONE, onUndo = {}, onPause = {})
     }
 
     /** What the screen shows against the computer after [move], with the threat highlight on, as the view model makes it. */

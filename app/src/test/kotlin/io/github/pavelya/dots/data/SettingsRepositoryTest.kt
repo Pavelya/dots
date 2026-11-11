@@ -43,7 +43,7 @@ class SettingsRepositoryTest {
 
     @Test
     fun `settings survive a restart`() = runBlocking {
-        val chosen = AppSettings(BoardSize.LARGE, GameLength.LONG, Difficulty.HARD, threatHighlight = true)
+        val chosen = AppSettings(BoardSize.LARGE, GameLength.LONG, Difficulty.HARD, threatHighlight = true, placing = PlacingMethod.MAGNIFIER)
         val first = Session(file())
         first.repository.update { chosen }
         first.close()

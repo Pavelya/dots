@@ -4,6 +4,7 @@ import dots.ai.Ai
 import dots.engine.GameSettings
 import dots.log.GameLogEntry
 import io.github.pavelya.dots.data.GameJournal
+import io.github.pavelya.dots.data.PlacingMethod
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -16,6 +17,7 @@ internal fun gameViewModel(
     showThreats: Boolean = false,
     journal: GameJournal? = null,
     clock: () -> Long = { 0L },
+    placing: () -> PlacingMethod = { PlacingMethod.TWO_TAPS },
 ): GameViewModel {
     val opponent = if (newComputer != null) "test" else GameLogEntry.HUMAN
     fun next() = GameLogEntry.start(newSettings(), opponent, showThreats, clock())
@@ -27,5 +29,6 @@ internal fun gameViewModel(
         computerDispatcher = computerDispatcher,
         replyDelayMillis = replyDelayMillis,
         clock = clock,
+        placing = placing,
     )
 }

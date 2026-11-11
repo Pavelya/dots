@@ -71,8 +71,9 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.OpponentLook
+import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.board.BoardStyle
-import io.github.pavelya.dots.ui.board.BoardView
+import io.github.pavelya.dots.ui.board.PlayableBoard
 import kotlinx.coroutines.delay
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -86,7 +87,8 @@ import kotlin.math.min
  * - **The opponent above the board:** against the computer, its face taped in like a photo, with a
  *   speech bubble; between two people, Blue's piece in the photo. Under it the opponent's piece,
  *   name, tally and score.
- * - **The board,** edge to edge, at the largest whole-dp spacing that fits ([boardSpacing]).
+ * - **The board,** edge to edge, at the largest whole-dp spacing that fits ([boardSpacing]). Dots
+ *   are placed by the [input]'s method ([PlayableBoard]).
  * - **The player below the board:** piece, name, tally and score, and the dots left.
  * - **The tool bar:** the campaign's boosters (A-05), or Undo in free play (decision 0023). Two
  *   players have none.
@@ -104,7 +106,7 @@ internal fun GameBoard(
     ui: GameUiState,
     human: Player,
     campaign: CampaignParts?,
-    onTap: (Pos?) -> Unit,
+    input: BoardInput,
     onUndo: () -> Unit,
     onPause: () -> Unit,
     modifier: Modifier = Modifier,
@@ -158,19 +160,19 @@ internal fun GameBoard(
                     Spacer(Modifier.height(12.dp))
                 }
             }
-            BoardView(
+            PlayableBoard(
                 state = state,
                 style = boardStyle,
                 description = stringResource(R.string.board_description, state.width, state.height, status(ui, names)),
+                input = input,
+                preview = ui.preview,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .size(spacing * state.width, boardHeight)
                     .testTag(BOARD_TAG),
                 lastMove = ui.lastMove,
-                preview = ui.preview,
                 dangers = ui.dangers,
                 marked = ui.level?.mission?.let(::missionDot)?.takeUnless { ui.isOver },
-                onTap = onTap,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().height(PLAYER_LINE).padding(horizontal = 16.dp),
