@@ -39,6 +39,7 @@ import androidx.compose.ui.window.DialogProperties
 import dots.campaign.Campaign
 import dots.campaign.LevelRecord
 import dots.campaign.Progress
+import dots.campaign.Tutorial
 import dots.log.GameLogEntry
 import io.github.pavelya.dots.BuildConfig
 import io.github.pavelya.dots.DotsApplication
@@ -121,6 +122,22 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
     val toMap = {
         if (!navController.popBackStack(Routes.MAP, inclusive = false)) {
             navController.navigate(Routes.MAP) { popUpTo(navController.graph.id) { inclusive = true } }
+        }
+        Unit
+    }
+    val appScope = rememberCoroutineScope()
+    // Play the tutorial (Rules) and Replay the tutorial (Settings): level 1 as practice, which
+    // changes no progress, with its guided steps shown again. It replaces the saved game, as
+    // Restart does, and the map stays under it.
+    val playTutorial = {
+        appScope.launch {
+            app.games.loaded.first { it }
+            app.settings.update { it.copy(tutorialSkipped = false) }
+            val settings = app.settings.settings.first()
+            app.games.start(levelGame(Tutorial.levels.first(), settings.threatHighlight, now = System.currentTimeMillis(), practice = true))
+            navController.navigate(Routes.GAME) {
+                if (navController.isOnStack(Routes.MAP)) popUpTo(Routes.MAP) else popUpTo(navController.graph.id) { inclusive = true }
+            }
         }
         Unit
     }
@@ -266,6 +283,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 sound = settings.value?.sound ?: AppSettings().sound,
                                 onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
                                 placing = settings.value?.placing ?: AppSettings().placing,
+                                guidesSkipped = settings.value?.tutorialSkipped ?: false,
+                                onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
                                 // Next goes back to the map, which opens the next level's card.
                                 onNext = { next ->
                                     toMap()
@@ -276,7 +295,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     }
                 }
                 composable(Routes.RULES) {
-                    RulesScreen(back)
+                    RulesScreen(onBack = back, onPlayTutorial = playTutorial)
                 }
                 composable(Routes.STATS) {
                     StandInScreen(R.string.screen_stats, "A-11", onBack = back)
@@ -299,6 +318,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             version = BuildConfig.VERSION_NAME,
                             onDetails = { navController.navigate(Routes.SETTINGS_DETAILS) },
                             onDeveloperMenu = { navController.navigate(Routes.DEVELOPER) },
+                            onReplayTutorial = playTutorial,
                             onBack = back,
                         )
                     }
@@ -330,21 +350,27 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
 
 /**
  * Where the app opens after loading (flows.md, First launch and Returning player). Until Level 1 is
- * passed, the board of Level 1: its saved game, or a new one when nothing is saved; no map and no
- * Level card, so a new player's first tap is a move. After that, or when another game is saved,
- * the map.
+ * passed, the board of Level 1: its saved game (also a practice one), or a new one when nothing is
+ * saved; no map and no Level card, so a new player's first tap is a move. After that, or when
+ * another game is saved, the map.
  */
 internal fun openingRoute(progress: Progress, saved: GameLogEntry?): String {
     val first = Campaign.levels.first()
     return when {
         progress.isPassed(first) -> Routes.MAP
-        saved == null || saved.levelCode == first.code -> Routes.GAME
+        saved == null || (saved.record as? LevelRecord)?.level?.code == first.code -> Routes.GAME
         else -> Routes.MAP
     }
 }
 
-/** The level of a saved campaign game, as its code (`1-7`); null for any other game. */
-private val GameLogEntry.levelCode: String? get() = (record as? LevelRecord)?.level?.code
+/**
+ * The level of a saved campaign game, as its code (`1-7`); null for any other game. A practice
+ * game is left out, so the level's card starts the level for real.
+ */
+private val GameLogEntry.levelCode: String? get() = (record as? LevelRecord)?.level?.code?.takeUnless { practice }
+
+/** True when [route] is on the back stack. */
+private fun NavHostController.isOnStack(route: String): Boolean = runCatching { getBackStackEntry(route) }.isSuccess
 
 /** For a saved free game: true against the computer, false between two people; null for any other game. */
 private val GameLogEntry.freeGameVsComputer: Boolean? get() = if (record is LevelRecord) null else vsComputer

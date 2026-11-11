@@ -6,8 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -24,7 +28,9 @@ import kotlin.math.max
  * which makes chains and rings visible (used to teach the rules). [dangers] marks groups close to
  * capture (the threat highlight). [marked] is the dot a level's mission is about (rescue or
  * target), circled twice in the player's ink. [guides] draws the preview's row and column across
- * the board, around a finger that hides the point itself (placing by drag).
+ * the board, around a finger that hides the point itself (placing by drag). [pointer] is the point
+ * the tutorial asks the player to tap: circled in the player's ink, with a hand pointing at it (the
+ * wireframes' "Tutorial level").
  */
 @Composable
 fun BoardView(
@@ -38,6 +44,7 @@ fun BoardView(
     dangers: List<Danger> = emptyList(),
     marked: Pos? = null,
     guides: Boolean = false,
+    pointer: Pos? = null,
 ) {
     Canvas(
         modifier = modifier
@@ -47,7 +54,46 @@ fun BoardView(
         val geometry = BoardGeometry(state.width, state.height, size.width, size.height)
         drawPosition(state, geometry, style, lastMove, preview, showLinks, dangers, marked)
         if (preview != null && guides) drawGuides(state, preview, geometry, style)
+        pointer?.let { drawPointer(geometry.center(it), geometry, style) }
     }
+}
+
+/**
+ * The tutorial's point to tap: a ring in the player's ink, and a hand, 48 x 56 dp, whose fingertip
+ * touches the point from below and to the right, so it hides little of the board around it.
+ */
+private fun DrawScope.drawPointer(at: Offset, geometry: BoardGeometry, style: BoardStyle) {
+    drawRing(at, geometry.spacing * 0.45f, style.color(Player.RED), max(geometry.spacing * 0.05f, 1.5.dp.toPx()))
+    val unit = 1.dp.toPx()
+    translate(at.x - 6 * unit, at.y + 4 * unit) {
+        scale(unit, unit, pivot = Offset.Zero) {
+            drawPath(HAND, style.background)
+            drawPath(HAND, style.pencil, style = Stroke(width = 1.6f, join = StrokeJoin.Round))
+        }
+    }
+}
+
+/** A hand pointing up with its first finger, in a 48 x 56 box (the wireframe's tutorial hand). */
+private val HAND: Path = Path().apply {
+    moveTo(14f, 4f)
+    relativeQuadraticTo(4f, -3f, 7f, 0f)
+    relativeLineTo(0f, 22f)
+    relativeLineTo(2f, -10f)
+    relativeQuadraticTo(4f, -3f, 7f, 0f)
+    relativeLineTo(0f, 10f)
+    relativeLineTo(2f, -6f)
+    relativeQuadraticTo(4f, -3f, 7f, 0f)
+    relativeLineTo(0f, 8f)
+    relativeLineTo(1f, -3f)
+    relativeQuadraticTo(4f, -2f, 6f, 1f)
+    relativeLineTo(0f, 14f)
+    relativeQuadraticTo(0f, 14f, -14f, 14f)
+    relativeLineTo(-6f, 0f)
+    relativeQuadraticTo(-8f, 0f, -13f, -8f)
+    relativeLineTo(-9f, -14f)
+    relativeQuadraticTo(-1f, -5f, 4f, -5f)
+    relativeLineTo(6f, 6f)
+    close()
 }
 
 /** Every layer of the position, in the theme's drawing order. */

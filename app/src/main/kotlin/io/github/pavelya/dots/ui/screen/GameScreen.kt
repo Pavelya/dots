@@ -53,6 +53,10 @@ internal const val OPENING_MILLIS = 1_500L
  *
  * Result's buttons: Retry and Play again start the next game here; Map goes to [onToMap]; Next, in
  * the campaign, goes to [onNext] with the level whose card the map should open.
+ *
+ * In the tutorial's levels (A-06) the guided steps show once the level opening has gone, unless
+ * [guidesSkipped]. Skip hides them and calls [onSkipGuides], which saves that. In a practice game
+ * of the tutorial, Next plays its next level here, and after the last one goes to the map.
  */
 @Composable
 fun GameScreen(
@@ -63,6 +67,8 @@ fun GameScreen(
     onSound: (Boolean) -> Unit = {},
     onNext: (Level?) -> Unit = { onToMap() },
     placing: PlacingMethod = PlacingMethod.TWO_TAPS,
+    guidesSkipped: Boolean = false,
+    onSkipGuides: () -> Unit = {},
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val names = Names(ui.vsComputer, viewModel.human)
@@ -80,6 +86,8 @@ fun GameScreen(
             opening = false
         }
     }
+    val guided = ui.guided && !guidesSkipped
+    val guide = ui.guide?.takeIf { guided && !opening }
     val campaign = level?.let { playing ->
         val mission = ui.mission
         val note = if (opening || mission == null) null else missionNote(playing, mission)
@@ -95,6 +103,12 @@ fun GameScreen(
             onPause = { paused = true },
             // Behind Pause, the board is out of reach, also for TalkBack.
             modifier = if (paused && !ui.isOver) Modifier.clearAndSetSemantics {} else Modifier,
+            guided = guided,
+            guide = guide,
+            onSkipGuide = {
+                viewModel.skipGuides()
+                onSkipGuides()
+            },
         )
         if (opening && level != null) {
             LevelOpening(level, Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp))
@@ -113,7 +127,14 @@ fun GameScreen(
             ResultNote(
                 ui = ui,
                 names = names,
-                onNext = { onNext(ui.levelEnd?.next) },
+                onNext = {
+                    val next = ui.levelEnd?.next
+                    when {
+                        !ui.practice -> onNext(next)
+                        next != null -> viewModel.practiceNext()
+                        else -> onToMap()
+                    }
+                },
                 onAgain = { paused = false; viewModel.playAgain() },
                 onAgainWithHint = { paused = false; viewModel.retryWith(Booster.HINT) },
                 onMap = onToMap,

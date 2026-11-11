@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dots.campaign.Mission
+import dots.campaign.Tutorial
 import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.R
@@ -92,6 +93,11 @@ import kotlin.math.min
  * - **The player below the board:** piece, name, tally and score, and the dots left.
  * - **The tool bar:** the campaign's boosters (A-05), or Undo in free play (decision 0023). Two
  *   players have none.
+ * - **The tutorial** (the wireframes' "Tutorial level"): a [guided] level has no tool bar and
+ *   keeps room just above the board for the step note ([guide], [TutorialNote]), which shows in
+ *   place of the mission note; the board circles the point to tap, with a hand pointing at it.
+ *   Skip calls [onSkipGuide]. When there is no room above the board, the note lies over its top
+ *   rows.
  *
  * A pen stroke under a name marks the side to move. Between two people, a banner names the side to
  * play at each change of turn. Spare height goes to the opponent; when there is too little for the
@@ -110,6 +116,9 @@ internal fun GameBoard(
     onUndo: () -> Unit,
     onPause: () -> Unit,
     modifier: Modifier = Modifier,
+    guided: Boolean = false,
+    guide: Tutorial.Step? = null,
+    onSkipGuide: () -> Unit = {},
 ) {
     val colors = MaterialTheme.colorScheme
     val dark = colors.background.luminance() < 0.5f
@@ -119,15 +128,18 @@ internal fun GameBoard(
     val names = Names(ui.vsComputer, human)
     val below = if (ui.vsComputer) human else Player.RED
     val above = below.opponent
-    val toolBar = campaign != null || ui.vsComputer
+    val toolBar = !guided && (campaign != null || ui.vsComputer)
     val turnBanner = turnBanner(ui)
     BoxWithConstraints(modifier.fillMaxSize().background(style.paper)) {
         val bottom = PLAYER_LINE + if (toolBar) TOOL_BAR else 0.dp
         val spacing = boardSpacing(maxWidth, maxHeight - TOP_ROW - bottom, state.width, state.height)
         val boardHeight = spacing * state.height
         val spare = maxHeight - TOP_ROW - bottom - boardHeight
+        // The tutorial's note takes the space just above the board, when there is that much.
+        val guideRoom = if (guided && spare >= GUIDE_ROOM) GUIDE_ROOM else 0.dp
+        val room = spare - guideRoom
         // On a small phone the opponent's line moves into the top row, and the mission note narrows to make room.
-        val compact = spare < OPPONENT_LINE
+        val compact = room < OPPONENT_LINE
         val opponentLine = @Composable { inTopRow: Boolean ->
             SideLine(above, names.of(above), state.score(above), toMove = isToMove(ui, above), style, inTopRow)
         }
@@ -151,14 +163,15 @@ internal fun GameBoard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Bottom,
             ) {
-                if (spare >= OPPONENT_WITH_PHOTO) {
+                if (room >= OPPONENT_WITH_PHOTO) {
                     Photo(above, ui.opponent, style)
                     Spacer(Modifier.height(8.dp))
                 }
-                if (spare >= OPPONENT_LINE) {
+                if (room >= OPPONENT_LINE) {
                     opponentLine(false)
                     Spacer(Modifier.height(12.dp))
                 }
+                Spacer(Modifier.height(guideRoom))
             }
             PlayableBoard(
                 state = state,
@@ -173,6 +186,7 @@ internal fun GameBoard(
                 lastMove = ui.lastMove,
                 dangers = ui.dangers,
                 marked = ui.level?.mission?.let(::missionDot)?.takeUnless { ui.isOver },
+                pointer = guide?.point,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().height(PLAYER_LINE).padding(horizontal = 16.dp),
@@ -199,7 +213,16 @@ internal fun GameBoard(
                 }
             }
         }
-        campaign?.mission?.let { MissionNote(style, Modifier.align(Alignment.TopEnd), if (compact) 120.dp else 136.dp, it) }
+        if (guide == null) campaign?.mission?.let { MissionNote(style, Modifier.align(Alignment.TopEnd), if (compact) 120.dp else 136.dp, it) }
+        if (guide != null) {
+            // Its bottom 4 dp above the board; with no room there, over the board's top rows.
+            val place = if (guideRoom > 0.dp) {
+                Modifier.align(Alignment.BottomCenter).padding(bottom = bottom + boardHeight + 4.dp)
+            } else {
+                Modifier.align(Alignment.TopCenter).padding(top = TOP_ROW + spare + 6.dp)
+            }
+            TutorialNote(guide, input.method, style, onSkipGuide, place.padding(horizontal = 14.dp))
+        }
         turnBanner?.let { TurnBanner(it, style, Modifier.offset(y = maxHeight * 0.38f)) }
     }
 }
@@ -212,6 +235,9 @@ private val PLAYER_LINE = 56.dp
 
 /** The tool bar: 56 dp buttons and a little paper under them. */
 private val TOOL_BAR = 64.dp
+
+/** The room the tutorial's note takes above the board: a label and two lines of handwriting. */
+private val GUIDE_ROOM = 96.dp
 
 /** The opponent's line above the board, when it fits there. */
 private val OPPONENT_LINE = 52.dp

@@ -39,6 +39,8 @@ enum class Outcome {
  *   releases, whether or not they placed a dot
  * @property placed the dots the players placed by touch, undone ones included; [touches] / [placed]
  *   is the taps per dot
+ * @property practice true for a campaign level played as practice, such as a replay of the
+ *   tutorial: its end changes no campaign progress
  */
 data class GameLogEntry(
     val appVersion: String,
@@ -55,6 +57,7 @@ data class GameLogEntry(
     val placing: String = "",
     val touches: Int = 0,
     val placed: Int = 0,
+    val practice: Boolean = false,
 ) {
     val vsComputer: Boolean get() = opponent != HUMAN
 
@@ -81,6 +84,7 @@ data class GameLogEntry(
         field("placing", placing).append(',')
         field("touches", touches).append(',')
         field("placed", placed).append(',')
+        field("practice", practice).append(',')
         field("record", record.toText())
         append('}')
     }
@@ -160,6 +164,8 @@ data class GameLogEntry(
                 placing = fields["placing"]?.let { it as? String ?: throw IllegalArgumentException("'placing' not text in: $line") } ?: "",
                 touches = optionalNumber("touches")?.toInt() ?: 0,
                 placed = optionalNumber("placed")?.toInt() ?: 0,
+                // Logs from before tutorial replays have no "practice".
+                practice = fields["practice"]?.let { it as? Boolean ?: throw IllegalArgumentException("'practice' not true/false in: $line") } ?: false,
             )
         }
 

@@ -48,7 +48,7 @@ Both use one format, `GameLogEntry` in the engine (`dots.log`), one line of JSON
 
 ```
 {"app":"0.1-poc","started":1762335720000,"updated":1762336100000,"play_ms":380000,"opponent":"normal",
- "threats":true,"undos":1,"outcome":"finished","red":5,"blue":3,"placing":"two-taps","touches":70,"placed":34,
+ "threats":true,"undos":1,"outcome":"finished","red":5,"blue":3,"placing":"two-taps","touches":70,"placed":34,"practice":false,
  "record":"dots/1 15x15 dots=33 ... | h8 g7 ..."}
 ```
 
@@ -61,6 +61,8 @@ Both use one format, `GameLogEntry` in the engine (`dots.log`), one line of JSON
   players' touches on the board, and `placed` the dots they placed by touch, undone ones included.
   `cli placing-report` turns them into undos per game and taps per dot for each method. Logs from
   before these fields were added lack them.
+- `practice` is true for a campaign level played as practice, such as a replay of the tutorial:
+  its end changes no campaign progress. Logs from before it was added lack it, and read as false.
 
 Files, in the app's private folder (`files/games/`, excluded from backups):
 

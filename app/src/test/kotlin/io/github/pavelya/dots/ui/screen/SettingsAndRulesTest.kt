@@ -9,9 +9,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
-import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.PlacingMethod
@@ -53,7 +51,7 @@ class SettingsAndRulesTest {
         var latest = AppSettings()
         compose.setContent {
             var settings by remember { mutableStateOf(AppSettings()) }
-            SettingsScreen(settings, onChange = { settings = it; latest = it }, version = "1.0", onDetails = {}, onDeveloperMenu = {}, onBack = {})
+            SettingsScreen(settings, onChange = { settings = it; latest = it }, version = "1.0", onDetails = {}, onDeveloperMenu = {}, onReplayTutorial = {}, onBack = {})
         }
         compose.onNodeWithText("Show threats").performClick()
 
@@ -65,7 +63,7 @@ class SettingsAndRulesTest {
         var latest = AppSettings()
         compose.setContent {
             var settings by remember { mutableStateOf(AppSettings()) }
-            SettingsScreen(settings, onChange = { settings = it; latest = it }, version = "1.0", onDetails = {}, onDeveloperMenu = {}, onBack = {})
+            SettingsScreen(settings, onChange = { settings = it; latest = it }, version = "1.0", onDetails = {}, onDeveloperMenu = {}, onReplayTutorial = {}, onBack = {})
         }
         compose.onNodeWithText("Two taps: tap a point, then tap it again").assertIsSelected()
 
@@ -79,7 +77,7 @@ class SettingsAndRulesTest {
     fun `seven taps on the version open the developer menu, fewer do not`() {
         var opened = 0
         compose.setContent {
-            SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onDetails = {}, onDeveloperMenu = { opened++ }, onBack = {})
+            SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onDetails = {}, onDeveloperMenu = { opened++ }, onReplayTutorial = {}, onBack = {})
         }
         val version = compose.onNodeWithText("Version 1.0")
         repeat(DEVELOPER_TAPS - 1) { version.performClick() }
@@ -91,12 +89,29 @@ class SettingsAndRulesTest {
     }
 
     @Test
-    fun `the rules show all three pictures`() {
-        compose.setContent { DotsTheme { RulesScreen(onBack = {}) } }
+    fun `How to play shows the five rules with their pictures, and Play the tutorial`() {
+        var played = 0
+        compose.setContent { DotsTheme { RulesScreen(onBack = {}, onPlayTutorial = { played++ }) } }
 
-        compose.onNodeWithContentDescription("Red’s dots linked into a chain, some diagonally.").assertIsDisplayed()
-        compose.onNodeWithContentDescription("A red ring of four dots has captured a blue dot.").assertIsDisplayed()
-        compose.onNodeWithContentDescription("A blue dot on the edge, with red dots around it, is safe.").assertIsDisplayed()
-        compose.onRoot().captureRoboImage("src/test/screenshots/rules_screen.png")
+        for (title in listOf("Placing", "Capturing", "Empty rings", "The border", "How a game ends")) {
+            compose.onNodeWithText(title).assertExists()
+        }
+        compose.onNodeWithContentDescription("A red ring of four dots has captured a blue dot.").assertExists()
+        compose.onNodeWithContentDescription("A red ring of four dots around an empty point.").assertExists()
+        compose.onNodeWithContentDescription("A blue dot on the edge, with red dots around it, is safe.").assertExists()
+
+        compose.onNodeWithText("Play the tutorial").assertIsDisplayed().performClick()
+        assertEquals(1, played)
+    }
+
+    @Test
+    fun `Replay the tutorial is under Help`() {
+        var replayed = 0
+        compose.setContent {
+            SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onDetails = {}, onDeveloperMenu = {}, onReplayTutorial = { replayed++ }, onBack = {})
+        }
+        compose.onNodeWithText("Help").assertIsDisplayed()
+        compose.onNodeWithText("Replay the tutorial").performClick()
+        assertEquals(1, replayed)
     }
 }
