@@ -133,9 +133,9 @@ internal const val MAGNIFIER_ZOOM = 2f
 
 /**
  * A round magnifier showing the board around [finger], [MAGNIFIER_ZOOM] times larger, with the
- * preview in the middle. It sits [MAGNIFIER_LIFT] above the finger, clear of a fingertip; near the
- * top of the board, where that would leave the screen, it sits beside the finger, toward the middle.
- * It is drawn by the board but may reach past its top edge, over the opponent's line.
+ * preview in the middle. It sits [MAGNIFIER_LIFT] above the finger, clear of a fingertip, and may
+ * reach past the board's top edge, over the opponent's line. Near the top of the board, where it
+ * would leave the screen, it sits beside the finger, toward the middle, inside the board.
  */
 private fun DrawScope.drawMagnifier(finger: Offset, board: BoardGeometry, style: BoardStyle, drawBoard: (BoardGeometry) -> Unit) {
     val radius = MAGNIFIER_RADIUS.toPx()
@@ -144,7 +144,7 @@ private fun DrawScope.drawMagnifier(finger: Offset, board: BoardGeometry, style:
         Offset(finger.x, finger.y - lift)
     } else {
         val side = if (finger.x < size.width / 2) 1 else -1
-        Offset(finger.x + side * (radius + SIDE_GAP.toPx()), max(finger.y - SIDE_GAP.toPx(), radius - TOP_ROOM.toPx()))
+        Offset(finger.x + side * (radius + SIDE_GAP.toPx()), max(finger.y - SIDE_GAP.toPx(), radius))
     }
     val circle = Path().apply { addOval(Rect(center, radius)) }
     clipPath(circle) {
