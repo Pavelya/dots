@@ -19,8 +19,6 @@ import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.printToLog
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -249,11 +247,9 @@ class NavigationTest {
         assertEquals(Routes.GAME, nav.currentDestination?.route)
         assertEquals(LEVEL_1_PASSED, runBlocking { app.progress.progress.first() })
 
-        // The map is under the tutorial.
+        // The map is under the tutorial: Back opens Pause, once Result has gone.
+        gone("You won!")
         back()
-        compose.waitForIdle()
-        println("A06DBG route=${nav.currentDestination?.route} ui=${app.games.current.value?.record?.toText()}")
-        compose.onRoot().printToLog("A06DBG")
         waitFor("To the map")
         tap("To the map")
         at(Routes.MAP)

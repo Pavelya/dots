@@ -72,7 +72,9 @@ class TutorialScreenTest {
         val ui = vm.ui.value
         throw AssertionError(
             "no turn: guide=${ui.guide} thinking=${ui.thinking} over=${ui.isOver} preview=${ui.preview} " +
-                "level=${ui.level?.code} toMove=${ui.state.toMove}\n${ui.state.toAscii()}",
+                "level=${ui.level?.code} toMove=${ui.state.toMove}\n${ui.state.toAscii()}\n" +
+                    Thread.getAllStackTraces().entries.filter { "Default" in it.key.name || it.key.name == "main" || "Test" in it.key.name }
+                        .joinToString("\n\n") { (t, s) -> t.name + " " + t.state + "\n" + s.take(25).joinToString("\n") },
             e,
         )
     }
