@@ -141,7 +141,7 @@ over the map or the board, which stay visible around it.
 
 | Screen | Opens from | What the player sees and does | Built in |
 | --- | --- | --- | --- |
-| Loading | App start | The app icon on paper, as on Android's own start-up screen, with its red ring drawing itself as the game loads, and a one-line tip. No buttons. Then the map; until Level 1 is finished, Level 1 instead. | A-01, A-06 |
+| Loading | App start | The app icon on paper, as on Android's own start-up screen, with its red ring drawing itself as the game loads, and a one-line tip. No buttons. Then the map; until Level 1 is finished, Level 1 instead. | A-01, A-06, A-18 |
 | World map (home) | Loading; Back from Rules, Stats, Shop or Settings; leaving a game | One scrolling map with a section per world. Finished levels with their stars, the next level circled and marked "next", boss levels as fortresses, a chest every 10 levels, locked worlds with the stars they need. No Play buttons: a level opens its Level card. Labelled icons for Today's puzzle, Play a game, How to play, Stats, Shop and Settings; the player's title and stars. | A-01, A-02, A-04 |
 | Level card | A level on the map, Next on Result | Over the map: the mission in one line, a small picture of the board, the computer's face for its strength, its head start, allowed boosters and star targets. A boss level adds the boss's name, face and rule. One button: Start, or Resume when the level's game is saved. Tapping a booster opens Boosters. | A-03 |
 | Boosters | A booster on the Level card | Wall, Hint, Bomb, Double dot and Undo: how many the player has, what each does, how to earn more. Close returns to where it opened. | A-05 |

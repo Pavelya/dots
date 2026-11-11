@@ -5,16 +5,24 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -23,12 +31,14 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.compose.ui.window.DialogProperties
 import dots.campaign.Campaign
 import dots.campaign.LevelRecord
+import dots.campaign.Progress
 import dots.log.GameLogEntry
 import io.github.pavelya.dots.BuildConfig
 import io.github.pavelya.dots.DotsApplication
@@ -60,7 +70,10 @@ import kotlinx.coroutines.withContext
  * draws have no route, and Pause, Result, the booster preview and the tutorial are states of [GAME].
  */
 object Routes {
-    /** Shown while the saved game is read; then the map. */
+    /**
+     * Shown while the saved game and the progress are read; then the map, or Level 1 until it is
+     * passed ([openingRoute]).
+     */
     const val LOADING = "loading"
 
     /** Home. Back here leaves the app. */
@@ -104,20 +117,42 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
     val app = LocalContext.current.applicationContext as DotsApplication
     val back = { navController.popBackStack(); Unit }
     // Leaving a game, or a note over the map, always lands on the map (flows.md, "Around the board").
-    val toMap = { navController.popBackStack(Routes.MAP, inclusive = false); Unit }
+    // A new player's first game opens straight from the loading screen, with no map below it yet.
+    val toMap = {
+        if (!navController.popBackStack(Routes.MAP, inclusive = false)) {
+            navController.navigate(Routes.MAP) { popUpTo(navController.graph.id) { inclusive = true } }
+        }
+        Unit
+    }
+    val top by navController.currentBackStackEntryAsState()
+    val starting = top == null || top?.destination?.route == Routes.LOADING
     DotsTheme {
-        Scaffold(modifier = Modifier.fillMaxSize()) { insets ->
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            // Paper under the system bars too, as on Android's own start-up screen.
+            containerColor = if (starting) colorResource(R.color.paper) else MaterialTheme.colorScheme.background,
+        ) { insets ->
             NavHost(
                 navController = navController,
                 startDestination = Routes.LOADING,
                 modifier = Modifier.padding(insets),
             ) {
                 composable(Routes.LOADING) {
-                    val loaded by app.games.loaded.collectAsStateWithLifecycle()
-                    LaunchedEffect(loaded) {
-                        if (loaded) navController.navigate(Routes.MAP) { popUpTo(Routes.LOADING) { inclusive = true } }
+                    val tips = stringArrayResource(R.array.loading_tips)
+                    val tip = rememberSaveable { tips.indices.random() }
+                    var drawn by remember { mutableStateOf(false) }
+                    LoadingScreen(tips[tip], onDrawn = { drawn = true }, outside = ScaffoldDefaults.contentWindowInsets)
+                    LaunchedEffect(Unit) {
+                        val progress = app.progress.progress.first()
+                        app.games.loaded.first { it }
+                        val opening = openingRoute(progress, app.games.current.value)
+                        if (opening == Routes.GAME && app.games.current.value == null) {
+                            val settings = app.settings.settings.first()
+                            app.games.start(levelGame(Campaign.levels.first(), settings.threatHighlight, now = System.currentTimeMillis()))
+                        }
+                        snapshotFlow { drawn }.first { it }
+                        navController.navigate(opening) { popUpTo(Routes.LOADING) { inclusive = true } }
                     }
-                    LoadingScreen()
                 }
                 composable(Routes.MAP) {
                     val map by app.progress.map.collectAsStateWithLifecycle()
@@ -288,6 +323,21 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 }
             }
         }
+    }
+}
+
+/**
+ * Where the app opens after loading (flows.md, First launch and Returning player). Until Level 1 is
+ * passed, the board of Level 1: its saved game, or a new one when nothing is saved; no map and no
+ * Level card, so a new player's first tap is a move. After that, or when another game is saved,
+ * the map.
+ */
+internal fun openingRoute(progress: Progress, saved: GameLogEntry?): String {
+    val first = Campaign.levels.first()
+    return when {
+        progress.isPassed(first) -> Routes.MAP
+        saved == null || saved.levelCode == first.code -> Routes.GAME
+        else -> Routes.MAP
     }
 }
 

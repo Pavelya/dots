@@ -4,6 +4,10 @@ import android.content.Intent
 import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -19,6 +23,7 @@ import androidx.navigation.NavController
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.espresso.Espresso
+import dots.campaign.LevelRecord
 import dots.campaign.Progress
 import dots.engine.GameSettings
 import dots.log.GameLogEntry
@@ -52,19 +57,39 @@ class NavigationTest {
     private lateinit var nav: NavHostController
     private val visited = mutableSetOf<String>()
 
-    private fun launch() {
+    /** How many times the app has been opened; a new number opens it again, with a new back stack. */
+    private var opened by mutableIntStateOf(0)
+
+    /** Saves [progress], opens the app as the player does, and waits for the loading screen to hand over to [route]. */
+    private fun launch(progress: Progress = LEVEL_1_PASSED, route: String = Routes.MAP) {
+        runBlocking { app.progress.replace(progress) }
         compose.setContent {
-            val controller = rememberNavController()
-            DisposableEffect(controller) {
-                nav = controller
-                val listener = NavController.OnDestinationChangedListener { _, destination, _ -> destination.route?.let { visited += it } }
-                controller.addOnDestinationChangedListener(listener)
-                onDispose { controller.removeOnDestinationChangedListener(listener) }
+            key(opened) {
+                val controller = rememberNavController()
+                DisposableEffect(controller) {
+                    nav = controller
+                    val listener = NavController.OnDestinationChangedListener { _, destination, _ -> destination.route?.let { visited += it } }
+                    controller.addOnDestinationChangedListener(listener)
+                    onDispose { controller.removeOnDestinationChangedListener(listener) }
+                }
+                DotsApp(controller)
             }
-            DotsApp(controller)
         }
-        at(Routes.MAP)
+        at(route)
     }
+
+    /** Closes the app and opens it again, from the loading screen; the saved game and progress stay. */
+    private fun reopen(route: String) {
+        compose.runOnIdle {
+            visited.clear()
+            opened++
+        }
+        compose.waitForIdle()
+        at(route)
+    }
+
+    /** The level code of the saved game, if it is a campaign game. */
+    private val savedLevel get() = (app.games.current.value?.record as? LevelRecord)?.level?.code
 
     /**
      * Waits until the screen on top is [route] and drawn: a dialog's window open, a screen's
@@ -121,12 +146,12 @@ class NavigationTest {
         visit("Settings", Routes.SETTINGS)
 
         // Level card, then Boosters over it: Back closes Boosters first.
-        compose.onNodeWithContentDescription("Level 1-1, next").performClick()
+        compose.onNodeWithContentDescription("Level 1-2, next").performClick()
         at(Routes.LEVEL)
         assertEquals(1, nav.currentBackStackEntry?.arguments?.getInt("world"))
-        assertEquals(1, nav.currentBackStackEntry?.arguments?.getInt("number"))
-        waitFor("World 1 · Level 1")
-        // Level 1-1 allows no boosters; a level that does opens Boosters from its chips (LevelCardTest).
+        assertEquals(2, nav.currentBackStackEntry?.arguments?.getInt("number"))
+        waitFor("World 1 · Level 2")
+        // Boosters opens from a booster chip on the card of a level that allows one (LevelCardTest).
         compose.runOnUiThread { nav.navigate(Routes.BOOSTERS) }
         at(Routes.BOOSTERS)
         back()
@@ -276,13 +301,9 @@ class NavigationTest {
     }
 
     @Test
-    fun `a level is chosen, played and passed in two taps, its stars are saved, and Next opens the next level's card`() {
-        launch()
-        compose.onNodeWithContentDescription("Level 1-1, next").performClick()
-        at(Routes.LEVEL)
-        waitFor("First Dot")
-        tap("Start")
-        at(Routes.GAME)
+    fun `a new player's first start opens Level 1, the first tap is a move, and Next shows the map for the first time`() {
+        launch(Progress.NONE, route = Routes.GAME)
+        assertEquals("1-1", savedLevel)
         waitForSide("You, score 0, to move")
 
         // Level 1-1: the ring around the computer's dot needs one more dot, below it.
@@ -291,6 +312,8 @@ class NavigationTest {
         compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.progress.progress.first() }.stars["1-1"] == 3 }
         waitFor("Level 1-2 is open")
         compose.onNodeWithContentDescription("3 of 3 stars").assertExists()
+        // No map and no Level card on the way.
+        assertEquals(setOf(Routes.LOADING, Routes.GAME), visited)
 
         tap("Next")
         at(Routes.LEVEL)
@@ -298,12 +321,60 @@ class NavigationTest {
         waitFor("World 1 · Level 2")
         back()
         at(Routes.MAP)
+        Espresso.pressBackUnconditionally()
+        assertTrue(compose.activity.isFinishing)
+    }
+
+    @Test
+    fun `a return before Level 1 is passed opens it where the player left off`() {
+        launch(Progress.NONE, route = Routes.GAME)
+        waitForSide("You, score 0, to move")
+        // A dot away from the ring, then the computer's reply.
+        place(0, 0, size = 7)
+        compose.waitUntil(timeoutMillis = 5_000) { (app.games.current.value?.record?.actions?.size ?: 0) >= 2 }
+        waitForSide("You, score 0, to move")
+        val saved = app.games.current.value!!
+
+        reopen(Routes.GAME)
+
+        assertEquals(setOf(Routes.LOADING, Routes.GAME), visited)
+        val resumed = app.games.current.value!!
+        assertEquals(saved.started, resumed.started)
+        assertEquals(saved.record.actions, resumed.record.actions)
+        waitForSide("You, score 0, to move")
+
+        // To the map shows the map early; the next start still opens Level 1.
+        compose.onNodeWithContentDescription("Pause").performClick()
+        tap("To the map")
+        at(Routes.MAP)
+        compose.onNodeWithContentDescription("Level 1-1, next").assertExists()
+        reopen(Routes.GAME)
+        assertEquals(saved.started, app.games.current.value?.started)
+    }
+
+    @Test
+    fun `a return after Level 1 is passed opens the map`() {
+        launch(LEVEL_1_PASSED, route = Routes.MAP)
+        assertEquals(setOf(Routes.LOADING, Routes.MAP), visited)
+        compose.onNodeWithContentDescription("Level 1-2, next").assertExists()
+
+        // A level game left for the map stays saved, and the app still opens on the map.
+        compose.onNodeWithContentDescription("Level 1-2, next").performClick()
+        at(Routes.LEVEL)
+        tap("Start")
+        at(Routes.GAME)
+        compose.onNodeWithContentDescription("Pause").performClick()
+        tap("To the map")
+        at(Routes.MAP)
+        reopen(Routes.MAP)
+        assertEquals(setOf(Routes.LOADING, Routes.MAP), visited)
+        assertEquals("1-2", savedLevel)
     }
 
     @Test
     fun `a level left for the map is resumed from its card`() {
         launch()
-        compose.onNodeWithContentDescription("Level 1-1, next").performClick()
+        compose.onNode(hasContentDescription("Level 1-1,", substring = true)).performClick()
         at(Routes.LEVEL)
         tap("Start")
         at(Routes.GAME)
@@ -313,7 +384,7 @@ class NavigationTest {
         tap("To the map")
         at(Routes.MAP)
 
-        compose.onNodeWithContentDescription("Level 1-1, next").performClick()
+        compose.onNode(hasContentDescription("Level 1-1,", substring = true)).performClick()
         at(Routes.LEVEL)
         waitFor("Resume")
         tap("Resume")
@@ -323,6 +394,11 @@ class NavigationTest {
 
     @After
     fun `forget the progress`() = runBlocking { app.progress.replace(Progress.NONE) }
+
+    private companion object {
+        /** Level 1 passed with one star: the app opens on the map, and a replay can earn more. */
+        val LEVEL_1_PASSED = Progress(mapOf("1-1" to 1))
+    }
 
     @Test
     fun `the developer menu holds the test settings and shares the game log`() {

@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Only the window behind Compose; the app's look is in ui/theme/Theme.kt. -->
-    <style name="Theme.Dots" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Only the window behind Compose; the app's look is in ui/theme/Theme.kt. Until Compose draws
+         its first frame, the window shows the loading screen's icon on paper. -->
+    <style name="Theme.Dots" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@drawable/loading_window</item>
+    </style>
 </resources>

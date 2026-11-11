@@ -4,6 +4,15 @@
     <string name="home_rules">Rules</string>
     <string name="home_settings">Settings</string>
     <string name="loading">Loading</string>
+    <!-- One shows under the icon while the game loads, picked at random. Rules only, one short line each. -->
+    <string-array name="loading_tips">
+        <item>Close a ring to capture dots.</item>
+        <item>Your dots link diagonally too.</item>
+        <item>Dots on the edge are always safe.</item>
+        <item>An empty ring captures nothing.</item>
+        <item>Inside a ring is out of play.</item>
+        <item>Whoever captures more wins.</item>
+    </string-array>
     <string name="map_level">Level %1$s</string>
     <string name="map_world">World %1$d · %2$s</string>
     <string name="map_world_number">World %1$d</string>
