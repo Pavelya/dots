@@ -2,6 +2,7 @@ package io.github.pavelya.dots.ui.screen
 
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.TouchInjectionScope
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
@@ -53,7 +54,7 @@ class PlacingMethodsTest {
     private fun GameViewModel.owner(x: Int, y: Int): Player? = ui.value.state.ownerAt(Pos(x, y))
 
     @Test
-    fun `two taps: the first shows the preview, the second places`() {
+    fun `two taps, the first shows the preview, the second places`() {
         val vm = open(PlacingMethod.TWO_TAPS)
         touch { click(it.center(1, 1)) }
         assertEquals(Pos(1, 1), vm.ui.value.preview)
@@ -64,7 +65,7 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `zoom: the first tap zooms in around the point, the next tap places where it lands`() {
+    fun `zoom, the first tap zooms in around the point, the next tap places where it lands`() {
         val vm = open(PlacingMethod.ZOOM)
         touch { click(it.center(1, 2)) }
         assertEquals(Pos(1, 2), vm.ui.value.preview)
@@ -86,7 +87,7 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `zoom: a tap on a taken point zooms out and places nothing`() {
+    fun `zoom, a tap on a taken point zooms out and places nothing`() {
         val vm = open(PlacingMethod.ZOOM)
         touch { click(it.center(2, 2)) }
         touch { click(it.center(2, 2)) }
@@ -99,7 +100,7 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `magnifier: the preview follows the finger, and lifting it places the dot`() {
+    fun `magnifier, the preview follows the finger, and lifting it places the dot`() {
         val vm = open(PlacingMethod.MAGNIFIER)
         touch { down(it.center(1, 1)) }
         assertEquals(Pos(1, 1), vm.ui.value.preview)
@@ -114,7 +115,7 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `magnifier: lifting the finger off the board places nothing`() {
+    fun `magnifier, lifting the finger off the board places nothing`() {
         val vm = open(PlacingMethod.MAGNIFIER)
         touch { board ->
             down(board.center(3, 3))
@@ -126,7 +127,7 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `drag: press, drag and lift places the dot where the finger leaves the board`() {
+    fun `drag, press, drag and lift places the dot where the finger leaves the board`() {
         val vm = open(PlacingMethod.DRAG)
         touch { board ->
             down(board.center(0, 0))
@@ -140,7 +141,7 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `long press: holding the point places the dot, a short touch does not`() {
+    fun `long press, holding the point places the dot, a short touch does not`() {
         val vm = open(PlacingMethod.LONG_PRESS)
         touch { board ->
             down(board.center(3, 1))
@@ -160,7 +161,7 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `long press: moving to another point starts the hold again there`() {
+    fun `long press, moving to another point starts the hold again there`() {
         val vm = open(PlacingMethod.LONG_PRESS)
         touch { board ->
             down(board.center(0, 3))
