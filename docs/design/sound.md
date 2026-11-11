@@ -95,7 +95,7 @@ These moments have no sound on purpose:
 
 | Moment | Why silent |
 | --- | --- |
-| The preview ring, if A-13 uses one | It would play on almost every tap. |
+| The preview ring, and drag's row and column guides | They would play on almost every tap. |
 | Chain lines growing | They grow with every dot; the dot's sound covers them. |
 | The computer's ripples and edge marks | The blue dot's own sound announces the move. |
 | The pen stroke under the name of the side to move | It moves every turn. |

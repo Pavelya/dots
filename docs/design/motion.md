@@ -72,7 +72,8 @@ does while the animation runs.
 
 ## Placing a dot and chain lines
 
-0 ms is the moment the dot is confirmed, whichever placing method A-13 chooses.
+0 ms is the moment the dot is placed: the second tap, or the finger lifting when placing by drag
+(decision 0024).
 
 <img src="motion/strip-placing.png" width="720" alt="Key frames: the preview, then the dot growing past its size, settling, its link growing up to its neighbour, and the pinhole appearing">
 

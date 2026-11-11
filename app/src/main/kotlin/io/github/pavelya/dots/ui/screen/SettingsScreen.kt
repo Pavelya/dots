@@ -37,14 +37,15 @@ import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.Difficulty
 import io.github.pavelya.dots.data.GameLength
+import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.data.SampleProgress
 
 /** The number of taps on the version line that opens the developer menu, as Android's "Build number" does. */
 const val DEVELOPER_TAPS = 7
 
 /**
- * Settings for players: the threat highlight now; A-09 adds sound, vibration and the rest. Tapping
- * the version line [DEVELOPER_TAPS] times opens the developer menu.
+ * Settings for players: the threat highlight and how a dot is placed now; A-09 adds sound,
+ * vibration and the rest. Tapping the version line [DEVELOPER_TAPS] times opens the developer menu.
  */
 @Composable
 fun SettingsScreen(
@@ -78,6 +79,21 @@ fun SettingsScreen(
             }
             Switch(checked = settings.threatHighlight, onCheckedChange = null)
         }
+
+        Section(R.string.settings_placing)
+        Choices(
+            options = PlacingMethod.entries,
+            selected = settings.placing,
+            label = {
+                stringResource(
+                    when (it) {
+                        PlacingMethod.TWO_TAPS -> R.string.placing_two_taps
+                        PlacingMethod.DRAG -> R.string.placing_drag
+                    },
+                )
+            },
+            onSelect = { onChange(settings.copy(placing = it)) },
+        )
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Row(

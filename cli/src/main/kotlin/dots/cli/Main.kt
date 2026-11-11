@@ -46,6 +46,8 @@ private const val USAGE = """Dots - terminal prototype
   daily <date>                          print one day's puzzle (date like 2027-03-14)
   log-check <file>...                   replay the games in logs exported from the app, check their results
   poc-report <file>...                  the POC test week's numbers, one shared log per tester
+  placing-report <file>...              undos per game and taps per dot for each way of placing a dot,
+                                        one shared log per tester
 
   tier: beginner, easy, steady, normal, hard, expert   opening: cross (default), double, crosses, empty
   boards are 3 to 99 in each direction; columns after z are aa, ab, ...
@@ -68,6 +70,7 @@ fun main(args: Array<String>) {
         "daily" -> DailyCommand.run(args.drop(1))
         "log-check" -> if (LogCheck.run(args.drop(1)) > 0) exitProcess(1)
         "poc-report" -> if (PocReport.run(args.drop(1)) > 0) exitProcess(1)
+        "placing-report" -> if (PlacingReport.run(args.drop(1)) > 0) exitProcess(1)
         else -> println(USAGE)
     }
 }

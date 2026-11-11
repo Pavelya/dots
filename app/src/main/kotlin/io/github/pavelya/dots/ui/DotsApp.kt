@@ -255,6 +255,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                     computerFor = ::computerFor,
                                     journal = app.games,
                                     campaign = app.progress,
+                                    placing = { settings.value?.placing ?: AppSettings().placing },
                                 )
                             }
                             val scope = rememberCoroutineScope()
@@ -264,6 +265,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 onRules = { navController.navigate(Routes.RULES) },
                                 sound = settings.value?.sound ?: AppSettings().sound,
                                 onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
+                                placing = settings.value?.placing ?: AppSettings().placing,
                                 // Next goes back to the map, which opens the next level's card.
                                 onNext = { next ->
                                     toMap()

@@ -22,6 +22,7 @@ import dots.log.Outcome
 import io.github.pavelya.dots.data.CampaignJournal
 import io.github.pavelya.dots.data.GameJournal
 import io.github.pavelya.dots.data.LevelEnd
+import io.github.pavelya.dots.data.PlacingMethod
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -66,7 +67,7 @@ data class GameUiState(
 
 /**
  * Holds one game and turns screen events into game actions. The screen sends events ([onTap],
- * [undo], [playAgain]) and draws [ui]; all rules are the engine's.
+ * [aim], [release], [undo], [playAgain]) and draws [ui]; all rules are the engine's.
  *
  * A game is described by a [GameLogEntry]: a new one, or the saved one when the app was closed
  * mid-game (its moves are replayed). Every change is reported to the [journal], which saves it
@@ -82,6 +83,8 @@ data class GameUiState(
  * @param nextGame the game "play again" starts (a fresh seed every time; the same level again)
  * @param computerFor the computer opponent of a game, or null for two players on one phone
  * @param clock the time now in milliseconds, for the log
+ * @param placing how dots are placed now, for the log: the game log records the method with the
+ *   touches and dots it took, so that `cli placing-report` can compare methods (A-13)
  */
 class GameViewModel(
     start: GameLogEntry,
@@ -92,6 +95,7 @@ class GameViewModel(
     private val computerDispatcher: CoroutineDispatcher = Dispatchers.Default,
     private val replyDelayMillis: Long = 400,
     private val clock: () -> Long = System::currentTimeMillis,
+    private val placing: () -> PlacingMethod = { PlacingMethod.TWO_TAPS },
 ) : ViewModel() {
     val human: Player = Player.RED
 
@@ -120,21 +124,62 @@ class GameViewModel(
         letComputerMove() // a resumed game may have been closed while the computer was to move
     }
 
-    /** A tap on board point [point], or off the board when null. */
+    /**
+     * A tap on board point [point], or off the board when null, placing by two taps ([Placement]):
+     * the first shows the preview, a second on the same point places the dot.
+     */
     fun onTap(point: Pos?) {
-        val current = _ui.value
-        val state = game.state
-        if (current.thinking || game.isOver) return
-        if (computer != null && state.toMove != human) return
-        val result = Placement.onTap(current.preview, point) { state.isLegal(it) }
+        if (!humanToMove()) return
+        touched()
+        val result = Placement.onTap(_ui.value.preview, point) { game.state.isLegal(it) }
         val placed = result.placed
         if (placed == null) {
-            _ui.value = current.copy(preview = result.preview)
-            return
+            _ui.value = _ui.value.copy(preview = result.preview)
+        } else {
+            put(placed)
         }
-        val move = game.apply(Action.Place(placed))
+    }
+
+    /**
+     * A finger is down over [point], or off the board when null: the preview follows it, on a
+     * playable point only. Placing methods that place on release send this while the finger moves;
+     * it is not a touch of its own.
+     */
+    fun aim(point: Pos?) {
+        if (!humanToMove()) return
+        val preview = point?.takeIf { game.state.isLegal(it) }
+        if (preview != _ui.value.preview) _ui.value = _ui.value.copy(preview = preview)
+    }
+
+    /**
+     * A touch that ends asking for a dot at [point]: it is placed if the point is playable. Null,
+     * or an unplayable point, places nothing and clears the preview (the finger was lifted off the
+     * board, or too early).
+     */
+    fun release(point: Pos?) {
+        if (!humanToMove()) return
+        touched()
+        if (point == null || !game.state.isLegal(point)) {
+            _ui.value = _ui.value.copy(preview = null)
+        } else {
+            put(point)
+        }
+    }
+
+    /** True when a touch on the board may place a dot: not while the computer thinks or after the end. */
+    private fun humanToMove(): Boolean =
+        !_ui.value.thinking && !game.isOver && (computer == null || game.state.toMove == human)
+
+    /** Counts a touch on the board for the log; it is saved with the next move. */
+    private fun touched() {
+        entry = entry.copy(touches = entry.touches + 1)
+    }
+
+    private fun put(point: Pos) {
+        val move = game.apply(Action.Place(point))
+        entry = entry.copy(placed = entry.placed + 1)
         changed()
-        _ui.value = snapshot(lastMove = placed, captured = move)
+        _ui.value = snapshot(lastMove = point, captured = move)
         letComputerMove()
     }
 
@@ -208,6 +253,7 @@ class GameViewModel(
             red = state.score(Player.RED),
             blue = state.score(Player.BLUE),
             record = game.record,
+            placing = placing().key,
         )
         lastActive = now
         if (over) {

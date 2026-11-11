@@ -23,8 +23,10 @@ import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Player
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
+import io.github.pavelya.dots.ui.board.BoardInput
 import kotlinx.coroutines.delay
 
 /**
@@ -47,7 +49,7 @@ internal const val OPENING_MILLIS = 1_500L
  * campaign level opens with its mission big over the board for a moment, then the mission sits in
  * the corner note. The pause icon, or Back, opens Pause over the board; when the game ends, Result
  * opens over the final board (docs/design/flows.md, "Around the board"). [sound] is the setting the
- * sound icon in Pause turns on or off through [onSound].
+ * sound icon in Pause turns on or off through [onSound]. Dots are placed by the [placing] method.
  *
  * Result's buttons: Retry and Play again start the next game here; Map goes to [onToMap]; Next, in
  * the campaign, goes to [onNext] with the level whose card the map should open.
@@ -60,6 +62,7 @@ fun GameScreen(
     sound: Boolean = true,
     onSound: (Boolean) -> Unit = {},
     onNext: (Level?) -> Unit = { onToMap() },
+    placing: PlacingMethod = PlacingMethod.TWO_TAPS,
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val names = Names(ui.vsComputer, viewModel.human)
@@ -87,7 +90,7 @@ fun GameScreen(
             ui = ui,
             human = viewModel.human,
             campaign = campaign,
-            onTap = viewModel::onTap,
+            input = BoardInput(placing, viewModel::onTap, viewModel::aim, viewModel::release),
             onUndo = viewModel::undo,
             onPause = { paused = true },
             // Behind Pause, the board is out of reach, also for TalkBack.

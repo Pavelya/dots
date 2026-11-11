@@ -101,6 +101,9 @@
     <string name="difficulty_hard">Hard</string>
     <string name="settings_threats">Show threats</string>
     <string name="settings_threats_detail">Mark groups of dots that are close to being captured.</string>
+    <string name="settings_placing">Placing a dot</string>
+    <string name="placing_two_taps">Two taps: tap a point, then tap it again</string>
+    <string name="placing_drag">Drag: press, slide to the point, lift your finger</string>
     <string name="rules_goal">Capture more of the other player’s dots than they capture of yours.</string>
     <string name="rules_chain">Take turns placing one dot on a free point. Your dots link up with neighbouring dots of your colour, also diagonally.</string>
     <string name="rules_chain_picture">Red’s dots linked into a chain, some diagonally.</string>

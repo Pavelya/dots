@@ -8,6 +8,9 @@ import dots.engine.GameState
 import dots.engine.Opening
 import dots.engine.Player
 import dots.engine.Pos
+import dots.log.GameLogEntry
+import io.github.pavelya.dots.data.GameJournal
+import io.github.pavelya.dots.data.PlacingMethod
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -27,6 +30,14 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.asCoroutineDispatcher
+
+/** Keeps every entry the game hands over, last one last. */
+private class RecordingJournal : GameJournal {
+    val entries = mutableListOf<GameLogEntry>()
+    override fun start(entry: GameLogEntry) { entries += entry }
+    override fun save(entry: GameLogEntry) { entries += entry }
+    override fun finish(entry: GameLogEntry) { entries += entry }
+}
 
 /** Plays the first free point; predictable, so tests can follow the game. */
 private class FirstFreePoint : Ai {
@@ -71,6 +82,61 @@ class GameViewModelTest {
         assertNull(ui.preview)
         assertEquals(Player.BLUE, ui.state.toMove)
         assertEquals(32, ui.state.dotsLeft(Player.RED))
+    }
+
+    @Test
+    fun `a finger moving over the board moves the preview, and lifting it places the dot`() {
+        val vm = twoPlayers()
+        vm.place(Pos(0, 0))
+        vm.aim(Pos(2, 2))
+        assertEquals(Pos(2, 2), vm.ui.value.preview)
+        vm.aim(Pos(0, 0)) // taken: no preview there
+        assertNull(vm.ui.value.preview)
+        vm.aim(Pos(3, 2))
+        assertEquals(Pos(3, 2), vm.ui.value.preview)
+
+        vm.release(Pos(3, 2))
+
+        assertEquals(Player.BLUE, vm.ui.value.state.ownerAt(Pos(3, 2)))
+        assertNull(vm.ui.value.preview)
+        assertEquals(Player.RED, vm.ui.value.state.toMove)
+    }
+
+    @Test
+    fun `lifting the finger off the board or on a taken point places nothing`() {
+        val vm = twoPlayers()
+        vm.aim(Pos(2, 2))
+        vm.release(null)
+        assertNull(vm.ui.value.preview)
+        assertEquals(0, vm.ui.value.state.moveCount)
+
+        vm.release(Pos(2, 2))
+        vm.release(Pos(2, 2))
+        assertEquals(1, vm.ui.value.state.moveCount)
+    }
+
+    @Test
+    fun `the log records the placing method, every touch, and every dot placed by touch`() = runTest(dispatcher) {
+        val journal = RecordingJournal()
+        val vm = gameViewModel(
+            newSettings = { small },
+            newComputer = { FirstFreePoint() },
+            computerDispatcher = dispatcher,
+            journal = journal,
+            placing = { PlacingMethod.DRAG },
+        )
+        vm.release(null) // a touch lifted off the board
+        vm.release(Pos(4, 4))
+        vm.release(Pos(3, 3)) // the computer is thinking: not a touch on the player's turn
+        advanceUntilIdle()
+        vm.onTap(Pos(3, 4))
+        vm.onTap(Pos(3, 4))
+        advanceUntilIdle()
+
+        val logged = journal.entries.last()
+        assertEquals("drag", logged.placing)
+        assertEquals(4, logged.touches)
+        assertEquals(2, logged.placed)
     }
 
     @Test

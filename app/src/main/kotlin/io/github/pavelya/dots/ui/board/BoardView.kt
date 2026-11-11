@@ -1,7 +1,6 @@
 package io.github.pavelya.dots.ui.board
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -9,21 +8,23 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import dots.ai.Danger
 import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
+import kotlin.math.max
 
 /**
  * Draws a position: grid, enclosed areas shaded in the colour of the player who closed them, live
  * and captured dots, the last move, and a placement preview. It decides nothing about the game;
- * a tap is reported as the board point it hit (or null when off the board). [showLinks] draws the
- * links between neighbouring dots of one colour, which makes chains and rings visible (used to
- * teach the rules). [dangers] marks groups close to capture (the threat highlight). [marked] is
- * the dot a level's mission is about (rescue or target), circled twice in the player's ink.
+ * [PlayableBoard] adds touch. [showLinks] draws the links between neighbouring dots of one colour,
+ * which makes chains and rings visible (used to teach the rules). [dangers] marks groups close to
+ * capture (the threat highlight). [marked] is the dot a level's mission is about (rescue or
+ * target), circled twice in the player's ink. [guides] draws the preview's row and column across
+ * the board, around a finger that hides the point itself (placing by drag).
  */
 @Composable
 fun BoardView(
@@ -36,38 +37,58 @@ fun BoardView(
     showLinks: Boolean = false,
     dangers: List<Danger> = emptyList(),
     marked: Pos? = null,
-    onTap: ((Pos?) -> Unit)? = null,
+    guides: Boolean = false,
 ) {
-    val tapModifier = if (onTap == null) Modifier else Modifier.pointerInput(state.width, state.height) {
-        detectTapGestures { at ->
-            onTap(BoardGeometry(state.width, state.height, size.width.toFloat(), size.height.toFloat()).pointAt(at))
-        }
-    }
     Canvas(
         modifier = modifier
             .aspectRatio(state.width.toFloat() / state.height)
-            .semantics { contentDescription = description }
-            .then(tapModifier),
+            .semantics { contentDescription = description },
     ) {
         val geometry = BoardGeometry(state.width, state.height, size.width, size.height)
-        drawRect(style.background)
-        drawAreas(state, geometry, style)
-        drawGrid(state, geometry, style)
-        if (showLinks) drawLinks(state, geometry, style)
-        drawDots(state, geometry, style)
-        drawDangers(state, dangers, geometry, style)
-        marked?.let {
-            val ink = style.color(Player.RED)
-            drawRing(geometry.center(it), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
-            drawRing(geometry.center(it), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
-        }
-        lastMove?.let { drawRing(geometry.center(it), geometry.spacing * 0.42f, style.grid, geometry.spacing * 0.06f) }
-        preview?.let {
-            val color = style.color(state.toMove)
-            drawCircle(color.copy(alpha = 0.45f), geometry.spacing * style.dotRadius, geometry.center(it))
-            drawRing(geometry.center(it), geometry.spacing * 0.45f, color, geometry.spacing * 0.08f)
-        }
+        drawPosition(state, geometry, style, lastMove, preview, showLinks, dangers, marked)
+        if (preview != null && guides) drawGuides(state, preview, geometry, style)
     }
+}
+
+/** Every layer of the position, in the theme's drawing order. */
+private fun DrawScope.drawPosition(
+    state: GameState,
+    geometry: BoardGeometry,
+    style: BoardStyle,
+    lastMove: Pos?,
+    preview: Pos?,
+    showLinks: Boolean,
+    dangers: List<Danger>,
+    marked: Pos?,
+) {
+    drawRect(style.background)
+    drawAreas(state, geometry, style)
+    drawGrid(state, geometry, style)
+    if (showLinks) drawLinks(state, geometry, style)
+    drawDots(state, geometry, style)
+    drawDangers(state, dangers, geometry, style)
+    marked?.let {
+        val ink = style.color(Player.RED)
+        drawRing(geometry.center(it), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
+        drawRing(geometry.center(it), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
+    }
+    lastMove?.let { drawRing(geometry.center(it), geometry.spacing * 0.42f, style.grid, geometry.spacing * 0.06f) }
+    preview?.let {
+        val color = style.color(state.toMove)
+        drawCircle(color.copy(alpha = 0.45f), geometry.spacing * style.dotRadius, geometry.center(it))
+        drawRing(geometry.center(it), geometry.spacing * 0.45f, color, geometry.spacing * 0.08f)
+    }
+}
+
+/**
+ * The preview's row and column across the board, in the ink of the side to move. A fingertip
+ * covers about 60 dp; the lines run past it.
+ */
+private fun DrawScope.drawGuides(state: GameState, preview: Pos, geometry: BoardGeometry, style: BoardStyle) {
+    val ink = style.color(state.toMove).copy(alpha = 0.6f)
+    val width = max(geometry.spacing * 0.08f, 2.dp.toPx())
+    drawLine(ink, geometry.center(0, preview.y), geometry.center(state.width - 1, preview.y), width)
+    drawLine(ink, geometry.center(preview.x, 0), geometry.center(preview.x, state.height - 1), width)
 }
 
 private fun DrawScope.drawAreas(state: GameState, geometry: BoardGeometry, style: BoardStyle) {

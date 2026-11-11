@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -13,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
+import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -56,6 +58,21 @@ class SettingsAndRulesTest {
         compose.onNodeWithText("Show threats").performClick()
 
         assertTrue(latest.threatHighlight)
+    }
+
+    @Test
+    fun `placing a dot starts as two taps, and drag can be chosen`() {
+        var latest = AppSettings()
+        compose.setContent {
+            var settings by remember { mutableStateOf(AppSettings()) }
+            SettingsScreen(settings, onChange = { settings = it; latest = it }, version = "1.0", onDetails = {}, onDeveloperMenu = {}, onBack = {})
+        }
+        compose.onNodeWithText("Two taps: tap a point, then tap it again").assertIsSelected()
+
+        compose.onNodeWithText("Drag: press, slide to the point, lift your finger").performClick()
+
+        assertEquals(PlacingMethod.DRAG, latest.placing)
+        compose.onNodeWithText("Drag: press, slide to the point, lift your finger").assertIsSelected()
     }
 
     @Test

@@ -32,10 +32,17 @@ class BoardScreenshotTest {
 
     private val style = BoardStyle.plain(lightColorScheme(), dark = false)
 
-    private fun capture(name: String, state: GameState, lastMove: Pos? = null, preview: Pos? = null, dangers: List<Danger> = emptyList()) {
+    private fun capture(
+        name: String,
+        state: GameState,
+        lastMove: Pos? = null,
+        preview: Pos? = null,
+        dangers: List<Danger> = emptyList(),
+        guides: Boolean = false,
+    ) {
         compose.setContent {
             Box(Modifier.size(360.dp)) {
-                BoardView(state, style, "board", Modifier.fillMaxSize(), lastMove, preview, dangers = dangers)
+                BoardView(state, style, "board", Modifier.fillMaxSize(), lastMove, preview, dangers = dangers, guides = guides)
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
@@ -61,6 +68,19 @@ class BoardScreenshotTest {
         val state = GameSettings(width = 20, height = 20, dotsPerPlayer = 60, seed = 2).newGame()
         capture("board_20x20_preview", state, preview = Pos(3, 4))
     }
+
+    /** A mid-game 15x15 board, red to move. */
+    private val midGame: GameState = GameState.start(
+        15, 15, dotsPerPlayer = 33,
+        dots = mapOf(
+            Pos(6, 6) to Player.RED, Pos(8, 7) to Player.RED, Pos(4, 2) to Player.RED, Pos(7, 9) to Player.RED,
+            Pos(7, 6) to Player.BLUE, Pos(6, 8) to Player.BLUE, Pos(2, 1) to Player.BLUE, Pos(9, 8) to Player.BLUE,
+        ),
+    )
+
+    /** Placing by drag, the finger down at (7, 7): the preview's row and column across the board. */
+    @Test
+    fun guides() = capture("board_15x15_guides", midGame, preview = Pos(7, 7), guides = true)
 
     @Test
     fun threatHighlight() {
