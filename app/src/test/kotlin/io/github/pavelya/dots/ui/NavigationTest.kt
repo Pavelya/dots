@@ -339,7 +339,7 @@ class NavigationTest {
 
         assertEquals(setOf(Routes.LOADING, Routes.GAME), visited)
         val resumed = app.games.current.value!!
-        assertEquals(saved.started, resumed.started)
+        assertEquals(saved.startedAt, resumed.startedAt)
         assertEquals(saved.record.actions, resumed.record.actions)
         waitForSide("You, score 0, to move")
 
@@ -349,7 +349,7 @@ class NavigationTest {
         at(Routes.MAP)
         compose.onNodeWithContentDescription("Level 1-1, next").assertExists()
         reopen(Routes.GAME)
-        assertEquals(saved.started, app.games.current.value?.started)
+        assertEquals(saved.startedAt, app.games.current.value?.startedAt)
     }
 
     @Test

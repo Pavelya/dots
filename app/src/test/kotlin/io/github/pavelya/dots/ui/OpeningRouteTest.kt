@@ -24,7 +24,7 @@ class OpeningRouteTest {
     }
 
     @Test
-    fun `another saved game is not replaced: the map opens`() {
+    fun `another saved game is not replaced, and the map opens`() {
         assertEquals(Routes.MAP, openingRoute(Progress.NONE, saved = freeGame))
     }
 
