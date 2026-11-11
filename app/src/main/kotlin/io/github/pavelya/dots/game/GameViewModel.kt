@@ -126,7 +126,10 @@ class GameViewModel(
     /** True once the player skipped the tutorial's guided steps on this screen. */
     private var skipped = false
 
-    /** The guided step shown last, kept without its point while the computer moves. */
+    /**
+     * The last guided step for the position itself, with no dot shown: on the computer's turn it
+     * stays, without its point.
+     */
     private var shownGuide: Tutorial.Step? = null
 
     /** How often the human took a move back in this game. */
@@ -332,8 +335,9 @@ class GameViewModel(
             shownGuide = null
             return null
         }
-        shownGuide = Tutorial.step(level, state, preview) ?: shownGuide?.copy(point = null)
-        return shownGuide
+        val step = Tutorial.step(level, state, preview)
+        if (preview == null || step == null) shownGuide = step ?: shownGuide?.copy(point = null)
+        return step ?: shownGuide
     }
 
     private fun lastPlaced(): Pos? = game.record.actions.lastOrNull { it is Action.Place }?.let { (it as Action.Place).pos }

@@ -57,26 +57,17 @@ class TutorialScreenTest {
         nextGame = { error("a practice game starts its next game itself") },
         computerFor = { entry -> SearchAi((entry.record as dots.campaign.LevelRecord).level.ai, Random(1)) },
         campaign = journal,
-        computerDispatcher = Dispatchers.Default,
+        // The computer answers on the test's thread, as in the screenshot tests: a reply computed on
+        // another thread did not always get back to Robolectric's main thread in time.
+        computerDispatcher = Dispatchers.Unconfined,
         replyDelayMillis = 0,
         clock = { 0L },
     )
 
     /** Waits for the player's turn with a point to tap, or for Result. */
-    private fun waitForTurn(vm: GameViewModel) = try {
-        compose.waitUntil(timeoutMillis = 10_000) {
-            val ui = vm.ui.value
-            ui.showsResult || (!ui.thinking && ui.state.toMove == Player.RED && ui.guide?.point != null)
-        }
-    } catch (e: Throwable) {
+    private fun waitForTurn(vm: GameViewModel) = compose.waitUntil(timeoutMillis = 10_000) {
         val ui = vm.ui.value
-        throw AssertionError(
-            "no turn: guide=${ui.guide} thinking=${ui.thinking} over=${ui.isOver} preview=${ui.preview} " +
-                "level=${ui.level?.code} toMove=${ui.state.toMove}\n${ui.state.toAscii()}\n" +
-                    Thread.getAllStackTraces().entries.filter { "Default" in it.key.name || it.key.name == "main" || "Test" in it.key.name }
-                        .joinToString("\n\n") { (t, s) -> t.name + " " + t.state + "\n" + s.take(25).joinToString("\n") },
-            e,
-        )
+        ui.showsResult || (!ui.thinking && ui.state.toMove == Player.RED && ui.guide?.point != null)
     }
 
     private fun waitFor(text: String) =
