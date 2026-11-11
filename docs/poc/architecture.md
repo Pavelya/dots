@@ -23,7 +23,7 @@ Layers, each depending only on the ones below it:
 | Layer | Package | What it holds | Kept in the full version? |
 |---|---|---|---|
 | Screens | `ui.screen` | Compose screens: the map, game, settings, rules, the developer menu | Layout replaced by the designed screens; routes follow [`docs/design/flows.md`](../design/flows.md) |
-| Board view | `ui.board` | Draws the board on a Canvas; turns a touch into a grid cell and a placing gesture (two taps, zoom, magnifier, drag or long press) into game events; reads colours and shapes from a `BoardStyle` | Kept; the themes become new `BoardStyle`s |
+| Board view | `ui.board` | Draws the board on a Canvas; turns a touch into a grid cell and a placing gesture (two taps or drag, decision 0024) into game events; reads colours and shapes from a `BoardStyle` | Kept; the themes become new `BoardStyle`s |
 | Game control | `game` | One `GameViewModel` per game: holds the `GameState`, runs the computer on a background thread with a time limit, exposes one immutable `GameUiState` | Kept |
 | Data | `data` | Settings and campaign progress (DataStore), saved game, game log file | Kept; the log feeds future analytics |
 
@@ -57,7 +57,7 @@ Both use one format, `GameLogEntry` in the engine (`dots.log`), one line of JSON
   pause of over 2 minutes between moves counts as 2 minutes (the player put the phone down).
 - `opponent` is `human` (two players on one phone) or the computer's difficulty.
 - `outcome` is `playing` (the saved game), `finished`, or `abandoned` (another game was started).
-- `placing` is how dots were placed (the developer menu's "Placing a dot"); `touches` counts the
+- `placing` is how dots were placed (`two-taps` or `drag`, from Settings); `touches` counts the
   players' touches on the board, and `placed` the dots they placed by touch, undone ones included.
   `cli placing-report` turns them into undos per game and taps per dot for each method. Logs from
   before these fields were added lack them.

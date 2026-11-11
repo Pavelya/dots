@@ -13,24 +13,15 @@ enum class GameLength(val percent: Int) { SHORT(15), LONG(30) }
 enum class Difficulty { EASY, NORMAL, HARD }
 
 /**
- * The ways of placing a dot that A-13 compares, picked in the developer menu. [key] names the
- * method in the game log, where `cli placing-report` reads it.
+ * How the player places a dot, chosen in Settings (decision 0024). [key] names the method in the
+ * game log, where `cli placing-report` reads it.
  */
 enum class PlacingMethod(val key: String) {
-    /** Tap a point to see the preview, tap it again to place the dot. */
+    /** Tap a point to see the preview, tap it again to place the dot. The default. */
     TWO_TAPS("two-taps"),
-
-    /** The first tap zooms the board in around the point, to about 48 dp a point; the next tap places. */
-    ZOOM("zoom"),
-
-    /** While the finger is down, a magnifier above it shows the point under it; lifting the finger places. */
-    MAGNIFIER("magnifier"),
 
     /** Press, drag to the point and lift; the point's row and column show around the finger. */
     DRAG("drag"),
-
-    /** Hold a point until its row and column are drawn; lifting the finger earlier places nothing. */
-    LONG_PRESS("long-press"),
 }
 
 /** What the player chose in Settings. Defaults are the POC's test format (docs/poc/README.md). */
@@ -41,7 +32,7 @@ data class AppSettings(
     val threatHighlight: Boolean = false,
     /** Sound on or off, from the icon in Pause. A-09 adds it to Settings; the sounds come later (V-08, V-09). */
     val sound: Boolean = true,
-    /** How a dot is placed, while A-13 compares the methods. */
+    /** How a dot is placed (decision 0024). */
     val placing: PlacingMethod = PlacingMethod.TWO_TAPS,
 ) {
     val dotsPerPlayer: Int get() = dotsFor(boardSize, length)

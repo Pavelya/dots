@@ -35,24 +35,24 @@ class PlacingReportTest {
             listOf(
                 game("two-taps", touches = 70, placed = 33, undos = 1),
                 game("two-taps", touches = 66, placed = 33),
-                game("magnifier", touches = 36, placed = 33, undos = 2),
+                game("drag", touches = 36, placed = 33, undos = 2),
                 // Two people on one phone: their taps count, but they have no undo.
-                game("magnifier", touches = 30, placed = 30, opponent = GameLogEntry.HUMAN),
+                game("drag", touches = 30, placed = 30, opponent = GameLogEntry.HUMAN),
                 game("", touches = 0, placed = 0, undos = 5), // logged before the method was recorded
             ),
         )
-        assertEquals(listOf("two-taps", "magnifier"), rows.map { it.method })
-        val (twoTaps, magnifier) = rows
+        assertEquals(listOf("two-taps", "drag"), rows.map { it.method })
+        val (twoTaps, drag) = rows
         assertEquals(0.5, twoTaps.undosPerGame)
         assertEquals(136.0 / 66, twoTaps.tapsPerDot)
-        assertEquals(2, magnifier.games)
-        assertEquals(2.0, magnifier.undosPerGame)
-        assertEquals(66.0 / 63, magnifier.tapsPerDot)
+        assertEquals(2, drag.games)
+        assertEquals(2.0, drag.undosPerGame)
+        assertEquals(66.0 / 63, drag.tapsPerDot)
     }
 
     @Test
     fun `a method with no computer games or no dots has no number rather than a wrong one`() {
-        val row = PlacingReport.numbers(listOf(game("zoom", touches = 0, placed = 0, opponent = GameLogEntry.HUMAN))).single()
+        val row = PlacingReport.numbers(listOf(game("drag", touches = 0, placed = 0, opponent = GameLogEntry.HUMAN))).single()
         assertNull(row.undosPerGame)
         assertNull(row.tapsPerDot)
     }

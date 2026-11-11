@@ -28,7 +28,7 @@ class GameLogEntryTest {
         val end = game.state
         return GameLogEntry.start(game.record, opponent = "normal", threatHighlight = true, now = 1_762_300_000_000, appVersion = "0.1-poc")
             .copy(updatedAt = 1_762_300_400_000, playMillis = 395_000, undos = 2, outcome = Outcome.FINISHED,
-                placing = "magnifier", touches = 40, placed = 34,
+                placing = "drag", touches = 40, placed = 34,
                 red = end.score(Player.RED), blue = end.score(Player.BLUE), record = game.record)
     }
 

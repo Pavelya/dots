@@ -179,7 +179,8 @@ Settings is one scrolling screen. Changes take effect at once and survive a rest
 to the map.
 
 - **Sound and vibration:** music volume, sound-effects volume, vibration on or off.
-- **Board:** high-contrast pieces, threat highlights.
+- **Board:** high-contrast pieces, threat highlights, placing a dot (two taps, the default, or
+  drag; decision 0024).
 - **Help and app:** Replay tutorial, Send feedback (an email, A-12), Language (shown once a second
   language ships, A-10), Privacy (the policy and ad choices, C-03), Play Games backup (O-02),
   Credits and licences.
@@ -221,8 +222,8 @@ The first tap a new player makes is a move on the board.
    players in the EU and the UK first see Google's consent form (C-03). No sign-in is needed for
    anything offline.
 2. Level 1 starts with guided steps (A-06). Levels 1 to 3 teach placing, linking and capturing,
-   one step at a time, with threat highlights on. Level 1 teaches the placement method that A-13
-   picks.
+   one step at a time, with threat highlights on. Level 1 teaches placing a dot by two taps and
+   says that drag can be chosen in Settings (decision 0024).
 3. Result shows the stars over the final board. Next opens the map for the first time: the stars
    fly to Level 1, and the Level card of Level 2 opens. Retry plays Level 1 again.
 4. Until Level 1 is finished, the app opens straight into it, where the player left off. To the
@@ -321,7 +322,6 @@ the same place in Stats. Settings shows the Play Games backup.
 
 These tasks change what some screens show:
 
-- **A-13** picks how a dot is placed; the tutorial teaches that method.
 - **X-06** decides how a free play game ends.
 - **G-18** decides on timed games. A timed mode would be a new choice in Play a game.
 - **C-01** sets the cosmetics, the prices and where rewarded ads appear.

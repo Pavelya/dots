@@ -123,7 +123,7 @@ class GameViewModelTest {
             newComputer = { FirstFreePoint() },
             computerDispatcher = dispatcher,
             journal = journal,
-            placing = { PlacingMethod.MAGNIFIER },
+            placing = { PlacingMethod.DRAG },
         )
         vm.release(null) // a touch lifted off the board
         vm.release(Pos(4, 4))
@@ -134,7 +134,7 @@ class GameViewModelTest {
         advanceUntilIdle()
 
         val logged = journal.entries.last()
-        assertEquals("magnifier", logged.placing)
+        assertEquals("drag", logged.placing)
         assertEquals(4, logged.touches)
         assertEquals(2, logged.placed)
     }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
@@ -39,11 +38,11 @@ class BoardScreenshotTest {
         lastMove: Pos? = null,
         preview: Pos? = null,
         dangers: List<Danger> = emptyList(),
-        touch: BoardTouch = BoardTouch(),
+        guides: Boolean = false,
     ) {
         compose.setContent {
             Box(Modifier.size(360.dp)) {
-                BoardView(state, style, "board", Modifier.fillMaxSize(), lastMove, preview, dangers = dangers, touch = touch)
+                BoardView(state, style, "board", Modifier.fillMaxSize(), lastMove, preview, dangers = dangers, guides = guides)
             }
         }
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
@@ -70,7 +69,7 @@ class BoardScreenshotTest {
         capture("board_20x20_preview", state, preview = Pos(3, 4))
     }
 
-    /** A mid-game 15x15 board for the placing methods' marks, red to move. */
+    /** A mid-game 15x15 board, red to move. */
     private val midGame: GameState = GameState.start(
         15, 15, dotsPerPlayer = 33,
         dots = mapOf(
@@ -79,33 +78,9 @@ class BoardScreenshotTest {
         ),
     )
 
-    /** The magnifier method: a finger down at (7, 7), the magnifier above it. */
+    /** Placing by drag, the finger down at (7, 7): the preview's row and column across the board. */
     @Test
-    fun magnifier() {
-        val finger = Pos(7, 7)
-        // 360 dp across 15 points: 24 dp each, at 2 px per dp; the first point is half a cell in.
-        val px = { i: Int -> (12f + 24f * i) * 2 }
-        capture("board_15x15_magnifier", midGame, preview = finger, touch = BoardTouch(finger = Offset(px(7), px(7))))
-    }
-
-    /** The magnifier near the top edge moves beside the finger. */
-    @Test
-    fun magnifierNearTheTop() {
-        val px = { i: Int -> (12f + 24f * i) * 2 }
-        capture("board_15x15_magnifier_top", midGame, preview = Pos(3, 1), touch = BoardTouch(finger = Offset(px(3), px(1))))
-    }
-
-    /** The zoom method after its first tap: twice as large around the preview. */
-    @Test
-    fun zoomedIn() = capture("board_15x15_zoomed", midGame, preview = Pos(7, 7), touch = BoardTouch(zoom = 2f, zoomAround = Pos(7, 7)))
-
-    /** The drag method, or a long press that has finished: the preview's row and column across the board. */
-    @Test
-    fun guides() = capture("board_15x15_guides", midGame, preview = Pos(7, 7), touch = BoardTouch(guides = 1f))
-
-    /** A long press halfway: the row and column half way to the edges. */
-    @Test
-    fun guidesHalfway() = capture("board_15x15_guides_half", midGame, preview = Pos(7, 7), touch = BoardTouch(guides = 0.5f))
+    fun guides() = capture("board_15x15_guides", midGame, preview = Pos(7, 7), guides = true)
 
     @Test
     fun threatHighlight() {

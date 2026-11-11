@@ -14,9 +14,6 @@ import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.gameViewModel
 import io.github.pavelya.dots.ui.board.BoardGeometry
-import io.github.pavelya.dots.ui.board.HOLD_MILLIS
-import io.github.pavelya.dots.ui.board.ZOOM_SPACING
-import io.github.pavelya.dots.ui.board.zoomFactor
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -27,8 +24,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * Each way of placing a dot (A-13), by finger on the game screen: two people on a 5 x 5 board,
- * so every touch is Red's or Blue's own. On a 360 x 800 dp phone the board's points are 72 dp apart.
+ * Both ways of placing a dot (decision 0024), by finger on the game screen: two people on a
+ * 5 x 5 board, so every touch is Red's or Blue's own. On a 360 x 800 dp phone the board's points are 72 dp apart.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w360dp-h800dp")
@@ -65,43 +62,8 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `zoom, the first tap zooms in around the point, the next tap places where it lands`() {
-        val vm = open(PlacingMethod.ZOOM)
-        touch { click(it.center(1, 2)) }
-        assertEquals(Pos(1, 2), vm.ui.value.preview)
-
-        // Zoomed in, the point to the right of the preview is further away than before.
-        touch { board ->
-            val zoom = zoomFactor(board.spacing, ZOOM_SPACING.toPx())
-            click(board.zoomed(zoom, Pos(1, 2)).center(2, 2))
-        }
-        assertEquals(Player.RED, vm.owner(2, 2))
-        assertNull(vm.owner(1, 2))
-        assertNull(vm.ui.value.preview)
-
-        // Zoomed out again: a tap lands where the board shows unzoomed.
-        touch { click(it.center(4, 4)) }
-        assertEquals(Pos(4, 4), vm.ui.value.preview)
-        touch { click(it.center(4, 4)) } // the zoom keeps (4, 4) where it was
-        assertEquals(Player.BLUE, vm.owner(4, 4))
-    }
-
-    @Test
-    fun `zoom, a tap on a taken point zooms out and places nothing`() {
-        val vm = open(PlacingMethod.ZOOM)
-        touch { click(it.center(2, 2)) }
-        touch { click(it.center(2, 2)) }
-        assertEquals(Player.RED, vm.owner(2, 2))
-
-        touch { click(it.center(2, 3)) }
-        touch { board -> click(board.zoomed(zoomFactor(board.spacing, ZOOM_SPACING.toPx()), Pos(2, 3)).center(2, 2)) }
-        assertNull(vm.ui.value.preview)
-        assertEquals(1, vm.ui.value.state.moveCount)
-    }
-
-    @Test
-    fun `magnifier, the preview follows the finger, and lifting it places the dot`() {
-        val vm = open(PlacingMethod.MAGNIFIER)
+    fun `drag, the preview follows the finger, and lifting it places the dot`() {
+        val vm = open(PlacingMethod.DRAG)
         touch { down(it.center(1, 1)) }
         assertEquals(Pos(1, 1), vm.ui.value.preview)
 
@@ -115,8 +77,8 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `magnifier, lifting the finger off the board places nothing`() {
-        val vm = open(PlacingMethod.MAGNIFIER)
+    fun `drag, lifting the finger off the board places nothing`() {
+        val vm = open(PlacingMethod.DRAG)
         touch { board ->
             down(board.center(3, 3))
             moveTo(Offset(board.center(3, 4).x, height + 60f)) // just below the board
@@ -127,7 +89,7 @@ class PlacingMethodsTest {
     }
 
     @Test
-    fun `drag, press, drag and lift places the dot where the finger leaves the board`() {
+    fun `drag, the dot goes where the finger is lifted, not where it went down`() {
         val vm = open(PlacingMethod.DRAG)
         touch { board ->
             down(board.center(0, 0))
@@ -138,48 +100,5 @@ class PlacingMethodsTest {
         touch { up() }
         assertEquals(Player.RED, vm.owner(1, 1))
         assertEquals(1, vm.ui.value.state.moveCount)
-    }
-
-    @Test
-    fun `long press, holding the point places the dot, a short touch does not`() {
-        val vm = open(PlacingMethod.LONG_PRESS)
-        touch { board ->
-            down(board.center(3, 1))
-            advanceEventTime(HOLD_MILLIS / 2)
-            up()
-        }
-        assertNull(vm.owner(3, 1))
-        assertNull(vm.ui.value.preview)
-
-        touch { board ->
-            down(board.center(3, 1))
-            advanceEventTime(HOLD_MILLIS + 100)
-            up()
-        }
-        assertEquals(Player.RED, vm.owner(3, 1))
-        assertEquals(1, vm.ui.value.state.moveCount)
-    }
-
-    @Test
-    fun `long press, moving to another point starts the hold again there`() {
-        val vm = open(PlacingMethod.LONG_PRESS)
-        touch { board ->
-            down(board.center(0, 3))
-            advanceEventTime(HOLD_MILLIS - 100)
-            moveTo(board.center(1, 3))
-            advanceEventTime(HOLD_MILLIS - 100)
-            up()
-        }
-        assertEquals(0, vm.ui.value.state.moveCount)
-
-        touch { board ->
-            down(board.center(0, 3))
-            advanceEventTime(HOLD_MILLIS - 100)
-            moveTo(board.center(1, 3))
-            advanceEventTime(HOLD_MILLIS + 100)
-            up()
-        }
-        assertEquals(Player.RED, vm.owner(1, 3))
-        assertNull(vm.owner(0, 3))
     }
 }
