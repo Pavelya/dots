@@ -285,7 +285,9 @@ The first tap a new player makes is a move on the board.
   defaults, or resumes the saved one. A small link changes board size and game length first.
 - Two players on one phone shows whose turn it is with both names in their inks and the piece
   shape (D-04), and a banner at each change of turn.
-- Play again keeps the same setup. How a free play game ends follows X-06.
+- Play again keeps the same setup.
+- A game has a dot budget by default (Game length Short or Long). Game length also offers an
+  open-ended game, as on paper: a player stops and the opponent ends it with done (decision 0025).
 
 ## Shop and rewarded ads
 
@@ -322,7 +324,6 @@ the same place in Stats. Settings shows the Play Games backup.
 
 These tasks change what some screens show:
 
-- **X-06** decides how a free play game ends.
 - **G-18** decides on timed games. A timed mode would be a new choice in Play a game.
 - **C-01** sets the cosmetics, the prices and where rewarded ads appear.
 - **X-08** sets the gate for ranked games.
