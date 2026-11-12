@@ -39,7 +39,7 @@ class PlayAGameTest {
             PlayAGameNote(
                 saved = saved,
                 settings = settings,
-                onSettings = { settings = it; latest = it },
+                onSettings = { change -> settings = change(settings); latest = settings },
                 onPlay = { mode, replace -> played += mode to replace },
                 onClose = {},
             )

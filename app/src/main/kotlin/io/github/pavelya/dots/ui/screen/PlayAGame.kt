@@ -74,7 +74,7 @@ private val CHOICE_SHAPE = RoundedCornerShape(14.dp)
  * the bottom of the screen with two big cards, Against the computer (free play) and Two players.
  * A card resumes its mode's saved game, or starts a new one at once with the board size and game
  * length in [settings]. The small link under the cards opens the setup on the same note, where
- * [onSettings] saves a new board size or game length for the next games (decision 0025: Short,
+ * [onSettings] applies a change of board size or game length to the saved settings for the next games (decision 0025: Short,
  * Long or Open-ended). With the setup open, a card starts a new game; if that mode has a saved
  * game, the note asks first.
  *
@@ -86,7 +86,7 @@ private val CHOICE_SHAPE = RoundedCornerShape(14.dp)
 fun PlayAGameNote(
     saved: Set<GameMode>,
     settings: AppSettings,
-    onSettings: (AppSettings) -> Unit,
+    onSettings: (change: (AppSettings) -> AppSettings) -> Unit,
     onPlay: (mode: GameMode, replace: Boolean) -> Unit,
     onClose: () -> Unit,
 ) {
@@ -248,7 +248,7 @@ private fun SetupLink(settings: AppSettings, style: GameStyle, onClick: () -> Un
 
 /** Board size and game length for the next games, each a row of choices. */
 @Composable
-private fun Setup(settings: AppSettings, style: GameStyle, onSettings: (AppSettings) -> Unit) {
+private fun Setup(settings: AppSettings, style: GameStyle, onSettings: ((AppSettings) -> AppSettings) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(stringResource(R.string.settings_board), style = NoteText.label, color = style.graphite, modifier = Modifier.semantics { heading() })
         ChoiceRow {
@@ -258,7 +258,7 @@ private fun Setup(settings: AppSettings, style: GameStyle, onSettings: (AppSetti
                     detail = null,
                     selected = settings.boardSize == size,
                     style = style,
-                ) { onSettings(settings.copy(boardSize = size)) }
+                ) { onSettings { it.copy(boardSize = size) } }
             }
         }
         Text(
@@ -275,7 +275,7 @@ private fun Setup(settings: AppSettings, style: GameStyle, onSettings: (AppSetti
                     detail = if (dots == null) stringResource(R.string.length_open_detail) else pluralStringResource(R.plurals.length_dots, dots, dots),
                     selected = settings.length == length,
                     style = style,
-                ) { onSettings(settings.copy(length = length)) }
+                ) { onSettings { it.copy(length = length) } }
             }
         }
     }

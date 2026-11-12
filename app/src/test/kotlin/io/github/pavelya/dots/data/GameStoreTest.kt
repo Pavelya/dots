@@ -162,7 +162,7 @@ class GameStoreTest {
         now += 3_600_000 // an hour away
         vm.place(Pos(6, 6))
 
-        val saved = checkNotNull(store.saved(GameMode.FREE_PLAY))
+        val saved = checkNotNull(store.saved(GameMode.TWO_PLAYERS))
         assertEquals(10_000 + GameLogEntry.IDLE_CAP_MILLIS, saved.playMillis)
         assertEquals(now, saved.updatedAt)
     }

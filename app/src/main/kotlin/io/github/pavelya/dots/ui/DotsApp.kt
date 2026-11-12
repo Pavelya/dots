@@ -254,7 +254,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         PlayAGameNote(
                             saved = saved.keys,
                             settings = chosen,
-                            onSettings = { next -> scope.launch { app.settings.update { next } } },
+                            onSettings = { change -> scope.launch { app.settings.update(change) } },
                             onPlay = ::play,
                             onClose = back,
                         )
