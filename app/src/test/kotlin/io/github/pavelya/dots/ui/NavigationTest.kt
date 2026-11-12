@@ -543,6 +543,31 @@ class NavigationTest {
         assertSame(saved, app.games.saved(GameMode.CAMPAIGN))
     }
 
+    // TEMPORARY (A-09): print every thread's stack if a test runs longer than 90 s, then stop.
+    private var watchdog: Thread? = null
+
+    @org.junit.Before
+    fun startWatchdog() {
+        watchdog = Thread {
+            try {
+                Thread.sleep(90_000)
+            } catch (_: InterruptedException) {
+                return@Thread
+            }
+            for ((thread, stack) in Thread.getAllStackTraces()) {
+                println("WATCHDOG thread ${thread.name} ${thread.state}")
+                stack.take(60).forEach { println("WATCHDOG     at $it") }
+            }
+            System.out.flush()
+            Runtime.getRuntime().halt(1)
+        }.apply { isDaemon = true; start() }
+    }
+
+    @After
+    fun stopWatchdog() {
+        watchdog?.interrupt()
+    }
+
     @After
     fun `forget the progress and the settings`() = runBlocking {
         app.progress.replace(Progress.NONE)

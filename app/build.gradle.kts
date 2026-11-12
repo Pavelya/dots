@@ -59,7 +59,7 @@ android {
         unitTests.isIncludeAndroidResources = true
         // TEMPORARY (A-09): find the test that hangs.
         unitTests.all {
-            it.testLogging { events("started", "failed"); exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
+            it.testLogging { events("started", "failed"); showStandardStreams = true; exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
             it.timeout.set(Duration.ofMinutes(9))
         }
     }
