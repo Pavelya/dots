@@ -43,7 +43,7 @@ class SettingsRepositoryTest {
 
     @Test
     fun `settings survive a restart`() = runBlocking {
-        val chosen = AppSettings(BoardSize.LARGE, GameLength.LONG, Difficulty.HARD, threatHighlight = true, placing = PlacingMethod.DRAG)
+        val chosen = AppSettings(BoardSize.LARGE, GameLength.OPEN_ENDED, threatHighlight = true, placing = PlacingMethod.DRAG)
         val first = Session(file())
         first.repository.update { chosen }
         first.close()
@@ -69,6 +69,7 @@ class SettingsRepositoryTest {
             (BoardSize.LARGE to GameLength.SHORT) to 60, (BoardSize.LARGE to GameLength.LONG) to 120,
         )
         for ((key, dots) in expected) assertEquals("$key", dots, AppSettings.dotsFor(key.first, key.second))
+        for (size in BoardSize.entries) assertEquals(null, AppSettings.dotsFor(size, GameLength.OPEN_ENDED))
 
         val game = AppSettings(boardSize = BoardSize.SMALL).gameSettings(seed = 9)
         assertEquals(12, game.width)

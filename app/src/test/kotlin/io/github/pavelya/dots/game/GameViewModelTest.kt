@@ -2,6 +2,7 @@ package io.github.pavelya.dots.game
 
 import androidx.lifecycle.ViewModelStore
 import dots.ai.Ai
+import dots.campaign.Strength
 import dots.engine.Action
 import dots.engine.GameSettings
 import dots.engine.GameState
@@ -264,8 +265,8 @@ class GameViewModelTest {
     }
 
     @Test
-    fun `the real computer at each difficulty plays a whole game in the test format`() = runTest(dispatcher) {
-        for (difficulty in io.github.pavelya.dots.data.Difficulty.entries) {
+    fun `the real computer at each of the POC's strengths plays a whole game in the test format`() = runTest(dispatcher) {
+        for (difficulty in listOf(Strength.EASY, Strength.NORMAL, Strength.HARD)) {
             val vm = gameViewModel(
                 newSettings = { GameSettings.POC.copy(seed = 5) },
                 newComputer = { difficulty.computer(kotlin.random.Random(6)) },
@@ -296,5 +297,66 @@ class GameViewModelTest {
         assertEquals(listOf(Pos(2, 2)), on.first().group)
         assertEquals(listOf(Pos(2, 3)), on.first().closingPoints)
         assertTrue(play(showThreats = false).ui.value.dangers.isEmpty())
+    }
+
+    private val openEnded = GameSettings(width = 5, height = 5, dotsPerPlayer = null, opening = Opening.EMPTY)
+
+    @Test
+    fun `a game with a dot budget offers no stop`() {
+        val vm = twoPlayers()
+        assertFalse(vm.ui.value.openEnded)
+        assertFalse(vm.ui.value.canStop)
+        vm.stop()
+        assertFalse(vm.ui.value.state.isCleanup)
+    }
+
+    @Test
+    fun `between two people, an open-ended game ends when one stops and the other is done`() {
+        val vm = gameViewModel(newSettings = { openEnded })
+        assertTrue(vm.ui.value.openEnded)
+        vm.place(Pos(0, 0))
+        vm.place(Pos(4, 4))
+        assertTrue(vm.ui.value.canStop)
+
+        vm.stop() // Red stops; Blue collects
+        val collecting = vm.ui.value
+        assertEquals(Player.BLUE, collecting.state.toMove)
+        assertTrue(collecting.collecting)
+        assertFalse(collecting.canStop)
+        vm.place(Pos(2, 2))
+        vm.place(Pos(2, 3)) // as many dots as Blue likes
+        assertEquals(Player.BLUE, vm.ui.value.state.toMove)
+
+        vm.done()
+        assertTrue(vm.ui.value.isOver)
+        assertFalse(vm.ui.value.collecting)
+    }
+
+    @Test
+    fun `against the computer, after the player stops the computer collects and ends the game by itself`() = runTest(dispatcher) {
+        val journal = RecordingJournal()
+        val vm = gameViewModel(newSettings = { openEnded }, newComputer = { FirstFreePoint() }, computerDispatcher = dispatcher, journal = journal)
+        vm.place(Pos(2, 2))
+        advanceUntilIdle()
+        assertTrue(vm.ui.value.canStop)
+
+        vm.stop()
+        advanceUntilIdle()
+
+        assertTrue(vm.ui.value.isOver)
+        assertTrue(journal.entries.last().record.actions.contains(Action.Stop))
+    }
+
+    @Test
+    fun `play again keeps the board, the game length and the opponent, with fresh crosses`() {
+        val first = GameLogEntry.start(GameSettings.POC.copy(width = 20, height = 20, dotsPerPlayer = null, seed = 1), "steady", threatHighlight = false, now = 0)
+        val next = freeGameLike(first, threatHighlight = true, now = 5, seed = 2)
+        val settings = (next.record as dots.engine.GameRecord).settings
+
+        assertEquals(20, settings.width)
+        assertNull(settings.dotsPerPlayer)
+        assertEquals(2L, settings.seed)
+        assertEquals("steady", next.opponent)
+        assertTrue(next.threatHighlight)
     }
 }

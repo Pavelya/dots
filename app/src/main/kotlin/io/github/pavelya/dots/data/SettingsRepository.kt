@@ -18,7 +18,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             val next = change(read(prefs))
             prefs[BOARD] = next.boardSize.name
             prefs[LENGTH] = next.length.name
-            prefs[DIFFICULTY] = next.difficulty.name
             prefs[THREATS] = next.threatHighlight
             prefs[SOUND] = next.sound
             prefs[PLACING] = next.placing.name
@@ -31,7 +30,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         return AppSettings(
             boardSize = enumOrNull<BoardSize>(prefs[BOARD]) ?: defaults.boardSize,
             length = enumOrNull<GameLength>(prefs[LENGTH]) ?: defaults.length,
-            difficulty = enumOrNull<Difficulty>(prefs[DIFFICULTY]) ?: defaults.difficulty,
             threatHighlight = prefs[THREATS] ?: defaults.threatHighlight,
             sound = prefs[SOUND] ?: defaults.sound,
             placing = enumOrNull<PlacingMethod>(prefs[PLACING]) ?: defaults.placing,
@@ -45,7 +43,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
     private companion object {
         val BOARD = stringPreferencesKey("board_size")
         val LENGTH = stringPreferencesKey("game_length")
-        val DIFFICULTY = stringPreferencesKey("difficulty")
         val THREATS = booleanPreferencesKey("threat_highlight")
         val SOUND = booleanPreferencesKey("sound")
         val PLACING = stringPreferencesKey("placing")

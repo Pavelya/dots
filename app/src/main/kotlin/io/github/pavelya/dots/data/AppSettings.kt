@@ -2,15 +2,15 @@ package io.github.pavelya.dots.data
 
 import dots.engine.GameSettings
 import dots.engine.Opening
-import dots.log.GameLogEntry
-import kotlin.random.Random
 
 enum class BoardSize(val points: Int) { SMALL(12), STANDARD(15), LARGE(20) }
 
-/** How many dots each player gets, as a share of the board's points. */
-enum class GameLength(val percent: Int) { SHORT(15), LONG(30) }
-
-enum class Difficulty { EASY, NORMAL, HARD }
+/**
+ * How a free game ends (decision 0025): a dot budget, as a share of the board's points for each
+ * player ([percent]), or [OPEN_ENDED], as on paper, with no limit: a player stops and the
+ * opponent ends the game with done.
+ */
+enum class GameLength(val percent: Int?) { SHORT(15), LONG(30), OPEN_ENDED(null) }
 
 /**
  * How the player places a dot, chosen in Settings (decision 0024). [key] names the method in the
@@ -24,11 +24,13 @@ enum class PlacingMethod(val key: String) {
     DRAG("drag"),
 }
 
-/** What the player chose in Settings. Defaults are the POC's test format (docs/poc/README.md). */
+/**
+ * What the player chose: in Settings, and the board size and game length of free play and two
+ * players, chosen on Play a game and remembered for the next game.
+ */
 data class AppSettings(
     val boardSize: BoardSize = BoardSize.STANDARD,
     val length: GameLength = GameLength.SHORT,
-    val difficulty: Difficulty = Difficulty.NORMAL,
     val threatHighlight: Boolean = false,
     /** Sound on or off, from the icon in Pause. A-09 adds it to Settings; the sounds come later (V-08, V-09). */
     val sound: Boolean = true,
@@ -37,9 +39,10 @@ data class AppSettings(
     /** True once the player skipped the tutorial's guided steps; replaying the tutorial shows them again (A-06). */
     val tutorialSkipped: Boolean = false,
 ) {
-    val dotsPerPlayer: Int get() = dotsFor(boardSize, length)
+    /** Each player's dots, or null for an open-ended game. */
+    val dotsPerPlayer: Int? get() = dotsFor(boardSize, length)
 
-    /** A new game in these settings, starting from four random crosses placed by [seed]. */
+    /** A new free game in these settings, starting from four random crosses placed by [seed]. */
     fun gameSettings(seed: Long): GameSettings = GameSettings(
         width = boardSize.points,
         height = boardSize.points,
@@ -48,15 +51,8 @@ data class AppSettings(
         seed = seed,
     )
 
-    /** A new game in these settings, against the computer or, when [vsComputer] is false, between two people. */
-    fun newGame(vsComputer: Boolean, now: Long, seed: Long = Random.nextLong()): GameLogEntry = GameLogEntry.start(
-        settings = gameSettings(seed),
-        opponent = if (vsComputer) difficulty.name.lowercase() else GameLogEntry.HUMAN,
-        threatHighlight = threatHighlight,
-        now = now,
-    )
-
     companion object {
-        fun dotsFor(size: BoardSize, length: GameLength): Int = size.points * size.points * length.percent / 100
+        /** Each player's dots on a board of [size] for a game of [length]; null when it is open-ended. */
+        fun dotsFor(size: BoardSize, length: GameLength): Int? = length.percent?.let { size.points * size.points * it / 100 }
     }
 }

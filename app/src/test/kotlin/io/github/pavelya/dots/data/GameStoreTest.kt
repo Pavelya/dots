@@ -1,6 +1,7 @@
 package io.github.pavelya.dots.data
 
 import dots.ai.Ai
+import dots.campaign.Campaign
 import dots.engine.Action
 import dots.engine.GameSettings
 import dots.engine.GameState
@@ -11,6 +12,7 @@ import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.gameViewModel
+import io.github.pavelya.dots.game.levelGame
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -62,7 +64,7 @@ class GameStoreTest {
     private fun vsComputer(store: GameStore) = newGame().let { store.start(it); play(store, it) }
 
     /** Opens the saved game the way the app's game screen does. */
-    private fun resume(store: GameStore) = play(store, checkNotNull(store.current.value) { "no saved game" })
+    private fun resume(store: GameStore) = play(store, checkNotNull(store.saved(GameMode.FREE_PLAY)) { "no saved game" })
 
     private fun GameViewModel.place(pos: Pos) {
         onTap(pos)
@@ -119,10 +121,10 @@ class GameStoreTest {
             advanceUntilIdle()
         }
 
-        assertNull(store.current.value)
+        assertNull(store.saved(GameMode.FREE_PLAY))
         assertEquals(1, store.loggedGames.value)
         val reopened = openStore()
-        assertNull(reopened.current.value)
+        assertTrue(reopened.saved.value.isEmpty())
         assertEquals(1, reopened.loggedGames.value)
 
         val logged = GameLogEntry.parseLog(reopened.logFile.readText()).single()
@@ -147,7 +149,7 @@ class GameStoreTest {
         assertEquals(Outcome.ABANDONED, logged.outcome)
         assertEquals(2, logged.record.actions.size)
         assertNull(logged.check())
-        assertEquals(0, checkNotNull(store.current.value).record.actions.size)
+        assertEquals(0, checkNotNull(store.saved(GameMode.FREE_PLAY)).record.actions.size)
     }
 
     @Test
@@ -160,17 +162,52 @@ class GameStoreTest {
         now += 3_600_000 // an hour away
         vm.place(Pos(6, 6))
 
-        val saved = checkNotNull(store.current.value)
+        val saved = checkNotNull(store.saved(GameMode.FREE_PLAY))
         assertEquals(10_000 + GameLogEntry.IDLE_CAP_MILLIS, saved.playMillis)
         assertEquals(now, saved.updatedAt)
     }
 
     @Test
     fun `a damaged saved game is ignored instead of crashing the app`() {
-        File(folder.root, "current-game.json").writeText("{\"app\":\"x\", broken")
+        File(folder.root, "saved-free-play.json").writeText("{\"app\":\"x\", broken")
         val store = openStore()
-        assertNull(store.current.value)
+        assertTrue(store.saved.value.isEmpty())
         assertTrue(store.loaded.value)
         assertFalse(File(folder.root, "game-log.txt").exists())
+    }
+
+    @Test
+    fun `each mode keeps its own saved game, and a new game replaces only its own mode's`() {
+        val store = openStore()
+        val free = newGame().copy(startedAt = 1)
+        val two = GameLogEntry.start(settings, GameLogEntry.HUMAN, threatHighlight = false, now = 2)
+        val level = levelGame(Campaign.levels.first(), threatHighlight = false, now = 3)
+        store.start(free)
+        store.start(two)
+        store.start(level)
+
+        val reopened = openStore()
+        assertEquals(setOf(GameMode.CAMPAIGN, GameMode.FREE_PLAY, GameMode.TWO_PLAYERS), reopened.saved.value.keys)
+        assertEquals(1L, reopened.saved(GameMode.FREE_PLAY)?.startedAt)
+        assertEquals(2L, reopened.saved(GameMode.TWO_PLAYERS)?.startedAt)
+        assertEquals(3L, reopened.saved(GameMode.CAMPAIGN)?.startedAt)
+
+        reopened.start(newGame().copy(startedAt = 4))
+        assertEquals(4L, reopened.saved(GameMode.FREE_PLAY)?.startedAt)
+        assertEquals(2L, reopened.saved(GameMode.TWO_PLAYERS)?.startedAt)
+        assertEquals(3L, reopened.saved(GameMode.CAMPAIGN)?.startedAt)
+    }
+
+    @Test
+    fun `the one saved game of older versions becomes the saved game of its mode`() {
+        val old = GameLogEntry.start(settings, GameLogEntry.HUMAN, threatHighlight = false, now = 7)
+        File(folder.root, "current-game.json").writeText(old.toJson() + "\n")
+
+        val store = openStore()
+
+        assertEquals(7L, store.saved(GameMode.TWO_PLAYERS)?.startedAt)
+        assertEquals(setOf(GameMode.TWO_PLAYERS), store.saved.value.keys)
+        assertFalse(File(folder.root, "current-game.json").exists())
+        assertEquals(7L, openStore().saved(GameMode.TWO_PLAYERS)?.startedAt)
     }
 }

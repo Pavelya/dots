@@ -14,6 +14,7 @@ import dots.campaign.Outcome as MissionOutcome
 import dots.engine.Action
 import dots.engine.Booster
 import dots.engine.Game
+import dots.engine.GameRecord
 import dots.engine.GameState
 import dots.engine.MoveResult
 import dots.engine.Player
@@ -74,6 +75,15 @@ data class GameUiState(
     val guided: Boolean = false,
     /** True for a practice game, such as a replay of the tutorial: its end changes no campaign progress. */
     val practice: Boolean = false,
+    /** True for a free game with no dot limit: it ends when a player stops and the other is done (decision 0025). */
+    val openEnded: Boolean = false,
+    /** True when the side to move may stop now: an open-ended game, a person's turn, before anyone stopped. */
+    val canStop: Boolean = false,
+    /**
+     * True when a person collects after the other side stopped: they place as many dots as they
+     * like, then end the game with done.
+     */
+    val collecting: Boolean = false,
 ) {
     /** True when Result can open: the game is over and, in a level, its end is saved. */
     val showsResult: Boolean get() = isOver && (level == null || levelEnd != null)
@@ -81,7 +91,7 @@ data class GameUiState(
 
 /**
  * Holds one game and turns screen events into game actions. The screen sends events ([onTap],
- * [aim], [release], [undo], [playAgain]) and draws [ui]; all rules are the engine's.
+ * [aim], [release], [undo], [stop], [done], [playAgain]) and draws [ui]; all rules are the engine's.
  *
  * A game is described by a [GameLogEntry]: a new one, or the saved one when the app was closed
  * mid-game (its moves are replayed). Every change is reported to the [journal], which saves it
@@ -94,7 +104,8 @@ data class GameUiState(
  * their own dot land before the reply.
  *
  * @param start the game to play: new, or resumed
- * @param nextGame the game "play again" starts (a fresh seed every time; the same level again)
+ * @param nextGame the game "play again" starts (a fresh seed every time; the same level again, or
+ *   a free game with the same setup)
  * @param computerFor the computer opponent of a game, or null for two players on one phone
  * @param clock the time now in milliseconds, for the log
  * @param placing how dots are placed now, for the log: the game log records the method with the
@@ -208,6 +219,26 @@ class GameViewModel(
         changed()
         _ui.value = snapshot(lastMove = point, captured = move)
         letComputerMove()
+    }
+
+    /**
+     * In an open-ended game, the side to move declares the dots they keep grounded. The other side
+     * then collects what is left: the computer by itself, a person until they are [done].
+     */
+    fun stop() {
+        if (!humanToMove() || !_ui.value.canStop) return
+        game.apply(Action.Stop)
+        changed()
+        _ui.value = snapshot(lastMove = lastPlaced())
+        letComputerMove()
+    }
+
+    /** A person who collects after the other side stopped ends the game. */
+    fun done() {
+        if (!humanToMove() || !_ui.value.collecting) return
+        game.apply(Action.Finish)
+        changed()
+        _ui.value = snapshot(lastMove = lastPlaced())
     }
 
     /** Takes back the human's last move and the computer's reply. */
@@ -348,6 +379,8 @@ class GameViewModel(
         val level = level
         val mission = level?.status(state)
         val over = game.isOver
+        val openEnded = level == null && (entry.record as? GameRecord)?.settings?.dotsPerPlayer == null
+        val peopleToMove = computer == null || state.toMove == human
         val dangers = if (entry.threatHighlight && !over) Player.entries.flatMap { Hints.dangers(state, it) } else emptyList()
         val opponent = computer?.let {
             val lastCapture = captured?.captures?.takeIf { it.isNotEmpty() }?.let { captures ->
@@ -382,6 +415,9 @@ class GameViewModel(
             guide = guideFor(state, preview = null),
             guided = level != null && Tutorial.lesson(level) != null && !skipped,
             practice = entry.practice,
+            openEnded = openEnded,
+            canStop = openEnded && peopleToMove && state.isLegal(Action.Stop),
+            collecting = openEnded && peopleToMove && !over && state.isCleanup,
         )
     }
 }

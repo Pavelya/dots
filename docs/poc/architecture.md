@@ -55,7 +55,9 @@ Both use one format, `GameLogEntry` in the engine (`dots.log`), one line of JSON
 - `record` is the game record (settings, seed, every move), so the game replays exactly.
 - `started` / `updated` are milliseconds since 1970 (UTC); `play_ms` is time spent playing, where a
   pause of over 2 minutes between moves counts as 2 minutes (the player put the phone down).
-- `opponent` is `human` (two players on one phone) or the computer's difficulty.
+- `opponent` is `human` (two players on one phone) or the computer's strength (`steady`): a
+  level's, or in free play the one the player has reached in the campaign. POC logs name the test
+  difficulty (`easy`, `normal`, `hard`), strengths of the same names.
 - `outcome` is `playing` (the saved game), `finished`, or `abandoned` (another game was started).
 - `placing` is how dots were placed (`two-taps` or `drag`, from Settings); `touches` counts the
   players' touches on the board, and `placed` the dots they placed by touch, undone ones included.
@@ -66,11 +68,14 @@ Both use one format, `GameLogEntry` in the engine (`dots.log`), one line of JSON
 
 Files, in the app's private folder (`files/games/`, excluded from backups):
 
-- `current-game.json`: the unfinished game, rewritten after every move and undo (to a temporary
-  file first, then renamed, so a kill mid-write keeps the previous version). A new game is
-  written here *before* its screen opens; the game screen always plays this game, so after
-  Android kills and restarts the app it comes back to the same position, and its card in "Play a
-  game" opens it too. A damaged file is ignored rather than crashing the app.
+- `saved-campaign.json`, `saved-free-play.json`, `saved-two-players.json`: each mode's unfinished
+  game, rewritten after every move and undo (to a temporary file first, then renamed, so a kill
+  mid-write keeps the previous version). A saved game in one mode never replaces another mode's.
+  A new game is written here *before* its screen opens; the game screen plays the saved game of
+  its mode, so after Android kills and restarts the app it comes back to the same position, and
+  its card (the Level card, or Play a game) opens it too. A damaged file is ignored rather than
+  crashing the app. The one `current-game.json` of older versions becomes the saved game of its
+  mode.
 - `game-log.txt`: one line per finished or abandoned game (abandoned only if it had moves).
 
 `GameStore` writes both on one background thread, in order, so the main thread never waits for

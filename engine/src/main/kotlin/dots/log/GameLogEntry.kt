@@ -27,8 +27,9 @@ enum class Outcome {
  * @property startedAt when the game started, in milliseconds since 1970 (UTC)
  * @property updatedAt when the entry was last written: the end of the game once it is over
  * @property playMillis time spent playing, not counting pauses of over [IDLE_CAP_MILLIS] between moves
- * @property opponent [HUMAN] for two players on one phone, else the computer's difficulty
- *   ("easy", "normal", "hard") or, in a campaign level, its strength ("steady")
+ * @property opponent [HUMAN] for two players on one phone, else the computer's strength ("steady"):
+ *   a campaign level's, or in free play the one reached in the campaign. Logs of the POC name its
+ *   test difficulty ("easy", "normal", "hard"), strengths of the same names.
  * @property threatHighlight whether threats were shown
  * @property undos how often the player took a move back
  * @property red dots captured by red at the time of writing; [blue] likewise

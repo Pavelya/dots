@@ -11,7 +11,6 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import io.github.pavelya.dots.data.AppSettings
-import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import org.junit.Assert.assertEquals
@@ -29,22 +28,6 @@ import org.robolectric.annotation.GraphicsMode
 class SettingsAndRulesTest {
     @get:Rule
     val compose = createComposeRule()
-
-    @Test
-    fun `in the developer menu, choosing a bigger board updates the dot counts shown`() {
-        var latest = AppSettings()
-        compose.setContent {
-            var settings by remember { mutableStateOf(AppSettings()) }
-            DeveloperScreen(settings, onChange = { settings = it; latest = it }, onProgress = {}, loggedGames = 0, onShareLog = {}, onBack = {})
-        }
-        compose.onNodeWithText("Short: 33 dots each").assertIsDisplayed()
-
-        compose.onNodeWithText("20 × 20").performClick()
-
-        assertEquals(BoardSize.LARGE, latest.boardSize)
-        compose.onNodeWithText("Short: 60 dots each").assertIsDisplayed()
-        compose.onNodeWithText("Long: 120 dots each").assertIsDisplayed()
-    }
 
     @Test
     fun `the threat switch turns on`() {

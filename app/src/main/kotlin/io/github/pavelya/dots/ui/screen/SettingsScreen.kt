@@ -34,9 +34,6 @@ import androidx.compose.ui.unit.dp
 import dots.campaign.Progress
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
-import io.github.pavelya.dots.data.BoardSize
-import io.github.pavelya.dots.data.Difficulty
-import io.github.pavelya.dots.data.GameLength
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.data.SampleProgress
 
@@ -133,13 +130,11 @@ fun SettingsScreen(
 }
 
 /**
- * The developer menu: the POC's test settings, hidden from players (decision 0003 removes the
- * difficulty picker). Opens from the version line in Settings.
+ * The developer menu, hidden from players: sample campaign progress, and the game log to share.
+ * Opens from the version line in Settings.
  */
 @Composable
 fun DeveloperScreen(
-    settings: AppSettings,
-    onChange: (AppSettings) -> Unit,
     onProgress: (Progress) -> Unit,
     loggedGames: Int,
     onShareLog: () -> Unit,
@@ -152,42 +147,6 @@ fun DeveloperScreen(
         ScreenHeader(R.string.developer_title, onBack)
         Text(stringResource(R.string.developer_note), style = MaterialTheme.typography.bodyMedium)
 
-        Section(R.string.settings_board)
-        Choices(
-            options = BoardSize.entries,
-            selected = settings.boardSize,
-            label = { stringResource(R.string.settings_board_size, it.points, it.points) },
-            onSelect = { onChange(settings.copy(boardSize = it)) },
-        )
-
-        Section(R.string.settings_length)
-        Choices(
-            options = GameLength.entries,
-            selected = settings.length,
-            label = {
-                val dots = AppSettings.dotsFor(settings.boardSize, it)
-                pluralStringResource(if (it == GameLength.SHORT) R.plurals.settings_length_short else R.plurals.settings_length_long, dots, dots)
-            },
-            onSelect = { onChange(settings.copy(length = it)) },
-        )
-
-        Section(R.string.settings_computer)
-        Choices(
-            options = Difficulty.entries,
-            selected = settings.difficulty,
-            label = {
-                stringResource(
-                    when (it) {
-                        Difficulty.EASY -> R.string.difficulty_easy
-                        Difficulty.NORMAL -> R.string.difficulty_normal
-                        Difficulty.HARD -> R.string.difficulty_hard
-                    },
-                )
-            },
-            onSelect = { onChange(settings.copy(difficulty = it)) },
-        )
-
-        HorizontalDivider(Modifier.padding(vertical = 8.dp))
         Section(R.string.developer_progress)
         Text(stringResource(R.string.developer_progress_note), style = MaterialTheme.typography.bodyMedium)
         for ((label, progress) in listOf(
