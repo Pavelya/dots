@@ -3,6 +3,8 @@ package io.github.pavelya.dots.ui.screen
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -220,7 +222,13 @@ private fun PlayCard(
     ) {
         Icon(icon, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(52.dp))
         Column(Modifier.weight(1f)) {
-            Text(stringResource(title), style = NoteText.display.copy(fontSize = 28.sp, lineHeight = 32.sp), color = style.paper, maxLines = 1)
+            // The handwriting is wider than the wireframe's Caveat until V-03: it shrinks to fit.
+            BasicText(
+                stringResource(title),
+                style = NoteText.display.copy(fontSize = 28.sp, lineHeight = 32.sp, color = style.paper),
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(minFontSize = 16.sp, maxFontSize = 28.sp),
+            )
             Text(stringResource(detail), style = NoteText.small.copy(fontSize = 13.sp), color = style.paper.copy(alpha = 0.9f))
         }
         Icon(remember(style) { Doodles.play(style.paper) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(22.dp))
@@ -302,7 +310,7 @@ private fun RowScope.Choice(label: String, detail: String?, selected: Boolean, s
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .padding(horizontal = 4.dp, vertical = 6.dp),
     ) {
-        Text(label, style = CHOICE_TEXT, color = ink, maxLines = 1)
+        BasicText(label, style = CHOICE_TEXT.copy(color = ink), maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 14.sp))
         detail?.let { Text(it, style = NoteText.small, color = ink, maxLines = 1) }
     }
 }
