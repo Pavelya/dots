@@ -29,13 +29,6 @@ jobs:
         # Starts from an empty folder, so a screenshot no test draws any more shows up as deleted.
         run: |
           rm -f app/src/test/screenshots/*.png
-          # TEMPORARY (A-09): dump every JVM's threads if the tests hang.
-          ( sleep 420
-            ps -eo pid,args | grep -E "Gradle(Worker|Daemon)|java" | grep -v grep | cut -c1-200
-            for p in $(pgrep -f "GradleWorkerMain|Gradle Test Executor"); do
-              echo "=== JSTACK $p"; jstack -l "$p" || { echo "jstack failed, SIGQUIT"; kill -3 "$p"; sleep 5; }
-            done
-            pkill -f "GradleWorkerMain|Gradle Test Executor" || true ) &
           ./gradlew :app:recordRoborazziDebug
       - name: Compare with the branch
         run: |

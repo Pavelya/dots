@@ -62,7 +62,6 @@ import io.github.pavelya.dots.ui.screen.RulesScreen
 import io.github.pavelya.dots.ui.screen.SettingsDetailsScreen
 import io.github.pavelya.dots.ui.screen.SettingsPage
 import io.github.pavelya.dots.ui.screen.SettingsScreen
-import io.github.pavelya.dots.ui.screen.SettingsViewModel
 import io.github.pavelya.dots.ui.screen.StandInNote
 import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.theme.DotsTheme
@@ -324,12 +323,13 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     StandInScreen(R.string.screen_cosmetic, "C-02", onBack = back)
                 }
                 composable(Routes.SETTINGS) {
-                    val model = viewModel { SettingsViewModel(app.settings) }
-                    val settings by model.settings.collectAsStateWithLifecycle()
+                    val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
                     settings?.let {
                         SettingsScreen(
                             settings = it,
-                            onChange = model::change,
+                            // Saved in the app's scope, so leaving Settings never cuts a change short.
+                            // Each change applies to the stored settings, so quick changes never undo each other.
+                            onChange = { change -> appScope.launch { app.settings.update(change) } },
                             version = BuildConfig.VERSION_NAME,
                             onPage = { navController.navigate(Routes.settingsDetails(it)) },
                             onDeveloperMenu = { navController.navigate(Routes.DEVELOPER) },

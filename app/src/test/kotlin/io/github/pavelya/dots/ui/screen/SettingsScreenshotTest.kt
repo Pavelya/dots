@@ -47,19 +47,19 @@ class SettingsScreenshotTest {
 
     private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
 
-    private fun settings(dark: Boolean = false) = show(dark) {
+    private fun showSettings(dark: Boolean = false) = show(dark) {
         SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onPage = {}, onDeveloperMenu = {}, onReplayTutorial = {}, onBack = {})
     }
 
     @Test
     fun settings() {
-        settings()
+        showSettings()
         capture("settings_screen")
     }
 
     @Test
     fun `settings scrolled to the end`() {
-        settings()
+        showSettings()
         compose.onNodeWithText("Version 1.0").performScrollTo()
         capture("settings_screen_end")
     }
@@ -67,13 +67,13 @@ class SettingsScreenshotTest {
     @Test
     @Config(qualifiers = "w320dp-h568dp-xhdpi")
     fun `settings on a small phone`() {
-        settings()
+        showSettings()
         capture("settings_small_phone")
     }
 
     @Test
     fun `settings in dark mode`() {
-        settings(dark = true)
+        showSettings(dark = true)
         capture("settings_dark")
     }
 
