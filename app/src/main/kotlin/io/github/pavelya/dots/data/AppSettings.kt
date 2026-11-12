@@ -32,8 +32,19 @@ data class AppSettings(
     val boardSize: BoardSize = BoardSize.STANDARD,
     val length: GameLength = GameLength.SHORT,
     val threatHighlight: Boolean = false,
-    /** Sound on or off, from the icon in Pause. A-09 adds it to Settings; the sounds come later (V-08, V-09). */
+    /**
+     * Sound on or off, from the icon in Pause. Off silences music and sound effects whatever their
+     * volumes; the sounds themselves come later (V-08, V-09).
+     */
     val sound: Boolean = true,
+    /** The music's volume in Settings, from 0 (silent) to [MAX_VOLUME]. */
+    val musicVolume: Int = DEFAULT_VOLUME,
+    /** The sound effects' volume in Settings, from 0 (silent) to [MAX_VOLUME]. */
+    val effectsVolume: Int = DEFAULT_VOLUME,
+    /** Vibration when a dot lands and a ring closes (motion.md, rule 6); V-07 makes the phone vibrate. */
+    val vibration: Boolean = true,
+    /** High-contrast pieces (pieces.md); V-04 draws them. */
+    val highContrast: Boolean = false,
     /** How a dot is placed (decision 0024). */
     val placing: PlacingMethod = PlacingMethod.TWO_TAPS,
     /** True once the player skipped the tutorial's guided steps; replaying the tutorial shows them again (A-06). */
@@ -52,6 +63,11 @@ data class AppSettings(
     )
 
     companion object {
+        const val MAX_VOLUME = 100
+
+        /** Both volumes start here, as the Settings wireframe draws them. */
+        const val DEFAULT_VOLUME = 70
+
         /** Each player's dots on a board of [size] for a game of [length]; null when it is open-ended. */
         fun dotsFor(size: BoardSize, length: GameLength): Int? = length.percent?.let { size.points * size.points * it / 100 }
     }

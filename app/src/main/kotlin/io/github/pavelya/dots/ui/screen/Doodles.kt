@@ -29,6 +29,8 @@ object Doodles {
     const val CALENDAR = "M3.5 5h17v15h-17z M3.5 10h17M8 3v4M16 3v4"
     const val STAR = "M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"
     const val CLOSE = "M6 6l12 12M18 6L6 18"
+    const val BACK = "M15 5l-7 7 7 7"
+    const val CHEVRON = "M9 5l7 7-7 7"
     const val FLAG = "M6 21.5V3 M6 4h11.5l-2.5 4.5 2.5 4.5H6"
     const val TICK = "M4.5 12.5l5 5L19.5 6.5"
     const val RETRY = "M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5"

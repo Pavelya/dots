@@ -14,7 +14,8 @@ class SettingsViewModel(private val repository: SettingsRepository) : ViewModel(
     val settings: StateFlow<AppSettings?> =
         repository.settings.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun change(next: AppSettings) {
-        viewModelScope.launch { repository.update { next } }
+    /** Saves a change; it applies to the stored settings, so two quick changes never undo each other. */
+    fun change(change: (AppSettings) -> AppSettings) {
+        viewModelScope.launch { repository.update(change) }
     }
 }

@@ -8,7 +8,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
@@ -18,6 +26,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
@@ -36,6 +45,7 @@ import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.GameLength
 import io.github.pavelya.dots.data.GameMode
+import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.data.SampleProgress
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
@@ -111,7 +121,7 @@ class NavigationTest {
     private fun waitFor(text: String, substring: Boolean = false) =
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text, substring = substring)).fetchSemanticsNodes().isNotEmpty() }
 
-    /** A side's line on the board, as TalkBack reads it. */
+    /** A side's line on the board, or another node TalkBack reads by its description. */
     private fun waitForSide(description: String) =
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasContentDescription(description)).fetchSemanticsNodes().isNotEmpty() }
 
@@ -176,6 +186,7 @@ class NavigationTest {
 
         tap("Settings")
         at(Routes.SETTINGS)
+        compose.onNodeWithText("Credits and licences").performScrollTo()
         visit("Credits and licences", Routes.SETTINGS_DETAILS, returnTo = Routes.SETTINGS)
         back()
         at(Routes.MAP)
@@ -276,6 +287,58 @@ class NavigationTest {
         tap("Skip")
         gone("Tap the circled point.")
         compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.settings.settings.first() }.tutorialSkipped }
+    }
+
+    @Test
+    fun `every setting changed in Settings survives a restart`() {
+        launch()
+        tap("Settings")
+        at(Routes.SETTINGS)
+        waitForSide("Music")
+        compose.onNodeWithContentDescription("Music").performSemanticsAction(SemanticsActions.SetProgress) { it(20f) }
+        compose.onNodeWithContentDescription("Sounds").performSemanticsAction(SemanticsActions.SetProgress) { it(45f) }
+        for (row in listOf("Vibration", "High-contrast pieces", "Threat highlights", "Drag")) {
+            compose.onNodeWithText(row).performScrollTo().performClick()
+        }
+        val changed = AppSettings(musicVolume = 20, effectsVolume = 45, vibration = false, highContrast = true, threatHighlight = true, placing = PlacingMethod.DRAG)
+        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.settings.settings.first() } == changed }
+
+        reopen(Routes.MAP)
+        tap("Settings")
+        at(Routes.SETTINGS)
+        waitFor("Vibration")
+        compose.onNodeWithContentDescription("Music").assert(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(20f, 0f..100f)))
+        compose.onNodeWithContentDescription("Sounds").assert(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(45f, 0f..100f)))
+        compose.onNodeWithText("Vibration").assertIsOff()
+        compose.onNodeWithText("High-contrast pieces").performScrollTo().assertIsOn()
+        compose.onNodeWithText("Threat highlights").performScrollTo().assertIsOn()
+        compose.onNodeWithText("Drag").performScrollTo().assertIsSelected()
+        assertEquals(changed, runBlocking { app.settings.settings.first() })
+    }
+
+    @Test
+    fun `Settings opens each of its pages, and Back returns to Settings`() {
+        launch()
+        tap("Settings")
+        at(Routes.SETTINGS)
+        waitFor("Send feedback")
+        for ((row, page) in listOf("Send feedback" to "feedback", "Privacy" to "privacy", "Play Games backup" to "backup", "Credits and licences" to "credits")) {
+            compose.onNodeWithText(row).performScrollTo().performClick()
+            at(Routes.SETTINGS_DETAILS)
+            assertEquals(page, nav.currentBackStackEntry?.arguments?.getString("page"))
+            back()
+            at(Routes.SETTINGS)
+        }
+        compose.onNodeWithText("Credits and licences").performScrollTo().performClick()
+        at(Routes.SETTINGS_DETAILS)
+        tap("Open-source licences")
+        compose.waitUntil(timeoutMillis = 5_000) { nav.currentBackStackEntry?.arguments?.getString("page") == "licences" }
+        compose.waitForIdle()
+        back()
+        compose.waitUntil(timeoutMillis = 5_000) { nav.currentBackStackEntry?.arguments?.getString("page") == "credits" }
+        compose.waitForIdle()
+        tap("Back to settings")
+        at(Routes.SETTINGS)
     }
 
     @Test
