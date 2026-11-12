@@ -42,6 +42,7 @@ import dots.engine.Pos
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.DotsApplication
+import java.util.concurrent.atomic.AtomicReference
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.GameLength
 import io.github.pavelya.dots.data.GameMode
@@ -51,7 +52,10 @@ import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.screen.BOARD_TAG
 import io.github.pavelya.dots.ui.screen.DEVELOPER_TAPS
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -301,7 +305,12 @@ class NavigationTest {
             compose.onNodeWithText(row).performScrollTo().performClick()
         }
         val changed = AppSettings(musicVolume = 20, effectsVolume = 45, vibration = false, highContrast = true, threatHighlight = true, placing = PlacingMethod.DRAG)
-        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.settings.settings.first() } == changed }
+        // Watched off the main thread: DataStore runs each save's change on the main thread, so
+        // blocking it to read the store while saves are queued would wait forever.
+        val stored = AtomicReference<AppSettings>()
+        val watching = CoroutineScope(Dispatchers.IO).launch { app.settings.settings.collect { stored.set(it) } }
+        compose.waitUntil(timeoutMillis = 5_000) { stored.get() == changed }
+        watching.cancel()
 
         reopen(Routes.MAP)
         tap("Settings")
@@ -541,31 +550,6 @@ class NavigationTest {
         tap("Resume")
         at(Routes.GAME)
         assertSame(saved, app.games.saved(GameMode.CAMPAIGN))
-    }
-
-    // TEMPORARY (A-09): print every thread's stack if a test runs longer than 90 s, then stop.
-    private var watchdog: Thread? = null
-
-    @org.junit.Before
-    fun startWatchdog() {
-        watchdog = Thread {
-            try {
-                Thread.sleep(90_000)
-            } catch (_: InterruptedException) {
-                return@Thread
-            }
-            for ((thread, stack) in Thread.getAllStackTraces()) {
-                println("WATCHDOG thread ${thread.name} ${thread.state}")
-                stack.take(60).forEach { println("WATCHDOG     at $it") }
-            }
-            System.out.flush()
-            Runtime.getRuntime().halt(1)
-        }.apply { isDaemon = true; start() }
-    }
-
-    @After
-    fun stopWatchdog() {
-        watchdog?.interrupt()
     }
 
     @After

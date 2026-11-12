@@ -1,4 +1,3 @@
-import java.time.Duration
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -57,11 +56,6 @@ android {
 
     testOptions {
         unitTests.isIncludeAndroidResources = true
-        // TEMPORARY (A-09): find the test that hangs.
-        unitTests.all {
-            it.testLogging { events("started", "failed"); showStandardStreams = true; exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL }
-            it.timeout.set(Duration.ofMinutes(9))
-        }
     }
 
     lint {
