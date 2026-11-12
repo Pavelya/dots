@@ -552,10 +552,18 @@ class NavigationTest {
         assertSame(saved, app.games.saved(GameMode.CAMPAIGN))
     }
 
+    /**
+     * Off the main thread, while the main thread keeps running: a save a screen started may still
+     * be queued, and DataStore runs each save's change on the thread that asked for it, here the
+     * main thread. Blocking it until the reset is done would wait forever.
+     */
     @After
-    fun `forget the progress and the settings`() = runBlocking {
-        app.progress.replace(Progress.NONE)
-        app.settings.update { AppSettings() }
+    fun `forget the progress and the settings`() {
+        val reset = CoroutineScope(Dispatchers.IO).launch {
+            app.progress.replace(Progress.NONE)
+            app.settings.update { AppSettings() }
+        }
+        compose.waitUntil(timeoutMillis = 10_000) { reset.isCompleted }
     }
 
     private companion object {
