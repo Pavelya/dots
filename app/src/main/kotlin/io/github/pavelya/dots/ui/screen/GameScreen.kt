@@ -101,6 +101,8 @@ fun GameScreen(
             input = BoardInput(placing, viewModel::onTap, viewModel::aim, viewModel::release),
             onUndo = viewModel::undo,
             onPause = { paused = true },
+            onStop = viewModel::stop,
+            onDone = viewModel::done,
             // Behind Pause, the board is out of reach, also for TalkBack.
             modifier = if (paused && !ui.isOver) Modifier.clearAndSetSemantics {} else Modifier,
             guided = guided,

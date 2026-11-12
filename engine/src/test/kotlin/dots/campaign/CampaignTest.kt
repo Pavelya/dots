@@ -34,6 +34,18 @@ class CampaignTest {
     }
 
     @Test
+    fun `free play plays at the strongest computer the player has beaten`() {
+        val first = Campaign.levels.first()
+        assertEquals(first.strength, Campaign.strengthReached(Progress.NONE))
+
+        val strongest = Campaign.levels.maxBy { it.strength }
+        val weaker = Campaign.levels.first { it.strength < strongest.strength }
+        val progress = Progress(mapOf(weaker.code to 1, strongest.code to 2))
+        assertEquals(strongest.strength, Campaign.strengthReached(progress))
+        assertEquals(weaker.strength, Campaign.strengthReached(Progress(mapOf(weaker.code to 3))))
+    }
+
+    @Test
     fun `a file whose name does not match its level is refused`() {
         val text = LevelFormat.write(Campaign.levels.first().copy(number = 2))
         val error = assertFailsWith<LevelFormatException> { Campaign.load { if (it == "1-01.level") text else null } }

@@ -116,6 +116,30 @@ class GameScreenshotTest {
         capture("game_free_play")
     }
 
+    /** Free play, open-ended (decision 0025): Undo and Stop in the tool bar, no dots left. */
+    @Test
+    fun freePlayOpenEnded() {
+        val start = GameSettings.POC.copy(seed = 1, dotsPerPlayer = null).newGame()
+        val first = start.play(start.near(7, 7)).state
+        val reply = first.near(8, 8)
+        val ui = ui(MoveResult(first.play(reply).state, emptyList()), lastMove = reply)
+            .copy(canUndo = true, openEnded = true, canStop = true)
+        show { Board(ui, campaign = null) }
+        capture("game_free_play_open_ended")
+    }
+
+    /** Two players, open-ended: Red has stopped, and Blue collects, then taps Done. */
+    @Test
+    fun twoPlayersCollecting() {
+        val start = GameSettings.POC.copy(seed = 1, dotsPerPlayer = null).newGame()
+        val first = start.play(start.near(7, 7)).state
+        val second = first.play(first.near(8, 8)).state
+        val stopped = second.stop()
+        val ui = GameUiState(state = stopped, lastMove = first.near(8, 8), openEnded = true, collecting = true)
+        show { Board(ui, campaign = null) }
+        capture("game_two_players_collecting")
+    }
+
     @Test
     fun twoPlayersTurnBanner() {
         val game = gameViewModel(newSettings = { GameSettings.POC.copy(seed = 1) })

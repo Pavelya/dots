@@ -2,8 +2,7 @@ package io.github.pavelya.dots.ui
 
 import dots.campaign.Campaign
 import dots.campaign.Progress
-import dots.engine.GameSettings
-import dots.log.GameLogEntry
+import io.github.pavelya.dots.data.GameMode
 import io.github.pavelya.dots.game.levelGame
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -15,17 +14,17 @@ class OpeningRouteTest {
     private val passed = Progress(mapOf(level1.code to 2))
     private val level1Game = levelGame(level1, threatHighlight = true, now = 0)
     private val level2Game = levelGame(level2, threatHighlight = true, now = 0)
-    private val freeGame = GameLogEntry.start(GameSettings.POC, "normal", threatHighlight = false, now = 0)
 
     @Test
     fun `until Level 1 is passed, its board opens, new or saved`() {
-        assertEquals(Routes.GAME, openingRoute(Progress.NONE, saved = null))
-        assertEquals(Routes.GAME, openingRoute(Progress.NONE, saved = level1Game))
+        val level1Board = Routes.game(GameMode.CAMPAIGN)
+        assertEquals(level1Board, openingRoute(Progress.NONE, saved = null))
+        assertEquals(level1Board, openingRoute(Progress.NONE, saved = level1Game))
     }
 
     @Test
-    fun `another saved game is not replaced, and the map opens`() {
-        assertEquals(Routes.MAP, openingRoute(Progress.NONE, saved = freeGame))
+    fun `another saved level is not replaced, and the map opens`() {
+        assertEquals(Routes.MAP, openingRoute(Progress.NONE, saved = level2Game))
     }
 
     @Test
@@ -33,6 +32,5 @@ class OpeningRouteTest {
         assertEquals(Routes.MAP, openingRoute(passed, saved = null))
         assertEquals(Routes.MAP, openingRoute(passed, saved = level1Game))
         assertEquals(Routes.MAP, openingRoute(passed, saved = level2Game))
-        assertEquals(Routes.MAP, openingRoute(passed, saved = freeGame))
     }
 }

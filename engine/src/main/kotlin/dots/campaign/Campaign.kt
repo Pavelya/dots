@@ -20,6 +20,13 @@ object Campaign {
     /** What the world map shows for [progress]. */
     fun map(progress: Progress): CampaignMap = CampaignMap.of(worlds, progress)
 
+    /**
+     * The strength free play uses against the computer (decision 0003: no difficulty picker): the
+     * strongest computer among the levels passed in [progress], or the first level's before any.
+     */
+    fun strengthReached(progress: Progress): Strength =
+        levels.filter { progress.isPassed(it) }.maxOfOrNull { it.strength } ?: levels.first().strength
+
     fun level(world: Int, number: Int): Level = levels.firstOrNull { it.world == world && it.number == number }
         ?: throw NoSuchElementException("No level $world-$number (see the files in $FOLDER/)")
 

@@ -92,7 +92,8 @@ import kotlin.math.min
  *   are placed by the [input]'s method ([PlayableBoard]).
  * - **The player below the board:** piece, name, tally and score, and the dots left.
  * - **The tool bar:** the campaign's boosters (A-05), or Undo in free play (decision 0023). Two
- *   players have none.
+ *   players have none. An open-ended game (decision 0025) adds Stop, which asks for a second tap,
+ *   and, for the side that collects after the other stopped, Done with a line saying what to do.
  * - **The tutorial** (the wireframes' "Tutorial level"): a [guided] level has no tool bar and
  *   keeps room just above the board for the step note ([guide], [TutorialNote]), which shows in
  *   place of the mission note; the board circles the point to tap, with a hand pointing at it.
@@ -116,6 +117,8 @@ internal fun GameBoard(
     onUndo: () -> Unit,
     onPause: () -> Unit,
     modifier: Modifier = Modifier,
+    onStop: () -> Unit = {},
+    onDone: () -> Unit = {},
     guided: Boolean = false,
     guide: Tutorial.Step? = null,
     onSkipGuide: () -> Unit = {},
@@ -128,7 +131,7 @@ internal fun GameBoard(
     val names = Names(ui.vsComputer, human)
     val below = if (ui.vsComputer) human else Player.RED
     val above = below.opponent
-    val toolBar = !guided && (campaign != null || ui.vsComputer)
+    val toolBar = !guided && (campaign != null || ui.vsComputer || ui.openEnded)
     val turnBanner = turnBanner(ui)
     BoxWithConstraints(modifier.fillMaxSize().background(style.paper)) {
         val bottom = PLAYER_LINE + if (toolBar) TOOL_BAR else 0.dp
@@ -206,8 +209,26 @@ internal fun GameBoard(
                         ui.isOver -> Spacer(Modifier.weight(1f))
                         campaign != null -> campaign.boosters(this)
                         else -> {
-                            UndoTool(enabled = ui.canUndo && !ui.thinking, style = style, onClick = onUndo, modifier = Modifier.weight(1f))
-                            repeat(3) { Spacer(Modifier.weight(1f)) }
+                            var slots = 4
+                            if (ui.vsComputer) {
+                                UndoTool(enabled = ui.canUndo && !ui.thinking, style = style, onClick = onUndo, modifier = Modifier.weight(1f))
+                                slots--
+                            }
+                            if (ui.collecting) {
+                                DoneTool(style, onDone, Modifier.weight(1f))
+                                val stopper = state.stopper ?: below.opponent
+                                Text(
+                                    stringResource(R.string.game_collect, names.of(stopper)),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = style.pencil,
+                                    modifier = Modifier.weight(2f).align(Alignment.CenterVertically),
+                                )
+                                slots -= 3
+                            } else if (ui.openEnded) {
+                                StopTool(enabled = ui.canStop && !ui.thinking, armedFor = state, style = style, onStop = onStop, modifier = Modifier.weight(1f))
+                                slots--
+                            }
+                            repeat(slots) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }
@@ -524,6 +545,63 @@ private fun UndoTool(enabled: Boolean, style: GameStyle, onClick: () -> Unit, mo
     ) {
         Icon(remember(ink) { Doodles.icon(Doodles.UNDO, ink) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
         Text(stringResource(R.string.game_undo), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ink)
+    }
+}
+
+/**
+ * An open-ended game's Stop (decision 0025). Stopping ends the side's play, so it takes two taps:
+ * the first turns it red and asks "Stop now?", the second stops. Any change of the position
+ * [armedFor] (a move, an undo) puts it back.
+ */
+@Composable
+private fun StopTool(enabled: Boolean, armedFor: Any, style: GameStyle, onStop: () -> Unit, modifier: Modifier) {
+    var armed by remember(armedFor) { mutableStateOf(false) }
+    val sure = armed && enabled
+    val ink = when {
+        !enabled -> style.graphite
+        sure -> style.red
+        else -> style.blue
+    }
+    val outline = when {
+        !enabled -> style.graphite
+        sure -> style.red
+        else -> style.bluePale
+    }
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .height(56.dp)
+            .clip(TOOL_SHAPE)
+            .background(style.card)
+            .toolOutline(outline, dashed = !enabled, TOOL_SHAPE)
+            .clickable(enabled = enabled, role = Role.Button) { if (sure) onStop() else armed = true },
+    ) {
+        Icon(remember(ink) { Doodles.icon(Doodles.FLAG, ink) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
+        Text(
+            stringResource(if (sure) R.string.game_stop_sure else R.string.game_stop),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = ink,
+            maxLines = 1,
+        )
+    }
+}
+
+/** After the other side stopped: Done ends the game, in blue ink like the big buttons. */
+@Composable
+private fun DoneTool(style: GameStyle, onDone: () -> Unit, modifier: Modifier) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+        modifier = modifier
+            .height(56.dp)
+            .clip(TOOL_SHAPE)
+            .background(style.blue)
+            .clickable(role = Role.Button, onClick = onDone),
+    ) {
+        Icon(remember(style) { Doodles.icon(Doodles.TICK, style.paper, width = 2.2f) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
+        Text(stringResource(R.string.game_done), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = style.paper)
     }
 }
 

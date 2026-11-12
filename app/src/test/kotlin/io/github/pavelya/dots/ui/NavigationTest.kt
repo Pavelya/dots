@@ -27,11 +27,15 @@ import dots.campaign.Campaign
 import dots.campaign.LevelRecord
 import dots.campaign.Progress
 import dots.engine.Action
+import dots.engine.GameRecord
 import dots.engine.GameSettings
 import dots.engine.Pos
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.DotsApplication
+import io.github.pavelya.dots.data.AppSettings
+import io.github.pavelya.dots.data.GameLength
+import io.github.pavelya.dots.data.GameMode
 import io.github.pavelya.dots.data.SampleProgress
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
@@ -40,7 +44,6 @@ import io.github.pavelya.dots.ui.screen.DEVELOPER_TAPS
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.After
@@ -49,6 +52,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
 
 /** The routes and Back of docs/design/flows.md, on the whole app. */
@@ -93,7 +97,7 @@ class NavigationTest {
     }
 
     /** The level code of the saved game, if it is a campaign game. */
-    private val savedLevel get() = (app.games.current.value?.record as? LevelRecord)?.level?.code
+    private val savedLevel get() = (app.games.saved(GameMode.CAMPAIGN)?.record as? LevelRecord)?.level?.code
 
     /**
      * Waits until the screen on top is [route] and drawn: a dialog's window open, a screen's
@@ -189,7 +193,7 @@ class NavigationTest {
         at(Routes.MAP)
 
         tap("Play a game")
-        tap("Free play")
+        tap("Against the computer")
         at(Routes.GAME)
         waitForSide("You, score 0, to move")
         compose.onNodeWithContentDescription("Pause").performClick()
@@ -236,14 +240,14 @@ class NavigationTest {
         tap("Play the tutorial")
         at(Routes.GAME)
         assertEquals("1-1", savedLevel)
-        assertTrue(app.games.current.value!!.practice)
+        assertTrue(app.games.saved(GameMode.CAMPAIGN)!!.practice)
         waitFor("Tap the circled point.")
 
         place(3, 4, size = 7)
         waitFor("You won!")
         tap("Next")
         compose.waitUntil(timeoutMillis = 5_000) { savedLevel == "1-2" }
-        assertTrue(app.games.current.value!!.practice)
+        assertTrue(app.games.saved(GameMode.CAMPAIGN)!!.practice)
         assertEquals(Routes.GAME, nav.currentDestination?.route)
         assertEquals(LEVEL_1_PASSED, runBlocking { app.progress.progress.first() })
 
@@ -266,7 +270,7 @@ class NavigationTest {
         at(Routes.GAME)
         waitFor("Tap the circled point.")
         assertEquals("1-1", savedLevel)
-        assertTrue(app.games.current.value!!.practice)
+        assertTrue(app.games.saved(GameMode.CAMPAIGN)!!.practice)
         assertEquals(false, runBlocking { app.settings.settings.first() }.tutorialSkipped)
 
         tap("Skip")
@@ -283,31 +287,65 @@ class NavigationTest {
         assertTrue(compose.activity.isFinishing)
     }
 
+    /** Leaves the board for the map through Pause. */
+    private fun toMap() {
+        compose.onNodeWithContentDescription("Pause").performClick()
+        tap("To the map")
+        at(Routes.MAP)
+    }
+
     @Test
-    fun `a game left for the map is resumed by its card, and the other card starts a new one`() {
+    fun `free play and two players each keep their own saved game, and their cards resume them`() {
         launch()
         tap("Play a game")
-        tap("Free play")
+        tap("Against the computer")
         at(Routes.GAME)
         waitForSide("You, score 0, to move")
-        val first = app.games.current.value
-        compose.onNodeWithContentDescription("Pause").performClick()
-        tap("To the map")
-        at(Routes.MAP)
+        val free = app.games.saved(GameMode.FREE_PLAY)
+        toMap()
 
         tap("Play a game")
-        waitFor("Resume your game")
-        tap("Free play")
+        tap("Two players")
         at(Routes.GAME)
-        assertSame(first, app.games.current.value)
+        waitForSide("Red, score 0, to move")
+        val two = app.games.saved(GameMode.TWO_PLAYERS)
+        toMap()
+        // Starting two players kept the free game.
+        assertSame(free, app.games.saved(GameMode.FREE_PLAY))
 
-        compose.onNodeWithContentDescription("Pause").performClick()
-        tap("To the map")
-        at(Routes.MAP)
+        tap("Play a game")
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText("resume your game")).fetchSemanticsNodes().size == 2 }
+        tap("Against the computer")
+        at(Routes.GAME)
+        waitForSide("You, score 0, to move")
+        assertSame(free, app.games.saved(GameMode.FREE_PLAY))
+        toMap()
+
         tap("Play a game")
         tap("Two players")
         waitForSide("Red, score 0, to move")
-        assertNotSame(first, app.games.current.value)
+        assertSame(two, app.games.saved(GameMode.TWO_PLAYERS))
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp")
+    fun `free play uses the strength reached in the campaign and the board size and length chosen on the note`() {
+        launch(SampleProgress.midWorld)
+        tap("Play a game")
+        tap("Board 15 × 15 · Short · change")
+        tap("12 × 12")
+        tap("Open-ended")
+        compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.settings.settings.first() }.length == GameLength.OPEN_ENDED }
+        tap("Against the computer")
+        at(Routes.GAME)
+        waitForSide("You, score 0, to move")
+
+        val game = app.games.saved(GameMode.FREE_PLAY)!!
+        assertEquals(Campaign.strengthReached(SampleProgress.midWorld).text, game.opponent)
+        val settings = (game.record as GameRecord).settings
+        assertEquals(12, settings.width)
+        assertEquals(null, settings.dotsPerPlayer)
+        compose.onNodeWithText("Stop").assertExists()
     }
 
     @Test
@@ -388,7 +426,7 @@ class NavigationTest {
         launch(Progress.NONE, route = Routes.GAME)
 
         assertEquals(setOf(Routes.LOADING, Routes.GAME), visited)
-        val resumed = app.games.current.value!!
+        val resumed = app.games.saved(GameMode.CAMPAIGN)!!
         assertEquals(saved.startedAt, resumed.startedAt)
         assertEquals(saved.record.actions, resumed.record.actions)
         waitForSide("You, score 0, to move")
@@ -399,7 +437,7 @@ class NavigationTest {
         at(Routes.MAP)
         compose.onNodeWithContentDescription("Level 1-1, next").assertExists()
         reopen(Routes.GAME)
-        assertEquals(saved.startedAt, app.games.current.value?.startedAt)
+        assertEquals(saved.startedAt, app.games.saved(GameMode.CAMPAIGN)?.startedAt)
     }
 
     @Test
@@ -429,7 +467,7 @@ class NavigationTest {
         tap("Start")
         at(Routes.GAME)
         waitForSide("You, score 0, to move")
-        val saved = app.games.current.value
+        val saved = app.games.saved(GameMode.CAMPAIGN)
         compose.onNodeWithContentDescription("Pause").performClick()
         tap("To the map")
         at(Routes.MAP)
@@ -439,11 +477,14 @@ class NavigationTest {
         waitFor("Resume")
         tap("Resume")
         at(Routes.GAME)
-        assertSame(saved, app.games.current.value)
+        assertSame(saved, app.games.saved(GameMode.CAMPAIGN))
     }
 
     @After
-    fun `forget the progress`() = runBlocking { app.progress.replace(Progress.NONE) }
+    fun `forget the progress and the settings`() = runBlocking {
+        app.progress.replace(Progress.NONE)
+        app.settings.update { AppSettings() }
+    }
 
     private companion object {
         /** Level 1 passed with one star: the app opens on the map, and a replay can earn more. */

@@ -45,8 +45,11 @@ import io.github.pavelya.dots.BuildConfig
 import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
+import io.github.pavelya.dots.data.GameMode
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.computerFor
+import io.github.pavelya.dots.game.freeGame
+import io.github.pavelya.dots.game.freeGameLike
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.screen.DeveloperScreen
 import io.github.pavelya.dots.ui.screen.GameScreen
@@ -96,8 +99,9 @@ object Routes {
     /** Over the map: Free play or Two players. */
     const val PLAY = "play"
 
-    /** The game in progress: the store's current game, new or resumed. */
-    const val GAME = "game"
+    /** The game in progress: the saved game of its mode, new or resumed. */
+    const val GAME = "game/{mode}"
+    fun game(mode: GameMode) = "game/${mode.key}"
     const val RULES = "rules"
     const val STATS = "stats"
     const val SHOP = "shop"
@@ -135,7 +139,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
             app.settings.update { it.copy(tutorialSkipped = false) }
             val settings = app.settings.settings.first()
             app.games.start(levelGame(Tutorial.levels.first(), settings.threatHighlight, now = System.currentTimeMillis(), practice = true))
-            navController.navigate(Routes.GAME) {
+            navController.navigate(Routes.game(GameMode.CAMPAIGN)) {
                 if (navController.isOnStack(Routes.MAP)) popUpTo(Routes.MAP) else popUpTo(navController.graph.id) { inclusive = true }
             }
         }
@@ -162,8 +166,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     LaunchedEffect(Unit) {
                         val progress = app.progress.progress.first()
                         app.games.loaded.first { it }
-                        val opening = openingRoute(progress, app.games.current.value)
-                        if (opening == Routes.GAME && app.games.current.value == null) {
+                        val opening = openingRoute(progress, app.games.saved(GameMode.CAMPAIGN))
+                        if (opening != Routes.MAP && app.games.saved(GameMode.CAMPAIGN) == null) {
                             val settings = app.settings.settings.first()
                             app.games.start(levelGame(Campaign.levels.first(), settings.threatHighlight, now = System.currentTimeMillis()))
                         }
@@ -194,24 +198,24 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     val world = entry.arguments?.getInt("world") ?: 1
                     val number = entry.arguments?.getInt("number") ?: 1
                     val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
-                    val current by app.games.current.collectAsStateWithLifecycle()
+                    val saved by app.games.saved.collectAsStateWithLifecycle()
                     val scope = rememberCoroutineScope()
                     if (level == null) {
                         LaunchedEffect(Unit) { back() }
                     } else {
                         LevelCard(
                             level = level,
-                            saved = current?.levelCode == level.code,
+                            saved = saved[GameMode.CAMPAIGN]?.levelCode == level.code,
                             // Resume plays the saved game of this level; Start writes a new one to the
                             // store before the board opens, as Play a game does.
                             onStart = {
                                 scope.launch {
                                     app.games.loaded.first { it }
-                                    if (app.games.current.value?.levelCode != level.code) {
+                                    if (app.games.saved(GameMode.CAMPAIGN)?.levelCode != level.code) {
                                         val settings = app.settings.settings.first()
                                         app.games.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis()))
                                     }
-                                    navController.navigate(Routes.GAME) { popUpTo(Routes.MAP) }
+                                    navController.navigate(Routes.game(GameMode.CAMPAIGN)) { popUpTo(Routes.MAP) }
                                 }
                             },
                             onBooster = { navController.navigate(Routes.BOOSTERS) },
@@ -228,33 +232,39 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 dialog(Routes.DAILY) {
                     StandInNote(stringResource(R.string.screen_daily), "A-07", onClose = back)
                 }
-                dialog(Routes.PLAY) {
+                dialog(Routes.PLAY, dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
                     val scope = rememberCoroutineScope()
-                    val current by app.games.current.collectAsStateWithLifecycle()
-                    // A card resumes the saved game of its kind, or writes a new game to the store
-                    // before the board opens: the board always plays the store's current game, also
-                    // after Android restarts the app. Until A-08, every mode shares one saved game.
-                    fun play(vsComputer: Boolean) {
+                    val saved by app.games.saved.collectAsStateWithLifecycle()
+                    val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+                    // A card resumes its mode's saved game, or writes a new game to the store before
+                    // the board opens: the board always plays the saved game of its mode, also after
+                    // Android restarts the app. Free play's computer plays at the campaign's strength.
+                    fun play(mode: GameMode, replace: Boolean) {
                         scope.launch {
                             app.games.loaded.first { it }
-                            if (app.games.current.value?.freeGameVsComputer != vsComputer) {
-                                val settings = app.settings.settings.first()
-                                app.games.start(settings.newGame(vsComputer, now = System.currentTimeMillis()))
+                            if (replace || app.games.saved(mode) == null) {
+                                val chosen = app.settings.settings.first()
+                                val strength = if (mode == GameMode.FREE_PLAY) Campaign.strengthReached(app.progress.progress.first()) else null
+                                app.games.start(freeGame(chosen, strength, now = System.currentTimeMillis()))
                             }
-                            navController.navigate(Routes.GAME) { popUpTo(Routes.MAP) }
+                            navController.navigate(Routes.game(mode)) { popUpTo(Routes.MAP) }
                         }
                     }
-                    PlayAGameNote(
-                        saved = current?.freeGameVsComputer,
-                        onFreePlay = { play(vsComputer = true) },
-                        onTwoPlayers = { play(vsComputer = false) },
-                        onClose = back,
-                    )
+                    settings?.let { chosen ->
+                        PlayAGameNote(
+                            saved = saved.keys,
+                            settings = chosen,
+                            onSettings = { change -> scope.launch { app.settings.update(change) } },
+                            onPlay = ::play,
+                            onClose = back,
+                        )
+                    }
                 }
-                composable(Routes.GAME) {
+                composable(Routes.GAME, arguments = listOf(navArgument("mode") { type = NavType.StringType })) { entry ->
+                    val mode = GameMode.of(entry.arguments?.getString("mode")) ?: GameMode.CAMPAIGN
                     val loaded by app.games.loaded.collectAsStateWithLifecycle()
                     if (loaded) {
-                        val start = remember { app.games.current.value }
+                        val start = remember { app.games.saved(mode) }
                         if (start == null) {
                             // Nothing to resume (the app was restarted after the game ended).
                             LaunchedEffect(Unit) { toMap() }
@@ -267,7 +277,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         val now = System.currentTimeMillis()
                                         val chosen = settings.value ?: AppSettings()
                                         val level = (start.record as? LevelRecord)?.level
-                                        if (level != null) levelGame(level, chosen.threatHighlight, now) else chosen.newGame(start.vsComputer, now)
+                                        if (level != null) levelGame(level, chosen.threatHighlight, now) else freeGameLike(start, chosen.threatHighlight, now)
                                     },
                                     computerFor = ::computerFor,
                                     journal = app.games,
@@ -329,19 +339,13 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 composable(Routes.DEVELOPER) {
                     val context = LocalContext.current
                     val scope = rememberCoroutineScope()
-                    val model = viewModel { SettingsViewModel(app.settings) }
-                    val settings by model.settings.collectAsStateWithLifecycle()
                     val loggedGames by app.games.loggedGames.collectAsStateWithLifecycle()
-                    settings?.let {
-                        DeveloperScreen(
-                            settings = it,
-                            onChange = model::change,
-                            onProgress = { progress -> scope.launch { app.progress.replace(progress) } },
-                            loggedGames = loggedGames,
-                            onShareLog = { scope.launch { shareLog(context, app) } },
-                            onBack = back,
-                        )
-                    }
+                    DeveloperScreen(
+                        onProgress = { progress -> scope.launch { app.progress.replace(progress) } },
+                        loggedGames = loggedGames,
+                        onShareLog = { scope.launch { shareLog(context, app) } },
+                        onBack = back,
+                    )
                 }
             }
         }
@@ -350,15 +354,15 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
 
 /**
  * Where the app opens after loading (flows.md, First launch and Returning player). Until Level 1 is
- * passed, the board of Level 1: its saved game (also a practice one), or a new one when nothing is
- * saved; no map and no Level card, so a new player's first tap is a move. After that, or when
- * another game is saved, the map.
+ * passed, the board of Level 1: its saved game (also a practice one), or a new one when no campaign
+ * game is [saved]; no map and no Level card, so a new player's first tap is a move. After that, or
+ * when another level is saved, the map.
  */
 internal fun openingRoute(progress: Progress, saved: GameLogEntry?): String {
     val first = Campaign.levels.first()
     return when {
         progress.isPassed(first) -> Routes.MAP
-        saved == null || (saved.record as? LevelRecord)?.level?.code == first.code -> Routes.GAME
+        saved == null || (saved.record as? LevelRecord)?.level?.code == first.code -> Routes.game(GameMode.CAMPAIGN)
         else -> Routes.MAP
     }
 }
@@ -371,9 +375,6 @@ private val GameLogEntry.levelCode: String? get() = (record as? LevelRecord)?.le
 
 /** True when [route] is on the back stack. */
 private fun NavHostController.isOnStack(route: String): Boolean = runCatching { getBackStackEntry(route) }.isSuccess
-
-/** For a saved free game: true against the computer, false between two people; null for any other game. */
-private val GameLogEntry.freeGameVsComputer: Boolean? get() = if (record is LevelRecord) null else vsComputer
 
 /** Opens the share sheet with the game log file, for the tester to send it (docs/poc/test-protocol.md). */
 private suspend fun shareLog(context: Context, app: DotsApplication) {

@@ -1,14 +1,15 @@
 package io.github.pavelya.dots.game
 
 import dots.ai.Ai
-import dots.ai.AiConfig
 import dots.ai.SearchAi
 import dots.campaign.Level
 import dots.campaign.LevelRecord
+import dots.campaign.Strength
 import dots.campaign.Tutorial
 import dots.engine.Booster
+import dots.engine.GameRecord
 import dots.log.GameLogEntry
-import io.github.pavelya.dots.data.Difficulty
+import io.github.pavelya.dots.data.AppSettings
 import kotlin.random.Random
 
 /** The computer never thinks longer than this, even on a slow phone. */
@@ -16,22 +17,38 @@ const val COMPUTER_TIME_LIMIT_MILLIS = 1_500L
 
 /**
  * The computer a game is played against, or null for two players on one phone. In a campaign level
- * it plays at the level's strength; in free play, at the test difficulty of the game's settings.
+ * it plays at the level's strength; in free play, at the strength the game was started with, the
+ * one the player had reached in the campaign (decision 0003). Games saved before that name the
+ * POC's test difficulty ("easy", "normal", "hard"), which are strengths of the same names.
  */
 fun computerFor(game: GameLogEntry): Ai? {
     val record = game.record
     if (record is LevelRecord) return SearchAi(record.level.ai.copy(timeLimitMillis = COMPUTER_TIME_LIMIT_MILLIS))
-    return Difficulty.entries.firstOrNull { it.name.lowercase() == game.opponent }?.computer()
+    return Strength.entries.firstOrNull { it.text == game.opponent }?.computer()
 }
 
-/** The computer opponent for a test difficulty (see decision 0003: levels replace this later). */
-fun Difficulty.computer(random: Random = Random.Default): Ai {
-    val config = when (this) {
-        Difficulty.EASY -> AiConfig.EASY
-        Difficulty.NORMAL -> AiConfig.NORMAL
-        Difficulty.HARD -> AiConfig.HARD
-    }
-    return SearchAi(config.copy(timeLimitMillis = COMPUTER_TIME_LIMIT_MILLIS), random)
+/** The computer opponent at this strength, thinking no longer than [COMPUTER_TIME_LIMIT_MILLIS]. */
+fun Strength.computer(random: Random = Random.Default): Ai =
+    SearchAi(config.copy(timeLimitMillis = COMPUTER_TIME_LIMIT_MILLIS), random)
+
+/**
+ * A new free game in [settings]' board size and game length, from fresh crosses: against the
+ * computer at [strength], or between two people on one phone when [strength] is null.
+ */
+fun freeGame(settings: AppSettings, strength: Strength?, now: Long, seed: Long = Random.nextLong()): GameLogEntry = GameLogEntry.start(
+    settings = settings.gameSettings(seed),
+    opponent = strength?.text ?: GameLogEntry.HUMAN,
+    threatHighlight = settings.threatHighlight,
+    now = now,
+)
+
+/**
+ * The next free game after [game]: the same opponent, board size and game length (Play again keeps
+ * the same setup), from fresh crosses. Threats show as [threatHighlight] says now.
+ */
+fun freeGameLike(game: GameLogEntry, threatHighlight: Boolean, now: Long, seed: Long = Random.nextLong()): GameLogEntry {
+    val record = game.record as GameRecord
+    return GameLogEntry.start(record.settings.copy(seed = seed), game.opponent, threatHighlight = threatHighlight, now = now)
 }
 
 /**
