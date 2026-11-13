@@ -5,7 +5,7 @@ computer: steady
 dots: 4
 mission: capture 2 in 4 moves
 solutions: few
-boosters: double-dot 1
+boosters: double-dot 1, undo 1
 rule: none
 stars: moves 1 2
 holes: border

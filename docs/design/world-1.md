@@ -64,6 +64,8 @@ every ring by chance, and Retry plays it again.
   a `win` level is not a puzzle anyway.
 - **Every level starts with the player's dots in the middle,** so playing only on the border
   passes nothing.
+- **Every level gives one Undo** (`boosters: undo 1`), so Undo is the first booster a player
+  meets (decision 0023). It is the only booster in World 1.
 - **Every level file has a one-line `note`** saying what it teaches. It is repeated in italics
   below.
 
@@ -97,7 +99,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 1-1 First Dot
 
-`capture 1 in 3 moves` · computer: beginner · 3 dots each · stars: `moves 1 2`
+`capture 1 in 3 moves` · computer: beginner · 3 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *Placing: one tap closes a ring that is almost done, so the very first move captures.*
 
@@ -118,7 +120,7 @@ Blue d4 has red on three sides. **Answer:** d5 closes the diamond. A tap anywher
 
 ### 1-2 Two Rings
 
-`capture 1 in 4 moves` · computer: beginner · 4 dots each · stars: `moves 1 2`
+`capture 1 in 4 moves` · computer: beginner · 4 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *Chains: the dot between two open rings joins both, so one of them closes whatever the computer blocks.*
 
@@ -139,7 +141,7 @@ Two blue dots, each with red on two sides. **Answer:** e4 is next to both; blue 
 
 ### 1-3 First Capture
 
-`capture 1 in 8 moves` · computer: beginner · 8 dots each · stars: `moves 4 6`
+`capture 1 in 8 moves` · computer: beginner · 8 dots each · boosters: `undo 1` · stars: `moves 4 6`
 
 *The first ring of your own, from a plain cross, against a computer that does not see threats.*
 
@@ -159,7 +161,7 @@ A plain cross on 8x8. The beginner does not see threats, so two dots around one 
 
 ### 1-4 Door
 
-`capture 2 in 4 moves` · computer: easy · 4 dots each · stars: `moves 1 2`
+`capture 2 in 4 moves` · computer: easy · 4 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *Shut the door: close the gap at the top; if the computer slips out sideways, the ring only grows.*
 
@@ -180,7 +182,7 @@ Blue e3 and e4 sit in a red pocket with gaps at e2 and d3. **Answer:** e2. If bl
 
 ### 1-5 Edge
 
-`capture 2 in 5 moves` · computer: easy · 5 dots each · stars: `moves 1 2`
+`capture 2 in 5 moves` · computer: easy · 5 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *A dot on the border can never be captured, so take the edge point before the computer reaches it.*
 
@@ -201,7 +203,7 @@ Blue d5 and d6 are one step from the bottom edge. A dot on the border can never 
 
 ### 1-6 Marked Dot
 
-`target d4` · computer: easy · 4 dots each · stars: `moves 1 2`
+`target d4` · computer: easy · 4 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *The first target: capture one marked dot, which means ringing the whole group it belongs to.*
 
@@ -223,7 +225,7 @@ The marked dot d4 belongs to a group of three (c3, d3, d4). **Answer:** d2 close
 
 ### 1-7 Chase
 
-`capture 2 in 5 moves` · computer: easy · 5 dots each · stars: `moves 1 2`
+`capture 2 in 5 moves` · computer: easy · 5 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *Chase: close the bottom, let the computer run up into your wall, then close behind it.*
 
@@ -245,7 +247,7 @@ Blue e5 and f5, with a red wall above. **Answer:** f6 closes the bottom. Blue ru
 
 ### 1-8 Cut
 
-`target d5` · computer: easy · 5 dots each · stars: `moves 1 2`
+`target d5` · computer: easy · 5 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *Cut the diagonal: a dot across the link separates the target from its group, then the ring closes.*
 
@@ -267,7 +269,7 @@ The marked dot d5 hangs on a diagonal link to c4, and that group can reach the l
 
 ### 1-9 Three in a Row
 
-`capture 3 in 5 moves` · computer: easy · 5 dots each · stars: `moves 1 2`
+`capture 3 in 5 moves` · computer: easy · 5 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *A wider net: close the far end first, then answer each run until the ring takes all of them.*
 
@@ -289,7 +291,7 @@ Three blue dots in a row inside a loose net. **Answer:** h5 closes the far end. 
 
 ### 1-10 Long Chase
 
-`target f4` · computer: easy · 6 dots each · stars: `moves 1 2`
+`target f4` · computer: easy · 6 dots each · boosters: `undo 1` · stars: `moves 1 2`
 
 *The hardest puzzle of the world: four moves, each one answering where the computer runs.*
 
@@ -311,7 +313,7 @@ The marked dot f4 in a group of three, with an open side to the right and below.
 
 ### 1-11 First Game
 
-`win` · computer: easy · 10 dots each · stars: `margin 2 4`
+`win` · computer: easy · 10 dots each · boosters: `undo 1` · stars: `margin 2 4`
 
 *The first whole game: a small board, one cross, a computer that makes mistakes.*
 
@@ -332,7 +334,7 @@ One cross on 9x9, 10 dots each, against the easy computer. Nothing is set up: th
 
 ### 1-12 Two Crosses
 
-`win` · computer: easy · 12 dots each · stars: `margin 2 4`
+`win` · computer: easy · 12 dots each · boosters: `undo 1` · stars: `margin 2 4`
 
 *Two crosses: two places to fight, so the player learns to look at the whole board.*
 
@@ -354,7 +356,7 @@ Two crosses on 10x10, 12 dots each. A fight in one corner can be lost while the 
 
 ### 1-13 Head Start
 
-`win` · computer: easy · 12 dots each · stars: `margin 2 4`
+`win` · computer: easy · 12 dots each · boosters: `undo 1` · stars: `margin 2 4`
 
 *The first head start: two extra computer dots stretch its diagonal through the cross to four dots.*
 
@@ -376,7 +378,7 @@ One cross on 10x10, plus blue g4 and d7, which join the cross's blue dots into a
 
 ### 1-14 Four Crosses
 
-`win` · computer: steady · 16 dots each · stars: `margin 2 4`
+`win` · computer: steady · 16 dots each · boosters: `undo 1` · stars: `margin 2 4`
 
 *Four places to fight, and the first computer that checks the answer to its own moves.*
 
@@ -399,7 +401,7 @@ Four crosses on 11x11, 16 dots each, against the steady computer: it thinks abou
 
 ### 1-15 Ink Bottle
 
-`win` · computer: steady · 18 dots each · stars: `margin 2 5` · rule: double move every 5 turns
+`win` · computer: steady · 18 dots each · boosters: `undo 1` · stars: `margin 2 5` · rule: double move every 5 turns
 
 *The mini-boss: two ink blots to start, and every fifth turn it places two dots, with a countdown.*
 

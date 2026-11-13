@@ -5,9 +5,9 @@ computer: steady
 dots: 3
 mission: survive 3 moves
 solutions: few
-boosters: bomb 1, double-dot 1
+boosters: bomb 1, double-dot 1, undo 1
 rule: none
-stars: boosters 1 2
+stars: boosters 2 3
 holes: border
 note: A lake's edge is border: your dot at e4 touches the lake and can never be captured, so only d3 needs its gap filled.
 map:

@@ -3,6 +3,7 @@ package dots.campaign
 import dots.ai.AiConfig
 import dots.ai.Match
 import dots.ai.SearchAi
+import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Grounding
 import dots.engine.Player
@@ -90,6 +91,15 @@ class CampaignTest {
 
         assertEquals(0, headStarts.first())
         assertTrue(headStarts.last() > headStarts.first())
+    }
+
+    @Test
+    fun `every level allows one undo, and three stars for boosters left mean none used`() {
+        for (level in Campaign.levels) {
+            assertEquals(1, level.boosters[Booster.UNDO], "level ${level.code}")
+            val stars = level.stars ?: continue
+            if (stars.measure == StarMeasure.BOOSTERS) assertEquals(level.boosters.values.sum(), stars.three, "level ${level.code}")
+        }
     }
 
     @Test

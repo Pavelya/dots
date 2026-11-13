@@ -3,7 +3,7 @@
 World 4 has 20 levels. Its new ideas are two kinds of special point: **rocks** (`#`, blocked
 points), where nobody may place a dot but a ring may pass over, and **pearls** (`+`, bonus
 points), where a captured dot counts 2. It ends with the **Kraken**, the first real boss: the
-normal computer, placing two dots every turn. All four boosters are available. The level files
+normal computer, placing two dots every turn. All five boosters are available. The level files
 are in [`engine/src/main/resources/levels/`](../../engine/src/main/resources/levels/); the rules
 for special points are in the
 [README](../../README.md#board-shapes-and-special-points).
@@ -32,8 +32,9 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
   moves pass it. `cli check-levels` proves it, and CI runs it.
 - **Puzzles give two spare moves,** as in World 1: a puzzle whose shortest answer takes 3 moves
   gives 5, and `stars: moves 1 2` asks for both spares for three stars.
-- **Survive levels give two boosters,** and their stars count the boosters left
-  (`stars: boosters 1 2`): three stars without a booster, one with both used. Every survive level
+- **Survive levels give two boosters,** plus the Undo every level has, and their stars count
+  the boosters left (`stars: boosters 2 3`): three stars without a booster, two with one used,
+  one with two or more used. Every survive level
   can be passed without them; the solver never uses a booster.
 - **The computer is the steady step** for every level but the last boss of World 4, so the
   difficulty comes from the boards, the missions and the dot budgets.
@@ -41,7 +42,7 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
 - **Most puzzles started from the computer's own games or from random small positions,** and were
   kept only when the solver proved them and found one or two winning first moves. Their names
   and notes were written by hand.
-- **Boosters:** survive levels give a wall and a bomb, captures a hint and a double dot, targets a wall and a hint. Whole games give all four.
+- **Boosters:** survive levels give a wall and a bomb, captures a hint and a double dot, targets a wall and a hint. Whole games give all four. Every level also gives one Undo.
 - **Pearls in puzzles.** A level map cannot start a dot on a pearl, so a pearl counts in a puzzle when the computer runs onto one and is captured there (4-2, 4-13).
 
 ## How hard it is
@@ -106,7 +107,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-1 Rocks
 
-`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *Rocks: nobody can place a dot on #. The rock at d6 blocks the way out, so d5 closes one side and d3 then shuts d4 in.*
 
@@ -127,7 +128,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-2 Oyster
 
-`capture 3 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 3 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *A ring passes over a rock, and a dot on a pearl counts 2. Close above over the rock; if the computer runs onto the pearl, close below it.*
 
@@ -149,7 +150,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-3 Tide Pool
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1` · stars: `boosters 1 2`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1, undo 1` · stars: `boosters 2 3`
 
 *Hard: survive four moves. Fill the last gap beside your dot at e5, then answer the attacks on the right.*
 
@@ -170,7 +171,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-4 Anchor
 
-`target c5` · computer: steady · 5 dots each · boosters: `wall 1, hint 1` · stars: `moves 1 2`
+`target c5` · computer: steady · 5 dots each · boosters: `wall 1, hint 1, undo 1` · stars: `moves 1 2`
 
 *Target: the ring may pass over the rock at d6, so close the right side beyond it, then follow the runs down and left.*
 
@@ -191,7 +192,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-5 Rock Pool
 
-`capture 2 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 2 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *Close the left side; when the pair runs down, close again with a ring over the rock.*
 
@@ -213,7 +214,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-6 Rocky Shore
 
-`win` · computer: steady · 26 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1` · stars: `margin 2 4`
+`win` · computer: steady · 26 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1, undo 1` · stars: `margin 2 4`
 
 *World 4's first whole game: four rocks near the edges and two in the middle, four crosses, and every booster.*
 
@@ -237,7 +238,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-7 Seagull
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1` · stars: `boosters 1 2`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1, undo 1` · stars: `boosters 2 3`
 
 *One gap left above your dot: fill it, then keep the next ring from closing.*
 
@@ -259,7 +260,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-8 Coral
 
-`capture 2 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 2 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *Close below the pair; when it runs left, one more dot closes round both.*
 
@@ -281,7 +282,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-9 Shipwreck
 
-`capture 2 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 2 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *Hard: close the right side against the rock; the pair runs up, and you follow it twice.*
 
@@ -303,7 +304,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-10 Harbour
 
-`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *One dot threatens both computer dots, and the rock means the top one has nowhere to run.*
 
@@ -324,7 +325,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-11 Buoy
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1` · stars: `boosters 1 2`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1, undo 1` · stars: `boosters 2 3`
 
 *A lone dot with the computer on three sides: run down between the rocks.*
 
@@ -345,7 +346,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-12 Pearls
 
-`win` · computer: steady · 26 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1` · stars: `margin 3 5`
+`win` · computer: steady · 26 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1, undo 1` · stars: `margin 3 5`
 
 *A whole game with eight pearls in the middle: a dot captured on a pearl counts 2, for both sides.*
 
@@ -369,7 +370,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-13 Starfish
 
-`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *Close the left side; the dot runs onto the pearl, and when the ring closes below it, it counts 2.*
 
@@ -391,7 +392,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-14 Lighthouse
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1` · stars: `boosters 1 2`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1, undo 1` · stars: `boosters 2 3`
 
 *Fill the gap under your dot, then run along the bottom while the computer follows.*
 
@@ -413,7 +414,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-15 Whirlpool
 
-`capture 1 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 1 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *Hard: close below first; the computer attacks on the right, and you close above while it runs.*
 
@@ -435,7 +436,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-16 Sandbar
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1` · stars: `boosters 1 2`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, bomb 1, undo 1` · stars: `boosters 2 3`
 
 *Your dot at e3 has one way out: d3, then up towards the top edge.*
 
@@ -456,7 +457,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-17 Driftwood
 
-`target e6` · computer: steady · 5 dots each · boosters: `wall 1, hint 1` · stars: `moves 1 2`
+`target e6` · computer: steady · 5 dots each · boosters: `wall 1, hint 1, undo 1` · stars: `moves 1 2`
 
 *Target: close the left; the dot runs down, then up, and you follow both times.*
 
@@ -478,7 +479,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-18 Reef
 
-`win with 19 dots` · computer: steady · 28 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1` · stars: `margin 2 4` · holes: `open`
+`win with 19 dots` · computer: steady · 28 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1, undo 1` · stars: `margin 2 4` · holes: `open`
 
 *Hard: open holes, rocks and pearls, three computer dots ahead, and 19 dots against its 28.*
 
@@ -502,7 +503,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-19 Cove
 
-`capture 1 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1` · stars: `moves 1 2`
+`capture 1 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
 *The ring may pass over the rock: b6 closes the left beyond it, then follow the dot up and right.*
 
@@ -524,7 +525,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-20 Kraken
 
-`win` · computer: normal · 30 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1` · rule: two groups at once · stars: `margin 3 8`
+`win` · computer: normal · 30 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1, undo 1` · rule: two groups at once · stars: `margin 3 8`
 
 *The first real boss: the normal computer, and every turn it places two dots, one in each half of the board.*
 

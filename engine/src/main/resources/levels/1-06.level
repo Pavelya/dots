@@ -5,7 +5,7 @@ computer: easy
 dots: 4
 mission: target d4
 solutions: few
-boosters: none
+boosters: undo 1
 rule: none
 stars: moves 1 2
 holes: none

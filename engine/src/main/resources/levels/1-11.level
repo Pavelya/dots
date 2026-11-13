@@ -5,7 +5,7 @@ computer: easy
 dots: 10
 mission: win
 solutions: open
-boosters: none
+boosters: undo 1
 rule: none
 stars: margin 2 4
 holes: none

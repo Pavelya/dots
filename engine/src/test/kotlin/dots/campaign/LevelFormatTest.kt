@@ -138,7 +138,7 @@ class LevelFormatTest {
                 "line 6: the mission 'capture 15 in 12 moves' is already decided before the first move",
             ),
             Triple("solutions: few", "solutions: many", "line 7: unknown solutions 'many' (few, open)"),
-            Triple("boosters: none", "boosters: wall 2, shield 1", "line 8: unknown booster 'shield' (wall, hint, bomb, double-dot)"),
+            Triple("boosters: none", "boosters: wall 2, shield 1", "line 8: unknown booster 'shield' (wall, hint, bomb, double-dot, undo)"),
             Triple("boosters: none", "boosters: wall", "line 8: write each booster as a name and a count, like 'wall 2', not 'wall'"),
             Triple("boosters: none", "boosters: hint 1, hint 2", "line 8: 'hint' appears twice"),
             Triple("rule: none", "rule: double move every 1 turns", "line 9: 1 is not between 2 and 999"),

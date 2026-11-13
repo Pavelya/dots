@@ -49,10 +49,19 @@ sealed interface Action {
         override val booster get() = Booster.DOUBLE_DOT
     }
 
+    /**
+     * Takes back the player's last turn: their dot (both dots after a double dot), any booster used
+     * in that turn, which they get back, and the opponent's reply. The player then plays that turn
+     * again. See [GameState.useBooster].
+     */
+    data object Undo : UseBooster {
+        override val booster get() = Booster.UNDO
+    }
+
     companion object {
         /**
          * The word a game record uses for [action]: `e5`, `pass`, `stop`, `done`, or a booster's
-         * name with its point, `wall:e5`, `hint:e5`, `bomb:e5`, and `double-dot`.
+         * name with its point, `wall:e5`, `hint:e5`, `bomb:e5`, `double-dot` and `undo`.
          */
         fun word(action: Action): String = when (action) {
             is Place -> Notation.name(action.pos)
@@ -63,6 +72,7 @@ sealed interface Action {
             is Hint -> "${Booster.HINT.text}:${Notation.name(action.pos)}"
             is Bomb -> "${Booster.BOMB.text}:${Notation.name(action.pos)}"
             DoubleDot -> Booster.DOUBLE_DOT.text
+            Undo -> Booster.UNDO.text
         }
 
         /** Reads a word written by [word]. */
@@ -72,6 +82,7 @@ sealed interface Action {
                 "stop" -> return Stop
                 "done" -> return Finish
                 Booster.DOUBLE_DOT.text -> return DoubleDot
+                Booster.UNDO.text -> return Undo
             }
             val parts = word.split(':', limit = 2)
             fun point(text: String) = Notation.parse(text) ?: throw IllegalArgumentException("Bad move '$word'")
@@ -103,4 +114,7 @@ enum class Booster(val text: String) {
 
     /** Two dots in one turn: [Action.DoubleDot]. */
     DOUBLE_DOT("double-dot"),
+
+    /** Takes back the player's last turn: [Action.Undo] (decision 0023). */
+    UNDO("undo"),
 }

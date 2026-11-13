@@ -5,7 +5,7 @@ computer: normal
 dots: 30
 mission: win
 solutions: open
-boosters: wall 1, hint 1, bomb 1, double-dot 1
+boosters: wall 1, hint 1, bomb 1, double-dot 1, undo 1
 rule: two groups at once
 stars: margin 3 8
 holes: none

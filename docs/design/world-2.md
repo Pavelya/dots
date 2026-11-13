@@ -31,8 +31,9 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
   moves pass it. `cli check-levels` proves it, and CI runs it.
 - **Puzzles give two spare moves,** as in World 1: a puzzle whose shortest answer takes 3 moves
   gives 5, and `stars: moves 1 2` asks for both spares for three stars.
-- **Survive levels give two boosters,** and their stars count the boosters left
-  (`stars: boosters 1 2`): three stars without a booster, one with both used. Every survive level
+- **Survive levels give two boosters,** plus the Undo every level has, and their stars count
+  the boosters left (`stars: boosters 2 3`): three stars without a booster, two with one used,
+  one with two or more used. Every survive level
   can be passed without them; the solver never uses a booster.
 - **The computer is the steady step** for every level but the last boss of World 4, so the
   difficulty comes from the boards, the missions and the dot budgets.
@@ -40,7 +41,7 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
 - **Most puzzles started from the computer's own games or from random small positions,** and were
   kept only when the solver proved them and found one or two winning first moves. Their names
   and notes were written by hand.
-- **Boosters:** survive levels give two walls; the other puzzles give one. Whole games give two walls.
+- **Boosters:** survive levels give two walls; the other puzzles give one. Whole games give two walls. Every level also gives one Undo.
 
 ## How hard it is
 
@@ -104,7 +105,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-1 Weeds
 
-`survive 2 moves` · computer: steady · 2 dots each · boosters: `wall 2` · stars: `boosters 1 2`
+`survive 2 moves` · computer: steady · 2 dots each · boosters: `wall 2, undo 1` · stars: `boosters 2 3`
 
 *Survive: lose no dot. One dot fills the last gap; a wall there works too, which is what the wall booster is for.*
 
@@ -123,7 +124,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-2 Path Home
 
-`rescue b4` · computer: steady · 3 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`rescue b4` · computer: steady · 3 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Rescue: a dot joined to the edge by a straight line of dots can never be captured.*
 
@@ -142,7 +143,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-3 Snail
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 2` · stars: `boosters 1 2`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 2, undo 1` · stars: `boosters 2 3`
 
 *Hard: survive four moves. Close the gap under your lone dot at e6 first, then answer each new attack on the right.*
 
@@ -163,7 +164,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-4 Ladybug
 
-`target e4` · computer: steady · 4 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`target e4` · computer: steady · 4 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *A short target after a hard level: close the corner above the pair, and when it runs up, one more dot closes round both.*
 
@@ -184,7 +185,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-5 Fence Line
 
-`rescue c3` · computer: steady · 5 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`rescue c3` · computer: steady · 5 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Rescue near a corner: each time the computer blocks the way to the edge, step along and threaten the next way out.*
 
@@ -203,7 +204,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-6 Flower Beds
 
-`win` · computer: steady · 18 dots each · boosters: `wall 2` · stars: `margin 2 4`
+`win` · computer: steady · 18 dots each · boosters: `wall 2, undo 1` · stars: `margin 2 4`
 
 *World 2's first whole game: four crosses on 11x11, the steady computer, two walls to block its rings.*
 
@@ -224,7 +225,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-7 Bramble
 
-`survive 3 moves` · computer: steady · 3 dots each · boosters: `wall 2` · stars: `boosters 1 2`
+`survive 3 moves` · computer: steady · 3 dots each · boosters: `wall 2, undo 1` · stars: `boosters 2 3`
 
 *Your dot at e6 is one move from capture: block its last gap, or capture the attacker next to it first.*
 
@@ -245,7 +246,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-8 Seedling
 
-`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Capture review: one dot that threatens two rings at once, and the computer can block only one.*
 
@@ -266,7 +267,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-9 Side Step
 
-`rescue d5` · computer: steady · 5 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`rescue d5` · computer: steady · 5 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Hard: the way down is one move too slow, so the dot steps sideways first, next to its friend, and runs from there.*
 
@@ -285,7 +286,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-10 Rose Bush
 
-`target d4` · computer: steady · 5 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`target d4` · computer: steady · 5 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Wall: the only first move is a quiet one, three moves before the ring closes; close above the marked dot, then follow its run to the right and up.*
 
@@ -306,7 +307,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-11 Watering Can
 
-`survive 3 moves` · computer: steady · 3 dots each · boosters: `wall 2` · stars: `boosters 1 2`
+`survive 3 moves` · computer: steady · 3 dots each · boosters: `wall 2, undo 1` · stars: `boosters 2 3`
 
 *Survive: your dot at f3 has three attackers; fill its last gap first, then keep blocking.*
 
@@ -327,7 +328,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-12 Hedge
 
-`win` · computer: steady · 20 dots each · boosters: `wall 2` · stars: `margin 2 4`
+`win` · computer: steady · 20 dots each · boosters: `wall 2, undo 1` · stars: `margin 2 4`
 
 *A longer whole game: four crosses on 13x13 and one extra computer dot in the middle.*
 
@@ -350,7 +351,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-13 Greenhouse
 
-`target g6` · computer: steady · 5 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`target g6` · computer: steady · 5 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Target: the block right next to the marked dot fails; the answer is a point further out that covers both ways it can run.*
 
@@ -371,7 +372,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-14 Stepping Stone
 
-`rescue c4` · computer: steady · 5 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`rescue c4` · computer: steady · 5 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Rescue with a stepping stone: run towards the dot you already have near the edge.*
 
@@ -390,7 +391,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-15 Thorns
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 2` · stars: `boosters 1 2`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `wall 2, undo 1` · stars: `boosters 2 3`
 
 *Hard: survive four moves. Close the gap above e5 first; the attacks that follow come from both sides.*
 
@@ -411,7 +412,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-16 Tulips
 
-`target e6` · computer: steady · 5 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`target e6` · computer: steady · 5 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Target: close above the marked dot, then follow it as it runs to the right and down.*
 
@@ -433,7 +434,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-17 Garden Gate
 
-`rescue d3` · computer: steady · 5 dots each · boosters: `wall 1` · stars: `moves 1 2`
+`rescue d3` · computer: steady · 5 dots each · boosters: `wall 1, undo 1` · stars: `moves 1 2`
 
 *Rescue: the top edge is closer than it looks, because your dot at f1 is already on it.*
 
@@ -452,7 +453,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-18 Few Seeds
 
-`win with 18 dots` · computer: steady · 20 dots each · boosters: `wall 2` · stars: `margin 2 4`
+`win with 18 dots` · computer: steady · 20 dots each · boosters: `wall 2, undo 1` · stars: `margin 2 4`
 
 *Hard: a whole game with 18 dots against the computer's 20, so every dot must count.*
 
@@ -475,7 +476,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-19 Trellis
 
-`survive 3 moves` · computer: steady · 3 dots each · boosters: `wall 2` · stars: `boosters 1 2`
+`survive 3 moves` · computer: steady · 3 dots each · boosters: `wall 2, undo 1` · stars: `boosters 2 3`
 
 *Survive after a hard level: the gap under d7 comes first, then answer the attacks at the top and on the right.*
 
@@ -497,7 +498,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-20 Mole
 
-`win with 20 dots` · computer: steady · 22 dots each · boosters: `wall 2` · rule: double move every 4 turns · stars: `margin 2 5`
+`win with 20 dots` · computer: steady · 22 dots each · boosters: `wall 2, undo 1` · rule: double move every 4 turns · stars: `margin 2 5`
 
 *World 2's boss: every fourth turn it places two dots, and it has 22 dots to your 20.*
 

@@ -5,7 +5,7 @@ computer: steady
 dots: 5
 mission: target e6
 solutions: few
-boosters: wall 1, hint 1
+boosters: wall 1, hint 1, undo 1
 rule: none
 stars: moves 1 2
 holes: none
