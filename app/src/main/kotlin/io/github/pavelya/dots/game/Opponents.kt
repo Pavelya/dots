@@ -17,13 +17,16 @@ const val COMPUTER_TIME_LIMIT_MILLIS = 1_500L
 
 /**
  * The computer a game is played against, or null for two players on one phone. In a campaign level
- * it plays at the level's strength; in free play, at the strength the game was started with, the
+ * it plays at the level's strength, for the level's mission ([dots.campaign.Level.computer]); in free play, at the strength the game was started with, the
  * one the player had reached in the campaign (decision 0003). Games saved before that name the
  * POC's test difficulty ("easy", "normal", "hard"), which are strengths of the same names.
  */
 fun computerFor(game: GameLogEntry): Ai? {
     val record = game.record
-    if (record is LevelRecord) return SearchAi(record.level.ai.copy(timeLimitMillis = COMPUTER_TIME_LIMIT_MILLIS))
+    if (record is LevelRecord) {
+        val level = record.level
+        return level.computer(config = level.ai.copy(timeLimitMillis = COMPUTER_TIME_LIMIT_MILLIS))
+    }
     return Strength.entries.firstOrNull { it.text == game.opponent }?.computer()
 }
 

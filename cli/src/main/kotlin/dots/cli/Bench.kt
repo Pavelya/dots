@@ -290,13 +290,14 @@ internal object Bench {
     }
 
     /**
-     * [games] games of [level] between [standIn] as red and the level's computer, each stopping
+     * [games] games of [level] between [standIn] as red and the level's computer, which plays for
+     * the mission ([Level.computer]), each stopping
      * when the mission is decided. Games run in parallel; each has its own seeds, so the results
      * are the same every run.
      */
     fun playLevel(level: Level, games: Int, standIn: StandIn): List<LevelResult> =
         (0 until games).toList().parallelStream().map { g ->
-            val end = Match.playOut(level.newGame(), standIn(level, Random(3000 + g)), SearchAi(level.ai, Random(4000 + g)), level::isOver)
+            val end = Match.playOut(level.newGame(), standIn(level, Random(3000 + g)), level.computer(Random(4000 + g)), level::isOver)
             level.result(end)
         }.toList()
 

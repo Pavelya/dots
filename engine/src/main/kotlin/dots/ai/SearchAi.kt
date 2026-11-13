@@ -21,18 +21,26 @@ import kotlin.time.TimeSource
  * for every enemy group the computer could capture with a few more dots, the cells that wall it in
  * are tried first, and so are the cells that would stop the opponent's own captures. The rest are
  * the cells next to the most dots. That is what lets the search build toward a capture several
- * moves out instead of waiting for one to appear. Not thread-safe.
+ * moves out instead of waiting for one to appear.
+ *
+ * With a [goal], such as a level's mission, it plays for the goal rather than only for captures
+ * (see [Goal]); the goal counts only on the turns of [Goal.player]. Not thread-safe.
  */
 class SearchAi(
     private val config: AiConfig = AiConfig.NORMAL,
     private val random: Random = Random.Default,
+    private val goal: Goal? = null,
 ) : Ai {
 
-    private class Node(val pos: Pos, val state: GameState, val key: Int, val local: Int)
+    /** A move tried in the search: [end] is whether it decides the goal (see [Goal.reached]), null if not. */
+    private class Node(val pos: Pos, val state: GameState, val key: Int, val local: Int, val end: Boolean?)
 
     private val finder = ThreatFinder()
     private val attackWeights = config.attackWeights.toIntArray()
     private val dangerWeights = config.dangerWeights.toIntArray()
+
+    /** The [goal] while the search plays its side, else null. */
+    private var aim: Goal? = null
 
     /** Set while a search runs: true once it must give up (time is up or it was cancelled). */
     private var mustStop: () -> Boolean = { false }
@@ -75,6 +83,7 @@ class SearchAi(
      */
     fun chooseMove(state: GameState, isCancelled: () -> Boolean = { false }): Pos? {
         if (state.isOver) return null
+        aim = goal?.takeIf { it.player == state.toMove }
         val candidates = candidates(state)
         if (candidates.isEmpty()) return null
         if (config.mistakeRate > 0 && random.nextDouble() < config.mistakeRate) {
@@ -121,7 +130,7 @@ class SearchAi(
         val best = ArrayList<Pos>()
         for (node in expand(state, me, config.breadth * 2)) {
             val noise = if (config.variety > 0) random.nextInt(config.variety + 1) else 0
-            val value = search(node.state, me, depth - 1, -INF, INF) + node.local + noise
+            val value = outcome(node, me, depth - 1, -INF, INF) + node.local + noise
             when {
                 value > bestValue -> {
                     bestValue = value
@@ -145,7 +154,7 @@ class SearchAi(
         var high = beta
         var best = if (maximizing) -INF else INF
         for (node in nodes) {
-            val value = search(node.state, me, depth - 1, low, high)
+            val value = outcome(node, me, depth - 1, low, high)
             if (maximizing) {
                 best = max(best, value)
                 low = max(low, best)
@@ -158,6 +167,17 @@ class SearchAi(
         return best
     }
 
+    /**
+     * The value of [node] for [me]: [GOAL_WON] or its opposite if its move decides the goal, a win
+     * one move sooner (one more ply of [depth] left) counting [GOAL_SOONER] more, a loss one move
+     * later as much less; otherwise the search from there.
+     */
+    private fun outcome(node: Node, me: Player, depth: Int, alpha: Int, beta: Int): Int = when (node.end) {
+        null -> search(node.state, me, depth, alpha, beta)
+        true -> GOAL_WON + depth * GOAL_SOONER
+        false -> -GOAL_WON - depth * GOAL_SOONER
+    }
+
     /** The mover's best [limit] moves, most promising first, each already played out. */
     private fun expand(state: GameState, me: Player, limit: Int): List<Node> {
         val mover = state.toMove
@@ -167,7 +187,13 @@ class SearchAi(
             .map { pos ->
                 val child = state.play(pos).state
                 val local = neighbourhood(state, pos, mover) + (bonus?.get(pos.y * state.width + pos.x) ?: 0)
-                Node(pos, child, sign * evaluate(child, me) + local, local)
+                val end = aim?.reached(child)
+                val value = when (end) {
+                    null -> evaluate(child, me)
+                    true -> GOAL_WON
+                    false -> -GOAL_WON
+                }
+                Node(pos, child, sign * value + local, local, end)
             }
             .sortedByDescending { it.key }
             .take(limit)
@@ -181,17 +207,54 @@ class SearchAi(
         if (config.attackReach == 0 && config.dangerReach == 0) return null
         val bonus = IntArray(state.width * state.height)
         for (threat in finder.find(state, mover.opponent, config.attackReach)) {
-            for (cell in threat.cells) bonus[cell] += weight(attackWeights, threat)
+            val weight = weight(attackWeights, threat, state, mover)
+            if (weight > 0) for (cell in threat.cells) bonus[cell] += weight
         }
         for (threat in finder.find(state, mover, config.dangerReach)) {
-            for (cell in threat.cells) bonus[cell] += weight(dangerWeights, threat)
+            val weight = weight(dangerWeights, threat, state, mover.opponent)
+            if (weight > 0) for (cell in threat.cells) bonus[cell] += weight
         }
         return bonus
     }
 
-    /** [AiConfig.attackWeights] or [AiConfig.dangerWeights] for [threat]: by its cost, times its points. */
-    private fun weight(table: IntArray, threat: Threat): Int =
-        table[min(threat.cost, table.size) - 1] * min(threat.points, MAX_GROUP_WEIGHT)
+    /**
+     * [AiConfig.attackWeights] or [AiConfig.dangerWeights] for [threat] by [attacker]: by its cost,
+     * times its points. With an [aim], a threat the attacker has too few moves left for gets
+     * nothing, and the group holding the marked dot counts as the biggest. The bonus is added to
+     * the move's score, so the goal's weights are not used here: they would outweigh the search.
+     */
+    private fun weight(table: IntArray, threat: Threat, state: GameState, attacker: Player): Int {
+        val base = table[min(threat.cost, table.size) - 1]
+        val aim = aim ?: return base * min(threat.points, MAX_GROUP_WEIGHT)
+        if (outOfMoves(aim, threat, state, attacker)) return 0
+        return base * if (holdsMarked(aim, threat, state)) MAX_GROUP_WEIGHT else min(threat.points, MAX_GROUP_WEIGHT)
+    }
+
+    /**
+     * [value] per point times [points], for [threat] by [attacker], as the [aim] counts it: nothing
+     * if the attacker has too few moves left for it, [Goal.MARKED_WORTH] points if the group holds
+     * the marked dot, otherwise the attacker's [Goal.gains] or [Goal.losses] share.
+     */
+    private fun goalShare(threat: Threat, state: GameState, attacker: Player, value: Int, points: Int): Int {
+        val aim = aim ?: return value * points
+        if (outOfMoves(aim, threat, state, attacker)) return 0
+        if (holdsMarked(aim, threat, state)) return value * Goal.MARKED_WORTH
+        return value * points * share(aim, attacker) / 100
+    }
+
+    /** Whether [attacker] has fewer moves left for [aim] than [threat] costs. */
+    private fun outOfMoves(aim: Goal, threat: Threat, state: GameState, attacker: Player): Boolean {
+        val left = aim.movesLeft(state, attacker) ?: return false
+        return threat.cost > left
+    }
+
+    private fun holdsMarked(aim: Goal, threat: Threat, state: GameState): Boolean {
+        val marked = aim.marked ?: return false
+        return threat.group.contains(marked.y * state.width + marked.x)
+    }
+
+    /** What a dot [attacker] captures counts for [aim]'s player, in percent. */
+    private fun share(aim: Goal, attacker: Player): Int = if (attacker == aim.player) aim.gains else aim.losses
 
     /**
      * Without threat guidance every cell near a dot; with it the threat cells plus the busiest few.
@@ -236,36 +299,46 @@ class SearchAi(
      */
     private fun evaluateLeaf(state: GameState, me: Player): Int {
         if (config.attackReach == 0) return evaluate(state, me)
-        var value = (state.score(me) - state.score(me.opponent)) * SCORE_WEIGHT
+        var value = scores(state, me)
         if (state.isOver) return value
         val meToMove = state.toMove == me
-        for (threat in finder.find(state, me.opponent, LEAF_REACH)) value += threatValue(threat, meToMove)
-        for (threat in finder.find(state, me, LEAF_REACH)) value -= threatValue(threat, !meToMove)
+        for (threat in finder.find(state, me.opponent, LEAF_REACH)) value += threatValue(threat, state, me, meToMove)
+        for (threat in finder.find(state, me, LEAF_REACH)) value -= threatValue(threat, state, me.opponent, !meToMove)
         return value
     }
 
-    /** What a group that costs the attacker [Threat.cost] more dots is worth to the attacker. */
-    private fun threatValue(threat: Threat, attackerToMove: Boolean): Int {
+    /** What a group that costs [attacker] [Threat.cost] more dots is worth to the attacker. */
+    private fun threatValue(threat: Threat, state: GameState, attacker: Player, attackerToMove: Boolean): Int {
         val table = if (attackerToMove) TEMPO else NO_TEMPO
-        return table[min(threat.cost, table.size - 1)] * threat.points
+        return goalShare(threat, state, attacker, table[min(threat.cost, table.size - 1)], threat.points)
     }
 
-    private fun evaluate(state: GameState, me: Player): Int =
-        (state.score(me) - state.score(me.opponent)) * SCORE_WEIGHT +
-            pressure(state, me) - pressure(state, me.opponent)
+    /** The captured dots of both sides, as the [aim] counts them. */
+    private fun scores(state: GameState, me: Player): Int {
+        val aim = aim ?: return (state.score(me) - state.score(me.opponent)) * SCORE_WEIGHT
+        return (state.score(me) * share(aim, me) - state.score(me.opponent) * share(aim, me.opponent)) * (SCORE_WEIGHT / 100)
+    }
+
+    private fun evaluate(state: GameState, me: Player): Int {
+        val aim = aim ?: return scores(state, me) + pressure(state, me) - pressure(state, me.opponent)
+        return scores(state, me) +
+            (pressure(state, me) * share(aim, me) - pressure(state, me.opponent) * share(aim, me.opponent)) / 100
+    }
 
     /**
      * How hard [attacker] leans on the enemy dots that could still be captured. Without this the
      * search sees nothing between "no capture yet" positions and plays aimlessly: a ring is
-     * built around a dot long before anything is won.
+     * built around a dot long before anything is won. A goal's marked dot weighs
+     * [Goal.MARKED_WORTH].
      */
     private fun pressure(state: GameState, attacker: Player): Int {
+        val marked = aim?.marked
         var total = 0
         for (y in 0 until state.height) {
             for (x in 0 until state.width) {
                 if (state.ownerAt(x, y) != attacker.opponent || state.isCaptured(x, y)) continue
                 if (state.isBorder(x, y)) continue // dots on the border can never be enclosed
-                val worth = state.worth(x, y)
+                val worth = if (marked != null && marked.x == x && marked.y == y) Goal.MARKED_WORTH else state.worth(x, y)
                 for (dy in -2..2) {
                     for (dx in -2..2) {
                         val nx = x + dx
@@ -330,7 +403,13 @@ class SearchAi(
     }
 
     private companion object {
-        const val INF = 1_000_000
+        const val INF = 1_000_000_000
+
+        /** A goal reached: more than any number of captured dots. */
+        const val GOAL_WON = 100_000_000
+
+        /** Reaching a goal a move sooner: more than any move's own bonus, so a sure win now beats one later. */
+        const val GOAL_SOONER = 1_000_000
 
         /** A captured dot outweighs any amount of pressure. */
         const val SCORE_WEIGHT = 10_000
