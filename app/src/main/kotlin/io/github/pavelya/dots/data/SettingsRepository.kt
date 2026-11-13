@@ -4,6 +4,7 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -20,6 +21,10 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs[LENGTH] = next.length.name
             prefs[THREATS] = next.threatHighlight
             prefs[SOUND] = next.sound
+            prefs[MUSIC_VOLUME] = next.musicVolume
+            prefs[EFFECTS_VOLUME] = next.effectsVolume
+            prefs[VIBRATION] = next.vibration
+            prefs[HIGH_CONTRAST] = next.highContrast
             prefs[PLACING] = next.placing.name
             prefs[TUTORIAL_SKIPPED] = next.tutorialSkipped
         }
@@ -32,10 +37,16 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             length = enumOrNull<GameLength>(prefs[LENGTH]) ?: defaults.length,
             threatHighlight = prefs[THREATS] ?: defaults.threatHighlight,
             sound = prefs[SOUND] ?: defaults.sound,
+            musicVolume = volumeOrNull(prefs[MUSIC_VOLUME]) ?: defaults.musicVolume,
+            effectsVolume = volumeOrNull(prefs[EFFECTS_VOLUME]) ?: defaults.effectsVolume,
+            vibration = prefs[VIBRATION] ?: defaults.vibration,
+            highContrast = prefs[HIGH_CONTRAST] ?: defaults.highContrast,
             placing = enumOrNull<PlacingMethod>(prefs[PLACING]) ?: defaults.placing,
             tutorialSkipped = prefs[TUTORIAL_SKIPPED] ?: defaults.tutorialSkipped,
         )
     }
+
+    private fun volumeOrNull(stored: Int?): Int? = stored?.takeIf { it in 0..AppSettings.MAX_VOLUME }
 
     private inline fun <reified E : Enum<E>> enumOrNull(name: String?): E? =
         enumValues<E>().firstOrNull { it.name == name }
@@ -45,6 +56,10 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val LENGTH = stringPreferencesKey("game_length")
         val THREATS = booleanPreferencesKey("threat_highlight")
         val SOUND = booleanPreferencesKey("sound")
+        val MUSIC_VOLUME = intPreferencesKey("music_volume")
+        val EFFECTS_VOLUME = intPreferencesKey("effects_volume")
+        val VIBRATION = booleanPreferencesKey("vibration")
+        val HIGH_CONTRAST = booleanPreferencesKey("high_contrast")
         val PLACING = stringPreferencesKey("placing")
         val TUTORIAL_SKIPPED = booleanPreferencesKey("tutorial_skipped")
     }

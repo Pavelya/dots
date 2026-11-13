@@ -2,6 +2,7 @@ package io.github.pavelya.dots.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dots.engine.Opening
 import kotlinx.coroutines.CoroutineScope
@@ -11,6 +12,7 @@ import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -43,7 +45,23 @@ class SettingsRepositoryTest {
 
     @Test
     fun `settings survive a restart`() = runBlocking {
-        val chosen = AppSettings(BoardSize.LARGE, GameLength.OPEN_ENDED, threatHighlight = true, placing = PlacingMethod.DRAG)
+        // Every setting away from its default, so a value that is not saved shows up.
+        val chosen = AppSettings(
+            boardSize = BoardSize.LARGE,
+            length = GameLength.OPEN_ENDED,
+            threatHighlight = true,
+            sound = false,
+            musicVolume = 0,
+            effectsVolume = 35,
+            vibration = false,
+            highContrast = true,
+            placing = PlacingMethod.DRAG,
+            tutorialSkipped = true,
+        )
+        for (property in AppSettings::class.java.declaredFields.filterNot { java.lang.reflect.Modifier.isStatic(it.modifiers) }) {
+            property.isAccessible = true
+            assertNotEquals("${property.name} is at its default", property.get(AppSettings()), property.get(chosen))
+        }
         val first = Session(file())
         first.repository.update { chosen }
         first.close()
@@ -58,6 +76,8 @@ class SettingsRepositoryTest {
         val session = Session(file())
         session.store.edit { it[stringPreferencesKey("board_size")] = "GIGANTIC" }
         assertEquals(BoardSize.STANDARD, session.repository.settings.first().boardSize)
+        session.store.edit { it[intPreferencesKey("music_volume")] = 250 }
+        assertEquals(AppSettings.DEFAULT_VOLUME, session.repository.settings.first().musicVolume)
         session.close()
     }
 

@@ -17,7 +17,6 @@ import dots.ai.Ai
 import dots.campaign.Campaign
 import dots.engine.Action
 import dots.engine.GameState
-import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.levelGame
@@ -30,8 +29,8 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * The tutorial's levels with their step note and hand (the wireframes' "Tutorial level"), How to
- * play (the wireframes' "Rules") and Settings with Replay the tutorial, shown next to their frames
+ * The tutorial's levels with their step note and hand (the wireframes' "Tutorial level") and How to
+ * play (the wireframes' "Rules"), shown next to their frames
  * in the PR. Reference images in app/src/test/screenshots; they are recorded in CI (CLAUDE.md,
  * "Recording screenshots").
  */
@@ -125,11 +124,5 @@ class TutorialScreenshotTest {
     fun rules() {
         show { RulesScreen(onBack = {}, onPlayTutorial = {}) }
         capture("rules_screen")
-    }
-
-    @Test
-    fun settings() {
-        show { SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onDetails = {}, onDeveloperMenu = {}, onReplayTutorial = {}, onBack = {}) }
-        capture("settings_screen")
     }
 }

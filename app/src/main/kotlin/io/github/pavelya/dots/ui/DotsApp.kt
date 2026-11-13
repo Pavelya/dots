@@ -59,8 +59,9 @@ import io.github.pavelya.dots.ui.screen.MapActions
 import io.github.pavelya.dots.ui.screen.MapScreen
 import io.github.pavelya.dots.ui.screen.PlayAGameNote
 import io.github.pavelya.dots.ui.screen.RulesScreen
+import io.github.pavelya.dots.ui.screen.SettingsDetailsScreen
+import io.github.pavelya.dots.ui.screen.SettingsPage
 import io.github.pavelya.dots.ui.screen.SettingsScreen
-import io.github.pavelya.dots.ui.screen.SettingsViewModel
 import io.github.pavelya.dots.ui.screen.StandInNote
 import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.theme.DotsTheme
@@ -109,7 +110,10 @@ object Routes {
     /** An item from the Shop, on a sample board. */
     const val COSMETIC = "cosmetic"
     const val SETTINGS = "settings"
-    const val SETTINGS_DETAILS = "settings/details"
+
+    /** A page Settings opens: Privacy, Credits and the others of [SettingsPage]. */
+    const val SETTINGS_DETAILS = "settings/details/{page}"
+    fun settingsDetails(page: SettingsPage) = "settings/details/${page.key}"
 
     /** The POC's test settings; opens from the version line in Settings. */
     const val DEVELOPER = "developer"
@@ -319,22 +323,28 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     StandInScreen(R.string.screen_cosmetic, "C-02", onBack = back)
                 }
                 composable(Routes.SETTINGS) {
-                    val model = viewModel { SettingsViewModel(app.settings) }
-                    val settings by model.settings.collectAsStateWithLifecycle()
+                    val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
                     settings?.let {
                         SettingsScreen(
                             settings = it,
-                            onChange = model::change,
+                            // Saved in the app's scope, so leaving Settings never cuts a change short.
+                            // Each change applies to the stored settings, so quick changes never undo each other.
+                            onChange = { change -> appScope.launch { app.settings.update(change) } },
                             version = BuildConfig.VERSION_NAME,
-                            onDetails = { navController.navigate(Routes.SETTINGS_DETAILS) },
+                            onPage = { navController.navigate(Routes.settingsDetails(it)) },
                             onDeveloperMenu = { navController.navigate(Routes.DEVELOPER) },
                             onReplayTutorial = playTutorial,
                             onBack = back,
                         )
                     }
                 }
-                composable(Routes.SETTINGS_DETAILS) {
-                    StandInScreen(R.string.screen_settings_details, "A-09", onBack = back)
+                composable(Routes.SETTINGS_DETAILS, arguments = listOf(navArgument("page") { type = NavType.StringType })) { entry ->
+                    val page = SettingsPage.of(entry.arguments?.getString("page"))
+                    if (page == null) {
+                        LaunchedEffect(Unit) { back() }
+                    } else {
+                        SettingsDetailsScreen(page, onPage = { navController.navigate(Routes.settingsDetails(it)) }, onBack = back)
+                    }
                 }
                 composable(Routes.DEVELOPER) {
                     val context = LocalContext.current
