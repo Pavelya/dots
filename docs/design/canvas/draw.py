@@ -100,7 +100,38 @@ POSITIONS = {
     "undo": dict(red=[p for p in THREAT_RED if p != (9, 8)], blue=[p for p in THREAT_BLUE if p != (7, 7)],
                  areas=[R1, B1], last=None, near=CLUSTER, closing=[((5, 7), "red")],
                  ghosts=[((9, 8), "red"), ((7, 7), "blue")]),
+    # Placing the first dot by drag (decision 0024): the finger is down at (10, 7); the preview's row and
+    # column run out from its ring to the board's edges, under the pieces.
+    "drag": dict(red=OPENING_RED, blue=OPENING_BLUE, areas=[], last=None, drag=((10, 7), "red")),
 }
+
+DRAG_DASH = (4, 3)  # drag's guides: dashes and gaps along each arm, dp
+
+
+def guide_arms(x, y, sp, size, q=1.0):
+    """Drag's guides: four arms from the preview ring (0.45 of the spacing from the point) out to the
+    board's outermost grid lines. q (0 to 1) is how far they have been drawn out from the ring."""
+    r, lo, hi = 0.45 * sp, sp / 2, size - sp / 2
+    return [(x - r, y, x - r - (x - r - lo) * q, y), (x + r, y, x + r + (hi - x - r) * q, y),
+            (x, y - r, x, y - r - (y - r - lo) * q), (x, y + r, x, y + r + (hi - y - r) * q)]
+
+
+def guides(t, side, x, y, sp, size, q=1.0):
+    """Drag's guides in the ink of the side to move: 1.5 dp, dashed, each arm's dashes starting at the ring."""
+    return "".join(el("line", x1=f(a), y1=f(b), x2=f(c), y2=f(d), stroke=t[side], stroke_width=1.5,
+                      stroke_dasharray=f"{DRAG_DASH[0]} {DRAG_DASH[1]}")
+                   for a, b, c, d in guide_arms(x, y, sp, size, q) if abs(c - a) + abs(d - b) > 0.1)
+
+
+def preview(t, side, x, y, sp, dot):
+    """The preview: the moving side's piece in its pale colour inside a ring in its ink (pieces.md)."""
+    if side == "red":
+        piece = el("circle", cx=f(x), cy=f(y), r=f(dot / 2), fill=t["red_pale"])
+    else:
+        h = dot * 7 / 12
+        piece = el("path", d=f"M{f(x)} {f(y - h)}L{f(x + h)} {f(y)}L{f(x)} {f(y + h)}L{f(x - h)} {f(y)}Z",
+                   fill=t["blue_pale"])
+    return piece + el("circle", cx=f(x), cy=f(y), r=f(0.45 * sp), fill="none", stroke=t[side], stroke_width=2)
 
 
 def bowed_segments(points, seed):
@@ -156,6 +187,10 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False):
                         (x1, y1), (x2, y2) = c(p), c(q)
                         links.append(el("line", x1=f(x1), y1=f(y1), x2=f(x2), y2=f(y2),
                                         stroke=t[side + "_pale"], stroke_width=1.5, stroke_linecap="round"))
+    drag = []
+    if pos.get("drag"):
+        p, side = pos["drag"]
+        drag.append(guides(t, side, *c(p), sp, size))
     marks = []
     for p in pos.get("near", []):
         x, y = c(p)
@@ -193,6 +228,9 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False):
     for p, side in pos.get("closing", []):
         x, y = c(p)
         pieces.append(el("circle", cx=f(x), cy=f(y), r=f(sp / 6), fill="none", stroke=t[side], stroke_width=1.5))
+    if pos.get("drag"):
+        p, side = pos["drag"]
+        pieces.append(preview(t, side, *c(p), sp, dot))
     if pos.get("burst") and not mini:
         cx, cy = c((4.5, 5))
         for k in range(14):
@@ -205,7 +243,7 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False):
                              x2=f(cx + math.cos(a) * r2), y2=f(cy + math.sin(a) * r2 * 1.1),
                              stroke=t["red"], stroke_width=2.5, stroke_linecap="round"))
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=size, height=size, fill=t["paper"]) +
-            "".join(washes) + "".join(grid) + "".join(links) + "".join(rings) + "".join(marks) + "".join(pieces))
+            "".join(washes) + "".join(grid) + "".join(links) + "".join(drag) + "".join(rings) + "".join(marks) + "".join(pieces))
     return svg(size, size, body, label=None if mini else "The board, 15 by 15 points")
 
 
@@ -350,6 +388,7 @@ MOMENTS = {
     "big": dict(mood="upset", bubble="Ouch!", you=8, opp=1, left=12, mission=8),
     "win": dict(mood="sulky", bubble="Well played.", you=8, opp=1, left=12, mission=8),
     "undo": dict(mood="smug", bubble="Take it back?", you=2, opp=1, left=13, mission=2),
+    "drag": dict(mood="happy", bubble="Good luck!", you=0, opp=0, left=30, mission=0),
 }
 BOARD_TOP = 308
 
@@ -440,6 +479,23 @@ def undo_note(t, side=10, bottom=12, pad=10, angle=-0.6):
             f'{main_button(t, "Take back")}</div></div>')
 
 
+def thumb(x, y, opacity=0.93):
+    """A thumb whose tip rests on (x, y), reaching in from the lower right. It is drawn over the frame to
+    show where the finger is; it is not part of the game."""
+    return (f'<div aria-hidden="true" style="position: absolute; left: {f(x - 30)}px; top: {f(y - 16)}px; '
+            f'width: 60px; height: 170px; border-radius: 30px 30px 26px 26px / 34px 34px 20px 20px; '
+            f'background: #D9B49A; opacity: {f(opacity)}; transform-origin: 30px 16px; transform: rotate(-38deg); '
+            f'box-shadow: 0 3px 10px rgba(0,0,0,0.3)"><div style="position: absolute; left: 15px; top: 7px; '
+            f'width: 30px; height: 34px; border-radius: 15px 15px 9px 9px; background: #EBD0BF"></div></div>')
+
+
+def drag_thumb(board_top, sp):
+    """The thumb of a drag frame, its tip on the dragged point (the canvas shows it a little see-through,
+    so the preview under it can be checked)."""
+    p, _ = POSITIONS["drag"]["drag"]
+    return thumb(sp / 2 + p[0] * sp, board_top + sp / 2 + p[1] * sp, opacity=0.8)
+
+
 def margin_doodles(t):
     """World 1 is the notebook itself: a few pencil doodles in the empty paper around the opponent."""
     ink = t["blue_pale"]
@@ -467,7 +523,7 @@ def game_frame(t, key, uid):
                  f'{side_row(t, "blue", "Computer", m["opp"], False, "center")}</div>')
     parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">{board_svg(t, key, uid)}</div>')
     # The player, below the board.
-    you_turn = key in ("opening", "threat", "undo")
+    you_turn = key in ("opening", "threat", "undo", "drag")
     row_top = 682 if key != "win" else -200
     parts.append(f'<div style="position: absolute; left: 16px; right: 16px; top: {row_top}px; display: flex; '
                  f'align-items: center; justify-content: space-between">'
@@ -475,9 +531,11 @@ def game_frame(t, key, uid):
                  f'<div style="display: flex; align-items: baseline; gap: 6px"><span style="{SCORE}">{m["left"]}</span>'
                  f'<span style="{LABEL}; color: {t["graphite"]}">dots left</span></div></div>')
     if key not in ("win", "undo"):
-        parts.append(toolbar(t, undo_ready=key != "opening"))
+        parts.append(toolbar(t, undo_ready=key not in ("opening", "drag")))
     if key == "undo":
         parts.append(undo_note(t))
+    if key == "drag":
+        parts.append(drag_thumb(BOARD_TOP, 24))
     if key == "opening":
         parts.append(f'<div style="position: absolute; left: 36px; right: 36px; top: 222px; box-sizing: border-box; '
                      f'padding: 16px 18px 12px; text-align: center; {note_style(t, -1.5)}">{tape(t, 118, -9, 60, 3)}'
@@ -534,7 +592,9 @@ def small_game_frame(t, key, uid):
     if key == "undo":
         parts.append(undo_note(t, side=6, bottom=12, pad=6, angle=0))
     else:
-        parts.append(toolbar(t, top=500, side=10, gap=8))
+        parts.append(toolbar(t, top=500, side=10, gap=8, undo_ready=key != "drag"))
+    if key == "drag":
+        parts.append(drag_thumb(top, 21))
     return root(t, "".join(parts), w=sw, h=sh)
 
 
@@ -773,6 +833,9 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
     ("small-game-threat", "SmallGameThreat", "Small phone: a threat", lambda t, u: small_game_frame(t, "threat", u),
      SMALL_PHONE),
     ("small-game-undo", "SmallGameUndo", "Small phone: Undo's preview", lambda t, u: small_game_frame(t, "undo", u),
+     SMALL_PHONE),
+    ("game-drag", "GameDrag", "Game: placing by drag", lambda t, u: game_frame(t, "drag", u), (W, H)),
+    ("small-game-drag", "SmallGameDrag", "Small phone: placing by drag", lambda t, u: small_game_frame(t, "drag", u),
      SMALL_PHONE),
 ]
 

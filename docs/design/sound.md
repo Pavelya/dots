@@ -123,6 +123,7 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 
 | Motion moment | Sound |
 | --- | --- |
+| Drag's guides | silence |
 | Placing a dot | `sfx_place_*` at 0 ms; the preview silent |
 | Chain lines | silence |
 | The computer's move | `sfx_place_*` at 85% speed at 0 ms; ripples and edge marks silent |

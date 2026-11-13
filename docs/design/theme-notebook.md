@@ -69,13 +69,14 @@ smaller or larger spacing.
 | Threat ring, two moves from capture | 20 dp across, 1.5 dp line | 0.84 of the spacing across | Highlighter faint |
 | Closing point (where the attacker would close the ring) | 8 dp across, 1.5 dp line | a third of the spacing across | Ink of the attacker |
 | Preview (the piece about to be placed) | the moving side's piece inside a 22 dp ring, 2 dp line | piece as above; ring 0.9 of the spacing across | Piece: Red pale or Blue pale; ring: ink of the side to move |
+| Drag's guides (the preview's row and column, while the finger is down) | 1.5 dp line, dashes 4 dp long with 3 dp gaps | always the same | Ink of the side to move |
 
 Paper fills the board and half a spacing around its outermost points. Outside the board the screen
 is plain paper without a grid, so the board's edge is clear.
 
-**Drawing order**, from the back: paper, washes, hatching, grid, links, rings, threat rings,
-pieces, last-move pinhole and captured cuts, closing points, preview. The grid lies on top of the washes, so the squared paper shows
-through a captured area.
+**Drawing order**, from the back: paper, washes, hatching, grid, links, drag's guides, rings,
+threat rings, pieces, last-move pinhole and captured cuts, closing points, preview. The grid lies on
+top of the washes, so the squared paper shows through a captured area.
 
 **Captured dots** keep their full ink colour. The wash and the hatching around them show that they
 are captured, and they stay at least 3:1 against both (see the contrast table). A cut across
@@ -83,6 +84,42 @@ each captured piece marks it too.
 
 **Piece shapes, the last-move pinhole, the captured cut and the preview** are on
 [Piece shapes](pieces.md).
+
+## Drag's guides
+
+A player can place dots by drag instead of two taps (decision 0024, chosen in Settings). While the
+finger is down, the preview sits on the point under it, and the guides show which row and column
+that is. The finger hides the point itself, so the guides are what the player aims with.
+
+<img src="canvas/game-drag-light.png" width="180" alt="Light: the finger on the board, dashed red lines running from under it to the four edges of the board"> <img src="canvas/game-drag-dark.png" width="180" alt="Dark: the same drag"> <img src="canvas/small-game-drag-light.png" width="160" alt="Light: the same drag on a small phone">
+
+The canvas frames "Game: placing by drag" and "Small phone: placing by drag" show them. The thumb
+there is drawn a little see-through, so the preview under it shows.
+
+- **Four arms.** Each guide runs from the preview ring along the point's row or column to the
+  board's outermost grid line. It stops at the ring, so the pale piece inside stays clean.
+- **Dashed, in the ink of the side to move.** 1.5 dp, dashes 4 dp long with 3 dp gaps, each arm's
+  dashes starting at the ring. The guide lies on a grid line and is wider than it, so the grid
+  line shows only in the gaps, like a pen line traced over the ruled paper.
+- **Under the marks that matter.** The guides are drawn after the links and before the rings, so
+  rings, threat rings, pieces and closing points all lie on top. A guide never hides a dot.
+- **Solid colour.** The ink is drawn as it is, not see-through, like everything on the board.
+- **The same at every spacing.** The line width and the dashes don't change with the spacing, so
+  there are about three dashes between two points. At 21 dp, on a 320 x 568 phone, the arms still
+  show on both sides of a fingertip, which covers about 60 dp.
+- **Only on a free point.** Over a point that is taken, or off the board, there is no preview, so
+  there are no guides: lifting there places nothing.
+
+**Why dashed ink.** Three looks were tried on the canvas board. Solid ink running through a row of
+red dots looked like a red ring joining them. Red pale or Blue pale nearly disappeared on the dark
+board. A dashed ink line is plainly not a ring or a link, and dashes already mean "not placed yet"
+on the board, as in Undo's dashed rings.
+
+**Contrast.** The guides use the two inks, so their contrast is that of the dots in the contrast
+table: at least 4.17 against paper and either wash, and at least 3.24 where they cross a hatch
+line, in both versions.
+
+How the guides appear and follow the finger is on the [motion page](motion.md#placing-by-drag).
 
 ## The ring
 

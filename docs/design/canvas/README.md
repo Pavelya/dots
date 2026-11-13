@@ -28,6 +28,8 @@ Under the board, the tool bar holds the five boosters: Wall, Hint, Bomb, Double 
 | **Boosters.** Tapping a booster on the Level card lays this note over the map: each booster's icon, name, one line and count, and how boosters are earned. | <img src="boosters-light.png" width="180" alt="Light: the Boosters screen"> | <img src="boosters-dark.png" width="180" alt="Dark: the Boosters screen"> |
 | **Small phone: a threat.** The threat at 320 x 568: a 21 dp board and the same five-booster tool bar. | <img src="small-game-threat-light.png" width="160" alt="Light: a threat on a small phone"> | <img src="small-game-threat-dark.png" width="160" alt="Dark: a threat on a small phone"> |
 | **Small phone: Undo's preview.** Undo's note at 320 x 568, over the player's line and the tool bar, clear of the board. | <img src="small-game-undo-light.png" width="160" alt="Light: Undo's preview on a small phone"> | <img src="small-game-undo-dark.png" width="160" alt="Dark: Undo's preview on a small phone"> |
+| **Game: placing by drag.** Just after the level opens, the player places their first dot by drag (decision 0024). The thumb is on the point; dashed red guides run from the preview's ring along its row and column to the board's edges, under the pieces. Undo still waits. | <img src="game-drag-light.png" width="180" alt="Light: placing by drag"> | <img src="game-drag-dark.png" width="180" alt="Dark: placing by drag"> |
+| **Small phone: placing by drag.** The same drag on a 21 dp board: the guides keep their width and dashes. | <img src="small-game-drag-light.png" width="160" alt="Light: placing by drag on a small phone"> | <img src="small-game-drag-dark.png" width="160" alt="Dark: placing by drag on a small phone"> |
 
 ## Real size
 
@@ -70,6 +72,9 @@ These choices are new here. They are proposals for the owner to accept or change
   booster (decision 0023).
 - **On a small phone** the opponent is a small photo beside its name, and the speech bubble has no
   room.
+- **Drag's guides** are dashed lines in the ink of the side to move; the
+  [theme page](../theme-notebook.md#drags-guides) gives their values. The thumb on the drag frames
+  is not part of the game. It is drawn a little see-through, so the preview under it shows.
 
 ## Art
 
