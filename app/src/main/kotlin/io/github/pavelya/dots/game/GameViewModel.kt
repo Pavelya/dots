@@ -145,7 +145,8 @@ data class BoosterAim(
  * @param clock the time now in milliseconds, for the log
  * @param placing how dots are placed now, for the log: the game log records the method with the
  *   touches and dots it took, so that `cli placing-report` can compare methods (A-13)
- * @param hintFor the Hint booster's point for a position, found on [computerDispatcher]
+ * @param hintFor the Hint booster's point for a position of the level being played (null outside
+ *   the campaign), found on [computerDispatcher]: in a level, the move that serves its mission
  */
 class GameViewModel(
     start: GameLogEntry,
@@ -157,7 +158,7 @@ class GameViewModel(
     private val replyDelayMillis: Long = 400,
     private val clock: () -> Long = System::currentTimeMillis,
     private val placing: () -> PlacingMethod = { PlacingMethod.TWO_TAPS },
-    private val hintFor: (GameState) -> Action.Hint? = { Hints.hint(it) },
+    private val hintFor: (GameState, Level?) -> Action.Hint? = { state, level -> if (level != null) level.hint(state) else Hints.hint(state) },
 ) : ViewModel() {
     val human: Player = Player.RED
 
@@ -333,13 +334,14 @@ class GameViewModel(
         _ui.value = snapshot(lastMove = lastPlaced())
     }
 
-    /** The Hint looks for the player's best move as the computer would, off the main thread. */
+    /** The Hint looks for the move that serves the player's mission, off the main thread. */
     private fun findHint() {
         val position = game.state
+        val level = level
         chosen = null
         _ui.value = snapshot(lastMove = lastPlaced()).copy(thinking = true, usable = emptySet())
         thinking = viewModelScope.launch {
-            val hint = withContext(computerDispatcher) { hintFor(position) }
+            val hint = withContext(computerDispatcher) { hintFor(position, level) }
             ensureActive()
             if (game.state !== position) return@launch // the game changed meanwhile
             if (hint == null) {
