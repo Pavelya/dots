@@ -37,6 +37,7 @@ import dots.campaign.Mission
 import dots.campaign.MissionStatus
 import dots.campaign.Outcome
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.theme.Palette
 
 /** The most boxes the mission note ticks; a bigger capture mission counts in words. */
 private const val MAX_BOXES = 8
@@ -49,7 +50,7 @@ private const val MAX_BOXES = 8
  */
 @Composable
 fun MissionNoteContent(level: Level, status: MissionStatus) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     val mission = level.mission
     val head = stringResource(if (status.outcome == Outcome.PASSED) R.string.mission_done else R.string.mission_head)
     val text = missionText(mission)
@@ -72,7 +73,7 @@ fun MissionNoteContent(level: Level, status: MissionStatus) {
 
 /** One box per dot to capture, the first [ticked] filled red with a tick (draw.py, `mission_note`). */
 @Composable
-private fun Boxes(count: Int, ticked: Int, style: GameStyle, modifier: Modifier) {
+private fun Boxes(count: Int, ticked: Int, style: Palette, modifier: Modifier) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
         val gap = 3.dp
         val side = min(12.dp, (maxWidth - gap * (count - 1)) / count)
@@ -83,7 +84,7 @@ private fun Boxes(count: Int, ticked: Int, style: GameStyle, modifier: Modifier)
 }
 
 @Composable
-private fun MissionBox(ticked: Boolean, style: GameStyle, modifier: Modifier) {
+private fun MissionBox(ticked: Boolean, style: Palette, modifier: Modifier) {
     Canvas(modifier) {
         val u = size.width / 12f
         val inset = 0.75f * u
@@ -111,7 +112,7 @@ private fun MissionBox(ticked: Boolean, style: GameStyle, modifier: Modifier) {
  */
 @Composable
 fun LevelOpening(level: Level, modifier: Modifier = Modifier) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     TapedNote(style, modifier.semantics { liveRegion = LiveRegionMode.Polite }, angle = -1.5f) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.level_title, level.world, level.number), style = NoteText.label, color = style.graphite)
@@ -133,7 +134,7 @@ fun LevelOpening(level: Level, modifier: Modifier = Modifier) {
 
 /** The mission in one line after the red target icon, as the Level card and the opening show it. */
 @Composable
-internal fun MissionLine(level: Level, style: GameStyle, modifier: Modifier = Modifier) {
+internal fun MissionLine(level: Level, style: Palette, modifier: Modifier = Modifier) {
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = modifier) {
         Icon(
             remember(style) { Doodles.icon(Doodles.TARGET, style.red) },

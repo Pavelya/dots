@@ -3,8 +3,6 @@ package io.github.pavelya.dots.ui.screen
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
-import androidx.compose.foundation.text.BasicText
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -25,10 +23,13 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -64,6 +65,7 @@ import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.GameLength
 import io.github.pavelya.dots.data.GameMode
+import io.github.pavelya.dots.ui.theme.Palette
 
 /** The hand-cut shape of the big cards (the wireframe's border-radius). */
 private val CARD_SHAPE = RoundedCornerShape(topStart = 16.dp, topEnd = 20.dp, bottomEnd = 14.dp, bottomStart = 22.dp)
@@ -92,7 +94,7 @@ fun PlayAGameNote(
     onPlay: (mode: GameMode, replace: Boolean) -> Unit,
     onClose: () -> Unit,
 ) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     var setup by rememberSaveable { mutableStateOf(false) }
     var askingKey by rememberSaveable { mutableStateOf<String?>(null) }
     val asking = GameMode.of(askingKey)
@@ -183,7 +185,7 @@ private fun Modifier.ruled(ink: Color): Modifier = drawBehind {
 }
 
 @Composable
-private fun CloseIcon(style: GameStyle, onClose: () -> Unit) {
+private fun CloseIcon(style: Palette, onClose: () -> Unit) {
     val label = stringResource(R.string.close)
     Box(
         contentAlignment = Alignment.Center,
@@ -205,7 +207,7 @@ private fun PlayCard(
     @StringRes detail: Int,
     icon: ImageVector,
     background: Color,
-    style: GameStyle,
+    style: Palette,
     height: Dp,
     onClick: () -> Unit,
 ) {
@@ -238,7 +240,7 @@ private fun PlayCard(
 
 /** The small link under the cards: the board size and game length the next game gets, and "change". */
 @Composable
-private fun SetupLink(settings: AppSettings, style: GameStyle, onClick: () -> Unit) {
+private fun SetupLink(settings: AppSettings, style: Palette, onClick: () -> Unit) {
     val size = stringResource(R.string.settings_board_size, settings.boardSize.points, settings.boardSize.points)
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Text(
@@ -257,7 +259,7 @@ private fun SetupLink(settings: AppSettings, style: GameStyle, onClick: () -> Un
 
 /** Board size and game length for the next games, each a row of choices. */
 @Composable
-private fun Setup(settings: AppSettings, style: GameStyle, onSettings: ((AppSettings) -> AppSettings) -> Unit) {
+private fun Setup(settings: AppSettings, style: Palette, onSettings: ((AppSettings) -> AppSettings) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Text(stringResource(R.string.settings_board), style = NoteText.label, color = style.graphite, modifier = Modifier.semantics { heading() })
         ChoiceRow {
@@ -297,7 +299,7 @@ private fun ChoiceRow(content: @Composable RowScope.() -> Unit) {
 
 /** One choice: filled blue when chosen, outlined otherwise. */
 @Composable
-private fun RowScope.Choice(label: String, detail: String?, selected: Boolean, style: GameStyle, onClick: () -> Unit) {
+private fun RowScope.Choice(label: String, detail: String?, selected: Boolean, style: Palette, onClick: () -> Unit) {
     val ink = if (selected) style.paper else style.blue
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -316,11 +318,13 @@ private fun RowScope.Choice(label: String, detail: String?, selected: Boolean, s
     }
 }
 
-private val CHOICE_TEXT = TextStyle(fontSize = 14.sp, lineHeight = 18.sp, fontWeight = FontWeight.Bold)
+private val CHOICE_TEXT: TextStyle
+    @Composable @ReadOnlyComposable
+    get() = NoteText.label.copy(lineHeight = 18.sp)
 
 /** Before a new game takes the place of a saved one: New game, or Keep it. */
 @Composable
-private fun ReplaceQuestion(style: GameStyle, onReplace: () -> Unit, onKeep: () -> Unit) {
+private fun ReplaceQuestion(style: Palette, onReplace: () -> Unit, onKeep: () -> Unit) {
     Text(
         stringResource(R.string.play_replace_question),
         style = NoteText.title,

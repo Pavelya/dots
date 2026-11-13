@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -35,6 +36,7 @@ import dots.campaign.Tutorial.Lesson
 import dots.campaign.Tutorial.Prompt
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.PlacingMethod
+import io.github.pavelya.dots.ui.theme.Palette
 
 /**
  * The tutorial's step note (the wireframes' "Tutorial level"): the step and its lesson in small
@@ -43,7 +45,7 @@ import io.github.pavelya.dots.data.PlacingMethod
  * placing [method], so the tutorial works with either. TalkBack reads each new sentence.
  */
 @Composable
-internal fun TutorialNote(step: Tutorial.Step, method: PlacingMethod, style: GameStyle, onSkip: () -> Unit, modifier: Modifier = Modifier) {
+internal fun TutorialNote(step: Tutorial.Step, method: PlacingMethod, style: Palette, onSkip: () -> Unit, modifier: Modifier = Modifier) {
     val label = stringResource(R.string.tutorial_step, step.number, Tutorial.LESSONS, stringResource(lessonName(step.lesson)))
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -79,7 +81,9 @@ internal fun TutorialNote(step: Tutorial.Step, method: PlacingMethod, style: Gam
 }
 
 /** The wireframe's step label: 11 sp, extra bold, spaced out. */
-private val STEP_LABEL = TextStyle(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em)
+private val STEP_LABEL: TextStyle
+    @Composable @ReadOnlyComposable
+    get() = NoteText.small.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em)
 
 /** The step's sentence in handwriting (Caveat 24 on the wireframe, V-03). */
 private val SENTENCE = HAND.copy(fontSize = 22.sp, lineHeight = 26.sp)

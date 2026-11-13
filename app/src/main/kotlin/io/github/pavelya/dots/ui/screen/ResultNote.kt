@@ -43,6 +43,7 @@ import dots.engine.Player
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.game.GameUiState
+import io.github.pavelya.dots.ui.theme.Palette
 
 /**
  * Result: one note for every mode, taped over the final board (canvas frame `result-win`; the
@@ -66,7 +67,7 @@ internal fun ResultNote(
     onAgainWithHint: () -> Unit,
     onMap: () -> Unit,
 ) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     BackHandler(onBack = onMap)
     val level = ui.level
     val end = ui.levelEnd
@@ -96,7 +97,7 @@ internal fun ResultNote(
 private fun LevelResult(
     level: Level,
     end: LevelEnd,
-    style: GameStyle,
+    style: Palette,
     onNext: () -> Unit,
     onAgain: () -> Unit,
     onAgainWithHint: () -> Unit,
@@ -141,7 +142,7 @@ private fun LevelResult(
 }
 
 @Composable
-private fun FreeResult(ui: GameUiState, names: Names, style: GameStyle, onAgain: () -> Unit, onMap: () -> Unit) {
+private fun FreeResult(ui: GameUiState, names: Names, style: Palette, onAgain: () -> Unit, onMap: () -> Unit) {
     val state = ui.state
     val winner = state.winner
     val (headline, ink) = when {
@@ -179,7 +180,7 @@ private fun Headline(text: String, ink: Color) {
 
 /** Three stars, the middle one bigger and higher (draw.py, the `win` frame); [earned] of them filled. */
 @Composable
-private fun StarRow(earned: Int, style: GameStyle) {
+private fun StarRow(earned: Int, style: Palette) {
     val description = stringResource(R.string.result_stars, earned)
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -195,7 +196,7 @@ private fun StarRow(earned: Int, style: GameStyle) {
 }
 
 @Composable
-private fun ResultStar(filled: Boolean, size: Dp, style: GameStyle, modifier: Modifier) {
+private fun ResultStar(filled: Boolean, size: Dp, style: Palette, modifier: Modifier) {
     Icon(
         remember(filled, style) { Doodles.star(if (filled) style.red else style.graphite, filled) },
         contentDescription = null,
@@ -206,7 +207,7 @@ private fun ResultStar(filled: Boolean, size: Dp, style: GameStyle, modifier: Mo
 
 /** A world or level the pass has just opened, if any. */
 @Composable
-private fun Opened(end: LevelEnd, style: GameStyle) {
+private fun Opened(end: LevelEnd, style: Palette) {
     val world = end.opened.worlds.firstOrNull()
     val level = end.opened.levels.firstOrNull()
     val text = when {
@@ -219,7 +220,7 @@ private fun Opened(end: LevelEnd, style: GameStyle) {
 
 /** How far a capture mission got: a bar and "4 / 5" (the wireframes' Loss). */
 @Composable
-private fun CaptureBar(captured: Int, needed: Int, style: GameStyle) {
+private fun CaptureBar(captured: Int, needed: Int, style: Palette) {
     val shown = captured.coerceIn(0, needed)
     val description = stringResource(R.string.result_progress, shown, needed)
     Row(
@@ -247,7 +248,7 @@ private fun Buttons(content: @Composable RowScope.() -> Unit) {
 
 /** After the third failure in a row: play again with a free Hint (the wireframes' Loss). */
 @Composable
-private fun HelpOffer(style: GameStyle, onClick: () -> Unit) {
+private fun HelpOffer(style: Palette, onClick: () -> Unit) {
     val shape = RoundedCornerShape(14.dp)
     Row(
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),

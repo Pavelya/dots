@@ -14,12 +14,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import dots.engine.GameState
@@ -27,6 +25,7 @@ import dots.engine.Pos
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.BoardView
+import io.github.pavelya.dots.ui.theme.Palette
 
 /** The rules' pictures, as real engine positions, so a picture can never show an illegal game. */
 object RulePictures {
@@ -93,9 +92,8 @@ object RulePictures {
  */
 @Composable
 fun RulesScreen(onBack: () -> Unit, onPlayTutorial: () -> Unit) {
-    val colors = MaterialTheme.colorScheme
-    val style = rememberGameStyle()
-    val boardStyle = remember(colors) { BoardStyle.plain(colors, colors.background.luminance() < 0.5f) }
+    val style = Palette.current
+    val boardStyle = BoardStyle.current
     Column(Modifier.fillMaxSize().background(style.paper).padding(bottom = 16.dp)) {
         Column(Modifier.padding(horizontal = 16.dp)) { ScreenHeader(R.string.rules_title, onBack) }
         Column(
@@ -123,7 +121,7 @@ private fun Rule(
     @StringRes title: Int,
     @StringRes text: Int,
     @StringRes picture: Int,
-    style: GameStyle,
+    style: Palette,
     boardStyle: BoardStyle,
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.Top) {

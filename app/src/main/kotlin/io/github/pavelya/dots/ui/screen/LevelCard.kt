@@ -22,7 +22,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -35,7 +34,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -45,10 +43,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import dots.campaign.Level
 import dots.campaign.Mission
@@ -59,6 +57,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.BoardView
+import io.github.pavelya.dots.ui.theme.Palette
 
 /** The hand-cut shape of a booster chip on the card. */
 private val CHIP_SHAPE = RoundedCornerShape(24.dp)
@@ -82,7 +81,7 @@ fun LevelCard(
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     val boss = level.rule != null
     val title = stringResource(R.string.level_title, level.world, level.number)
     BoxWithConstraints(
@@ -169,7 +168,7 @@ private fun Modifier.tornTop(ink: Color): Modifier = drawBehind {
 
 /** The note's Close icon, 48 dp, in the top right corner. */
 @Composable
-internal fun CloseButton(style: GameStyle, onClose: () -> Unit) {
+internal fun CloseButton(style: Palette, onClose: () -> Unit) {
     val label = stringResource(R.string.close)
     Box(
         contentAlignment = Alignment.Center,
@@ -186,8 +185,7 @@ internal fun CloseButton(style: GameStyle, onClose: () -> Unit) {
 /** The board at the start, small, with its grid, the dots on it and any dot the mission is about. */
 @Composable
 private fun BoardPicture(level: Level, modifier: Modifier) {
-    val colors = MaterialTheme.colorScheme
-    val boardStyle = remember(colors) { BoardStyle.plain(colors, colors.background.luminance() < 0.5f) }
+    val boardStyle = BoardStyle.current
     val start = remember(level) { level.newGame() }
     val marked = when (val mission = level.mission) {
         is Mission.Rescue -> mission.dot
@@ -205,7 +203,7 @@ private fun BoardPicture(level: Level, modifier: Modifier) {
 
 /** The computer's face for its strength, its name, how it plays and its head start; a boss's name in red. */
 @Composable
-private fun Opponent(level: Level, style: GameStyle) {
+private fun Opponent(level: Level, style: Palette) {
     val boss = level.rule != null
     val name = if (boss) level.name else stringResource(R.string.player_computer)
     val mood = when {
@@ -236,7 +234,7 @@ private fun Opponent(level: Level, style: GameStyle) {
 
 /** The dots the player may place, and "Boosters:" when the level allows any. */
 @Composable
-private fun Allowance(level: Level, style: GameStyle) {
+private fun Allowance(level: Level, style: Palette) {
     val dots = pluralStringResource(R.plurals.level_your_dots, level.humanDots, level.humanDots)
     val text = if (level.boosters.isEmpty()) dots else dots + " " + stringResource(R.string.level_boosters)
     Text(text, style = NoteText.small, color = style.graphite)
@@ -244,7 +242,7 @@ private fun Allowance(level: Level, style: GameStyle) {
 
 /** The boosters the level allows, as dashed chips with a count; each opens Boosters. */
 @Composable
-private fun BoosterChips(boosters: Map<Booster, Int>, style: GameStyle, onBooster: (Booster) -> Unit) {
+private fun BoosterChips(boosters: Map<Booster, Int>, style: Palette, onBooster: (Booster) -> Unit) {
     if (boosters.isEmpty()) return
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         for (row in boosters.entries.sortedBy { it.key }.chunked(2)) {
@@ -256,7 +254,7 @@ private fun BoosterChips(boosters: Map<Booster, Int>, style: GameStyle, onBooste
 }
 
 @Composable
-private fun BoosterChip(booster: Booster, count: Int, style: GameStyle, onClick: () -> Unit) {
+private fun BoosterChip(booster: Booster, count: Int, style: Palette, onClick: () -> Unit) {
     val label = pluralStringResource(R.plurals.booster_chip, count, boosterName(booster), count)
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -291,7 +289,7 @@ internal fun BoosterIcon(booster: Booster, ink: Color, modifier: Modifier) {
 
 /** What earns one, two and three stars: a row of stars and a line each. A level without targets has one row. */
 @Composable
-private fun StarTargets(level: Level, style: GameStyle) {
+private fun StarTargets(level: Level, style: Palette) {
     val rows = if (level.stars == null) 1 else Stars.MAX
     Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
         for (stars in 1..rows) {

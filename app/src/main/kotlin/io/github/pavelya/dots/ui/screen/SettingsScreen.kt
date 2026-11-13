@@ -32,6 +32,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.data.SampleProgress
+import io.github.pavelya.dots.ui.theme.Palette
 
 /** The number of taps on the version line that opens the developer menu, as Android's "Build number" does. */
 const val DEVELOPER_TAPS = 7
@@ -73,7 +74,7 @@ fun SettingsScreen(
     onReplayTutorial: () -> Unit,
     onBack: () -> Unit,
 ) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     PaperPage(stringResource(R.string.home_settings), onBack) {
         SectionHead(stringResource(R.string.settings_sound_and_feel))
         VolumeRow(stringResource(R.string.settings_music), settings.musicVolume, AppSettings.MAX_VOLUME) { volume ->

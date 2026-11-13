@@ -56,6 +56,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.BoosterAim
 import io.github.pavelya.dots.game.GameUiState
+import io.github.pavelya.dots.ui.theme.Palette
 
 /**
  * One booster in the campaign's tool bar: how many the player has [left], whether it can be
@@ -77,12 +78,12 @@ internal fun boosterTools(ui: GameUiState, human: Player): List<BoosterTool> = B
  * to take back) is grey on paper, with its count still red. A tap opens its preview ([onBooster]).
  */
 @Composable
-internal fun RowScope.BoosterBar(tools: List<BoosterTool>, style: GameStyle, onBooster: (Booster) -> Unit) {
+internal fun RowScope.BoosterBar(tools: List<BoosterTool>, style: Palette, onBooster: (Booster) -> Unit) {
     for (tool in tools) BoosterButton(tool, style, Modifier.weight(1f)) { onBooster(tool.booster) }
 }
 
 @Composable
-private fun BoosterButton(tool: BoosterTool, style: GameStyle, modifier: Modifier, onClick: () -> Unit) {
+private fun BoosterButton(tool: BoosterTool, style: Palette, modifier: Modifier, onClick: () -> Unit) {
     val any = tool.left > 0
     val name = boosterName(tool.booster)
     val label = when {
@@ -124,7 +125,7 @@ private fun BoosterButton(tool: BoosterTool, style: GameStyle, modifier: Modifie
  * can be used (draw.py, `booster_pic`).
  */
 @Composable
-private fun BoosterPicture(booster: Booster, ink: Color, style: GameStyle, active: Boolean) {
+private fun BoosterPicture(booster: Booster, ink: Color, style: Palette, active: Boolean) {
     if (booster == Booster.DOUBLE_DOT) {
         BoosterIcon(booster, if (active) style.red else ink, Modifier.size(width = 30.dp, height = 16.dp))
     } else {
@@ -143,7 +144,7 @@ private fun BoosterPicture(booster: Booster, ink: Color, style: GameStyle, activ
 internal fun BoosterNote(
     aim: BoosterAim,
     method: PlacingMethod,
-    style: GameStyle,
+    style: Palette,
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
@@ -219,7 +220,7 @@ internal fun BoosterNote(
  */
 @Composable
 fun BoostersNote(left: Map<Booster, Int>, onClose: () -> Unit) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     val title = stringResource(R.string.screen_boosters)
     BoxWithConstraints(
         contentAlignment = Alignment.BottomCenter,
@@ -263,7 +264,7 @@ fun BoostersNote(left: Map<Booster, Int>, onClose: () -> Unit) {
 }
 
 @Composable
-private fun BoosterRow(booster: Booster, left: Int, style: GameStyle) {
+private fun BoosterRow(booster: Booster, left: Int, style: Palette) {
     val any = left > 0
     val name = boosterName(booster)
     val what = stringResource(

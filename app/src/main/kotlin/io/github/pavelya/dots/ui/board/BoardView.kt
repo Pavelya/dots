@@ -92,7 +92,7 @@ private fun DrawScope.drawPointer(at: Offset, geometry: BoardGeometry, style: Bo
     val unit = 1.dp.toPx()
     translate(at.x - 6 * unit, at.y + 4 * unit) {
         scale(unit, unit, pivot = Offset.Zero) {
-            drawPath(HAND, style.background)
+            drawPath(HAND, style.paper)
             drawPath(HAND, style.pencil, style = Stroke(width = 1.6f, join = StrokeJoin.Round))
         }
     }
@@ -133,7 +133,7 @@ private fun DrawScope.drawPosition(
     marked: Pos?,
     marks: BoardMarks,
 ) {
-    drawRect(style.background)
+    drawRect(style.paper)
     drawAreas(state, geometry, style)
     drawGrid(state, geometry, style)
     drawWalls(state, geometry, style)
@@ -149,11 +149,15 @@ private fun DrawScope.drawPosition(
         drawRing(geometry.center(circled), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
         drawRing(geometry.center(circled), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
     }
-    lastMove?.let { drawRing(geometry.center(it), geometry.spacing * 0.42f, style.grid, geometry.spacing * 0.06f) }
+    val look = style.look
+    val spacing = geometry.spacing
+    lastMove?.let {
+        drawRing(geometry.center(it), look.lastMoveRing.px(spacing, density) / 2, style.grid, look.lastMoveLine.px(spacing, density))
+    }
     preview?.let {
-        val color = style.color(state.toMove)
-        drawCircle(color.copy(alpha = 0.45f), geometry.spacing * style.dotRadius, geometry.center(it))
-        drawRing(geometry.center(it), geometry.spacing * 0.45f, color, geometry.spacing * 0.08f)
+        val center = geometry.center(it)
+        drawPiece(style.piece(state.toMove), center, look.dot.px(spacing, density), style.palette.pale(state.toMove))
+        drawRing(center, look.previewRing.px(spacing, density) / 2, style.color(state.toMove), look.previewLine.px(spacing, density))
     }
 }
 
@@ -174,7 +178,7 @@ private fun DrawScope.drawWall(at: Offset, geometry: BoardGeometry, style: Board
     val left = at.x - half
     val top = at.y - half
     clipRect(left, top, at.x + half, at.y + half) {
-        val graphite = style.pencil.copy(alpha = 0.55f)
+        val graphite = style.graphite
         for (i in 1..5) {
             // Lines rising to the right, evenly across the square's diagonal.
             val d = 4 * half * i / 6f
@@ -185,31 +189,33 @@ private fun DrawScope.drawWall(at: Offset, geometry: BoardGeometry, style: Board
     drawRect(style.pencil, Offset(left, top), Size(2 * half, 2 * half), style = Stroke(width, pathEffect = effect))
 }
 
-/** The points a booster may be aimed at: a small dot in the ink of the side to move. */
+/** The points a booster may be aimed at: a small dot in the pale ink of the side to move. */
 private fun DrawScope.drawTargets(state: GameState, targets: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
-    val ink = style.color(state.toMove).copy(alpha = 0.4f)
+    val ink = style.palette.pale(state.toMove)
     for (point in targets) drawCircle(ink, geometry.spacing * 0.1f, geometry.center(point))
 }
 
-/** The bomb's plus: each point in a dashed ring in the ink of the side to move, washed faintly. */
+/** The bomb's plus: each point in a dashed ring in the ink of the side to move, on its wash. */
 private fun DrawScope.drawPlus(state: GameState, plus: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
     val ink = style.color(state.toMove)
+    val wash = style.palette.wash(state.toMove)
     for (point in plus) {
         val c = geometry.center(point)
-        drawCircle(ink.copy(alpha = 0.12f), geometry.spacing * 0.46f, c)
+        drawCircle(wash, geometry.spacing * 0.46f, c)
         drawDashedRing(c, geometry.spacing * 0.46f, ink, 1.5.dp.toPx())
     }
 }
 
 /** Pieces a booster would take away: pale, in a dashed Graphite ring (Undo's preview, motion.md). */
 private fun DrawScope.drawGone(state: GameState, gone: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
-    val radius = geometry.spacing * style.dotRadius
+    val dot = style.look.dot.px(geometry.spacing, density)
     for (point in gone) {
         val owner = state.ownerAt(point.x, point.y) ?: continue
         val c = geometry.center(point)
-        drawCircle(style.background, radius * 1.1f, c)
-        drawCircle(style.color(owner).copy(alpha = 0.35f), radius, c)
-        drawDashedRing(c, geometry.spacing * 0.45f, style.pencil.copy(alpha = 0.7f), 1.5.dp.toPx())
+        val piece = style.piece(owner)
+        drawPiece(piece.copy(across = piece.across * 1.1f), c, dot, style.paper)
+        drawPiece(piece, c, dot, style.palette.pale(owner))
+        drawDashedRing(c, geometry.spacing * 0.45f, style.graphite, 1.5.dp.toPx())
     }
 }
 
@@ -223,8 +229,8 @@ private fun DrawScope.drawDashedRing(center: Offset, radius: Float, color: Color
  * covers about 60 dp; the lines run past it.
  */
 private fun DrawScope.drawGuides(state: GameState, preview: Pos, geometry: BoardGeometry, style: BoardStyle) {
-    val ink = style.color(state.toMove).copy(alpha = 0.6f)
-    val width = max(geometry.spacing * 0.08f, 2.dp.toPx())
+    val ink = style.color(state.toMove).copy(alpha = style.look.guideAlpha)
+    val width = style.look.guide.px(geometry.spacing, density)
     drawLine(ink, geometry.center(0, preview.y), geometry.center(state.width - 1, preview.y), width)
     drawLine(ink, geometry.center(preview.x, 0), geometry.center(preview.x, state.height - 1), width)
 }
@@ -234,23 +240,27 @@ private fun DrawScope.drawAreas(state: GameState, geometry: BoardGeometry, style
     for (y in 0 until state.height) for (x in 0 until state.width) {
         val by = state.enclosedBy(x, y) ?: continue
         val c = geometry.center(x, y)
-        drawRect(style.color(by).copy(alpha = style.areaAlpha), Offset(c.x - half, c.y - half), Size(geometry.spacing, geometry.spacing))
+        drawRect(style.palette.wash(by), Offset(c.x - half, c.y - half), Size(geometry.spacing, geometry.spacing))
     }
 }
 
+/** The grid lines, the outermost ones (the board's edge) in the edge's width. */
 private fun DrawScope.drawGrid(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
-    val stroke = geometry.spacing * 0.03f
+    val line = style.look.grid.px(geometry.spacing, density)
+    val edge = style.look.edge.px(geometry.spacing, density)
     for (x in 0 until state.width) {
-        drawLine(style.grid, geometry.center(x, 0), geometry.center(x, state.height - 1), stroke)
+        val width = if (x == 0 || x == state.width - 1) edge else line
+        drawLine(style.grid, geometry.center(x, 0), geometry.center(x, state.height - 1), width)
     }
     for (y in 0 until state.height) {
-        drawLine(style.grid, geometry.center(0, y), geometry.center(state.width - 1, y), stroke)
+        val width = if (y == 0 || y == state.height - 1) edge else line
+        drawLine(style.grid, geometry.center(0, y), geometry.center(state.width - 1, y), width)
     }
 }
 
-/** A line between every two live dots of one colour that touch, orthogonally or diagonally. */
+/** A line in the side's pale ink between every two live dots of one colour that touch, orthogonally or diagonally. */
 private fun DrawScope.drawLinks(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
-    val width = geometry.spacing * 0.08f
+    val width = style.look.link.px(geometry.spacing, density)
     for (y in 0 until state.height) for (x in 0 until state.width) {
         val owner = state.ownerAt(x, y) ?: continue
         if (state.isCaptured(x, y)) continue
@@ -258,7 +268,7 @@ private fun DrawScope.drawLinks(state: GameState, geometry: BoardGeometry, style
             val nx = x + dx
             val ny = y + dy
             if (!state.inBounds(nx, ny) || state.ownerAt(nx, ny) != owner || state.isCaptured(nx, ny)) continue
-            drawLine(style.color(owner).copy(alpha = 0.6f), geometry.center(x, y), geometry.center(nx, ny), width)
+            drawLine(style.palette.pale(owner), geometry.center(x, y), geometry.center(nx, ny), width)
         }
     }
 }
@@ -267,31 +277,36 @@ private fun DrawScope.drawLinks(state: GameState, geometry: BoardGeometry, style
 private val LINK_DIRECTIONS = listOf(1 to 0, 0 to 1, 1 to 1, 1 to -1)
 
 /**
- * An amber ring around every dot of a group close to capture: solid when one dot away, faint
- * when two. When one dot away, the point that would close the ring gets a small marker.
+ * A Highlighter ring around every dot of a group close to capture: solid when one dot away, faint
+ * when two. When one dot away, the point that would close the ring gets a small circle in the
+ * attacker's ink.
  */
 private fun DrawScope.drawDangers(state: GameState, dangers: List<Danger>, geometry: BoardGeometry, style: BoardStyle) {
+    val look = style.look
+    val spacing = geometry.spacing
+    val radius = look.threatRing.px(spacing, density) / 2
     for (danger in dangers) {
         val near = danger.dotsNeeded == 1
-        val ring = style.danger.copy(alpha = if (near) 1f else 0.45f)
-        for (dot in danger.group) {
-            drawRing(geometry.center(dot), geometry.spacing * 0.42f, ring, geometry.spacing * (if (near) 0.09f else 0.06f))
-        }
+        val ring = if (near) style.palette.highlighter else style.palette.highlighterFaint
+        val width = (if (near) look.threatNear else look.threatFar).px(spacing, density)
+        for (dot in danger.group) drawRing(geometry.center(dot), radius, ring, width)
         if (near) {
             val attacker = state.ownerAt(danger.group.first())?.opponent ?: continue
             for (point in danger.closingPoints) {
-                drawRing(geometry.center(point), geometry.spacing * 0.16f, style.color(attacker), geometry.spacing * 0.06f)
+                drawRing(geometry.center(point), look.closingPoint.px(spacing, density) / 2, style.color(attacker), look.closingLine.px(spacing, density))
             }
         }
     }
 }
 
+/** Each side's pieces; captured ones keep the theme's share of their ink. */
 private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
-    val radius = geometry.spacing * style.dotRadius
+    val dot = style.look.dot.px(geometry.spacing, density)
     for (y in 0 until state.height) for (x in 0 until state.width) {
         val owner = state.ownerAt(x, y) ?: continue
         val color = style.color(owner)
-        drawCircle(if (state.isCaptured(x, y)) color.copy(alpha = style.capturedAlpha) else color, radius, geometry.center(x, y))
+        val ink = if (state.isCaptured(x, y)) color.copy(alpha = style.look.capturedAlpha) else color
+        drawPiece(style.piece(owner), geometry.center(x, y), dot, ink)
     }
 }
 
