@@ -6,7 +6,8 @@ two Google Fonts):
     python3 docs/design/canvas/draw.py                  # the PNGs in docs/design/canvas/
     python3 docs/design/canvas/draw.py --canvas DIR     # also the design canvas files, in DIR/project/
 
-Every frame is 360 x 800 dp, the size of a common Android phone, drawn in the light and the dark
+Every frame is 360 x 800 dp, the size of a common Android phone, or 320 x 568 dp for a small phone,
+drawn in the light and the dark
 version. The PNGs are 3 px per dp (1080 x 2400). Every colour and size comes from
 docs/design/theme-notebook.md and docs/design/pieces.md. Set CHROME to use another Chrome binary.
 """
@@ -94,6 +95,11 @@ POSITIONS = {
                    near=PAIR + CLUSTER, closing=[((9, 9), "blue"), ((5, 7), "red")]),
     "big": dict(red=THREAT_RED + [(5, 7)], blue=THREAT_BLUE, areas=[R1, B1, BIG], last=(5, 7), burst=True),
     "win": dict(red=THREAT_RED + [(5, 7)], blue=THREAT_BLUE, areas=[R1, B1, BIG], last=(5, 7)),
+    # Undo's preview, from the threat: your last dot (9, 8) and the computer's answer (7, 7), which put
+    # your pair in danger, show pale in dashed rings. The pair's threat marks go; blue's six keep theirs.
+    "undo": dict(red=[p for p in THREAT_RED if p != (9, 8)], blue=[p for p in THREAT_BLUE if p != (7, 7)],
+                 areas=[R1, B1], last=None, near=CLUSTER, closing=[((5, 7), "red")],
+                 ghosts=[((9, 8), "red"), ((7, 7), "blue")]),
 }
 
 
@@ -173,6 +179,17 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False):
                 pieces.append(el("path", d=d, stroke=col, stroke_width=f(dot / 6), fill="none"))
             if p == pos["last"] and not mini:
                 pieces.append(el("circle", cx=f(x), cy=f(y), r=f(dot * 0.15), fill=t["paper"]))
+    for p, side in pos.get("ghosts", []):
+        # Undo's preview: the piece in its pale colour inside a dashed Graphite ring (nothing see-through).
+        x, y = c(p)
+        if side == "red":
+            pieces.append(el("circle", cx=f(x), cy=f(y), r=f(dot / 2), fill=t["red_pale"]))
+        else:
+            h = dot * 7 / 12
+            pieces.append(el("path", d=f"M{f(x)} {f(y - h)}L{f(x + h)} {f(y)}L{f(x)} {f(y + h)}L{f(x - h)} {f(y)}Z",
+                             fill=t["blue_pale"]))
+        pieces.append(el("circle", cx=f(x), cy=f(y), r=f(0.45 * sp), fill="none", stroke=t["graphite"],
+                         stroke_width=1.5, stroke_dasharray="3 3"))
     for p, side in pos.get("closing", []):
         x, y = c(p)
         pieces.append(el("circle", cx=f(x), cy=f(y), r=f(sp / 6), fill="none", stroke=t[side], stroke_width=1.5))
@@ -194,9 +211,15 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False):
 
 # ------------------------------------------------------------- drawn parts ----
 
-def icon(d, ink, size=24, sw=1.8, fill="none"):
-    return svg(size, size, el("path", d=d, fill=fill, stroke=ink, stroke_width=sw, stroke_linecap="round",
-                              stroke_linejoin="round"), view="0 0 24 24")
+def icon(d, ink, size=24, sw=1.8, fill="none", dots=()):
+    body = el("path", d=d, fill=fill, stroke=ink, stroke_width=sw, stroke_linecap="round", stroke_linejoin="round")
+    body += "".join(el("circle", cx=x, cy=y, r=r, fill=ink) for x, y, r in dots)
+    return svg(size, size, body, view="0 0 24 24")
+
+
+def named_icon(name, ink, size=24, sw=1.8):
+    """An icon from ICONS, with its filled dots from ICON_DOTS."""
+    return icon(ICONS[name], ink, size, sw, dots=ICON_DOTS.get(name, ()))
 
 
 ICONS = {
@@ -213,7 +236,12 @@ ICONS = {
     "next": "M3 12h16M13 6l6 6-6 6",
     "target": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 16.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z M12 12.5v-1",
     "calendar": "M3.5 5h17v15h-17z M3.5 10h17M8 3v4M16 3v4",
+    # Undo: a dot at the bottom left, and a pen stroke from it that loops up and back to an arrowhead
+    # pointing left: the dot goes back. Free play's plain Undo button is the arrow alone.
+    "undo": "M10.6 19.6 q2.4 -.2 4.5 -.1 q5.3 .1 5.4 -5.5 q-.1 -5.4 -5.5 -5.5 q-4.7 .1 -9.4 0 "
+            "M8.9 4.7 q-2 2 -3.7 3.8 q1.7 1.8 3.8 3.8",
 }
+ICON_DOTS = {"undo": [(7, 19.6, 2.4)]}
 STAR = "M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"
 
 
@@ -300,7 +328,7 @@ def icon_button(t, name, label, ink=None, size=48, isize=26, style=""):
             f'{style}">{icon(ICONS[name], ink or t["pencil"], isize)}</button>')
 
 
-def root(t, inner, grid=False, margin=False):
+def root(t, inner, grid=False, margin=False, w=W, h=H):
     bg = t["paper"]
     if grid:
         bg_img = (f'background-image: linear-gradient({t["grid"]} 1px, transparent 1px), '
@@ -310,7 +338,7 @@ def root(t, inner, grid=False, margin=False):
         bg_img = ""
     m = (f'<div aria-hidden="true" style="position: absolute; left: 58px; top: 0; bottom: 0; width: 1px; '
          f'background: {t["margin"]}"></div>') if margin else ""
-    return (f'<div style="position: relative; width: {W}px; height: {H}px; overflow: hidden; background-color: {bg}; '
+    return (f'<div style="position: relative; width: {w}px; height: {h}px; overflow: hidden; background-color: {bg}; '
             f'{bg_img} font-family: Nunito, system-ui, sans-serif; color: {t["pencil"]}">{m}{inner}</div>')
 
 
@@ -321,11 +349,12 @@ MOMENTS = {
     "threat": dict(mood="smug", bubble="Your move…", you=2, opp=1, left=13, mission=2),
     "big": dict(mood="upset", bubble="Ouch!", you=8, opp=1, left=12, mission=8),
     "win": dict(mood="sulky", bubble="Well played.", you=8, opp=1, left=12, mission=8),
+    "undo": dict(mood="smug", bubble="Take it back?", you=2, opp=1, left=13, mission=2),
 }
 BOARD_TOP = 308
 
 
-def mission_note(t, done):
+def mission_note(t, done, right=12, top=30):
     boxes = []
     for i in range(8):
         tick = el("path", d="M2.5 6.5 l2.5 2.5 l5 -6", fill="none", stroke=t["paper"], stroke_width=1.8,
@@ -334,7 +363,7 @@ def mission_note(t, done):
                  fill=t["red"] if i < done else "none", stroke=t["red"] if i < done else t["graphite"], stroke_width=1.5)
         boxes.append(svg(12, 12, box + tick))
     head = "Mission done" if done >= 8 else "Mission"
-    return (f'<div style="position: absolute; right: 12px; top: 30px; width: 136px; box-sizing: border-box; '
+    return (f'<div style="position: absolute; right: {right}px; top: {top}px; width: 136px; box-sizing: border-box; '
             f'padding: 8px 10px 9px; {note_style(t, 2)}">{tape(t, 44, -8, 44, -4)}'
             f'<div style="{SMALL}; color: {t["graphite"]}">{head}</div>'
             f'<div style="{LABEL}">Capture 8 dots</div>'
@@ -358,26 +387,57 @@ def side_row(t, side, name, score, turn, align):
             f'{tally(score, ink)}<span style="{SCORE}; color: {ink}">{score}</span></div>')
 
 
-def toolbar(t):
-    tools = [("Wall", "wall", 2), ("Hint", "hint", 1), ("Bomb", "bomb", 0), ("Double dot", None, 1)]
+# The five boosters (decisions 0012 and 0023), as the player has them in Level 7. Undo is last, nearest
+# the right thumb, in the same order as the engine and the Boosters screen.
+BOOSTERS = [  # name, icon, count, the line on the Boosters screen
+    ("Wall", "wall", 2, "Mark one empty point nobody can use."),
+    ("Hint", "hint", 1, "The computer shows your best move."),
+    ("Bomb", "bomb", 0, "Removes the computer's dots in a + of 5 points."),
+    ("Double dot", None, 1, "Place two dots in one turn."),
+    ("Undo", "undo", 1, "Take back your last dot and the computer's answer."),
+]
+
+
+def booster_pic(t, ic, ink, size=28):
+    if ic:
+        return named_icon(ic, ink, size)
+    return svg(size + 2, size * 16 / 28, el("circle", cx=7, cy=8, r=6, fill=t["red"] if ink != t["graphite"] else ink) +
+               el("path", d="M23 1 L30 8 L23 15 L16 8 Z", fill=t["red"] if ink != t["graphite"] else ink), view="0 0 30 16")
+
+
+def toolbar(t, top=730, side=12, gap=10, undo_ready=True):
+    """The tool bar under the player's line. Undo waits, grey with its count, until there is a turn to take back."""
     out = []
-    for name, ic, n in tools:
-        ink = t["blue"] if n else t["graphite"]
+    for name, ic, n, _ in BOOSTERS:
+        waiting = name == "Undo" and not undo_ready
+        ink = t["blue"] if n and not waiting else t["graphite"]
         border = f"2px solid {t['blue_pale']}" if n else f"2px dashed {t['graphite']}"
-        if ic:
-            pic = icon(ICONS[ic], ink, 28)
-        else:
-            pic = svg(30, 16, el("circle", cx=7, cy=8, r=6, fill=t["red"]) +
-                      el("path", d="M23 1 L30 8 L23 15 L16 8 Z", fill=t["red"]), view="0 0 30 16")
         badge = (f'<span style="position: absolute; right: -6px; top: -7px; min-width: 22px; height: 22px; '
                  f'border-radius: 11px; background: {t["red"] if n else t["graphite"]}; color: {t["paper"]}; '
                  f'font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center">{n}</span>')
-        out.append(f'<button type="button" aria-label="{name}, {n} left" style="position: relative; height: 56px; '
+        label = f"{name}, {n} left" + (", after your first move" if waiting else "")
+        out.append(f'<button type="button" aria-label="{label}" style="position: relative; height: 56px; '
                    f'box-sizing: border-box; border: {border}; border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px; '
-                   f'background: {t["card"]}; padding: 0; display: flex; align-items: center; '
-                   f'justify-content: center">{pic}{badge}</button>')
-    return (f'<div role="toolbar" aria-label="Boosters" style="position: absolute; left: 18px; right: 18px; top: 730px; '
-            f'display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">{"".join(out)}</div>')
+                   f'background: {t["paper"] if waiting else t["card"]}; padding: 0; display: flex; align-items: center; '
+                   f'justify-content: center">{booster_pic(t, ic, ink)}{badge}</button>')
+    return (f'<div role="toolbar" aria-label="Boosters" style="position: absolute; left: {side}px; right: {side}px; '
+            f'top: {top}px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: {gap}px">'
+            f'{"".join(out)}</div>')
+
+
+def undo_note(t, side=10, bottom=12, pad=10, angle=-0.6):
+    """Undo's booster preview. Undo has no point to aim at: the board shows the turn it takes back, pale in
+    dashed rings, and the note says so in one line. It lies over the player's line and the tool bar."""
+    cancel = (f'<button type="button" style="height: 56px; box-sizing: border-box; border: 2px solid {t["blue"]}; '
+              f'{BUTTON_SHAPE}; background: {t["card"]}; color: {t["blue"]}; font-family: inherit; {LABEL}; '
+              f'padding: 0">Cancel</button>')
+    return (f'<div role="dialog" aria-label="Undo" style="position: absolute; left: {side}px; right: {side}px; '
+            f'bottom: {bottom}px; box-sizing: border-box; padding: {pad}px {pad + 2}px; display: flex; '
+            f'flex-direction: column; gap: {pad - 2}px; {note_style(t, angle)}">{tape(t, 20, -8, 44, -3)}'
+            f'<div style="display: flex; align-items: center; gap: 8px">{named_icon("undo", t["blue"], 28)}'
+            f'<span style="{BODY}; white-space: nowrap"><b style="color: {t["blue"]}">Undo</b> takes back the pale dots.</span></div>'
+            f'<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px">{cancel}'
+            f'{main_button(t, "Take back")}</div></div>')
 
 
 def margin_doodles(t):
@@ -407,15 +467,17 @@ def game_frame(t, key, uid):
                  f'{side_row(t, "blue", "Computer", m["opp"], False, "center")}</div>')
     parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">{board_svg(t, key, uid)}</div>')
     # The player, below the board.
-    you_turn = key in ("opening", "threat")
+    you_turn = key in ("opening", "threat", "undo")
     row_top = 682 if key != "win" else -200
     parts.append(f'<div style="position: absolute; left: 16px; right: 16px; top: {row_top}px; display: flex; '
                  f'align-items: center; justify-content: space-between">'
                  f'{side_row(t, "red", "You", m["you"], you_turn, "flex-start")}'
                  f'<div style="display: flex; align-items: baseline; gap: 6px"><span style="{SCORE}">{m["left"]}</span>'
                  f'<span style="{LABEL}; color: {t["graphite"]}">dots left</span></div></div>')
-    if key != "win":
-        parts.append(toolbar(t))
+    if key not in ("win", "undo"):
+        parts.append(toolbar(t, undo_ready=key != "opening"))
+    if key == "undo":
+        parts.append(undo_note(t))
     if key == "opening":
         parts.append(f'<div style="position: absolute; left: 36px; right: 36px; top: 222px; box-sizing: border-box; '
                      f'padding: 16px 18px 12px; text-align: center; {note_style(t, -1.5)}">{tape(t, 118, -9, 60, 3)}'
@@ -451,6 +513,56 @@ def game_frame(t, key, uid):
                      f'<div style="align-self: stretch; display: flex; gap: 12px; margin-top: 10px">{retry}'
                      f'{main_button(t, "Next", "flex: 1", ICONS["next"])}</div></div>')
     return root(t, "".join(parts))
+
+
+def small_game_frame(t, key, uid):
+    """The game on a small phone, 320 x 568: a 21 dp board (315 dp) and the same five-booster tool bar.
+    The opponent shrinks to a small photo beside its name; the speech bubble has no room and waits."""
+    sw, sh, top = 320, 568, 141
+    m = MOMENTS[key]
+    parts = [f'<div style="position: absolute; left: 0; top: 24px">{icon_button(t, "pause", "Pause", isize=28)}</div>',
+             f'<div style="position: absolute; left: 54px; top: 38px; {LABEL}; color: {t["graphite"]}">Level 7</div>',
+             mission_note(t, m["mission"], right=8, top=28),
+             f'<div style="position: absolute; left: 18px; top: 74px; width: 62px; height: 62px; box-sizing: border-box; '
+             f'padding: 3px; {note_style(t, -3)}">{tape(t, 15, -7, 32, 4)}{face(t, m["mood"], 56)}</div>',
+             f'<div style="position: absolute; left: 96px; top: 104px">{side_row(t, "blue", "Computer", m["opp"], False, "flex-start")}</div>',
+             f'<div style="position: absolute; left: 0; top: {top}px">{board_svg(t, key, uid, size=315, sp=21)}</div>',
+             f'<div style="position: absolute; left: 12px; right: 12px; top: 462px; display: flex; align-items: center; '
+             f'justify-content: space-between">{side_row(t, "red", "You", m["you"], True, "flex-start")}'
+             f'<div style="display: flex; align-items: baseline; gap: 6px"><span style="{SCORE}">{m["left"]}</span>'
+             f'<span style="{LABEL}; color: {t["graphite"]}">dots left</span></div></div>']
+    if key == "undo":
+        parts.append(undo_note(t, side=6, bottom=12, pad=6, angle=0))
+    else:
+        parts.append(toolbar(t, top=500, side=10, gap=8))
+    return root(t, "".join(parts), w=sw, h=sh)
+
+
+def boosters_frame(t, uid):
+    """The Boosters screen, from a booster on the Level card: what each does, how many the player has."""
+    rows = []
+    for name, ic, n, line in BOOSTERS:
+        ink = t["blue"] if n else t["graphite"]
+        border = f"2px solid {t['blue']}" if n else f"2px dashed {t['graphite']}"
+        rows.append(f'<div style="display: flex; align-items: center; gap: 12px; padding: 6px 0; '
+                    f'border-bottom: 1px dashed {t["grid"]}">'
+                    f'<span style="width: 52px; height: 52px; flex-shrink: 0; box-sizing: border-box; border: {border}; '
+                    f'border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px; display: flex; align-items: center; '
+                    f'justify-content: center">{booster_pic(t, ic, ink)}</span>'
+                    f'<div style="flex: 1; min-width: 0; display: flex; flex-direction: column">'
+                    f'<span style="{HAND24}">{name}</span>'
+                    f'<span style="{BODY}; font-size: 14px; line-height: 20px; color: {t["graphite"]}">{line}</span></div>'
+                    f'<span style="{SCORE}; color: {t["red"] if n else t["graphite"]}">×{n}</span></div>')
+    card = (f'<div role="dialog" aria-label="Boosters" style="position: absolute; left: 12px; right: 12px; bottom: 16px; '
+            f'box-sizing: border-box; padding: 12px 16px 16px; display: flex; flex-direction: column; gap: 4px; '
+            f'{note_style(t, 0.8)}">{tape(t, 140, -9, 56, -3)}'
+            f'<div style="display: flex; align-items: center"><span style="flex: 1; {DISPLAY}; color: {t["blue"]}">Boosters</span>'
+            f'{icon_button(t, "close", "Close", style="margin-right: -10px")}</div>'
+            f'{"".join(rows)}'
+            f'<div style="{SMALL}; color: {t["graphite"]}; margin-top: 8px">Earned by playing: stars, chests and the daily '
+            f'streak. Never sold. One booster a turn, and Undo on top. Every level can be won without them.</div></div>')
+    scrim = f'<div aria-hidden="true" style="position: absolute; inset: 0; background: {t["scrim"]}"></div>'
+    return map_frame(t, uid, scrim + card)
 
 
 # -------------------------------------------------------------------- map ----
@@ -648,13 +760,20 @@ def level_card_frame(t, uid):
 
 # ------------------------------------------------------------------ output ----
 
-FRAMES = [  # file stem, canvas name, title, drawer
-    ("game-start", "GameStart", "Game: the level opens", lambda t, u: game_frame(t, "opening", u)),
-    ("game-threat", "GameThreat", "Game: a threat", lambda t, u: game_frame(t, "threat", u)),
-    ("game-big-capture", "GameBigCapture", "Game: right after a big capture", lambda t, u: game_frame(t, "big", u)),
-    ("result-win", "ResultWin", "Result: won, two stars", lambda t, u: game_frame(t, "win", u)),
-    ("map", "Map", "World map (home)", lambda t, u: map_frame(t, u)),
-    ("level-card", "LevelCard", "Level card", lambda t, u: level_card_frame(t, u)),
+SMALL_PHONE = (320, 568)
+FRAMES = [  # file stem, canvas name, title, drawer, size
+    ("game-start", "GameStart", "Game: the level opens", lambda t, u: game_frame(t, "opening", u), (W, H)),
+    ("game-threat", "GameThreat", "Game: a threat", lambda t, u: game_frame(t, "threat", u), (W, H)),
+    ("game-big-capture", "GameBigCapture", "Game: right after a big capture", lambda t, u: game_frame(t, "big", u), (W, H)),
+    ("result-win", "ResultWin", "Result: won, two stars", lambda t, u: game_frame(t, "win", u), (W, H)),
+    ("map", "Map", "World map (home)", lambda t, u: map_frame(t, u), (W, H)),
+    ("level-card", "LevelCard", "Level card", lambda t, u: level_card_frame(t, u), (W, H)),
+    ("game-undo", "GameUndo", "Game: Undo's preview", lambda t, u: game_frame(t, "undo", u), (W, H)),
+    ("boosters", "Boosters", "Boosters", lambda t, u: boosters_frame(t, u), (W, H)),
+    ("small-game-threat", "SmallGameThreat", "Small phone: a threat", lambda t, u: small_game_frame(t, "threat", u),
+     SMALL_PHONE),
+    ("small-game-undo", "SmallGameUndo", "Small phone: Undo's preview", lambda t, u: small_game_frame(t, "undo", u),
+     SMALL_PHONE),
 ]
 
 
@@ -664,8 +783,8 @@ def page(body, title):
             f'<style>body{{margin:0}} button{{cursor:pointer}}</style></head><body>{body}</body></html>\n')
 
 
-def dc_page(body, title):
-    props = '{"$preview":{"width":360,"height":800}}'
+def dc_page(body, title, size=(W, H)):
+    props = '{"$preview":{"width":%d,"height":%d}}' % size
     return (f'<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<title>{title}</title>\n'
             f'<script src="./support.js"></script>\n</head>\n<body>\n<x-dc>\n<helmet>\n'
             f'<link rel="stylesheet" href="{FONTS.replace("&", "&amp;")}">\n<style>\nbody{{margin:0}}\n</style>\n'
@@ -679,7 +798,7 @@ def main():
         canvas = os.path.join(sys.argv[sys.argv.index("--canvas") + 1], "project")
         os.makedirs(canvas, exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
-        for stem, name, title, draw in FRAMES:
+        for stem, name, title, draw, size in FRAMES:
             for theme, t in THEMES.items():
                 uid = f"{name}{theme[0]}"
                 body = draw(t, uid)
@@ -687,13 +806,13 @@ def main():
                 if canvas:
                     dc_name = name + ("" if theme == "light" else "Dark") + ".dc.html"
                     with open(os.path.join(canvas, dc_name), "w") as fh:
-                        fh.write(dc_page(body, full))
+                        fh.write(dc_page(body, full, size))
                 src = os.path.join(tmp, f"{stem}-{theme}.html")
                 with open(src, "w") as fh:
                     fh.write(page(body, full))
                 out = os.path.join(HERE, f"{stem}-{theme}.png")
                 subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars",
-                                f"--force-device-scale-factor={SCALE}", f"--window-size={W},{H}",
+                                f"--force-device-scale-factor={SCALE}", f"--window-size={size[0]},{size[1]}",
                                 "--virtual-time-budget=15000", f"--screenshot={out}", "file://" + src],
                                check=True, capture_output=True)
                 print(out)

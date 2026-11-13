@@ -25,7 +25,7 @@ step starts, and its "When it plays" names that step.
    four notes belong to the key of every music track, so a sound never clashes with the music.
 6. **One sound, several uses.** The app plays a sound faster or slower to make it higher or lower,
    so one file serves several moments: the computer's dot, the big capture, the wall, the hint,
-   the stars and the areas lighting up. This keeps the set small.
+   undo, the stars and the areas lighting up. This keeps the set small.
 7. **The dot never sounds mechanical.** It is heard every turn, so it has three takes, played in
    turn at slightly different speeds (95% to 105%), at half volume.
 8. **A tap stops the sound with the animation.** A tap that finishes an animation (motion rule 1)
@@ -76,6 +76,7 @@ Each starts at 0 ms, when the player taps Confirm in the booster preview.
 | Hint | `sfx_ring_draw` twice at 160% speed, 250 ms apart: the point circled twice, lighter and higher | 500 ms | full |
 | Bomb | `sfx_bomb`, made from `fx_book_drop`: the bomb drops at 0 ms and the thud lands at 150 ms, with the blast | 450 ms | full |
 | Double dot | `sfx_double_dot` (code), as the "×2" chip grows in: two notes up, "again!" | 300 ms | full |
+| Undo | `sfx_ring_draw` at 75% speed: one slow, low scrub as the turn is rubbed out. The booster flying back is silent | 530 ms | full |
 
 ### After a level and on the map
 
@@ -133,14 +134,14 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 | Hint | `sfx_ring_draw` twice at 160% speed |
 | Bomb | `sfx_bomb` |
 | Double dot | `sfx_double_dot`, then `sfx_place_*` with each dot |
+| Undo | `sfx_ring_draw` at 75% speed; a booster flying back silent |
 | End of game | `sfx_area_light` for each area; the result note silent |
 | Star reveal | `sfx_win`, `sfx_lose` or `sfx_draw` at 0 ms; `sfx_star` as each earned star lands |
 | Level unlock | silent; when a world opens, `sfx_world_open` with the page turn |
 | Level opening | silent |
 | Notes and cards | silent |
 
-Undo is a booster too (decision 0023); D-14 adds its row. If G-06 adds special points with their
-own animation, they need a row here too.
+If G-06 adds special points with their own animation, they need a row here too.
 
 ## The three source sounds
 

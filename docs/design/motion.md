@@ -64,6 +64,7 @@ does while the animation runs.
 | [Hint](#boosters) | Confirm | 500 ms | 0 | counts as usual | the circles at once |
 | [Bomb](#boosters) | Confirm | 450 ms | 0 | finishes it | the dots gone at once |
 | [Double dot](#boosters) | Confirm | 300 ms, then 250 ms per dot | 0 | counts as usual | the chip at once |
+| [Undo](#boosters) | Confirm | 600 ms | 0 | finishes it | the turn gone at once |
 | [End of game](#end-of-game) | the game is over and the last move has played out | 1400 ms to the result note | the game is over | jumps to the note | the note at once |
 | [Star reveal](#star-reveal) | the result note has settled | 1100 ms | 0: the buttons work at once | finishes it | the stars at once |
 | [Level unlock](#level-unlock) | the map shows after Next | 2100 ms | 0 | jumps to the Level card | the new state and the card at once |
@@ -257,7 +258,23 @@ dashed and grey.
 | First dot lands, 0 to 250 | The dot lands as usual, and four short strokes spark out from it. The chip turns to "×1" and swells to 125% and back in 200 ms. | ease out |
 | Second dot lands, 0 to 250 | The same sparks. The chip shrinks away in 150 ms, and the turn passes. | ease in |
 
-Undo is a booster too (decision 0023); D-14 adds its row.
+**Undo** takes back the player's last turn: their dot (both after a double dot), any booster used
+in that turn, and the computer's answer (decision 0023). It has no point to aim at, so its preview
+shows the turn it takes back: each of those pieces in its pale colour (Red pale, Blue pale) inside
+a dashed Graphite ring, and the threat marks that turn made are gone. The note over the player's
+line and the tool bar says "Undo takes back the pale dots." with Cancel and Take back, the canvas
+frame "Game: Undo's preview". The turn is rubbed out newest first, like a pencil eraser.
+
+| Time | What moves | Easing |
+| --- | --- | --- |
+| 0 to 250 | The computer's answer is rubbed out: three short Graphite strokes scrub back and forth across it while the piece shrinks to nothing and its links pull back. A capture it made goes with it: the ring undraws, the wash blends back to paper, the cuts go, and its score counts back. | ease in |
+| 200 to 450 | The player's dot is rubbed out the same way, both dots together after a double dot, and any capture it made. A booster used in that turn flies back to its button, whose count swells to 135% and back in 200 ms. | ease in |
+| 450 to 600 | The scrub strokes shrink away. The dots-left count goes up, the pen stroke sits under "You", and the opponent's face goes back to how it looked before its answer. | ease out |
+
+Undo's button waits until there is a turn to take back: before the player's first move it shows
+its icon in Graphite on paper, with its count still red, as on the canvas frame "Game: the level
+opens". A tap on it then does nothing. Each level allows one Undo, so after it the button turns
+dashed and grey with 0, like any booster.
 
 ## End of game
 
@@ -339,7 +356,7 @@ These have no GIF. The canvas frame "Game: the level opens" shows the opening.
 - **A big capture is under 1.5 s and can be skipped.** It takes 1400 ms, and a tap shows its end at
   once (second half of the big-capture GIF).
 - **Booster effects are under 1.5 s** (the V-06 check): Wall 400 ms, Hint 500 ms, Bomb 450 ms,
-  Double dot 300 ms and then 250 ms per dot.
+  Double dot 300 ms and then 250 ms per dot, Undo 600 ms.
 
 ## New in this storyboard
 
