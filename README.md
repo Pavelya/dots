@@ -188,7 +188,7 @@ computer: easy
 dots: 5
 mission: capture 2 in 5 moves
 solutions: few
-boosters: none
+boosters: undo 1
 rule: none
 stars: moves 1 2
 holes: none
@@ -212,7 +212,7 @@ map:
 | `dots` | Dots each side may place. |
 | `mission` | What passes the level: `win`, `win by 3`, `win with 8 dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` or `target e5`. See [Missions](#missions). |
 | `solutions` | `few` or `open`: how many first moves may pass a puzzle. `few` allows at most 3; `open` any number, for teaching levels where any sensible move should work. See [Checking puzzles](#checking-puzzles). |
-| `boosters` | `none`, or the boosters the player may use and how many of each: `wall 2, hint 1, bomb 1, double-dot 1`. See [Boosters](#boosters). |
+| `boosters` | `none`, or the boosters the player may use and how many of each: `wall 2, hint 1, bomb 1, double-dot 1, undo 1`. Every campaign level allows `undo 1`, and a test checks it. See [Boosters](#boosters). |
 | `rule` | A rule the computer bends on a boss level: `none`, `double move every 5 turns`, `fortress of 12 dots` or `two groups at once`. See [Boss rules](#boss-rules). |
 | `stars` | What earns two and three stars: what is counted, then the score for two stars and for three, `margin 2 5`. See [Stars](#stars). |
 | `holes` | Whether the edge of the map's holes counts as border: `border` or `open`, or `none` for a map without holes. See [Board shapes and special points](#board-shapes-and-special-points). |
@@ -268,7 +268,7 @@ play.
 | `margin` | Margin of victory: the player's captures minus the computer's, a dot on a bonus point counting 2. | Every mission. In the win missions, the two-star score must ask for more than passing does: more than 1 in `win`, more than 3 in `win by 3`. |
 | `moves` | Moves to spare: in `capture 5 in 8 moves`, the moves left of the 8; in `rescue` and `target`, the dots the player has not placed. | Capture, rescue and target, the missions that end the moment they pass. |
 | `saved` | Dots saved: the player's dots on the map at the start (`R`) that are not captured. | Every mission but survive, where losing a dot fails. At most the number of `R` dots. |
-| `boosters` | Boosters unused: the level's boosters the player has left, all kinds together. | Levels with boosters, up to as many as they allow. |
+| `boosters` | Boosters unused: the level's boosters the player has left, all kinds together, Undo included. | Levels with boosters, up to as many as they allow. |
 
 Both scores are 1 or more, and the three-star score is higher. Targets that do not fit the level
 are refused, with the line of the `stars` field. A level file may say `stars: none`, and then
@@ -285,18 +285,25 @@ Boosters exist only in the campaign, and only the player has them (decision 0006
 | `hint` | Shows the player the computer's best move for them (`Hints.hint`, the hard computer without its random choice, within 1.5 seconds). The board does not change. |
 | `bomb` | Removes the computer's dots on a point and the four points next to it, up, down, left and right. Points off the board and points out of play (inside a capture) are not touched, so a bomb never undoes a capture. It needs at least one dot to hit. The points become empty and playable; scores and dots left do not change. |
 | `double-dot` | The player places two dots this turn. It needs 2 dots left. No pass or stop between the two; if the board fills up after the first, the turn ends there. |
+| `undo` | Takes back the player's last turn: their dot (both dots after a double dot), any booster used in that turn, which the player gets back, and the computer's reply. The player then plays that turn again. It can be used at the start of the player's turn, after their first move, and not once the level is over. Every campaign level allows one (decision 0023). |
 
 - A booster does not use up the turn: the player still places their dot afterwards.
-- At most one booster per turn, and none after a stop.
+- At most one booster per turn, and none after a stop. Undo is used at the start of a turn, so it
+  is never that turn's one booster: the turn played again may still use another.
+- Free play against the computer has its own Undo, with no limit (`Game.undo`). It is not a
+  booster, and the undone moves leave the record. The computer, the stand-ins and the solver
+  never use Undo.
 - A "target" mission cannot allow the bomb, which would remove the target instead of capturing
   it.
 - A double dot's two dots both count as moves, and both come out of the dots left.
 
 A level game is saved as a `LevelRecord`: the level and every action, boosters included, on one
-line. It replays to exactly the same position against the level as its file is now.
+line. An undo is saved as `undo`, and the turn it took back stays in the record. The record
+replays to exactly the same position, with the same boosters left, against the level as its file
+is now.
 
 ```
-level/1 2-5 | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3 hint:b2 b2 c2 bomb:d3 d3 e2
+level/1 2-5 | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3 hint:b2 b2 c2 bomb:d3 d3 e2 undo c4 e2
 ```
 
 ### Boss rules
@@ -799,7 +806,7 @@ each):
 ```
 
 The puzzles of Worlds 2 to 4 follow World 1's rule (`moves 1 2`), except survive, whose stars
-count the boosters left (`boosters 1 2`). The stand-ins never use a booster, so they earn three
+count the boosters left (`boosters 2 3`). The stand-ins never use a booster, so they earn three
 stars whenever they pass a survive level; for people, each booster used costs a star.
 
 **Speed.** On a laptop, a HARD move on a 14×14 board takes about 40 ms (EXPERT about 130 ms).

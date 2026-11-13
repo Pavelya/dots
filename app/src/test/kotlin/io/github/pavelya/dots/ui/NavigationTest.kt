@@ -513,6 +513,7 @@ class NavigationTest {
     }
 
     @Test
+    @Config(qualifiers = "w360dp-h800dp") // the whole Level card, Start included, fits on the screen
     fun `a return after Level 1 is passed opens the map`() {
         launch(LEVEL_1_PASSED, route = Routes.MAP)
         assertEquals(setOf(Routes.LOADING, Routes.MAP), visited)
@@ -532,6 +533,7 @@ class NavigationTest {
     }
 
     @Test
+    @Config(qualifiers = "w360dp-h800dp") // the whole Level card, Start included, fits on the screen
     fun `a level left for the map is resumed from its card`() {
         launch()
         compose.onNode(hasContentDescription("Level 1-1,", substring = true)).performClick()

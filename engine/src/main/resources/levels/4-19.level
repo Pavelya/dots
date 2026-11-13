@@ -5,7 +5,7 @@ computer: steady
 dots: 5
 mission: capture 1 in 5 moves
 solutions: few
-boosters: hint 1, double-dot 1
+boosters: hint 1, double-dot 1, undo 1
 rule: none
 stars: moves 1 2
 holes: none

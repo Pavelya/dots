@@ -5,7 +5,7 @@ computer: steady
 dots: 18
 mission: win
 solutions: open
-boosters: wall 2
+boosters: wall 2, undo 1
 rule: none
 stars: margin 2 4
 holes: none

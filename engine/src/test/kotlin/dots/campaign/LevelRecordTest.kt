@@ -29,7 +29,7 @@ class LevelRecordTest {
         ),
     )
 
-    private val boosters = mapOf(Booster.WALL to 3, Booster.HINT to 2, Booster.BOMB to 2, Booster.DOUBLE_DOT to 2)
+    private val boosters = mapOf(Booster.WALL to 3, Booster.HINT to 2, Booster.BOMB to 2, Booster.DOUBLE_DOT to 2, Booster.UNDO to 2)
 
     private val level = Level(2, 5, "Test", Strength.EASY, 20, map, boosters = boosters)
 
@@ -41,6 +41,7 @@ class LevelRecordTest {
             addAll(points.map(Action::Hint))
             addAll(points.map(Action::Bomb))
             add(Action.DoubleDot)
+            add(Action.Undo)
         }.filter { state.isLegal(it) }
         return options.randomOrNull(random)
     }
@@ -69,6 +70,7 @@ class LevelRecordTest {
         val random = Random(4)
         val levels = listOf(level, level.copy(strength = Strength.NORMAL), level.copy(mission = Mission.Capture(3, 12)))
         var used = 0
+        var undos = 0
         repeat(60) { i ->
             val level = levels[i % levels.size]
             val record = LevelRecord(level, play(level, SearchAi(level.ai, Random(i)), random))
@@ -92,8 +94,47 @@ class LevelRecordTest {
             }
             assertEquals(level.status(played), level.status(replayed), text)
             used += record.actions.count { it is Action.UseBooster }
+            undos += record.actions.count { it == Action.Undo }
         }
         assertTrue(used > 100, "only $used boosters used")
+        assertTrue(undos > 10, "only $undos undos used")
+    }
+
+    @Test
+    fun `a record with undos replays to the position the undos left`() {
+        val actions = "a1 i9 wall:b1 b2 i8 c1 i7 undo undo d1 i8".split(' ').map(Action::parse)
+        val record = LevelRecord(level, actions)
+        val text = record.toText()
+        assertEquals("level/1 2-5 | a1 i9 wall:b1 b2 i8 c1 i7 undo undo d1 i8", text)
+
+        val replayed = LevelRecord.parse(text) { _, _ -> level }.replay()
+        val game = dots.engine.Game.from(record)
+        // Two undos take back two turns, so this is a1 i9 d1 i8, with both undos used and the wall given back.
+        val same = LevelRecord(level, "a1 i9 d1 i8".split(' ').map(Action::parse)).replay()
+        for (state in listOf(replayed, game.state)) {
+            assertEquals(same.toAscii(), state.toAscii())
+            assertEquals(same.toMove, state.toMove)
+            assertEquals(same.dotsLeft(level.human), state.dotsLeft(level.human))
+            assertEquals(same.dotsPlaced(level.human), state.dotsPlaced(level.human))
+            for (booster in Booster.entries) {
+                val used = if (booster == Booster.UNDO) 2 else 0
+                assertEquals(same.boostersLeft(level.human, booster) - used, state.boostersLeft(level.human, booster), "$booster")
+            }
+        }
+        assertEquals(record, game.record)
+    }
+
+    @Test
+    fun `no undo once the level's mission is decided`() {
+        val survive = level.copy(mission = Mission.Survive(1))
+        val game = dots.engine.Game(LevelRecord(survive, emptyList()))
+        game.apply(Action.Place(Notation.parse("a1")!!))
+        game.apply(Action.Place(Notation.parse("i9")!!)) // the computer's one move, and no capture
+
+        assertTrue(game.isOver)
+        assertTrue(game.state.canUse(Booster.UNDO), "the board alone would allow it")
+        assertTrue(!game.canUse(Booster.UNDO))
+        assertFailsWith<IllegalArgumentException> { game.apply(Action.Undo) }
     }
 
     @Test

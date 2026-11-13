@@ -5,9 +5,9 @@ computer: steady
 dots: 4
 mission: survive 4 moves
 solutions: few
-boosters: wall 1, bomb 1
+boosters: wall 1, bomb 1, undo 1
 rule: none
-stars: boosters 1 2
+stars: boosters 2 3
 holes: none
 note: One gap left above your dot: fill it, then keep the next ring from closing.
 map:

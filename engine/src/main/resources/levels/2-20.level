@@ -5,7 +5,7 @@ computer: steady
 dots: 22
 mission: win with 20 dots
 solutions: open
-boosters: wall 2
+boosters: wall 2, undo 1
 rule: double move every 4 turns
 stars: margin 2 5
 holes: none

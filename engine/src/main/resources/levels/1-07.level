@@ -5,7 +5,7 @@ computer: easy
 dots: 5
 mission: capture 2 in 5 moves
 solutions: few
-boosters: none
+boosters: undo 1
 rule: none
 stars: moves 1 2
 holes: none

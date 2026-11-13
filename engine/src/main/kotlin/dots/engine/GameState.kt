@@ -19,7 +19,9 @@ package dots.engine
  * Deliberate additions and choices:
  *  - Optional dot budget per player, for short mobile sessions and puzzle levels.
  *  - Boosters for the solo campaign ([Booster], [useBooster]): a player may use at most one per
- *    turn, before placing their dot, and only during normal play (not after a [stop]).
+ *    turn, before placing their dot, and only during normal play (not after a [stop]). Undo is one
+ *    of them: the state keeps where the player's last turn began, so an undo is an action like any
+ *    other and a record with undos replays by applying its actions in order.
  *  - Turn rules for the campaign's bosses ([TurnRule]): a player may place two dots on some of
  *    their turns, on a schedule announced in advance ([doubleMoveIn]).
  *  - When one dot closes several chains the wiki lets players choose; this engine captures every
@@ -72,6 +74,12 @@ class GameState private constructor(
     private val turns: IntArray,
     /** In a [TurnRule.TwoHalves] turn, the half of the first dot ([LEFT] or [RIGHT]); else [NO_HALF]. */
     private var half: Int,
+    /**
+     * For [Booster.UNDO]: at [Player.ordinal] * 2, the state at the start of the player's current
+     * turn; at the next index, the state at the start of their turn before it, where an undo goes
+     * back to. Null in a game where nobody has an Undo, so other games pay nothing for it.
+     */
+    private val turnStarts: Array<GameState?>?,
 ) {
     var toMove: Player = toMove
         private set
@@ -222,11 +230,16 @@ class GameState private constructor(
 
     /**
      * True if the player to move may use [booster] now, on some point if it needs one. A double
-     * dot is not allowed in a turn that already has two dots.
+     * dot is not allowed in a turn that already has two dots. An undo needs a turn of theirs to take
+     * back, and is used at the start of a turn: before any booster or dot of it.
      */
     fun canUse(booster: Booster): Boolean =
         !isOver && !isCleanup && !boosterUsed && boostersLeft(toMove, booster) > 0 &&
-            (booster != Booster.DOUBLE_DOT || (doubleDots == 0 && (dotsLeft(toMove) ?: Int.MAX_VALUE) >= 2))
+            when (booster) {
+                Booster.DOUBLE_DOT -> doubleDots == 0 && (dotsLeft(toMove) ?: Int.MAX_VALUE) >= 2
+                Booster.UNDO -> doubleDots != 1 && turnStarts?.get(toMove.ordinal * 2 + 1) != null
+                else -> true
+            }
 
     /**
      * The opponent's dots a [Booster.BOMB] dropped on [center] would remove: those on [center] and
@@ -281,7 +294,7 @@ class GameState private constructor(
             is Action.Wall -> inBounds(action.pos.x, action.pos.y) && owner[index(action.pos)] == EMPTY && !dead[index(action.pos)]
             is Action.Hint -> isLegal(action.pos)
             is Action.Bomb -> bombHits(action.pos).isNotEmpty()
-            Action.DoubleDot -> true
+            Action.DoubleDot, Action.Undo -> true
         }
     }
 
@@ -295,7 +308,7 @@ class GameState private constructor(
                 is Action.Wall -> action.pos
                 is Action.Hint -> action.pos
                 is Action.Bomb -> action.pos
-                Action.DoubleDot -> null
+                Action.DoubleDot, Action.Undo -> null
             }
             val removed = if (action is Action.Bomb) bombHits(action.pos) else emptyList()
             MoveResult(useBooster(action), emptyList(), BoosterEffect(toMove, action.booster, pos, removed))
@@ -355,10 +368,16 @@ class GameState private constructor(
      *    become empty and playable. Scores, dots left and dots placed do not change.
      *  - [Action.DoubleDot] needs 2 dots left (or no limit). The turn passes after the second dot,
      *    or after the first if the player cannot place another. No pass or stop in between.
+     *  - [Action.Undo] goes back to the start of the player's last turn: their dot or dots, any
+     *    booster they used in it (which they get back) and the opponent's reply are taken back.
+     *    Only the Undo count stays as it is now, less the one used. It needs a turn to take back
+     *    and is used at the start of a turn, so it is never the turn's one booster: the player may
+     *    still use another in the turn they play again.
      * Each needs [canUse]: one left, none used this turn, normal play.
      */
     fun useBooster(action: Action.UseBooster): GameState {
         require(isLegal(action)) { "Cannot use $action now for $toMove" }
+        if (action == Action.Undo) return takenBack()
         val next = copy()
         next.boosters[boosterIndex(toMove, action.booster)]--
         next.boosterUsed = true
@@ -376,7 +395,20 @@ class GameState private constructor(
                 next.playableCells++
             }
             Action.DoubleDot -> next.doubleDots = 2
+            Action.Undo -> Unit // returned above
         }
+        return next
+    }
+
+    /** The state an [Action.Undo] leads to: see [useBooster]. */
+    private fun takenBack(): GameState {
+        val i = toMove.ordinal * 2
+        val next = turnStarts!![i + 1]!!.copy()
+        for (player in Player.entries) {
+            next.boosters[boosterIndex(player, Booster.UNDO)] = boostersLeft(player, Booster.UNDO)
+        }
+        next.boosters[boosterIndex(toMove, Booster.UNDO)]--
+        next.turnStarts!![i] = next
         return next
     }
 
@@ -414,6 +446,7 @@ class GameState private constructor(
         liveDots.clone(), dotsLeft.clone(), placed.clone(), lastPlaced.clone(), blocked.clone(), hole, bonus, edge, holesAreBorder,
         boosters.clone(), playableCells, toMove,
         passesInRow, moveCount, cleaner, finished, boosterUsed, doubleDots, turnRules, turns.clone(), half,
+        turnStarts?.clone(),
     )
 
     private fun index(pos: Pos) = pos.y * width + pos.x
@@ -439,6 +472,11 @@ class GameState private constructor(
      * [TurnRule] says so and they have 2 dots left.
      */
     private fun beginTurn(player: Player) {
+        turnStarts?.let { starts ->
+            val i = player.ordinal * 2
+            starts[i + 1] = starts[i]
+            starts[i] = this
+        }
         toMove = player
         turns[player.ordinal]++
         boosterUsed = false
@@ -706,6 +744,7 @@ class GameState private constructor(
                 IntArray(2), budgets, IntArray(2), IntArray(2) { -1 }, blockedCells, hole, bonusCells, edge, holesAreBorder, stock,
                 n - dead.count { it }, first, 0, 0, null, false, false, 0,
                 Array(2) { turnRules[Player.entries[it]] }, IntArray(2), NO_HALF,
+                if (Player.entries.any { stock[boosterIndex(it, Booster.UNDO)] > 0 }) arrayOfNulls(4) else null,
             )
             for ((pos, player) in dots) {
                 require(state.inBounds(pos.x, pos.y)) { "Starting dot $pos is off the board" }

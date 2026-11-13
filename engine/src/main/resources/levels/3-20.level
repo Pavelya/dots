@@ -5,7 +5,7 @@ computer: steady
 dots: 26
 mission: win with 23 dots
 solutions: open
-boosters: bomb 1, double-dot 1
+boosters: bomb 1, double-dot 1, undo 1
 rule: double move every 3 turns
 stars: margin 2 5
 holes: border

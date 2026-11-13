@@ -137,6 +137,7 @@
     <string name="booster_hint">Hint</string>
     <string name="booster_bomb">Bomb</string>
     <string name="booster_double_dot">Double dot</string>
+    <string name="booster_undo">Undo</string>
     <string name="mission_win">Win</string>
     <string name="mission_win_by">Win by %1$s</string>
     <string name="mission_win_fewer">Win with only %1$s</string>

@@ -90,6 +90,7 @@ fun boosterName(booster: Booster): String = stringResource(
         Booster.HINT -> R.string.booster_hint
         Booster.BOMB -> R.string.booster_bomb
         Booster.DOUBLE_DOT -> R.string.booster_double_dot
+        Booster.UNDO -> R.string.booster_undo
     },
 )
 

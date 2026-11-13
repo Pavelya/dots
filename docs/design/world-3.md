@@ -32,8 +32,9 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
   moves pass it. `cli check-levels` proves it, and CI runs it.
 - **Puzzles give two spare moves,** as in World 1: a puzzle whose shortest answer takes 3 moves
   gives 5, and `stars: moves 1 2` asks for both spares for three stars.
-- **Survive levels give two boosters,** and their stars count the boosters left
-  (`stars: boosters 1 2`): three stars without a booster, one with both used. Every survive level
+- **Survive levels give two boosters,** plus the Undo every level has, and their stars count
+  the boosters left (`stars: boosters 2 3`): three stars without a booster, two with one used,
+  one with two or more used. Every survive level
   can be passed without them; the solver never uses a booster.
 - **The computer is the steady step** for every level but the last boss of World 4, so the
   difficulty comes from the boards, the missions and the dot budgets.
@@ -41,7 +42,7 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
 - **Most puzzles started from the computer's own games or from random small positions,** and were
   kept only when the solver proved them and found one or two winning first moves. Their names
   and notes were written by hand.
-- **Boosters:** survive levels give a bomb and a double dot; captures and targets a double dot (a target never allows the bomb, which would remove the target). Whole games give a bomb and a double dot.
+- **Boosters:** survive levels give a bomb and a double dot; captures and targets a double dot (a target never allows the bomb, which would remove the target). Whole games give a bomb and a double dot. Every level also gives one Undo.
 - **Holes:** the lake levels say `holes: border`, the open-hole levels `holes: open`. Round boards cut their corners with holes; a hole that reaches the edge of the map is outside the board either way, so they say `holes: border`.
 
 ## How hard it is
@@ -107,7 +108,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-1 Lake Shore
 
-`survive 3 moves` · computer: steady · 3 dots each · boosters: `bomb 1, double-dot 1` · stars: `boosters 1 2` · holes: `border`
+`survive 3 moves` · computer: steady · 3 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `boosters 2 3` · holes: `border`
 
 *A lake's edge is border: your dot at e4 touches the lake and can never be captured, so only d3 needs its gap filled.*
 
@@ -128,7 +129,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-2 Shoreline
 
-`target e3` · computer: steady · 5 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
+`target e3` · computer: steady · 5 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
 *The lake guards the computer too: take e4 by the shore before the marked dot gets there, then follow its run.*
 
@@ -149,7 +150,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-3 Night Swim
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1` · stars: `boosters 1 2` · holes: `border`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `boosters 2 3` · holes: `border`
 
 *Hard: the dot by the lake is safe, the one at f3 is not. Close its gap, then answer the attacks on both sides for four moves.*
 
@@ -170,7 +171,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-4 Crescent
 
-`capture 2 in 4 moves` · computer: steady · 4 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
+`capture 2 in 4 moves` · computer: steady · 4 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
 *A round board, its corners cut off. Close below the pair; when it runs right, one more dot closes round both.*
 
@@ -191,7 +192,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-5 Lantern
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1` · stars: `boosters 1 2` · holes: `border`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `boosters 2 3` · holes: `border`
 
 *A lone dot with the computer on three sides: run up, and keep stepping away from the ring.*
 
@@ -212,7 +213,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-6 Full Moon
 
-`win` · computer: steady · 22 dots each · boosters: `bomb 1, double-dot 1` · stars: `margin 2 5` · holes: `border`
+`win` · computer: steady · 22 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `margin 2 5` · holes: `border`
 
 *World 3's first whole game: a round board, four crosses, and a bomb and a double dot to use.*
 
@@ -235,7 +236,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-7 Fireflies
 
-`survive 3 moves` · computer: steady · 3 dots each · boosters: `bomb 1, double-dot 1` · stars: `boosters 1 2` · holes: `border`
+`survive 3 moves` · computer: steady · 3 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `boosters 2 3` · holes: `border`
 
 *Again the lake guards one dot; the other, at d7, needs its last gap filled first.*
 
@@ -256,7 +257,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-8 Owl
 
-`target f6` · computer: steady · 5 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
+`target f6` · computer: steady · 5 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
 *Target: close above the marked dot, then follow it left and up.*
 
@@ -277,7 +278,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-9 Crater Rim
 
-`capture 2 in 5 moves` · computer: steady · 5 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `open`
+`capture 2 in 5 moves` · computer: steady · 5 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `open`
 
 *Hard: an open hole is not border. It takes away the easy point at e5; close d5, then follow the run down the left side.*
 
@@ -299,7 +300,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-10 Telescope
 
-`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
+`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
 *Close the top; the dot runs down into your pocket, and one more dot shuts it.*
 
@@ -320,7 +321,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-11 Shooting Star
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1` · stars: `boosters 1 2` · holes: `border`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `boosters 2 3` · holes: `border`
 
 *A lone dot near the top: run for the edge, stepping sideways when the computer blocks.*
 
@@ -341,7 +342,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-12 Crater
 
-`win with 20 dots` · computer: steady · 24 dots each · boosters: `bomb 1, double-dot 1` · stars: `margin 2 4` · holes: `open`
+`win with 20 dots` · computer: steady · 24 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `margin 2 4` · holes: `open`
 
 *A whole game round an open crater, with 20 dots against the computer's 24.*
 
@@ -364,7 +365,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-13 Reflection
 
-`target f3` · computer: steady · 5 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
+`target f3` · computer: steady · 5 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
 *Wall: the only first move is a quiet one, three moves before the ring closes; shut the way to the lake first, then answer the runs.*
 
@@ -385,7 +386,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-14 Pole Star
 
-`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
+`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
 *Close one side; when the dot runs, follow it and close the far end.*
 
@@ -406,7 +407,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-15 Black Pool
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1` · stars: `boosters 1 2` · holes: `open`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `boosters 2 3` · holes: `open`
 
 *Hard: an open hole is no shelter, since a ring can go round it. Your dot at e8 needs d8 at once, and the attacks keep coming.*
 
@@ -428,7 +429,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-16 Moon Bay
 
-`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1` · stars: `boosters 1 2` · holes: `border`
+`survive 4 moves` · computer: steady · 4 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `boosters 2 3` · holes: `border`
 
 *Your dot at c6 is almost closed in. d6 joins it to the dot by the lake, and a straight line to the shore can never be cut.*
 
@@ -449,7 +450,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-17 Dusk
 
-`target d4` · computer: steady · 4 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
+`target d4` · computer: steady · 4 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
 *Close the right side; the dot runs down, and one more dot shuts it in.*
 
@@ -470,7 +471,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-18 Twin Stars
 
-`win with 19 dots` · computer: steady · 24 dots each · boosters: `bomb 1, double-dot 1` · stars: `margin 2 4` · holes: `border`
+`win with 19 dots` · computer: steady · 24 dots each · boosters: `bomb 1, double-dot 1, undo 1` · stars: `margin 2 4` · holes: `border`
 
 *Hard: two round halves joined in the middle, three computer dots in the neck, and 19 dots against its 24.*
 
@@ -493,7 +494,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-19 Stargazer
 
-`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `double-dot 1` · stars: `moves 1 2` · holes: `border`
+`capture 1 in 4 moves` · computer: steady · 4 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
 *The dot by the lake can never be captured, so go for its neighbour: close one side, then follow.*
 
@@ -514,7 +515,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-20 Comet
 
-`win with 23 dots` · computer: steady · 26 dots each · boosters: `bomb 1, double-dot 1` · rule: double move every 3 turns · stars: `margin 2 5` · holes: `border`
+`win with 23 dots` · computer: steady · 26 dots each · boosters: `bomb 1, double-dot 1, undo 1` · rule: double move every 3 turns · stars: `margin 2 5` · holes: `border`
 
 *World 3's boss: every third turn it places two dots, and it has 26 dots to your 23, on a round board.*
 

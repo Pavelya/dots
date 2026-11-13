@@ -22,14 +22,24 @@ class Game private constructor(private val origin: PlayRecord, private val state
     /** True when the game is over: no move is left or, in a level, its mission is decided. */
     val isOver: Boolean get() = origin.isOver(state)
 
+    /**
+     * True if the player to move may use [booster] now. Unlike [GameState.canUse], it knows when a
+     * level's mission is decided: no booster then, and no [Action.Undo] either.
+     */
+    fun canUse(booster: Booster): Boolean = !isOver && state.canUse(booster)
+
     fun apply(action: Action): MoveResult {
+        require(action != Action.Undo || !isOver) { "No undo once the game is over" }
         val result = state.apply(action)
         states += result.state
         actions += action
         return result
     }
 
-    /** True if [player] has an action to take back. */
+    /**
+     * True if [player] has an action to take back with [undo], free play's unlimited undo. A
+     * campaign level uses the Undo booster instead ([Action.Undo]), which stays in the record.
+     */
     fun canUndo(player: Player): Boolean = lastActionBy(player) != null
 
     /**

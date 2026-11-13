@@ -5,7 +5,7 @@ computer: steady
 dots: 18
 mission: win
 solutions: open
-boosters: none
+boosters: undo 1
 rule: double move every 5 turns
 stars: margin 2 5
 holes: none
