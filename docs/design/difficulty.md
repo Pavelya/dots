@@ -143,9 +143,6 @@ earns 0.4 to 1.6 stars a game, and the strong one 1.2 to 2.3.
   is for the play-tests (Q-04).
 - **The stand-ins do not use boosters and do not retry,** so puzzles are harder for them than for
   a person who does both.
-- The `bench levels <stand-in>` tables in the README and the world pages use stand-ins that do
-  not read the mission, and were measured against the computer that played only for captures
-  (G-25).
 
 ## Charts
 

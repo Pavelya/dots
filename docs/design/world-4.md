@@ -49,47 +49,22 @@ gap next to the dot that does not hold, or a fight elsewhere that draws the eye.
 
 ## How hard it is
 
-`cli bench levels 80 <stand-in>`: a stand-in plays red on each level, and the table shows how many
-games passed the level's mission. The EASY step stands for a weak player, the NORMAL step for a
-strong one, border-only for someone who only plays on the border. The README explains the bench
-([How strong is it, and how hard are the levels?](../../README.md#how-strong-is-it-and-how-hard-are-the-levels)).
+The [difficulty curve](difficulty.md) measures every level: a weak, an average and a strong
+stand-in, which read the mission, each play the level 200 times against its own computer. The
+stand-ins are computers, not people: the numbers say which levels are hard compared with the
+others, and the play-tests say how they feel.
 
-```
-                                             passed of 80   passed of 80     passed of 40
-level                 mission                EASY stand-in  NORMAL stand-in  border-only
-4-1   Rocks           capture 1 in 4 moves    18              9               0
-4-2   Oyster          capture 3 in 4 moves     1              2               0
-4-3   Tide Pool       survive 4 moves          0             80               0
-4-4   Anchor          target c5               30             40               0
-4-5   Rock Pool       capture 2 in 4 moves    18             12               0
-4-6   Rocky Shore     win                     22             45               0
-4-7   Seagull         survive 4 moves          0             80               0
-4-8   Coral           capture 2 in 4 moves    24             20               0
-4-9   Shipwreck       capture 2 in 5 moves    18             80               0
-4-10  Harbour         capture 1 in 4 moves    71             61               0
-4-11  Buoy            survive 4 moves         77             80               0
-4-12  Pearls          win                     16             37               0
-4-13  Starfish        capture 1 in 4 moves    34             26               0
-4-14  Lighthouse      survive 4 moves         58             80               0
-4-15  Whirlpool       capture 1 in 5 moves     0             80               0
-4-16  Sandbar         survive 4 moves         80             80               0
-4-17  Driftwood       target e6                5             80               0
-4-18  Reef            win with 19 dots        21             24               0
-4-19  Cove            capture 1 in 5 moves     2             80               0
-4-20  Kraken          win                      8             26               0
-```
-
-- **Whole games get harder through the world** for a weak player: 22, 16, 21 and 8 passes of 80
-  for Rocky Shore, Pearls, Reef and the Kraken. Rocky Shore is easier than the Comet, so the
-  world opens with a dip. Pearls and Reef are equal within the noise of 80 games.
-- **The puzzles look harder here than they are,** as in World 1: the stand-ins play for captures
-  and do not read the mission. That every puzzle can be passed is what `check-levels` proves; how
-  hard each feels needs people.
-- **Border-only play passes no level of the world.** Before its first dot, the computer looks at
-  the whole board, so a danger already on the board is attacked even when the player opens far
-  from it.
-- These are stand-ins, not people, and nobody has played these levels yet: treat the numbers as a
-  first draft.
+- **Whole games get harder through the world:** the average stand-in passes 59%, 53%, 30% and
+  33% of games in Rocky Shore, Pearls, Reef and the Kraken; the weak one 27%, 21%, 28% and 9%.
+  Reef and the Kraken are equal within the noise for the average stand-in; the Kraken is the
+  hardest whole game of the campaign for the weak one. Rocky Shore is easier than the Comet (24%
+  and 23%), so the world opens with a dip.
+- **Five puzzles are hard,** more than in any other world: 4-4 Anchor (the average stand-in
+  passes 50%), 4-5 Rock Pool (42%), 4-15 Whirlpool (32%), 4-17 Driftwood (33%) and 4-19 Cove
+  (49%). The strong stand-in passes them all every time; each answer is three moves deep.
+- **Survive puzzles are passed every time** by all three stand-ins. They are the easy steps
+  between the hard levels.
+- **Border-only play passes no level of the world** (`cli bench levels 40 border`).
 
 ## Trying the levels
 

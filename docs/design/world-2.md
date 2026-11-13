@@ -45,47 +45,22 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
 
 ## How hard it is
 
-`cli bench levels 80 <stand-in>`: a stand-in plays red on each level, and the table shows how many
-games passed the level's mission. The EASY step stands for a weak player, the NORMAL step for a
-strong one, border-only for someone who only plays on the border. The README explains the bench
-([How strong is it, and how hard are the levels?](../../README.md#how-strong-is-it-and-how-hard-are-the-levels)).
+The [difficulty curve](difficulty.md) measures every level: a weak, an average and a strong
+stand-in, which read the mission, each play the level 200 times against its own computer. The
+stand-ins are computers, not people: the numbers say which levels are hard compared with the
+others, and the play-tests say how they feel.
 
-```
-                                             passed of 80   passed of 80     passed of 40
-level                 mission                EASY stand-in  NORMAL stand-in  border-only
-2-1   Weeds           survive 2 moves         80             80               0
-2-2   Path Home       rescue b4               80             80               4
-2-3   Snail           survive 4 moves         10             80               0
-2-4   Ladybug         target e4                5              4               0
-2-5   Fence Line      rescue c3               72             80               0
-2-6   Flower Beds     win                     33             59               0
-2-7   Bramble         survive 3 moves          0             80               0
-2-8   Seedling        capture 1 in 4 moves    11             11               0
-2-9   Side Step       rescue d5               43             80               0
-2-10  Rose Bush       target d4                0              0               0
-2-11  Watering Can    survive 3 moves          1             80               0
-2-12  Hedge           win                     24             52               0
-2-13  Greenhouse      target g6                9              6               0
-2-14  Stepping Stone  rescue c4               43             80               0
-2-15  Thorns          survive 4 moves          8             80               0
-2-16  Tulips          target e6               74             33               0
-2-17  Garden Gate     rescue d3                0             80               0
-2-18  Few Seeds       win with 18 dots        21             28               0
-2-19  Trellis         survive 3 moves          0             79               0
-2-20  Mole            win with 20 dots        17             27               0
-```
-
-- **Whole games get harder through the world** for a weak player: 33, 24, 21 and 17 passes of 80
-  for levels 6, 12, 18 and the Mole. The first is a little easier than World 1's mini-boss, 1-15 (29
-  of 80), so the world opens with a dip.
-- **The puzzles look harder here than they are,** as in World 1: the stand-ins play for captures
-  and do not read the mission. That every puzzle can be passed is what `check-levels` proves; how
-  hard each feels needs people.
-- **Border-only play passes no level of the world but 2-2** (4 of 40), whose answer is itself a
-  border point. Before its first dot, the computer looks at the whole board, so a danger already
-  on the board is attacked even when the player opens far from it.
-- These are stand-ins, not people, and nobody has played these levels yet: treat the numbers as a
-  first draft.
+- **Whole games get harder through the world:** the average stand-in passes 75%, 61%, 39% and
+  32% of games in Flower Beds, Hedge, Few Seeds and the Mole; the weak one 49%, 34%, 28% and
+  22%. Flower Beds is easier than World 1's mini-boss, 1-15 (55% and 41%), so the world opens
+  with a dip.
+- **Two puzzles are hard:** 2-10 Rose Bush, a deliberate wall (the average stand-in passes 11%),
+  and 2-13 Greenhouse (33%). The strong stand-in passes both every time; each answer is three
+  moves deep.
+- **Survive and rescue puzzles are passed every time** by all three stand-ins. They are the easy
+  steps between the hard levels.
+- **Border-only play passes no level of the world but 2-2** (4 of 40 games,
+  `cli bench levels 40 border`), whose answer is itself a border point.
 
 ## Trying the levels
 

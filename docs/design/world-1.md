@@ -71,11 +71,18 @@ every ring by chance, and Retry plays it again.
 
 ## How hard it is
 
-The [README](../../README.md#how-strong-is-it-and-how-hard-are-the-levels) has the numbers from
-`cli bench levels` and `cli bench stars`. In short: a weak computer player passes the whole games
-11 to 15 in 28, 17, 18, 16 and 14 of 40 games, so they get harder step by step (17 and 18 are
-equal within the noise) and the mini-boss is the hardest. Computer players do not read missions, so the puzzles need people to judge how
-hard they feel.
+The [difficulty curve](difficulty.md) measures every level: a weak, an average and a strong
+stand-in, which read the mission, each play the level 200 times against its own computer. The
+stand-ins are computers, not people: the numbers say which levels are hard compared with the
+others, and the play-tests say how they feel.
+
+- **The whole games get harder** for a weak player: it passes 74%, 53%, 53%, 45% and 41% of
+  games in levels 11 to 15. The mini-boss, 1-15, is the hardest of them for the weak and the
+  average stand-in (41% and 55%).
+- **The average stand-in passes nearly every puzzle;** the hardest is 1-9 Three in a Row (71%).
+  The weak one fails 1-4 Door in most games (13%).
+- **Border-only play passes no level of the world** (`cli bench levels 40 border`), so every
+  level asks the player to fight.
 
 ## Trying the levels
 
