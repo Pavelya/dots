@@ -1,6 +1,5 @@
 package dots.log
 
-import dots.ai.SearchAi
 import dots.campaign.Campaign
 import dots.campaign.LevelRecord
 import dots.engine.Action
@@ -80,7 +79,7 @@ class GameLogEntryTest {
         val game = Game(LevelRecord(level, emptyList()))
         while (!game.isOver) {
             val state = game.state
-            val move = if (state.toMove == level.human) Action.Place(state.legalMoves().first()) else SearchAi(level.ai, Random(1)).choose(state)
+            val move = if (state.toMove == level.human) Action.Place(state.legalMoves().first()) else level.computer(Random(1)).choose(state)
             game.apply(move)
         }
         val entry = GameLogEntry.start(game.record, level.strength.text, threatHighlight = false, now = 5)

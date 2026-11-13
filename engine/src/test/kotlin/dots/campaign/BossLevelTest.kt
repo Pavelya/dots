@@ -55,7 +55,7 @@ class BossLevelTest {
      */
     private fun computerTurns(level: Level, seed: Int): List<Turn> {
         val human = SearchAi(AiConfig.NORMAL, Random(seed))
-        val computer = SearchAi(level.ai, Random(seed + 100))
+        val computer = level.computer(Random(seed + 100))
         var state = level.newGame()
         val actions = ArrayList<Action>()
         val turns = ArrayList<Turn>()
@@ -118,7 +118,7 @@ class BossLevelTest {
         val level = level("double move every 3 turns")
         var state = level.newGame()
         val countdown = ArrayList<Int?>()
-        val computer = SearchAi(level.ai, Random(1))
+        val computer = level.computer(Random(1))
         repeat(7) {
             countdown += state.doubleMoveIn(level.computer)
             state = state.apply(SearchAi(AiConfig.EASY, Random(it)).choose(state)).state

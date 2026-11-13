@@ -130,7 +130,7 @@ private fun playLevel(level: Level) {
     println("Mission: ${goal(level)}")
     level.stars?.let { println("Stars: ${targets(it)}") }
     level.rule?.let { println("Boss rule: ${announce(it)}") }
-    val computer = SearchAi(level.ai)
+    val computer = level.computer()
     val seats = mapOf(level.human to null, level.computer to computer)
     val end = loop(level.newGame(), seats, level::isOver) { state ->
         listOfNotNull(progress(level.mission, level.status(state)), countdown(level, state)).joinToString("\n    ")

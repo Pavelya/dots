@@ -1,6 +1,5 @@
 package dots.campaign
 
-import dots.ai.SearchAi
 import dots.campaign.Tutorial.Lesson
 import dots.campaign.Tutorial.Prompt
 import dots.engine.Action
@@ -90,7 +89,7 @@ class TutorialTest {
     fun `following the steps passes each tutorial level against its own computer`() {
         for (level in Tutorial.levels) for (seed in 0L until 20L) {
             val game = Game.from(LevelRecord(level, emptyList()))
-            val computer = SearchAi(level.ai, Random(seed))
+            val computer = level.computer(Random(seed))
             while (!game.isOver) {
                 val state = game.state
                 if (state.toMove == level.human) {

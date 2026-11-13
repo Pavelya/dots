@@ -251,7 +251,8 @@ it. An enemy ring can cross a diagonal step, so a dot joined to the border only 
 safe.
 
 A level is refused if its mission is decided before the first move, or asks for more moves than
-that side has dots. The computer plays for captures only, not against the mission.
+that side has dots. The computer plays against the mission, not only for captures (see
+[Playing for the mission](#playing-for-the-mission)).
 
 ### Stars
 
@@ -655,6 +656,45 @@ Some weaknesses that sound human made no measurable difference, so no step relie
   dot it may lose at half, a quarter, a tenth or 2% of a dot it may win changed nothing: any loss
   still outweighs a quiet move. Ignoring losses completely made a two-move computer play like a
   one-move one.
+
+### Playing for the mission
+
+In a level, the computer plays for the player to fail the mission, not only for captures
+(`Level.computer`, `MissionGoal`). The search uses the mission in four ways:
+
+- **The end.** A position where the mission is decided ends the search there: a failed mission
+  is a win for the computer and a passed one a loss, worth more than any number of captures. A win
+  one move sooner beats one later, whatever else the moves offer.
+- **What a capture counts.** Each mission sets what the computer's captures and losses are worth,
+  for dots captured and for groups close to capture alike.
+- **A marked dot.** In rescue and target, the group holding the marked dot counts as 10 dots.
+- **Moves left.** A ring that needs more dots than its attacker may still place is no threat: in
+  "capture" the player's moves left, in "survive" the computer's, and otherwise the dots each side
+  has left.
+
+| Mission | The computer's captures count | Its losses count | Also |
+|---------|------------------------------:|-----------------:|------|
+| `capture 5 in 8 moves` | half | double | a ring the player cannot close in the moves left is no danger |
+| `survive 6 moves` | double | half | a ring the computer cannot close in its moves left is no chance |
+| `rescue e5` | half | half | the group holding e5 counts as 10 dots, to capture |
+| `target e5` | half | half | the group holding e5 counts as 10 dots, to guard |
+| `win`, `win by 3`, `win with 8 dots` | as in the plain game | as in the plain game | |
+
+In the win missions the plain game's aim, more captures than the other side, is already the
+mission's. What the goal adds there is the end: when the player could no longer reach the
+margin even by capturing every computer dot still exposed, the mission has failed, so the
+computer may prefer making its last exposed dots safe to capturing one more dot.
+
+The strength steps see the mission no better than they see anything else. BEGINNER and EASY see
+a mission decided only on their own move; the steps below HARD look only near the last dots and
+miss a move that decides the mission elsewhere on the board. `MissionGoalTest` has, for each
+mission, a position where HARD playing for the mission plays a different move from HARD playing
+only for captures, and one where the steps below HARD miss it.
+
+Checking the mission at every position the search visits costs time: over three games of every
+level against an EASY stand-in, HARD took 18 ms a move instead of 16, and the levels' own steps
+0.76 ms instead of 0.67, on a laptop. In free play there is no mission, and the computer plays as
+before.
 
 ### How strong is it, and how hard are the levels?
 

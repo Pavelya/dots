@@ -1,12 +1,15 @@
 package dots.campaign
 
 import dots.ai.AiConfig
+import dots.ai.Goal
+import dots.ai.SearchAi
 import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Notation
 import dots.engine.Player
 import dots.engine.Pos
 import dots.engine.TurnRule
+import kotlin.random.Random
 
 /**
  * A single-player level: the human (red, moving first) plays the computer (blue). Levels are
@@ -55,6 +58,12 @@ data class Level(
     val code: String get() = "$world-$number"
 
     val ai: AiConfig get() = strength.config
+
+    /** What the computer plays for: that the player fails the [mission] ([MissionGoal]). */
+    val goal: Goal get() = MissionGoal(this)
+
+    /** The computer the player meets in this level: [config], by default the level's [strength], playing for the [goal]. */
+    fun computer(random: Random = Random.Default, config: AiConfig = ai): SearchAi = SearchAi(config, random, goal)
 
     /** Dots the human may place: [dotsPerPlayer], or fewer in a "win with fewer dots" mission. */
     val humanDots: Int get() = (mission as? Mission.WinWithFewerDots)?.dots ?: dotsPerPlayer

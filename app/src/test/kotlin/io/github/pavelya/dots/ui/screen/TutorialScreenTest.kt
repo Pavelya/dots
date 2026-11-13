@@ -8,7 +8,6 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
-import dots.ai.SearchAi
 import dots.campaign.Level
 import dots.campaign.LevelResult
 import dots.campaign.Tutorial
@@ -55,7 +54,7 @@ class TutorialScreenTest {
     private fun practice(journal: CampaignJournal = Journal()) = GameViewModel(
         start = levelGame(Tutorial.levels.first(), threatHighlight = false, now = 0, practice = true),
         nextGame = { error("a practice game starts its next game itself") },
-        computerFor = { entry -> SearchAi((entry.record as dots.campaign.LevelRecord).level.ai, Random(1)) },
+        computerFor = { entry -> (entry.record as dots.campaign.LevelRecord).level.computer(Random(1)) },
         campaign = journal,
         // The computer answers on the test's thread, as in the screenshot tests: a reply computed on
         // another thread did not always get back to Robolectric's main thread in time.
