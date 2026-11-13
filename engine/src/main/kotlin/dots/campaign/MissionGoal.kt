@@ -7,10 +7,11 @@ import dots.engine.Pos
 import kotlin.math.min
 
 /**
- * The computer's goal in [level]: that the player fails the mission. It is reached when the
- * mission fails and lost when it passes ([Level.status]). A ring that needs more dots than its
- * attacker has left is no threat. Besides that, each mission changes what captures count for the
- * computer:
+ * One side's goal in [level]'s mission. For the computer ([Level.goal]) it is that the player
+ * fails the mission: reached when the mission fails and lost when it passes ([Level.status]). For
+ * the player ([Level.playerGoal], the Hint booster's goal) it is the other way round. A ring that
+ * needs more dots than its attacker has left is no threat. Besides that, each mission changes what
+ * captures count. For the computer:
  *
  * - **Capture N in M moves.** The dots it loses count double, and a ring the player cannot close
  *   within the moves left is no danger. The dots it captures still count in full: taking the
@@ -22,25 +23,34 @@ import kotlin.math.min
  * - **Win**, **win by N** and **win with fewer dots.** Captures count as in the plain game, whose
  *   aim is the mission's: the end of the mission is what the goal adds, such as a margin that is
  *   out of the player's reach.
+ *
+ * The player's weights are the computer's seen from the other side: what the computer loses, the
+ * player gains. In "capture" the player's captures count double, in "survive" its losses count
+ * double and its captures half.
  */
-internal class MissionGoal(private val level: Level) : Goal {
+internal class MissionGoal(private val level: Level, override val player: Player) : Goal {
     private val mission = level.mission
-
-    override val player: Player get() = level.computer
+    private val forComputer = player == level.computer
 
     override fun reached(state: GameState): Boolean? = when (level.status(state).outcome) {
         Outcome.PLAYING -> null
-        Outcome.PASSED -> false
-        Outcome.FAILED -> true
+        Outcome.PASSED -> !forComputer
+        Outcome.FAILED -> forComputer
     }
 
-    override val gains: Int = if (mission is Mission.Survive) MORE else SAME
+    /** What the computer's captures count; the player's losses count the same. */
+    private val computerGains: Int = if (mission is Mission.Survive) MORE else SAME
 
-    override val losses: Int = when (mission) {
+    /** What the computer's losses count; the player's captures count the same. */
+    private val computerLosses: Int = when (mission) {
         is Mission.Capture -> MORE
         is Mission.Survive -> LESS
         else -> SAME
     }
+
+    override val gains: Int = if (forComputer) computerGains else computerLosses
+
+    override val losses: Int = if (forComputer) computerLosses else computerGains
 
     override val marked: Pos? = when (mission) {
         is Mission.Rescue -> mission.dot

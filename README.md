@@ -283,7 +283,7 @@ Boosters exist only in the campaign, and only the player has them (decision 0006
 | Booster | What it does |
 |---------|--------------|
 | `wall` | Blocks one empty point that is in play. Nobody may place a dot there for the rest of the game. A ring passes over a wall as over an empty point, so a wall on the point that would close a ring stops that ring there, but a wider ring round the wall still captures. |
-| `hint` | Shows the player the computer's best move for them (`Hints.hint`, the hard computer without its random choice, within 1.5 seconds). The board does not change. |
+| `hint` | Shows the player the move that serves their mission, within 1.5 seconds (`Level.hint`; see [The hint](#the-hint)). The board does not change. |
 | `bomb` | Removes the computer's dots on a point and the four points next to it, up, down, left and right. Points off the board and points out of play (inside a capture) are not touched, so a bomb never undoes a capture. It needs at least one dot to hit. The points become empty and playable; scores and dots left do not change. |
 | `double-dot` | The player places two dots this turn. It needs 2 dots left. No pass or stop between the two; if the board fills up after the first, the turn ends there. |
 | `undo` | Takes back the player's last turn: their dot (both dots after a double dot), any booster used in that turn, which the player gets back, and the computer's reply. The player then plays that turn again. It can be used at the start of the player's turn, after their first move, and not once the level is over. Every campaign level allows one (decision 0023). |
@@ -701,6 +701,29 @@ Checking the mission at every position the search visits costs time: over three 
 level against an EASY stand-in, HARD took 18.6 ms a move instead of 16.3, and the levels' own
 steps 0.77 ms instead of 0.68, on a laptop. In free play there is no mission, and the computer
 plays only for captures.
+
+### The hint
+
+The hint booster plays for the player's side of the same mission (`Level.hint`, `LevelHint`).
+It is found in two steps that share 1.5 seconds:
+
+1. **The hard computer, playing for the player** (`Level.playerGoal`), for at most 1 second: HARD
+   without its random choice. It uses the mission as the computer does, seen from the other side:
+   a passed mission is a win and a failed one a loss, and the weights swap. In "capture" the
+   player's captures count double; in "survive" the player's losses count double and its captures
+   half; the marked dot's group counts as 10 dots, to capture in "target" and to guard in "rescue".
+2. **The puzzle solver**, in a puzzle mission ([Checking puzzles](#checking-puzzles)), for at most 0.4 seconds or
+   50,000 positions per search (`Solver.lookAhead`). It looks up to 5 of the player's moves
+   ahead against every reply, further than the search. If it finds a move that passes the
+   mission whatever the computer does, the hint shows the quickest one. If not, it keeps the first
+   step's move, unless the computer could then force the mission to fail; it then shows a move
+   that avoids that, if there is one.
+
+At the start of the campaign's puzzle levels, the hint that plays only for captures (`Hints.hint`)
+shows a move that does not pass in 13 of 59 levels, and the first step alone in 10. With the solver,
+the hint shows a passing first move in all 59, and a test checks it. In the win missions the hint
+differs from one that plays only for captures only when the computer could put the mission out of
+reach: it then blocks that rather than take a dot. `LevelHintTest` has a position for each mission.
 
 ### How strong is it, and how hard are the levels?
 

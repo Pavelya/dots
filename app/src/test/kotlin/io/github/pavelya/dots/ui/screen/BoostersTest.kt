@@ -70,7 +70,7 @@ class BoostersTest {
             computerDispatcher = Dispatchers.Unconfined,
             replyDelayMillis = 0,
             clock = { 0L },
-            hintFor = { Action.Hint(hintPoint) },
+            hintFor = { _, _ -> Action.Hint(hintPoint) },
         )
     }
 

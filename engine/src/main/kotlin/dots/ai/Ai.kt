@@ -119,7 +119,8 @@ data class AiConfig(
         val HARD = AiConfig(depth = 3, breadth = 8, variety = 5, attackReach = 3, dangerReach = 2)
         /**
          * The [dots.engine.Booster.HINT]: [HARD] without its random bonus, so it shows the move it
-         * rates best, within 1.5 seconds on a phone.
+         * rates best, within 1.5 seconds on a phone. In a level it has 1 second of those, and the
+         * puzzle solver the rest (`dots.campaign.Level.hint`).
          */
         val HINT = HARD.copy(variety = 0, timeLimitMillis = 1500)
 

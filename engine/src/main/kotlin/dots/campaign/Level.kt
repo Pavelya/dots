@@ -3,6 +3,7 @@ package dots.campaign
 import dots.ai.AiConfig
 import dots.ai.Goal
 import dots.ai.SearchAi
+import dots.engine.Action
 import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Notation
@@ -60,10 +61,20 @@ data class Level(
     val ai: AiConfig get() = strength.config
 
     /** What the computer plays for: that the player fails the [mission] ([MissionGoal]). */
-    val goal: Goal get() = MissionGoal(this)
+    val goal: Goal get() = MissionGoal(this, computer)
+
+    /** What the player plays for: that the [mission] passes. The [hint] plays for it. */
+    val playerGoal: Goal get() = MissionGoal(this, human)
 
     /** The computer the player meets in this level: [config], by default the level's [strength], playing for the [goal]. */
     fun computer(random: Random = Random.Default, config: AiConfig = ai): SearchAi = SearchAi(config, random, goal)
+
+    /**
+     * The [Booster.HINT] for the player in [state], a position of this level's game: the move that
+     * serves the [mission] ([LevelHint]). Null if the player cannot use a hint now or has no move.
+     * Apply the result to use up the hint. [random] breaks ties between equally good moves.
+     */
+    fun hint(state: GameState, random: Random = Random.Default): Action.Hint? = LevelHint.find(this, state, random)
 
     /** Dots the human may place: [dotsPerPlayer], or fewer in a "win with fewer dots" mission. */
     val humanDots: Int get() = (mission as? Mission.WinWithFewerDots)?.dots ?: dotsPerPlayer

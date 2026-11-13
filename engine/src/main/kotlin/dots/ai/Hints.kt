@@ -34,8 +34,9 @@ object Hints {
 
     /**
      * The [Booster.HINT] for the player to move: the computer's best move for them, played as
-     * [ai] sees it. Null if they cannot use a hint now or have no move. Apply the result to use
-     * up the hint; the record keeps the point.
+     * [ai] sees it, which plays only for captures. Null if they cannot use a hint now or have no
+     * move. Apply the result to use up the hint; the record keeps the point. In a level, use
+     * `dots.campaign.Level.hint`, which plays for the level's mission.
      */
     fun hint(state: GameState, ai: SearchAi = SearchAi(AiConfig.HINT)): Action.Hint? {
         if (!state.canUse(Booster.HINT)) return null

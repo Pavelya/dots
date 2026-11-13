@@ -69,7 +69,7 @@ class BoosterViewModelTest {
 
     private fun game(
         journal: GameJournal? = null,
-        hintFor: (GameState) -> Action.Hint? = { Action.Hint(hintPoint) },
+        hintFor: (GameState, Level?) -> Action.Hint? = { _, _ -> Action.Hint(hintPoint) },
         level: Level = this.level,
     ) = GameViewModel(
         start = levelGame(level, threatHighlight = false, now = 0),
@@ -276,7 +276,7 @@ class BoosterViewModelTest {
         val rockyShore = Campaign.level(4, 6)
         assertEquals(Booster.entries.toSet(), rockyShore.boosters.keys)
         val journal = LastEntry()
-        val vm = game(journal, hintFor = { dots.ai.Hints.hint(it) }, level = rockyShore) // the real Hint
+        val vm = game(journal, hintFor = { state, played -> played!!.hint(state) }, level = rockyShore) // the real Hint
         fun turn(play: () -> Unit) {
             play()
             advanceUntilIdle()
