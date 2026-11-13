@@ -23,7 +23,7 @@ object Credits {
     data class Library(val name: String, val licence: Licence, val groups: List<String>)
 
     /** The name under Made by. */
-    const val MADE_BY = "Pavelya"
+    const val MADE_BY = "School 25"
 
     /** The fonts the app ships with. Caveat and Nunito arrive with the Notebook theme (V-03). */
     val fonts: List<Asset> = emptyList()

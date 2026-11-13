@@ -165,7 +165,7 @@ class SettingsAndRulesTest {
     fun `Credits names the maker and opens the open-source licences`() {
         compose.setContent { SettingsDetailsScreen(SettingsPage.CREDITS, onPage = { pages += it }, onBack = {}) }
         compose.onNodeWithText("Made by").assertIsDisplayed()
-        compose.onNodeWithText("Pavelya").assertIsDisplayed()
+        compose.onNodeWithText("School 25").assertIsDisplayed()
 
         compose.onNodeWithText("Open-source licences").performClick()
         assertEquals(listOf(SettingsPage.LICENCES), pages)
