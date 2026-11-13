@@ -48,48 +48,22 @@ moves deep, and its first move is not the one that looks natural. 3-13 is a wall
 
 ## How hard it is
 
-`cli bench levels 80 <stand-in>`: a stand-in plays red on each level, and the table shows how many
-games passed the level's mission. The EASY step stands for a weak player, the NORMAL step for a
-strong one, border-only for someone who only plays on the border. The README explains the bench
-([How strong is it, and how hard are the levels?](../../README.md#how-strong-is-it-and-how-hard-are-the-levels)).
+The [difficulty curve](difficulty.md) measures every level: a weak, an average and a strong
+stand-in, which read the mission, each play the level 200 times against its own computer. The
+stand-ins are computers, not people: the numbers say which levels are hard compared with the
+others, and the play-tests say how they feel.
 
-```
-                                             passed of 80   passed of 80     passed of 40
-level                 mission                EASY stand-in  NORMAL stand-in  border-only
-3-1   Lake Shore      survive 3 moves          5             80               0
-3-2   Shoreline       target e3               31             80               0
-3-3   Night Swim      survive 4 moves         13             79               0
-3-4   Crescent        capture 2 in 4 moves    20             20               0
-3-5   Lantern         survive 4 moves         66             80               0
-3-6   Full Moon       win                     24             54               0
-3-7   Fireflies       survive 3 moves          4             80               0
-3-8   Owl             target f6                4              6               0
-3-9   Crater Rim      capture 2 in 5 moves    18              9               0
-3-10  Telescope       capture 1 in 4 moves     7              4               0
-3-11  Shooting Star   survive 4 moves         67             80               0
-3-12  Crater          win with 20 dots        18             31               0
-3-13  Reflection      target f3                0              0               0
-3-14  Pole Star       capture 1 in 4 moves     1              7               0
-3-15  Black Pool      survive 4 moves         18             80               0
-3-16  Moon Bay        survive 4 moves         75             80               0
-3-17  Dusk            target d4               79             49               0
-3-18  Twin Stars      win with 19 dots        17             39               0
-3-19  Stargazer       capture 1 in 4 moves    28             27               0
-3-20  Comet           win with 23 dots        18             18               0
-```
-
-- **Whole games get harder after the first** for a weak player: 24, 18, 17 and 18 passes of 80
-  for Full Moon, Crater, Twin Stars and the Comet; the last three are equal within the noise of
-  80 games. Full Moon is easier than the Mole, so the world opens with a dip. For the average
-  player of the [difficulty curve](difficulty.md), the Comet is the hardest level of the world.
-- **The puzzles look harder here than they are,** as in World 1: the stand-ins play for captures
-  and do not read the mission. That every puzzle can be passed is what `check-levels` proves; how
-  hard each feels needs people.
-- **Border-only play passes no level of the world.** Before its first dot, the computer looks at
-  the whole board, so a danger already on the board is attacked even when the player opens far
-  from it.
-- These are stand-ins, not people, and nobody has played these levels yet: treat the numbers as a
-  first draft.
+- **Whole games get harder through the world:** the average stand-in passes 73%, 43%, 48% and
+  24% of games in Full Moon, Crater, Twin Stars and the Comet; the weak one 33%, 27%, 28% and
+  23%. Twin Stars is a little easier than Crater. The Comet is the hardest whole game of the
+  campaign for the average stand-in. Full Moon is easier than the Mole (32% and 22%), so the
+  world opens with a dip.
+- **Three puzzles are hard:** 3-8 Owl (the average stand-in passes 46%), 3-13 Reflection, a
+  deliberate wall (0%), and 3-17 Dusk (29%). The strong stand-in passes all three every time;
+  each answer is three moves deep.
+- **Survive puzzles are passed every time** by all three stand-ins. They are the easy steps
+  between the hard levels.
+- **Border-only play passes no level of the world** (`cli bench levels 40 border`).
 
 ## Trying the levels
 
