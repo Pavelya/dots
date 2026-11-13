@@ -53,6 +53,7 @@ does while the animation runs.
 
 | Moment | Starts when | Length | Next tap waits | A tap | With animations removed |
 | --- | --- | --- | --- | --- | --- |
+| [Drag's guides](#placing-by-drag) | the finger goes down, placing by drag | 100 ms, then they follow the finger at once | 0 | – (the finger is down) | the guides at once |
 | [Placing a dot](#placing-a-dot-and-chain-lines) | a dot is confirmed | 200 ms | 0 | counts as usual | the dot at once |
 | [Chain lines](#placing-a-dot-and-chain-lines) | with placing | 80 to 230 ms | 0 | counts as usual | the links at once |
 | [The computer's move](#the-computers-move) | 500 ms or more after the player's dot | 900 ms; the edge marks stay | 0 | counts as usual | dot and edge marks at once, no ripple |
@@ -70,6 +71,36 @@ does while the animation runs.
 | [Level unlock](#level-unlock) | the map shows after Next | 2100 ms | 0 | jumps to the Level card | the new state and the card at once |
 | [Level opening](#level-opening-notes-and-cards) | the board shows | 1500 ms | 0 | finishes it and counts | the corner note at once |
 | [Notes and cards](#level-opening-notes-and-cards) | a note is opened or closed | 300 ms in, 200 ms out | 0: the buttons work at once | counts as usual | the note at once |
+
+## Placing by drag
+
+A player who places dots by drag (decision 0024, chosen in Settings) presses the board, slides to
+the point and lifts. While the finger is down, the preview sits on the point under it, and the
+guides run from the preview's ring along its row and column to the board's edges (theme page,
+[Drag's guides](theme-notebook.md#drags-guides)). The finger hides the point, so the guides show
+around it. 0 ms is the moment the finger goes down.
+
+<img src="motion/strip-drag.png" width="720" alt="Key frames: a thumb goes down and dashed red guides grow out from under it; the thumb slides off the board and the guides are gone; it goes down again, passes a taken point with no guides, stops on a free point with guides, lifts, and the red dot lands">
+
+<img src="motion/drag-light.gif" width="360" alt="Animation: the thumb slides off the bottom of the board and lifts, placing nothing; then it slides up past a taken point to a free one and lifts, and the dot lands">
+
+[Same in the dark version](motion/drag-dark.gif). The thumb is drawn a little see-through, so the
+preview under it shows.
+
+| Time | What moves | Easing |
+| --- | --- | --- |
+| 0 | The preview appears on the point under the finger: the pale piece in its ring, as with two taps. | |
+| 0 to 100 | The four guides are drawn out from the ring to the edges, in the ink of the side to move. | ease out |
+| The finger moves onto another point | The preview and the guides jump to it at once. They never glide: a guide that trailed the finger would point at the wrong row. | |
+| The finger is over a taken point, or off the board | The preview and the guides go at once. Back on a free point, they come back at once, without being drawn out again. | |
+| The finger lifts on a free point | The guides and the preview ring go at once. This is 0 ms of [Placing a dot](#placing-a-dot-and-chain-lines). | |
+| The finger lifts anywhere else | The preview and the guides go at once. Nothing is placed: no vibration, no sound, and the dots-left count stays. | |
+
+- **Nothing vibrates while the finger moves.** The light vibration comes when the dot lands, as for
+  two taps.
+- **With animations removed,** the guides appear at full length at once. Everything else here
+  already happens at once.
+- During the computer's turn a finger on the board shows no preview and no guides.
 
 ## Placing a dot and chain lines
 
@@ -363,6 +394,7 @@ These have no GIF. The canvas frame "Game: the level opens" shows the opening.
 These looks are new here. They are proposals for the owner to accept or change:
 
 - The computer's move: two ripples and the edge marks on the top and left edges.
+- Placing by drag: the guides drawn out from the ring in 100 ms, then jumping with the finger.
 - Dots running out: the Highlighter count, the row of small pieces, the mission-note nudge and
   "Last dot!".
 - The wall: a square in pencil, hatched.

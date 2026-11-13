@@ -205,6 +205,10 @@ def board(t, st, uid):
                     (x1, y1), (x2, y2) = c(q), c(n)
                     links.append(el("line", x1=f(x1), y1=f(y1), x2=f(x1 + (x2 - x1) * g), y2=f(y1 + (y2 - y1) * g),
                                     stroke=t[side + "_pale"], stroke_width=1.5, stroke_linecap="round"))
+    drag = []
+    if st.get("guides"):  # drag's guides, under the rings and pieces (theme page, drawing order)
+        p, side, q = st["guides"]
+        drag.append(cd.guides(t, side, *c(p), SP, 360, q))
     marks = []
     for p, k, w, col in st.get("threats", []):
         x, y = c(p)
@@ -317,7 +321,7 @@ def board(t, st, uid):
     dx = st.get("shake", 0.0)
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=360, height=360, fill=t["paper"]) +
             f'<g transform="translate({f(dx)} 0)">' + "".join(washes) + "".join(grid) + "".join(links) +
-            "".join(rings) + "".join(marks) + "".join(pieces) + "".join(extra) + "</g>")
+            "".join(drag) + "".join(rings) + "".join(marks) + "".join(pieces) + "".join(extra) + "</g>")
     return svg(360, 360, body, label="The board, 15 by 15 points")
 
 
@@ -579,6 +583,74 @@ def scene_turn(theme, T, uid, finger=True):
         cap = ("Your dot lands, its link grows", f"+{T - you_at} ms")
     else:
         cap = ("The computer's dot lands", f"+{T - opp_at} ms")
+    return screen(t, ui, uid), cap
+
+
+# Placing by drag (decision 0024), from the threat. First the finger goes down, slides off the bottom of
+# the board and lifts there: nothing is placed. Then it goes down at (11, 12), slides up past the taken
+# (10, 10) and lifts on (9, 9), which saves the pair. Each path: (T, finger point in board steps).
+DRAG_OFF = [(300, (7, 12)), (600, (7, 12)), (1000, (7, 15.2)), (1200, (7, 15.2))]
+DRAG_ON = [(1700, (11, 12)), (2000, (11, 12)), (2300, (10, 11)), (2500, (10, 11)), (2800, (10, 10)),
+           (3000, (10, 10)), (3300, (9, 9)), (3700, (9, 9))]
+DRAW_IN = 100  # the guides are drawn out from the ring when the finger goes down
+
+
+def finger_at(path, T):
+    """Where the finger is at T on a path (board steps), or None when it is not on the screen."""
+    if T < path[0][0] or T >= path[-1][0]:
+        return None
+    for (t0, a), (t1, b) in zip(path, path[1:]):
+        if t0 <= T < t1:
+            k = EASE_IN_OUT((T - t0) / (t1 - t0)) if a != b else 0.0
+            return (a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k)
+    return None
+
+
+def point_under(at, taken):
+    """The point nearest the finger, if it is on the board and free; else None (no preview, no guides)."""
+    x, y = at
+    if not (-0.5 <= x < 14.5 and -0.5 <= y < 14.5):
+        return None
+    p = (round(x), round(y))
+    return None if p in taken else p
+
+
+def scene_drag(theme, T, uid):
+    t = THEMES[theme]
+    target, lift = DRAG_ON[-1][1], DRAG_ON[-1][0]
+    red = TR + ([target] if T >= lift else [])
+    st = position(red, TB, [area_state(R1), area_state(B1)], last=(7, 7))
+    st["scale"], st["grow"] = {}, {}
+    st["edges"] = fading_edges((7, 7), T, lift)
+    over, cap = [], ("Two ways to place a dot: this is drag", "")
+    for path in (DRAG_OFF, DRAG_ON):
+        at = finger_at(path, T)
+        if at is None:
+            continue
+        down = path[0][0]
+        p = point_under(at, set(TR) | set(TB))
+        if p is not None:
+            st["preview"] = [(p, "red")]
+            st["guides"] = (p, "red", prog(T, down, down + DRAW_IN))
+        x, y = fc(at)
+        over.append(cd.thumb(x, y, opacity=0.8))  # a little see-through, so the preview shows
+        if T < down + DRAW_IN:
+            cap = ("Finger down: the preview, its guides drawn out", f"+{T - down} ms")
+        elif p is None:
+            cap = ("Off the board: no preview" if at[1] > 14.5 else "Over a taken point: no preview", "")
+        else:
+            cap = ("The guides follow the finger", "")
+    if DRAG_OFF[-1][0] <= T < DRAG_ON[0][0]:
+        cap = ("Lifted off the board: nothing placed", "")
+    if T >= lift:
+        st["scale"][target] = placed(T, lift)
+        st["grow"][target] = prog(T - lift, 80, 230)
+        if T >= lift + 200:
+            st["last"] = target
+        cap = ("Lifted on a point: the dot lands", f"+{T - lift} ms")
+    ui = base_threat_ui()
+    ui.update(board=st, left=13 if T < lift else 12, over=over)
+    ui["turn"] = ("you", 1.0) if T < lift else ("opp", prog(T - lift, 0, 200))
     return screen(t, ui, uid), cap
 
 
@@ -1212,6 +1284,7 @@ for _p in RUN_RED + RUN_BLUE + [(9, 9), (10, 9), (12, 10)]:
 FULL = (0, 0, W, H)
 SCENES = {  # name: (drawer, length in ms, crop x, y, w, h)
     "turn": (scene_turn, 2800, (0, 296, W, 420)),
+    "drag": (scene_drag, 4160, (0, 296, W, 420)),
     "capture": (scene_capture, 2600, FULL),
     "big-capture": (scene_big, 4800, FULL),
     "threat": (scene_threat, 6600, (0, 296, W, 380)),
@@ -1231,6 +1304,9 @@ def sq(p, size):
 STRIPS = {  # name: (scene, crop, scale, [(T, label)])
     "placing": (lambda th, T, u: scene_turn(th, T, u, finger=False), sq((9, 8.5), 120), 3, [(360, "preview"), (400, "0 ms"), (440, "40"), (480, "80"),
                                                 (520, "120"), (560, "160"), (600, "200")]),
+    "drag": ("drag", (0, BOARD_TOP, W, 360), 1.5, [(300, "down, 0 ms"), (350, "50"), (400, "100"),
+                                                   (1000, "off the board"), (2700, "taken point"),
+                                                   (3500, "on (9, 9)"), (3820, "lifted, +120")]),
     "computer-move": ("turn", sq((10, 9.5), 168), 2, [(880, "before"), (900, "0 ms"), (1000, "100"), (1100, "200"),
                                                       (1300, "400"), (1500, "600"), (1800, "900")]),
     "capture": ("capture", FULL, 1, [(CAPTURE_AT + u, f"{u} ms" if u == 0 else str(u)) for u in

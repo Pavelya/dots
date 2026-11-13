@@ -27,6 +27,10 @@ Sizes follow the **dot size**: half the spacing, at least 9 dp, at most 20 dp (1
 | Captured piece | Cut: a straight band through the middle of the piece, across its whole width | 2 dp wide, 18 dp long | 1/6 of the dot size wide, 1.5 dot sizes long | Wash of the side that captured it |
 | Preview | The moving side's shape, pale, inside the round preview ring | piece as above; ring as on the theme page | as above | Red pale or Blue pale; ring in the ink of the side to move |
 
+**Placing by drag.** The preview follows the finger, and dashed guides run from its ring along its
+row and column to the board's edges. They are on the theme page,
+[Drag's guides](theme-notebook.md#drags-guides).
+
 **The cut runs along the captor's hatching.** A captured red piece lies in a blue area, hatched
 falling to the right (`\`), so its cut falls to the right. A captured blue piece lies in a red
 area, hatched rising (`/`), so its cut rises. The piece looks as if the hatching runs across it.
