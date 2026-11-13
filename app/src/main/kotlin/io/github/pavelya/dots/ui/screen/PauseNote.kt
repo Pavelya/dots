@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -207,9 +208,17 @@ internal fun SquareButton(path: String, label: String, style: GameStyle, onClick
 
 /** A button beside or under the big one: blue ink outlined on the note's card. */
 @Composable
-internal fun SmallButton(text: String, style: GameStyle, onClick: () -> Unit, modifier: Modifier, height: Dp = 48.dp) {
+internal fun SmallButton(
+    text: String,
+    style: GameStyle,
+    onClick: () -> Unit,
+    modifier: Modifier,
+    height: Dp = 48.dp,
+    padding: PaddingValues = ButtonDefaults.ContentPadding,
+) {
     OutlinedButton(
         onClick = onClick,
+        contentPadding = padding,
         shape = TOOL_SHAPE,
         border = BorderStroke(2.dp, style.blue),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = style.card, contentColor = style.blue),

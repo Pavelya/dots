@@ -215,8 +215,9 @@ internal fun GameBoard(
                     horizontalArrangement = Arrangement.spacedBy(if (campaign != null) 10.dp else 14.dp),
                 ) {
                     // At the end the tools leave, and Result takes their place (motion.md, End of game).
+                    // A booster preview's note covers them (canvas frame `game-undo`).
                     when {
-                        ui.isOver -> Spacer(Modifier.weight(1f))
+                        ui.isOver || ui.aim != null -> Spacer(Modifier.weight(1f))
                         campaign != null -> campaign.boosters(this)
                         else -> {
                             var slots = 4

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -196,7 +197,14 @@ internal fun BoosterNote(
                 )
             }
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                SmallButton(stringResource(R.string.booster_cancel), style, onCancel, Modifier.weight(1f), height = 56.dp)
+                SmallButton(
+                    stringResource(R.string.booster_cancel),
+                    style,
+                    onCancel,
+                    Modifier.weight(1f),
+                    height = 56.dp,
+                    padding = PaddingValues(horizontal = 4.dp), // "Cancel" fits a third of a 320 dp phone
+                )
                 BigButton(stringResource(go), style, onConfirm, Modifier.weight(2f), enabled = aim.ready)
             }
         }
