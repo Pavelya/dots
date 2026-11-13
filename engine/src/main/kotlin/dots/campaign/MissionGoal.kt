@@ -12,12 +12,13 @@ import kotlin.math.min
  * attacker has left is no threat. Besides that, each mission changes what captures count for the
  * computer:
  *
- * - **Capture N in M moves.** The dots it loses count double, the dots it captures half, and a
- *   ring the player cannot close within the moves left is no danger.
- * - **Survive M moves.** The other way round: its captures count double, its losses half, and a
- *   ring it cannot close within its moves left is no chance.
+ * - **Capture N in M moves.** The dots it loses count double, and a ring the player cannot close
+ *   within the moves left is no danger. The dots it captures still count in full: taking the
+ *   dots of a ring the player is building is a defence.
+ * - **Survive M moves.** Its captures count double and its losses half, and a ring it cannot
+ *   close within its moves left is no chance.
  * - **Rescue** and **target.** The group holding the marked dot counts as [Goal.MARKED_WORTH] dots
- *   (to capture in "rescue", to guard in "target"); every other dot counts half, captured or lost.
+ *   (to capture in "rescue", to guard in "target").
  * - **Win**, **win by N** and **win with fewer dots.** Captures count as in the plain game, whose
  *   aim is the mission's: the end of the mission is what the goal adds, such as a margin that is
  *   out of the player's reach.
@@ -33,15 +34,11 @@ internal class MissionGoal(private val level: Level) : Goal {
         Outcome.FAILED -> true
     }
 
-    override val gains: Int = when (mission) {
-        is Mission.Survive -> MORE
-        is Mission.Capture, is Mission.Rescue, is Mission.Target -> LESS
-        else -> SAME
-    }
+    override val gains: Int = if (mission is Mission.Survive) MORE else SAME
 
     override val losses: Int = when (mission) {
         is Mission.Capture -> MORE
-        is Mission.Survive, is Mission.Rescue, is Mission.Target -> LESS
+        is Mission.Survive -> LESS
         else -> SAME
     }
 

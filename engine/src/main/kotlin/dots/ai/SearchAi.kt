@@ -219,11 +219,15 @@ class SearchAi(
 
     /**
      * [AiConfig.attackWeights] or [AiConfig.dangerWeights] for [threat] by [attacker]: by its cost,
-     * times its points, and as the goal counts it ([goalShare]).
+     * times its points. With an [aim], a threat the attacker has too few moves left for gets
+     * nothing, and the group holding the marked dot counts as the biggest. The bonus is added to
+     * the move's score, so the goal's weights are not used here: they would outweigh the search.
      */
     private fun weight(table: IntArray, threat: Threat, state: GameState, attacker: Player): Int {
         val base = table[min(threat.cost, table.size) - 1]
-        return goalShare(threat, state, attacker, base, min(threat.points, MAX_GROUP_WEIGHT))
+        val aim = aim ?: return base * min(threat.points, MAX_GROUP_WEIGHT)
+        if (outOfMoves(aim, threat, state, attacker)) return 0
+        return base * if (holdsMarked(aim, threat, state)) MAX_GROUP_WEIGHT else min(threat.points, MAX_GROUP_WEIGHT)
     }
 
     /**
@@ -233,11 +237,20 @@ class SearchAi(
      */
     private fun goalShare(threat: Threat, state: GameState, attacker: Player, value: Int, points: Int): Int {
         val aim = aim ?: return value * points
-        val left = aim.movesLeft(state, attacker)
-        if (left != null && threat.cost > left) return 0
-        val marked = aim.marked
-        if (marked != null && threat.group.contains(marked.y * state.width + marked.x)) return value * Goal.MARKED_WORTH
+        if (outOfMoves(aim, threat, state, attacker)) return 0
+        if (holdsMarked(aim, threat, state)) return value * Goal.MARKED_WORTH
         return value * points * share(aim, attacker) / 100
+    }
+
+    /** Whether [attacker] has fewer moves left for [aim] than [threat] costs. */
+    private fun outOfMoves(aim: Goal, threat: Threat, state: GameState, attacker: Player): Boolean {
+        val left = aim.movesLeft(state, attacker) ?: return false
+        return threat.cost > left
+    }
+
+    private fun holdsMarked(aim: Goal, threat: Threat, state: GameState): Boolean {
+        val marked = aim.marked ?: return false
+        return threat.group.contains(marked.y * state.width + marked.x)
     }
 
     /** What a dot [attacker] captures counts for [aim]'s player, in percent. */

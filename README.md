@@ -674,11 +674,17 @@ In a level, the computer plays for the player to fail the mission, not only for 
 
 | Mission | The computer's captures count | Its losses count | Also |
 |---------|------------------------------:|-----------------:|------|
-| `capture 5 in 8 moves` | half | double | a ring the player cannot close in the moves left is no danger |
+| `capture 5 in 8 moves` | in full | double | a ring the player cannot close in the moves left is no danger |
 | `survive 6 moves` | double | half | a ring the computer cannot close in its moves left is no chance |
-| `rescue e5` | half | half | the group holding e5 counts as 10 dots, to capture |
-| `target e5` | half | half | the group holding e5 counts as 10 dots, to guard |
-| `win`, `win by 3`, `win with 8 dots` | as in the plain game | as in the plain game | |
+| `rescue e5` | in full | in full | the group holding e5 counts as 10 dots, to capture |
+| `target e5` | in full | in full | the group holding e5 counts as 10 dots, to guard |
+| `win`, `win by 3`, `win with 8 dots` | in full | in full | |
+
+The computer's own captures keep their full value outside "survive": taking the dots of a ring
+the player is building is a defence. The weights change only how the search scores a position.
+The bonus that orders the moves is the plain game's, except that a ring its attacker has no moves
+left for gets none and the marked dot's group counts as the biggest: that bonus is added to each
+move's score, and the goal's weights there would outweigh what the search found.
 
 In the win missions the plain game's aim, more captures than the other side, is already the
 mission's. What the goal adds there is the end: when the player could no longer reach the
@@ -692,9 +698,9 @@ mission, a position where HARD playing for the mission plays a different move fr
 only for captures, and one where the steps below HARD miss it.
 
 Checking the mission at every position the search visits costs time: over three games of every
-level against an EASY stand-in, HARD took 18 ms a move instead of 16, and the levels' own steps
-0.76 ms instead of 0.67, on a laptop. In free play there is no mission, and the computer plays as
-before.
+level against an EASY stand-in, HARD took 18.6 ms a move instead of 16.3, and the levels' own
+steps 0.77 ms instead of 0.68, on a laptop. In free play there is no mission, and the computer
+plays only for captures.
 
 ### How strong is it, and how hard are the levels?
 
