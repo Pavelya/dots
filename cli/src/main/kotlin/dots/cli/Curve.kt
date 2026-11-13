@@ -6,6 +6,7 @@ import dots.ai.SearchAi
 import dots.campaign.Campaign
 import dots.campaign.Level
 import dots.campaign.LevelResult
+import dots.campaign.Mission
 import dots.campaign.Solver
 import dots.engine.Action
 import dots.engine.GameState
@@ -51,8 +52,8 @@ internal class MissionReader(private val level: Level, config: AiConfig, private
 
 /**
  * `bench levels [games]`: every [Person] plays every level [games] times; the share of games
- * passed and the average stars per level, as Markdown for `docs/design/difficulty.md`, then the
- * checks of the curve.
+ * passed and the average stars per level, as Markdown for `docs/design/difficulty.md`, then each
+ * world's mean over its puzzles, then the checks of the curve.
  */
 internal object Curve {
     /** A level the average person passes less often than this is a wall. */
@@ -69,6 +70,13 @@ internal object Curve {
         fun stars(person: Person): Double = results.getValue(person).map { it.stars }.average()
         val isWall: Boolean get() = passed(Person.AVERAGE) < WALL
         val isNoted: Boolean get() = level.note?.startsWith(WALL_NOTE) == true
+
+        /** Every level that is not a whole game is a puzzle, even one longer than the solver reads. */
+        val isPuzzle: Boolean
+            get() = when (level.mission) {
+                Mission.Win, is Mission.WinBy, is Mission.WinWithFewerDots -> false
+                else -> true
+            }
     }
 
     fun run(games: Int, levels: List<Level> = Campaign.levels) {
@@ -91,7 +99,33 @@ internal object Curve {
             chart("World $world: average stars per game", worldRows, "stars", 3, withWall = false) { row, p -> "%.2f".format(row.stars(p)) }
         }
         println()
+        puzzles(rows)
+        println()
         checks(rows)
+    }
+
+    /**
+     * Each person's mean pass rate over each world's puzzles (every level whose mission is not a
+     * whole game), and whether it falls from each world to the next for the weak and average
+     * person.
+     */
+    private fun puzzles(rows: List<Row>) {
+        val people = Person.entries
+        val worlds = rows.filter { it.isPuzzle }.groupBy { it.level.world }
+        fun mean(worldRows: List<Row>, person: Person) = worldRows.map { it.passed(person) }.average()
+        println("Puzzles: the mean share of games passed over each world's puzzles.")
+        println()
+        println("| World | Puzzles | " + people.joinToString(" | ") { "Passed, ${it.label}" } + " |")
+        println("| --- | ---: |" + " ---: |".repeat(people.size))
+        for ((world, worldRows) in worlds) {
+            println("| $world | ${worldRows.size} | " + people.joinToString(" | ") { "%.1f%%".format(100 * mean(worldRows, it)) } + " |")
+        }
+        println()
+        for (person in listOf(Person.WEAK, Person.AVERAGE)) {
+            val means = worlds.values.map { mean(it, person) }
+            val falls = means.zipWithNext().all { (a, b) -> b < a }
+            println("Puzzles get harder from world to world for the ${person.label} stand-in: ${if (falls) "yes" else "no"}.")
+        }
     }
 
     private fun table(rows: List<Row>) {

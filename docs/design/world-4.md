@@ -22,9 +22,11 @@ for special points are in the
 | 19 | A capture that closes beyond a rock. |
 | 20 | The Kraken: the normal computer, and two dots every turn, one in each half of the board. |
 
-The difficulty is a saw-tooth: levels 3, 6, 9, 12, 15 and 18 are the hard ones, and the two
-after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; levels 3, 9 and
-15 are puzzles whose answers take three or four moves.
+The difficulty is a saw-tooth: levels 6, 12 and 18 are whole games, harder than the puzzles
+around them, and 20 is the boss. World 4 has the most hard puzzles: 4-4, 4-5, 4-15, 4-17 and
+4-19. Each answer is three moves deep, and its first move is not the one that looks natural: a
+gap next to the dot that does not hold, or a fight elsewhere that draws the eye. The
+[difficulty curve](difficulty.md) measures them.
 
 ## How the levels are built
 
@@ -173,14 +175,14 @@ computer's replies in brackets, as `check-levels` prints them.
 
 `target c5` · computer: steady · 5 dots each · boosters: `wall 1, hint 1, undo 1` · stars: `moves 1 2`
 
-*Target: the ring may pass over the rock at d6, so close the right side beyond it, then follow the runs down and left.*
+*Target: the ring may pass over the rock at d6, so close the right side beyond it, not the gap at d4; then follow the runs left and down.*
 
 ```
     a b c d e f g h i
   1 . . . . . . . . .
   2 . . . R . . . . .
   3 . . # . . . . . .
-  4 . . R . R # . . .
+  4 . . R . . # . . .
   5 . R B R . . . . .
   6 . . B # . . . . .
   7 . R . R . . # . .
@@ -188,13 +190,13 @@ computer's replies in brackets, as `check-levels` prints them.
   9 . . . . . . . . .
 ```
 
-`check-levels`: passes in 3 moves: e6 (c7) c8 (b6) a6; 1 first move passes: e6.
+`check-levels`: passes in 3 moves: e6 (b6) a6 (c7) c8; 1 first move passes: e6.
 
 ### 4-5 Rock Pool
 
-`capture 2 in 4 moves` · computer: steady · 4 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
+`capture 2 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
-*Close the left side; when the pair runs down, close again with a ring over the rock.*
+*Hard: the pair has three ways out; close the left one first, then follow it right, and close again with a ring over the rock.*
 
 ```
     a b c d e f g h i j
@@ -202,15 +204,15 @@ computer's replies in brackets, as `check-levels` prints them.
   2 . . . . . . . . . .
   3 . . . # R . + . . .
   4 . . . . B R . . . .
-  5 . . + . B R . # . .
-  6 . . # R R . . + . .
+  5 . . + . B . . # . .
+  6 . . # R R R . + . .
   7 . . . . . . . . . .
   8 . . . + . . # B . .
   9 . . . . . . . . . .
  10 . . . . . . . . . .
 ```
 
-`check-levels`: passes in 2 moves: d4 (d5) c5; 1 first move passes: d4.
+`check-levels`: passes in 3 moves: d4 (f5) g5 (d5) c5; 1 first move passes: d4.
 
 ### 4-6 Rocky Shore
 
@@ -416,7 +418,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 `capture 1 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
-*Hard: close below first; the computer attacks on the right, and you close above while it runs.*
+*Hard: close below the left dot first, not above it; when it runs up, follow it round.*
 
 ```
     a b c d e f g h i j
@@ -425,14 +427,14 @@ computer's replies in brackets, as `check-levels` prints them.
   3 . . . # . . + . . .
   4 . . . . . . R . . .
   5 . . + . R . . # . .
-  6 . . # . . B R + . .
-  7 . . . R B R B . . .
+  6 . . # . . . R + . R
+  7 . . . R B R B B . .
   8 . . . + . . # R . .
   9 . . . . . . R . . .
  10 . . . . . . . . . .
 ```
 
-`check-levels`: passes in 3 moves: f8 (h7) e6 (e8) f5; 1 first move passes: f8.
+`check-levels`: passes in 3 moves: e8 (e6) d6 (f6) f5; 1 first move passes: e8.
 
 ### 4-16 Sandbar
 
@@ -459,12 +461,12 @@ computer's replies in brackets, as `check-levels` prints them.
 
 `target e6` · computer: steady · 5 dots each · boosters: `wall 1, hint 1, undo 1` · stars: `moves 1 2`
 
-*Target: close the left; the dot runs down, then up, and you follow both times.*
+*Target: leave the fight at the top alone and close the left; the dot runs down, then up, and you follow both times.*
 
 ```
     a b c d e f g h i j
   1 . . . . . . . . . .
-  2 . . . . . . . . . .
+  2 . . . . . R B . . .
   3 . . . # . B + . . .
   4 . . . . . . . . . .
   5 . . + R . R . # . .
@@ -505,14 +507,14 @@ computer's replies in brackets, as `check-levels` prints them.
 
 `capture 1 in 5 moves` · computer: steady · 5 dots each · boosters: `hint 1, double-dot 1, undo 1` · stars: `moves 1 2`
 
-*The ring may pass over the rock: b6 closes the left beyond it, then follow the dot up and right.*
+*The ring may pass over the rock: b6 closes the left beyond it, while e6 by the dot does not hold; then follow the dot right and up.*
 
 ```
     a b c d e f g h i j
   1 . . . . . . . . . .
   2 . . . . . . . . . .
   3 . . R # . . + . . .
-  4 . . . . . . . . . .
+  4 . . . . . R R . . .
   5 . . R . R . . # . .
   6 . . # B . . . + . .
   7 . . R R R . R . . .
@@ -521,7 +523,7 @@ computer's replies in brackets, as `check-levels` prints them.
  10 . . . . . . . . . .
 ```
 
-`check-levels`: passes in 3 moves: b6 (d5) d4 (e6) f6; 1 first move passes: b6.
+`check-levels`: passes in 3 moves: b6 (e6) f6 (d5) d4; 1 first move passes: b6.
 
 ### 4-20 Kraken
 

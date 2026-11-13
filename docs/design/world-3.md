@@ -22,9 +22,10 @@ holes are in the [README](../../README.md#board-shapes-and-special-points).
 | 19 | The dot by the lake cannot be captured, so capture its neighbour. |
 | 20 | The Comet, World 3's boss: a double move every third turn, on a round board. |
 
-The difficulty is a saw-tooth: levels 3, 6, 9, 12, 15 and 18 are the hard ones, and the two
-after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; levels 3, 9 and
-15 are puzzles whose answers take three or four moves.
+The difficulty is a saw-tooth: levels 6, 12 and 18 are whole games, harder than the puzzles
+around them, and 20 is the boss. The hard puzzles are 3-8, 3-13 and 3-17: each answer is three
+moves deep, and its first move is not the one that looks natural. 3-13 is a wall (see the
+[difficulty curve](difficulty.md)).
 
 ## How the levels are built
 
@@ -259,7 +260,7 @@ computer's replies in brackets, as `check-levels` prints them.
 
 `target f6` · computer: steady · 5 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
-*Target: close above the marked dot, then follow it left and up.*
+*Hard: close above the marked dot, not beside it at d6; then follow it left and up.*
 
 ```
     a b c d e f g h i
@@ -268,7 +269,7 @@ computer's replies in brackets, as `check-levels` prints them.
   3 . . . . . . . . .
   4 . . B R . . . . .
   5 . . R B . . . . .
-  6 . . . . . B R R .
+  6 . . . . . B R . .
   7 . . . . R R B R .
   8 - . . . . . B B -
   9 - - . . . . . - -
@@ -450,9 +451,9 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-17 Dusk
 
-`target d4` · computer: steady · 4 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
+`target d4` · computer: steady · 5 dots each · boosters: `double-dot 1, undo 1` · stars: `moves 1 2` · holes: `border`
 
-*Close the right side; the dot runs down, and one more dot shuts it in.*
+*Hard: close the right side first, not the left; the dot runs down, then left, and you follow it both times.*
 
 ```
     a b c d e f g h i
@@ -460,14 +461,14 @@ computer's replies in brackets, as `check-levels` prints them.
   2 - . . . . . . . -
   3 . . B R . . . . .
   4 . . R B . . . . .
-  5 . . R . . . . . .
-  6 . B B R . . . . .
+  5 . . . . . . . . .
+  6 . B R R . . . . .
   7 . . R B B . . . .
   8 - . . R . . . . -
   9 - - . . . . . - -
 ```
 
-`check-levels`: passes in 2 moves: e4 (d5) e5; 1 first move passes: e4.
+`check-levels`: passes in 3 moves: e4 (d5) e5 (c5) b5; 1 first move passes: e4.
 
 ### 3-18 Twin Stars
 
