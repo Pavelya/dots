@@ -2,21 +2,21 @@ world: 4
 level: 5
 name: Rock Pool
 computer: steady
-dots: 4
-mission: capture 2 in 4 moves
+dots: 5
+mission: capture 2 in 5 moves
 solutions: few
 boosters: hint 1, double-dot 1, undo 1
 rule: none
 stars: moves 1 2
 holes: none
-note: Close the left side; when the pair runs down, close again with a ring over the rock.
+note: Hard: the pair has three ways out; close the left one first, then follow it right, and close again with a ring over the rock.
 map:
 ..........
 ..........
 ...#R.+...
 ....BR....
-..+.BR.#..
-..#RR..+..
+..+.B..#..
+..#RRR.+..
 ..........
 ...+..#B..
 ..........

@@ -2,21 +2,21 @@ world: 3
 level: 17
 name: Dusk
 computer: steady
-dots: 4
+dots: 5
 mission: target d4
 solutions: few
 boosters: double-dot 1, undo 1
 rule: none
 stars: moves 1 2
 holes: border
-note: Close the right side; the dot runs down, and one more dot shuts it in.
+note: Hard: close the right side first, not the left; the dot runs down, then left, and you follow it both times.
 map:
 --.....--
 -.......-
 ..BR.....
 ..RB.....
-..R......
-.BBR.....
+.........
+.BRR.....
 ..RBB....
 -..R....-
 --.....--

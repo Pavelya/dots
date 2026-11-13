@@ -83,19 +83,30 @@ head starts and faster boss rules, not a stronger computer. The curve above show
 enough to make them climb. Where each step sits stays as it is until the play-tests (Q-04) say
 otherwise.
 
-**Puzzles do not get harder from world to world.** The average and strong stand-ins pass almost
-every puzzle every time; the weak one's results jump between 1% and 100% with no trend. Two
-reasons:
+**Puzzles get harder from world to world.** The mean share of games passed over each world's
+puzzles (every level that is not a whole game):
 
+| World | Puzzles | Passed, weak | Passed, average | Passed, strong |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 10 | 85.1% | 95.6% | 99.3% |
+| 2 | 16 | 80.8% | 89.4% | 100.0% |
+| 3 | 16 | 70.3% | 85.9% | 100.0% |
+| 4 | 16 | 54.9% | 81.6% | 100.0% |
+
+- **The climb comes from the hard puzzles,** and each world has more of them: for the average
+  stand-in, 2-10 and 2-13 in World 2; 3-8, 3-13 and 3-17 in World 3; 4-4, 4-5, 4-15, 4-17
+  and 4-19 in World 4. Each answer is three moves deep, one more than the average stand-in reads,
+  and its first move is not the one its step would play: a quiet move away from the capture, or
+  a move beyond a rock while one next to the dot looks right. In 4-17 a second fight at the top
+  draws the eye. Only one first move passes each of them (`cli check-levels`).
+- **The strong stand-in passes every puzzle of Worlds 2 to 4,** because it reads three moves
+  ahead. The hard puzzles ask for depth, not luck.
 - **Survive and rescue puzzles are passed every time by all three,** although the computer plays
   against the mission (README, "Playing for the mission"). To fail a player who reads the
   mission, the computer has to set up a capture the player cannot see coming, and the steady
   step, which plays them, thinks only two moves ahead. Even HARD as the computer failed the weak
-  stand-in in only 1 of 460 survive and rescue games (20 games of each level).
-- **Most puzzle answers are found by reading two moves ahead.** What makes a puzzle hard for the
-  stand-ins is a quiet first move far from a capture, deep in the answer: 2-10, 2-13 and 3-13.
-
-G-22 makes the puzzles climb.
+  stand-in in only 1 of 460 survive and rescue games (20 games of each level). They are the easy
+  steps between the hard puzzles.
 
 **Stars.** In a puzzle, a stand-in that passes nearly always finds the shortest answer, so it
 earns three stars; a person will often take a longer way. In whole games the average stand-in
@@ -127,6 +138,9 @@ earns 0.4 to 1.6 stars a game, and the strong one 1.2 to 2.3.
 - **Noise.** With 200 games, a share near 50% is known to within about 7 points either way (95%
   of the time), one near 20% or 80% to within about 6. Two levels closer than that may be equally
   hard.
+- **The hard puzzles of Worlds 3 and 4 are tuned against the stand-ins:** each board is set so
+  that the stand-in's own step prefers a wrong first move. Whether that move tempts a person too
+  is for the play-tests (Q-04).
 - **The stand-ins do not use boosters and do not retry,** so puzzles are harder for them than for
   a person who does both.
 - The `bench levels <stand-in>` tables in the README and the world pages use stand-ins that do
@@ -197,8 +211,8 @@ xychart-beta
     title "World 3: games passed (%)"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "passed (%)" 0 --> 100
-    line [100, 100, 100, 100, 100, 33, 100, 28, 23, 16, 100, 27, 0, 86, 100, 100, 97, 28, 100, 23]
-    line [100, 100, 100, 100, 100, 73, 100, 59, 100, 100, 100, 43, 0, 100, 100, 100, 100, 48, 100, 24]
+    line [100, 100, 100, 100, 100, 33, 100, 2, 23, 16, 100, 27, 0, 86, 100, 100, 0, 28, 100, 23]
+    line [100, 100, 100, 100, 100, 73, 100, 46, 100, 100, 100, 43, 0, 100, 100, 100, 29, 48, 100, 24]
     line [100, 100, 100, 100, 100, 97, 100, 100, 100, 100, 100, 77, 100, 100, 100, 100, 100, 79, 100, 71]
     line [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 ```
@@ -209,8 +223,8 @@ xychart-beta
     title "World 3: average stars per game"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "stars" 0 --> 3
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 0.57, 3.00, 0.32, 0.54, 0.34, 3.00, 0.44, 0.00, 1.46, 3.00, 3.00, 2.90, 0.45, 3.00, 0.38]
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.15, 3.00, 1.45, 3.00, 3.00, 3.00, 0.59, 0.00, 3.00, 3.00, 3.00, 3.00, 0.76, 3.00, 0.35]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 0.57, 3.00, 0.02, 0.54, 0.34, 3.00, 0.44, 0.00, 1.46, 3.00, 3.00, 0.00, 0.45, 3.00, 0.38]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.15, 3.00, 1.35, 3.00, 3.00, 3.00, 0.59, 0.00, 3.00, 3.00, 3.00, 0.85, 0.76, 3.00, 0.35]
     line [3.00, 3.00, 3.00, 3.00, 3.00, 2.12, 3.00, 3.00, 3.00, 3.00, 3.00, 1.51, 3.00, 3.00, 3.00, 3.00, 3.00, 1.76, 3.00, 1.47]
 ```
 
@@ -222,8 +236,8 @@ xychart-beta
     title "World 4: games passed (%)"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "passed (%)" 0 --> 100
-    line [100, 6, 100, 100, 40, 27, 100, 33, 22, 100, 100, 21, 33, 100, 2, 100, 3, 28, 14, 9]
-    line [100, 100, 100, 100, 100, 59, 100, 100, 100, 100, 100, 53, 100, 100, 100, 100, 100, 30, 100, 33]
+    line [100, 6, 100, 49, 21, 27, 100, 33, 22, 100, 100, 21, 33, 100, 2, 100, 0, 28, 14, 9]
+    line [100, 100, 100, 50, 42, 59, 100, 100, 100, 100, 100, 53, 100, 100, 32, 100, 33, 30, 49, 33]
     line [100, 100, 100, 100, 100, 90, 100, 100, 100, 100, 100, 91, 100, 100, 100, 100, 100, 60, 100, 73]
     line [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 ```
@@ -234,8 +248,8 @@ xychart-beta
     title "World 4: average stars per game"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "stars" 0 --> 3
-    line [1.34, 0.18, 3.00, 2.96, 0.80, 0.46, 3.00, 0.86, 0.64, 3.00, 3.00, 0.29, 0.88, 3.00, 0.02, 3.00, 0.09, 0.54, 0.42, 0.13]
-    line [3.00, 3.00, 3.00, 2.99, 3.00, 0.89, 3.00, 3.00, 3.00, 3.00, 3.00, 0.70, 3.00, 3.00, 3.00, 3.00, 3.00, 0.49, 3.00, 0.53]
+    line [1.34, 0.18, 3.00, 1.45, 0.49, 0.46, 3.00, 0.86, 0.64, 3.00, 3.00, 0.29, 0.88, 3.00, 0.05, 3.00, 0.00, 0.54, 0.41, 0.13]
+    line [3.00, 3.00, 3.00, 1.50, 1.24, 0.89, 3.00, 3.00, 3.00, 3.00, 3.00, 0.70, 3.00, 3.00, 0.69, 3.00, 0.99, 0.49, 1.46, 0.53]
     line [3.00, 3.00, 3.00, 3.00, 3.00, 1.90, 3.00, 3.00, 3.00, 3.00, 3.00, 1.66, 3.00, 3.00, 3.00, 3.00, 3.00, 1.27, 3.00, 1.40]
 ```
 
@@ -288,7 +302,7 @@ Stars: the average stars per game, a failed game counting 0.
 | 3-5 | Lantern | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-6 | Full Moon | win | steady | 33% | 73% | 97% | 0.6 | 1.1 | 2.1 |
 | 3-7 | Fireflies | survive 3 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 3-8 | Owl | target f6 | steady | 28% | 59% | 100% | 0.3 | 1.4 | 3.0 |
+| 3-8 | Owl | target f6 | steady | 2% | 46% | 100% | 0.0 | 1.3 | 3.0 |
 | 3-9 | Crater Rim | capture 2 in 5 moves | steady | 23% | 100% | 100% | 0.5 | 3.0 | 3.0 |
 | 3-10 | Telescope | capture 1 in 4 moves | steady | 16% | 100% | 100% | 0.3 | 3.0 | 3.0 |
 | 3-11 | Shooting Star | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
@@ -297,15 +311,15 @@ Stars: the average stars per game, a failed game counting 0.
 | 3-14 | Pole Star | capture 1 in 4 moves | steady | 86% | 100% | 100% | 1.5 | 3.0 | 3.0 |
 | 3-15 | Black Pool | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-16 | Moon Bay | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 3-17 | Dusk | target d4 | steady | 97% | 100% | 100% | 2.9 | 3.0 | 3.0 |
+| 3-17 | Dusk | target d4 | steady | 0% | 29% | 100% | 0.0 | 0.9 | 3.0 |
 | 3-18 | Twin Stars | win with 19 dots | steady | 28% | 48% | 79% | 0.5 | 0.8 | 1.8 |
 | 3-19 | Stargazer | capture 1 in 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-20 | Comet | win with 23 dots | steady | 23% | 24% | 71% | 0.4 | 0.4 | 1.5 |
 | 4-1 | Rocks | capture 1 in 4 moves | steady | 100% | 100% | 100% | 1.3 | 3.0 | 3.0 |
 | 4-2 | Oyster | capture 3 in 4 moves | steady | 6% | 100% | 100% | 0.2 | 3.0 | 3.0 |
 | 4-3 | Tide Pool | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 4-4 | Anchor | target c5 | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 4-5 | Rock Pool | capture 2 in 4 moves | steady | 40% | 100% | 100% | 0.8 | 3.0 | 3.0 |
+| 4-4 | Anchor | target c5 | steady | 49% | 50% | 100% | 1.5 | 1.5 | 3.0 |
+| 4-5 | Rock Pool | capture 2 in 5 moves | steady | 21% | 42% | 100% | 0.5 | 1.2 | 3.0 |
 | 4-6 | Rocky Shore | win | steady | 27% | 59% | 90% | 0.5 | 0.9 | 1.9 |
 | 4-7 | Seagull | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 4-8 | Coral | capture 2 in 4 moves | steady | 33% | 100% | 100% | 0.9 | 3.0 | 3.0 |
@@ -315,9 +329,9 @@ Stars: the average stars per game, a failed game counting 0.
 | 4-12 | Pearls | win | steady | 21% | 53% | 91% | 0.3 | 0.7 | 1.7 |
 | 4-13 | Starfish | capture 1 in 4 moves | steady | 33% | 100% | 100% | 0.9 | 3.0 | 3.0 |
 | 4-14 | Lighthouse | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 4-15 | Whirlpool | capture 1 in 5 moves | steady | 2% | 100% | 100% | 0.0 | 3.0 | 3.0 |
+| 4-15 | Whirlpool | capture 1 in 5 moves | steady | 2% | 32% | 100% | 0.0 | 0.7 | 3.0 |
 | 4-16 | Sandbar | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 4-17 | Driftwood | target e6 | steady | 3% | 100% | 100% | 0.1 | 3.0 | 3.0 |
+| 4-17 | Driftwood | target e6 | steady | 0% | 33% | 100% | 0.0 | 1.0 | 3.0 |
 | 4-18 | Reef | win with 19 dots | steady | 28% | 30% | 60% | 0.5 | 0.5 | 1.3 |
-| 4-19 | Cove | capture 1 in 5 moves | steady | 14% | 100% | 100% | 0.4 | 3.0 | 3.0 |
+| 4-19 | Cove | capture 1 in 5 moves | steady | 14% | 49% | 100% | 0.4 | 1.5 | 3.0 |
 | 4-20 | Kraken | win | normal | 9% | 33% | 73% | 0.1 | 0.5 | 1.4 |

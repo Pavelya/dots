@@ -9,14 +9,14 @@ boosters: double-dot 1, undo 1
 rule: none
 stars: moves 1 2
 holes: border
-note: Target: close above the marked dot, then follow it left and up.
+note: Hard: close above the marked dot, not beside it at d6; then follow it left and up.
 map:
 --.....--
 -.......-
 .........
 ..BR.....
 ..RB.....
-.....BRR.
+.....BR..
 ....RRBR.
 -.....BB-
 --.....--
