@@ -219,9 +219,9 @@ Highlighter on paper is 4.48 in light and 9.02 in dark.
 booster's count drops at 0 ms and swells to 135% and back in 200 ms. At 0 left, the button turns
 dashed and grey.
 
-<img src="motion/strip-boosters.png" width="720" alt="Key frames of the four boosters: the wall drawn and hatched, the hint circled twice, the bomb removing four blue dots, the double dot placing two dots with sparkles">
+<img src="motion/strip-boosters.png" width="720" alt="Key frames of the five boosters: the wall drawn and hatched, the hint circled twice, the bomb removing four blue dots, the double dot placing two dots with sparkles, and Undo's preview with two pale dots in dashed rings, rubbed out by grey strokes, the computer's first">
 
-<img src="motion/boosters-light.gif" width="360" alt="Animation: Wall, Hint, Bomb and Double dot, one after another">
+<img src="motion/boosters-light.gif" width="360" alt="Animation: Wall, Hint, Bomb, Double dot and Undo, one after another, with the five boosters in the tool bar">
 
 [Same in the dark version](motion/boosters-dark.gif)
 

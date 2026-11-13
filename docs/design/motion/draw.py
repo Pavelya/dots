@@ -238,6 +238,19 @@ def board(t, st, uid):
                                      stroke=col, stroke_width=f(DOT / 6), fill="none"))
             if p == st.get("last") and s >= 0.999:
                 pieces.append(el("circle", cx=f(x), cy=f(y), r=f(DOT * 0.15), fill=t["paper"]))
+    for p, side, s in st.get("ghosts", []):
+        # Undo's preview: the piece in its pale colour inside a dashed Graphite ring; the rub-out shrinks both.
+        if s <= 0.01:
+            continue
+        x, y = c(p)
+        if side == "red":
+            pieces.append(el("circle", cx=f(x), cy=f(y), r=f(DOT / 2 * s), fill=t["red_pale"]))
+        else:
+            h = DOT * 7 / 12 * s
+            pieces.append(el("path", d=f"M{f(x)} {f(y - h)}L{f(x + h)} {f(y)}L{f(x)} {f(y + h)}L{f(x - h)} {f(y)}Z",
+                             fill=t["blue_pale"]))
+        pieces.append(el("circle", cx=f(x), cy=f(y), r=f(0.45 * SP * s), fill="none", stroke=t["graphite"],
+                         stroke_width=1.5, stroke_dasharray="3 3"))
     for p, side, k in st.get("closing", []):
         x, y = c(p)
         pieces.append(el("circle", cx=f(x), cy=f(y), r=f(SP / 6 * k), fill="none", stroke=t[side], stroke_width=1.5))
@@ -252,6 +265,8 @@ def board(t, st, uid):
         extra.append(wall(t, p, q1, q2, uid))
     for p, q in st.get("hints", []):
         extra.append(hint(t, p, q))
+    for p, shift, k in st.get("scrubs", []):
+        extra.append(scrub(t, p, shift, k))
     for p, side, q in st.get("sparkles", []):
         x, y = c(p)
         for k in range(4):
@@ -330,6 +345,24 @@ def wall(t, p, q1, q2, uid):
     return "".join(out)
 
 
+def scrub(t, p, shift, k):
+    """Undo's eraser: three short Graphite strokes across the point, slid by shift dp along their slant and
+    k of their full length."""
+    x, y = c(p)
+    a = math.radians(-30)
+    ux, uy = math.cos(a), math.sin(a)  # along the stroke
+    nx, ny = -uy, ux  # across the strokes
+    half = 8 * k
+    out = []
+    for j, off in enumerate((-4.5, 0, 4.5)):
+        sx = x + nx * off + ux * (shift + (1.5 if j == 1 else -1))
+        sy = y + ny * off + uy * (shift + (1.5 if j == 1 else -1))
+        if half > 0.2:
+            out.append(el("line", x1=f(sx - ux * half), y1=f(sy - uy * half), x2=f(sx + ux * half),
+                          y2=f(sy + uy * half), stroke=t["graphite"], stroke_width=2, stroke_linecap="round"))
+    return "".join(out)
+
+
 def hint(t, p, q):
     """The hint: the point circled twice in the player's ink, like the next level on the map."""
     x, y = c(p)
@@ -382,27 +415,28 @@ def left_block(t, ui):
             f'color: {col}">{n}</span><span style="{cd.LABEL}; color: {t["graphite"]}">{label}</span></div>')
 
 
-def toolbar(t, counts, pops=(1, 1, 1, 1), dy=0.0, tap=None):
-    tools = [("Wall", "wall"), ("Hint", "hint"), ("Bomb", "bomb"), ("Double dot", None)]
+def toolbar(t, counts, pops=(1, 1, 1, 1, 1), dy=0.0, tap=None, undo_ready=True):
+    """The canvas tool bar (cd.toolbar) with moving parts: five boosters, Undo last. Undo waits, grey on paper
+    with its count, until there is a turn to take back."""
     out = []
-    for i, ((name, ic), n) in enumerate(zip(tools, counts)):
-        ink = t["blue"] if n else t["graphite"]
+    for i, ((name, ic, _, _), n) in enumerate(zip(cd.BOOSTERS, counts)):
+        waiting = name == "Undo" and not undo_ready
+        ink = t["blue"] if n and not waiting else t["graphite"]
         border = f"2px solid {t['blue_pale']}" if n else f"2px dashed {t['graphite']}"
-        pic = (cd.icon(cd.ICONS[ic], ink, 28) if ic else
-               svg(30, 16, el("circle", cx=7, cy=8, r=6, fill=t["red"]) +
-                   el("path", d="M23 1 L30 8 L23 15 L16 8 Z", fill=t["red"]), view="0 0 30 16"))
+        pic = cd.booster_pic(t, ic, ink)
         badge = (f'<span style="position: absolute; right: -6px; top: -7px; min-width: 22px; height: 22px; '
                  f'border-radius: 11px; background: {t["red"] if n else t["graphite"]}; color: {t["paper"]}; '
                  f'font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; '
                  f'transform: scale({f(pops[i])})">{n}</span>')
         ring = ""
         if tap and tap[0] == i:
-            ring = touch(28 + 0, 28, tap[1], t)
+            ring = touch(28, 28, tap[1], t)
         out.append(f'<div style="position: relative; height: 56px; box-sizing: border-box; border: {border}; '
-                   f'border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px; background: {t["card"]}; '
+                   f'border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px; '
+                   f'background: {t["paper"] if waiting else t["card"]}; '
                    f'display: flex; align-items: center; justify-content: center">{pic}{badge}{ring}</div>')
-    return (f'<div style="position: absolute; left: 18px; right: 18px; top: {f(730 + dy)}px; display: grid; '
-            f'grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px">{"".join(out)}</div>')
+    return (f'<div style="position: absolute; left: 12px; right: 12px; top: {f(730 + dy)}px; display: grid; '
+            f'grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px">{"".join(out)}</div>')
 
 
 def touch(x, y, q, t):
@@ -464,8 +498,8 @@ def screen(t, ui, uid):
                  f'align-items: center; justify-content: space-between">'
                  f'{side_row(t, "red", "You", ui.get("you", 0), turn[1] if turn[0] == "you" else 0, "flex-start", ui.get("you_pop", 1.0), chip)}'
                  f'{left_block(t, ui)}</div>')
-    parts.append(toolbar(t, ui.get("tools", (2, 1, 0, 1)), ui.get("tool_pops", (1, 1, 1, 1)), ui.get("tool_dy", 0),
-                         ui.get("tool_tap")))
+    parts.append(toolbar(t, ui.get("tools", TOOLS), ui.get("tool_pops", (1, 1, 1, 1, 1)), ui.get("tool_dy", 0),
+                         ui.get("tool_tap"), ui.get("undo_ready", True)))
     parts.extend(ui.get("over", []))
     return cd.root(t, "".join(parts))
 
@@ -486,8 +520,11 @@ def fading_edges(p, T, at):
     return [(p, "blue", 1 - q)] if q < 1 else []
 
 
+TOOLS = tuple(n for _, _, n, _ in cd.BOOSTERS)  # Wall 2, Hint 1, Bomb 0, Double dot 1, Undo 1, as on the canvas
+
+
 def base_threat_ui():
-    return dict(mood="smug", bubble="Your move…", you=2, opp=1, left=13, mission=2, tools=(2, 1, 0, 1))
+    return dict(mood="smug", bubble="Your move…", you=2, opp=1, left=13, mission=2, tools=TOOLS)
 
 
 def computer_lands(T, at, p, st, side="blue"):
@@ -788,32 +825,85 @@ def scene_running_out(theme, T, uid):
     return screen(t, ui, uid), cap
 
 
-BOOSTER_PARTS = [  # name, length of the effect (ms)
-    ("Wall", 400), ("Hint", 500), ("Bomb", 450), ("Double dot", 1350),
-]
 LEAD, HOLD = 500, 900
+UNDO_LEAD = 1800  # Undo shows its preview before Take back
+BOOSTER_PARTS = [  # name, time before Confirm (ms), length of the effect (ms)
+    ("Wall", LEAD, 400), ("Hint", LEAD, 500), ("Bomb", LEAD, 450), ("Double dot", LEAD, 1350),
+    ("Undo", UNDO_LEAD, 600),
+]
+
+# Undo takes back the turn of the threat: your dot (9, 8) and the computer's answer (7, 7), as on the
+# canvas frame "Game: Undo's preview". The turn before it ended on the computer's (12, 12).
+UNDO_YOU, UNDO_OPP, UNDO_BEFORE = (9, 8), (7, 7), (12, 12)
 
 
 def scene_boosters(theme, T, uid):
     t = THEMES[theme]
     start = 0
-    for i, (name, length) in enumerate(BOOSTER_PARTS):
-        total = LEAD + length + HOLD
+    for i, (name, lead, length) in enumerate(BOOSTER_PARTS):
+        total = lead + length + HOLD
         if T < start + total or i == len(BOOSTER_PARTS) - 1:
-            return booster_frame(t, i, name, T - start - LEAD, uid)
+            return booster_frame(t, i, name, T - start - lead, uid)
         start += total
 
 
+def take_back_tap(t, q):
+    """A tap on Take back, in the note over the player's line (the canvas undo_note)."""
+    return f'<div style="position: absolute; left: 0; top: 0">{touch(236, 744, q, t)}</div>'
+
+
+def undo_part(t, u, st, ui):
+    """Undo: the tap on its button, the preview, Take back, then the turn rubbed out newest first."""
+    over = []
+    if u < -1400:
+        ui["tool_tap"] = (4, (u + 1700) / 300) if u >= -1700 else None
+    previewing = u >= -1400
+    # The threat marks of the position; the preview takes away those the turn made (the pair's).
+    if not previewing:
+        st["threats"] = [(p, 1.0, 2, t["hi"]) for p in PAIR + CLUSTER]
+        st["closing"] = [((9, 9), "blue", 1.0), ((5, 7), "red", 1.0)]
+        return over
+    st["threats"] = [(p, 1.0, 2, t["hi"]) for p in CLUSTER]
+    st["closing"] = [((5, 7), "red", 1.0)]
+    st["red"] = [p for p in st["red"] if p != UNDO_YOU]
+    st["blue"] = [p for p in st["blue"] if p != UNDO_OPP]
+    st["edges"] = []
+    st["last"] = None
+    ui.update(mood="smug", bubble="Take it back?")
+    # The note slides up in 300 ms and down in 200 ms from Take back.
+    slide = prog(u, -1400, -1100) if u < 0 else 1 - prog(u, 0, 200, EASE_IN)
+    if slide > 0.01:
+        over.append(f'<div style="position: absolute; inset: 0; transform: translateY({f((1 - slide) * 150)}px)">'
+                    f'{cd.undo_note(t)}</div>')
+    if -400 <= u < -100:
+        over.append(take_back_tap(t, (u + 400) / 300))
+    # The rub-out: the computer's answer from 0, your dot from 200, each in 250 ms; the strokes go at 450.
+    ghosts, scrubs = [], []
+    for p, side, a in ((UNDO_OPP, "blue", 0), (UNDO_YOU, "red", 200)):
+        ghosts.append((p, side, 1 - prog(u, a, a + 250, EASE_IN)))
+        if u >= a:
+            k = prog(u, a, a + 50) * (1 - prog(u, 450, 600, EASE_OUT))
+            shift = 3 * math.sin(2 * math.pi * 3 * prog(u, a, a + 250, linear))
+            if k > 0.01:
+                scrubs.append((p, shift, k))
+    st["ghosts"], st["scrubs"] = ghosts, scrubs
+    if u >= 450:
+        ui.update(left=14, mood="happy", bubble="Your move…")
+        st["last"] = UNDO_BEFORE
+        ui["left_pop"] = bump(u, 450, 150, 1.3)
+    return over
+
+
 def booster_frame(t, i, name, u, uid):
-    counts = [2, 1, 1, 1]
+    counts = [2, 1, 1, 1, 1]
     st = position(TR, TB, [area_state(R1), area_state(B1)], last=(7, 7))
     st["scale"], st["grow"] = {}, {}
     ui = base_threat_ui()
-    pops = [1, 1, 1, 1]
+    pops = [1, 1, 1, 1, 1]
     if u >= 0:
         counts[i] -= 1
         pops[i] = bump(u, 0, 200, 1.35)
-    tap = (i, (u + 400) / 300) if -400 <= u < -100 else None
+    tap = (i, (u + 400) / 300) if -400 <= u < -100 and name != "Undo" else None
     p = (9, 9)
     turn = ("you", 1.0)
     over = []
@@ -864,7 +954,22 @@ def booster_frame(t, i, name, u, uid):
             ui["chip"] = ("×1", 1 - prog(u, 1200, 1350, EASE_IN))
             turn = ("opp", prog(u - 1200, 0, 200))
         ui["left"] = 13 - (u >= 600) - (u >= 1200)
-    ui.update(board=st, tools=tuple(counts), tool_pops=tuple(pops), tool_tap=tap, turn=turn, over=over)
+    ui.update(tool_tap=tap)
+    if name == "Undo":
+        over = undo_part(t, u, st, ui)
+    ui.update(board=st, tools=tuple(counts), tool_pops=tuple(pops), turn=turn, over=over)
+    if name == "Undo":
+        if u < -1400:
+            cap = ("Undo: chosen", "")
+        elif u < 0:
+            cap = ("Undo's preview, then Take back", "")
+        elif u < 200:
+            cap = ("Undo: the computer's answer rubbed out", f"+{u} ms")
+        elif u < 450:
+            cap = ("Undo: your dot rubbed out", f"+{u} ms")
+        else:
+            cap = ("Undo: the strokes go, 14 dots left", f"+{u} ms")
+        return screen(t, ui, uid), cap
     if u < 0:
         cap = (f"{name}: chosen, then Confirm", "")
     else:
@@ -1111,7 +1216,7 @@ SCENES = {  # name: (drawer, length in ms, crop x, y, w, h)
     "big-capture": (scene_big, 4800, FULL),
     "threat": (scene_threat, 6600, (0, 296, W, 380)),
     "running-out": (scene_running_out, 6000, FULL),
-    "boosters": (scene_boosters, sum(LEAD + n + HOLD for _, n in BOOSTER_PARTS), (0, 296, W, 494)),
+    "boosters": (scene_boosters, sum(lead + n + HOLD for _, lead, n in BOOSTER_PARTS), (0, 296, W, 494)),
     "end": (scene_end, 4300, FULL),
     "unlock": (scene_unlock, 3600, FULL),
 }
@@ -1147,10 +1252,11 @@ def booster_strip():
     rows = []
     start = 0
     times = {"Wall": (0, 100, 200, 300, 400), "Hint": (0, 125, 250, 375, 500), "Bomb": (0, 150, 220, 300, 450),
-             "Double dot": (0, 300, 600, 700, 1200, 1350)}
-    for name, length in BOOSTER_PARTS:
-        rows.append([(start + LEAD + u, f"{name} {u} ms" if u == 0 else str(u)) for u in times[name]])
-        start += LEAD + length + HOLD
+             "Double dot": (0, 300, 600, 700, 1200, 1350), "Undo": (-800, 0, 125, 300, 450, 600)}
+    for name, lead, length in BOOSTER_PARTS:
+        rows.append([(start + lead + u, f"{name} preview" if u < 0 else f"{name} {u} ms" if u == 0 else str(u))
+                     for u in times[name]])
+        start += lead + length + HOLD
     return rows
 
 
