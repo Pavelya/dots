@@ -194,9 +194,10 @@ class LevelScreensTest {
         compose.onNode(hasContentDescription("Computer, plays steady", substring = true)).assertIsDisplayed()
         compose.onNodeWithText("You have 2 dots. Boosters:").assertIsDisplayed()
         compose.onNodeWithContentDescription("1 of 3 stars: Keep all your dots for 2 moves").assertExists()
-        compose.onNodeWithContentDescription("3 of 3 stars: With 2 boosters unused").assertExists()
+        compose.onNodeWithContentDescription("3 of 3 stars: With 3 boosters unused").assertExists()
         compose.onNodeWithContentDescription("Wall, 2. What it does").performClick()
-        assertEquals(listOf(Booster.WALL), boosters)
+        compose.onNodeWithContentDescription("Undo, 1. What it does").performClick()
+        assertEquals(listOf(Booster.WALL, Booster.UNDO), boosters)
 
         compose.onNodeWithText("Start").performClick()
         assertEquals(1, started)
