@@ -50,7 +50,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -98,14 +97,13 @@ const val MAP_PATH_TAG = "map-path"
  * level low on the screen, near the thumb. A level opens its Level card; a locked level or world
  * says what opens it. There are no Play buttons on levels.
  *
- * [map] is null while the progress is read. The inks are the plain POC ones ([MapStyle.plain]);
- * the Notebook theme (V-02, V-03) brings the paper, fonts and hand-drawn icons, V-11 the landscape,
+ * [map] is null while the progress is read. The inks come from the theme ([MapStyle]);
+ * the Notebook theme (V-03) brings the paper, fonts and hand-drawn icons, V-11 the landscape,
  * A-04 the chest and the player's title, A-07 the streak on the puzzle note.
  */
 @Composable
 fun MapScreen(map: CampaignMap?, actions: MapActions) {
-    val colors = MaterialTheme.colorScheme
-    val style = remember(colors) { MapStyle.plain(colors, dark = colors.background.luminance() < 0.5f) }
+    val style = MapStyle.current
     var lock by remember { mutableStateOf<CampaignMap.Lock?>(null) }
     Box(Modifier.fillMaxSize().background(style.paper)) {
         if (map != null) {

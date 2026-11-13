@@ -26,6 +26,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,7 +49,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.inset
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -59,9 +59,9 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dots.campaign.Mission
@@ -77,10 +77,12 @@ import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.board.BoardMarks
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.PlayableBoard
-import kotlinx.coroutines.delay
+import io.github.pavelya.dots.ui.board.drawPiece
+import io.github.pavelya.dots.ui.theme.Palette
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.min
+import kotlinx.coroutines.delay
 
 /**
  * The game board as the canvas game frames lay it out (docs/design/canvas, `game-start`,
@@ -111,8 +113,8 @@ import kotlin.math.min
  * photo, only the opponent's line stays, and on a small phone that line moves into the top row in
  * place of the game's name, as the wireframes' small frames show.
  *
- * The inks are the plain POC ones ([GameStyle.plain]); the Notebook theme (V-02, V-03) brings the
- * paper, fonts and hand-drawn icons, V-12 the faces.
+ * Every ink, size and text style comes from the theme ([Palette], [BoardStyle], [NoteText]); the
+ * Notebook theme (V-03) brings the paper, fonts and hand-drawn icons, V-12 the faces.
  */
 @Composable
 internal fun GameBoard(
@@ -129,10 +131,8 @@ internal fun GameBoard(
     guide: Tutorial.Step? = null,
     onSkipGuide: () -> Unit = {},
 ) {
-    val colors = MaterialTheme.colorScheme
-    val dark = colors.background.luminance() < 0.5f
-    val style = remember(colors) { GameStyle.plain(colors, dark) }
-    val boardStyle = remember(colors) { BoardStyle.plain(colors, dark) }
+    val style = Palette.current
+    val boardStyle = BoardStyle.current
     val state = ui.state
     val names = Names(ui.vsComputer, human)
     val below = if (ui.vsComputer) human else Player.RED
@@ -337,7 +337,7 @@ private fun boardMarks(ui: GameUiState): BoardMarks {
 
 /** After a Double dot, beside the player's name: "×2", then "×1" (motion.md, Boosters: Double dot). */
 @Composable
-private fun DoubleDotChip(left: Int, style: GameStyle, modifier: Modifier) {
+private fun DoubleDotChip(left: Int, style: Palette, modifier: Modifier) {
     val description = pluralStringResource(R.plurals.double_dot_left, left, left)
     Text(
         "×$left",
@@ -355,7 +355,7 @@ private fun DoubleDotChip(left: Int, style: GameStyle, modifier: Modifier) {
 
 /** The top row: the pause icon and the [content], the game's name or, on a small phone, the opponent's line. */
 @Composable
-private fun TopRow(showPause: Boolean, style: GameStyle, onPause: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun TopRow(showPause: Boolean, style: Palette, onPause: () -> Unit, content: @Composable BoxScope.() -> Unit) {
     Box(Modifier.fillMaxWidth().height(TOP_ROW)) {
         if (showPause) {
             val label = stringResource(R.string.pause)
@@ -381,7 +381,7 @@ private fun TopRow(showPause: Boolean, style: GameStyle, onPause: () -> Unit, co
  * picture goes"), and its speech bubble beside it. Between two people, the photo holds Blue's piece.
  */
 @Composable
-private fun Photo(player: Player, look: OpponentLook?, style: GameStyle) {
+private fun Photo(player: Player, look: OpponentLook?, style: Palette) {
     // The canvas places the photo 64 dp from the left of a 360 dp screen and the bubble at 198 dp.
     Box(Modifier.width(296.dp).height(PHOTO_HEIGHT)) {
         Box(Modifier.offset(x = 32.dp, y = 8.dp).rotate(-3f)) {
@@ -422,11 +422,13 @@ private fun bubbleText(bubble: Bubble): String = stringResource(
     },
 )
 
-/** Handwriting, until the Notebook theme brings Caveat (V-03). */
-internal val HAND = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic)
+/** Short handwritten words: the theme's display style at 24 sp. */
+internal val HAND: TextStyle
+    @Composable @ReadOnlyComposable
+    get() = NoteText.display.copy(fontSize = 24.sp, lineHeight = TextUnit.Unspecified)
 
 @Composable
-private fun SpeechBubble(text: String, style: GameStyle, modifier: Modifier) {
+private fun SpeechBubble(text: String, style: Palette, modifier: Modifier) {
     val shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomEnd = 16.dp, bottomStart = 3.dp)
     Text(
         text,
@@ -442,7 +444,7 @@ private fun SpeechBubble(text: String, style: GameStyle, modifier: Modifier) {
 
 /** A strip of tape on a note or a photo. */
 @Composable
-internal fun Tape(style: GameStyle, modifier: Modifier) {
+internal fun Tape(style: Palette, modifier: Modifier) {
     Box(modifier.background(style.tape))
 }
 
@@ -452,7 +454,7 @@ internal fun Tape(style: GameStyle, modifier: Modifier) {
  * line, for the top row of a small phone, is smaller and has no tally.
  */
 @Composable
-private fun SideLine(player: Player, name: String, score: Int, toMove: Boolean, style: GameStyle, compact: Boolean = false) {
+private fun SideLine(player: Player, name: String, score: Int, toMove: Boolean, style: Palette, compact: Boolean = false) {
     val ink = style.ink(player)
     val description = stringResource(if (toMove) R.string.side_to_move else R.string.side_waiting, name, score)
     Row(
@@ -475,31 +477,20 @@ private fun SideLine(player: Player, name: String, score: Int, toMove: Boolean, 
             modifier = if (toMove) Modifier.penStroke(ink) else Modifier,
         )
         if (!compact) Tally(score, ink)
-        Text(score.toString(), style = if (compact) SCORE.copy(fontSize = 18.sp) else SCORE, color = ink)
+        Text(score.toString(), style = if (compact) NoteText.score.copy(fontSize = 18.sp) else NoteText.score, color = ink)
     }
 }
 
-/** Big numbers: the scores and the dots left. */
-private val SCORE = TextStyle(fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold, fontFeatureSettings = "tnum")
 
-/** A side's piece (pieces.md): a round dot for Red, a diamond for Blue. */
+/**
+ * A side's piece in the theme's shape (pieces.md, "Beyond the board"). The dot size is 6/7 of the
+ * box, so a diamond of 7/6 of the dot size fills it.
+ */
 @Composable
-internal fun Piece(player: Player, style: GameStyle, modifier: Modifier) {
+internal fun Piece(player: Player, style: Palette, modifier: Modifier) {
     val ink = style.ink(player)
-    Canvas(modifier) {
-        if (player == Player.RED) {
-            drawCircle(ink, radius = size.minDimension * 6f / 14f)
-        } else {
-            val path = Path().apply {
-                moveTo(size.width / 2, 0f)
-                lineTo(size.width, size.height / 2)
-                lineTo(size.width / 2, size.height)
-                lineTo(0f, size.height / 2)
-                close()
-            }
-            drawPath(path, ink)
-        }
-    }
+    val piece = BoardStyle.current.piece(player)
+    Canvas(modifier) { drawPiece(piece, center, size.minDimension * 6f / 7f, ink) }
 }
 
 /** The canvas's pen stroke under a name: a slightly wavy line, 4 dp under the text. */
@@ -549,13 +540,13 @@ private fun Tally(score: Int, ink: Color) {
 
 /** The dots the player below the board has left: a big number and a label. */
 @Composable
-private fun DotsLeft(left: Int, style: GameStyle) {
+private fun DotsLeft(left: Int, style: Palette) {
     val description = pluralStringResource(R.plurals.game_dots_left, left, left)
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         modifier = Modifier.clearAndSetSemantics { contentDescription = description },
     ) {
-        Text(left.toString(), style = SCORE, color = style.pencil, modifier = Modifier.alignByBaseline())
+        Text(left.toString(), style = NoteText.score, color = style.pencil, modifier = Modifier.alignByBaseline())
         Text(
             pluralStringResource(R.plurals.game_dots_left_label, left),
             style = MaterialTheme.typography.labelLarge,
@@ -574,7 +565,7 @@ internal val TOOL_SHAPE = RoundedCornerShape(topStart = 14.dp, topEnd = 18.dp, b
  * dashed and its ink grey, as an empty booster on the canvas.
  */
 @Composable
-private fun UndoTool(enabled: Boolean, style: GameStyle, onClick: () -> Unit, modifier: Modifier) {
+private fun UndoTool(enabled: Boolean, style: Palette, onClick: () -> Unit, modifier: Modifier) {
     val ink = if (enabled) style.blue else style.graphite
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -597,7 +588,7 @@ private fun UndoTool(enabled: Boolean, style: GameStyle, onClick: () -> Unit, mo
  * [armedFor] (a move, an undo) puts it back.
  */
 @Composable
-private fun StopTool(enabled: Boolean, armedFor: Any, style: GameStyle, onStop: () -> Unit, modifier: Modifier) {
+private fun StopTool(enabled: Boolean, armedFor: Any, style: Palette, onStop: () -> Unit, modifier: Modifier) {
     var armed by remember(armedFor) { mutableStateOf(false) }
     val sure = armed && enabled
     val ink = when {
@@ -633,7 +624,7 @@ private fun StopTool(enabled: Boolean, armedFor: Any, style: GameStyle, onStop: 
 
 /** After the other side stopped: Done ends the game, in blue ink like the big buttons. */
 @Composable
-private fun DoneTool(style: GameStyle, onDone: () -> Unit, modifier: Modifier) {
+private fun DoneTool(style: Palette, onDone: () -> Unit, modifier: Modifier) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
@@ -659,7 +650,7 @@ internal fun Modifier.toolOutline(ink: Color, dashed: Boolean, shape: Shape): Mo
 
 /** The campaign's mission note, taped in the top right corner; [MissionNoteContent] fills it. */
 @Composable
-private fun MissionNote(style: GameStyle, modifier: Modifier, width: Dp, content: @Composable () -> Unit) {
+private fun MissionNote(style: Palette, modifier: Modifier, width: Dp, content: @Composable () -> Unit) {
     Box(modifier.padding(top = 6.dp, end = 12.dp).rotate(2f)) {
         Box(
             Modifier
@@ -674,7 +665,7 @@ private fun MissionNote(style: GameStyle, modifier: Modifier, width: Dp, content
 
 /** Between two people, across the screen at each change of turn: the side to play now. */
 @Composable
-private fun TurnBanner(player: Player, style: GameStyle, modifier: Modifier) {
+private fun TurnBanner(player: Player, style: Palette, modifier: Modifier) {
     val ink = style.ink(player)
     val text = stringResource(R.string.turn_banner, playerName(player))
     Row(

@@ -4,9 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,6 +34,9 @@ import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.game.OpponentLook
 import io.github.pavelya.dots.game.gameViewModel
 import io.github.pavelya.dots.ui.board.BoardInput
+import io.github.pavelya.dots.ui.theme.DotsTheme
+import io.github.pavelya.dots.ui.theme.GameTheme
+import io.github.pavelya.dots.ui.theme.Palette
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -66,9 +67,9 @@ class GameScreenshotTest {
     private val human = Player.RED
 
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
-    private fun show(content: @Composable () -> Unit) {
+    private fun show(theme: GameTheme = GameTheme.PLAIN, dark: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
+            DotsTheme(theme, dark) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
             }
         }
@@ -103,6 +104,19 @@ class GameScreenshotTest {
         assertEquals(8, big.state.score(Player.RED))
         show { Board(ui(big)) }
         capture("game_big_capture")
+    }
+
+    /** The threat (as `game_threat`) in the Notebook theme, light and dark. */
+    @Test
+    fun threatInNotebook() {
+        show(GameTheme.NOTEBOOK) { Board(ui(CanvasGame.threat)) }
+        capture("theme_game_notebook")
+    }
+
+    @Test
+    fun threatInNotebookDark() {
+        show(GameTheme.NOTEBOOK, dark = true) { Board(ui(CanvasGame.threat)) }
+        capture("theme_game_notebook_dark")
     }
 
     @Test
@@ -233,7 +247,7 @@ class GameScreenshotTest {
             BoosterNote(
                 aim = ui.aim!!,
                 method = PlacingMethod.TWO_TAPS,
-                style = rememberGameStyle(),
+                style = Palette.current,
                 onCancel = {},
                 onConfirm = {},
                 modifier = Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
@@ -308,7 +322,7 @@ private object CanvasGame {
         return CampaignParts(
             title = "Level 7",
             mission = if (note) missionNote(level, status) else null,
-            boosters = { BoosterBar(tools, rememberGameStyle()) {} },
+            boosters = { BoosterBar(tools, Palette.current) {} },
         )
     }
 

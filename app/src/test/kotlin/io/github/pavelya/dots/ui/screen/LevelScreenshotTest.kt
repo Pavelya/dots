@@ -4,9 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -31,6 +29,8 @@ import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.gameViewModel
 import io.github.pavelya.dots.game.levelGame
+import io.github.pavelya.dots.ui.theme.DotsTheme
+import io.github.pavelya.dots.ui.theme.GameTheme
 import kotlinx.coroutines.Dispatchers
 import org.junit.Rule
 import org.junit.Test
@@ -53,9 +53,9 @@ class LevelScreenshotTest {
     val compose = createComposeRule()
 
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
-    private fun show(content: @Composable () -> Unit) {
+    private fun show(theme: GameTheme = GameTheme.PLAIN, dark: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
+            DotsTheme(theme, dark) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
             }
         }
@@ -127,17 +127,25 @@ class LevelScreenshotTest {
     private fun waitFor(text: String) =
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isNotEmpty() }
 
-    @Test
-    fun resultWin() {
-        // Level 1-1 passed with a move to spare: two stars of three, and Level 1-2 opens.
+    /** Level 1-1 passed with a move to spare, in [theme]: two stars of three, and Level 1-2 opens. */
+    private fun win(name: String, theme: GameTheme = GameTheme.PLAIN, dark: Boolean = false) {
         val journal = CampaignJournal { _: Level, result: LevelResult -> LevelEnd(result, CampaignMap.Opened(emptyList(), listOf(Campaign.level(1, 2))), 0, Campaign.level(1, 2)) }
         val vm = level11(journal)
-        show { GameScreen(vm, onToMap = {}, onRules = {}) }
+        show(theme, dark) { GameScreen(vm, onToMap = {}, onRules = {}) }
         play(vm, Pos(0, 6))
         play(vm, Pos(3, 4))
         waitFor("You won!")
-        capture("result_level_win")
+        capture(name)
     }
+
+    @Test
+    fun resultWin() = win("result_level_win")
+
+    @Test
+    fun resultWinInNotebook() = win("theme_result_notebook", GameTheme.NOTEBOOK)
+
+    @Test
+    fun resultWinInNotebookDark() = win("theme_result_notebook_dark", GameTheme.NOTEBOOK, dark = true)
 
     @Test
     fun resultLossAfterTheThirdFailure() {

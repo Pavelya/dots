@@ -3,10 +3,7 @@ package io.github.pavelya.dots.ui.screen
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasText
@@ -17,6 +14,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.pavelya.dots.data.AppSettings
+import io.github.pavelya.dots.ui.theme.DotsTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +37,7 @@ class SettingsScreenshotTest {
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
     private fun show(dark: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+            DotsTheme(dark = dark) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
             }
         }

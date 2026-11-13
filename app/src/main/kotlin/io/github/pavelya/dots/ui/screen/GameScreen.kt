@@ -27,6 +27,7 @@ import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.ui.board.BoardInput
+import io.github.pavelya.dots.ui.theme.Palette
 import kotlinx.coroutines.delay
 
 /**
@@ -81,7 +82,7 @@ fun GameScreen(
     BackHandler(enabled = !ui.isOver) { paused = !paused }
     // Registered later, so it comes first: Back closes an open booster preview.
     BackHandler(enabled = ui.aim != null && !paused) { viewModel.cancelBooster() }
-    val style = rememberGameStyle()
+    val style = Palette.current
     val level = ui.level
     // Each new game of a level opens with its mission; the first move, or a moment, ends it.
     var opening by rememberSaveable(ui.round) { mutableStateOf(level != null && ui.fresh) }

@@ -29,6 +29,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -49,10 +50,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.theme.Palette
 import kotlin.math.roundToInt
 
 /**
@@ -68,7 +69,7 @@ internal fun PaperPage(
     backLabel: String = stringResource(R.string.back),
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     Column(Modifier.fillMaxSize().squaredPaper(style)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -106,9 +107,9 @@ internal fun PaperPage(
 }
 
 /** Paper, the grid every 24 dp, and the margin line at 56 dp, as the wireframes draw the menu screens. */
-private fun Modifier.squaredPaper(style: GameStyle): Modifier {
-    val grid = style.blue.copy(alpha = 0.12f)
-    val margin = style.red.copy(alpha = 0.35f)
+private fun Modifier.squaredPaper(style: Palette): Modifier {
+    val grid = style.grid
+    val margin = style.margin
     return background(style.paper).drawBehind {
         val step = 24.dp.toPx()
         val line = 1.dp.toPx()
@@ -130,7 +131,7 @@ private fun Modifier.squaredPaper(style: GameStyle): Modifier {
 /** A section's name in red handwriting, sitting on the bottom of its 40 dp line. */
 @Composable
 internal fun SectionHead(text: String) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     Box(contentAlignment = Alignment.BottomStart, modifier = Modifier.fillMaxWidth().height(40.dp).semantics { heading() }) {
         Text(text, style = HAND, color = style.red, maxLines = 1, modifier = Modifier.padding(bottom = 4.dp))
     }
@@ -142,7 +143,7 @@ internal fun SectionHead(text: String) {
  */
 @Composable
 internal fun VolumeRow(label: String, volume: Int, max: Int, onChange: (Int) -> Unit) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     var moving by remember(volume) { mutableFloatStateOf(volume.toFloat()) }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -164,7 +165,7 @@ internal fun VolumeRow(label: String, volume: Int, max: Int, onChange: (Int) -> 
 /** A setting that is on or off: its [label], and a hand-drawn switch on the right. The whole row toggles. */
 @Composable
 internal fun SwitchRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -193,7 +194,7 @@ internal fun SwitchRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) 
 /** One of several choices: a hand-drawn radio circle, its [label] and a [detail] line under it. */
 @Composable
 internal fun RadioRow(label: String, detail: String?, selected: Boolean, onClick: () -> Unit) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -215,7 +216,7 @@ internal fun RadioRow(label: String, detail: String?, selected: Boolean, onClick
 /** A row that opens another page or does something: its [label], a [detail] in grey, and an arrow. */
 @Composable
 internal fun LinkRow(label: String, detail: String? = null, onClick: () -> Unit) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -234,7 +235,7 @@ internal fun LinkRow(label: String, detail: String? = null, onClick: () -> Unit)
 /** A line of information that does nothing when tapped: its [label] and a [detail] in grey. */
 @Composable
 internal fun InfoRow(label: String, detail: String) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -248,7 +249,7 @@ internal fun InfoRow(label: String, detail: String) {
 /** A short text on a white card laid on the page: what a Settings details page is about. */
 @Composable
 internal fun IntroCard(text: String) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     Text(
         text,
         style = NoteText.body.copy(fontSize = 14.sp, lineHeight = 20.sp),
@@ -262,7 +263,7 @@ internal fun IntroCard(text: String) {
     )
 }
 
-private fun Modifier.dashedUnderline(style: GameStyle): Modifier = drawBehind {
+private fun Modifier.dashedUnderline(style: Palette): Modifier = drawBehind {
     val y = size.height - 0.5.dp.toPx()
     drawLine(
         style.blue.copy(alpha = 0.25f),
@@ -274,10 +275,14 @@ private fun Modifier.dashedUnderline(style: GameStyle): Modifier = drawBehind {
 }
 
 /** The wireframes' Caveat page title, 34 sp; italics until V-03 brings Caveat. */
-private val PAGE_TITLE = NoteText.display.copy(fontSize = 34.sp, lineHeight = 40.sp)
+private val PAGE_TITLE: TextStyle
+    @Composable @ReadOnlyComposable
+    get() = NoteText.display.copy(fontSize = 34.sp, lineHeight = 40.sp)
 
 /** A row's text on the menu screens. */
-internal val ROW_TEXT = TextStyle(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold)
+internal val ROW_TEXT: TextStyle
+    @Composable @ReadOnlyComposable
+    get() = NoteText.label.copy(fontSize = 15.sp)
 
 /** The switch's hand-cut track. */
 private val SWITCH_SHAPE = RoundedCornerShape(topStart = 14.dp, topEnd = 16.dp, bottomEnd = 13.dp, bottomStart = 15.dp)

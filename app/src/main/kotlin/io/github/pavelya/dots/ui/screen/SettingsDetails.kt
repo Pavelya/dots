@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.Credits
+import io.github.pavelya.dots.ui.theme.Palette
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -68,7 +69,7 @@ private fun AssetCredits(@StringRes title: Int, assets: List<Credits.Asset>) {
 /** The full text of [licence], from the app's assets, on a white card. */
 @Composable
 private fun LicenceText(licence: Credits.Licence) {
-    val style = rememberGameStyle()
+    val style = Palette.current
     val context = LocalContext.current
     val text by produceState<String?>(null, licence) {
         value = withContext(Dispatchers.IO) {

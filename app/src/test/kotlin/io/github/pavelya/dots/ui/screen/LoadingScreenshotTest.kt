@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -15,6 +12,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.theme.DotsTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -39,7 +37,7 @@ class LoadingScreenshotTest {
      */
     private fun show(ring: Float, lastDot: Float, words: Float, dark: Boolean = false) {
         compose.setContent {
-            MaterialTheme(colorScheme = if (dark) darkColorScheme() else lightColorScheme()) {
+            DotsTheme(dark = dark) {
                 Box(Modifier.fillMaxSize().background(colorResource(R.color.paper)).padding(top = 24.dp, bottom = 12.dp)) {
                     LoadingPicture(
                         tip = "Close a ring to capture dots.",

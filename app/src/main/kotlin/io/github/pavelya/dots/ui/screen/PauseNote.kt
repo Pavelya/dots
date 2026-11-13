@@ -38,7 +38,6 @@ import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -53,6 +52,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.theme.Palette
 
 /** The canvas's hand-cut shape of a big button. */
 private val BIG_BUTTON_SHAPE = RoundedCornerShape(topStart = 16.dp, topEnd = 20.dp, bottomEnd = 14.dp, bottomStart = 22.dp)
@@ -72,8 +72,7 @@ internal fun PauseNote(
     onToMap: () -> Unit,
     onRules: () -> Unit,
 ) {
-    val colors = MaterialTheme.colorScheme
-    val style = remember(colors) { GameStyle.plain(colors, colors.background.luminance() < 0.5f) }
+    val style = Palette.current
     var asking by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = asking) { asking = false }
     val title = stringResource(R.string.paused)
@@ -129,7 +128,7 @@ internal fun PauseNote(
 
 /** A note taped over the board: a card turned a little ([angle] degrees), with a strip of tape at the top. */
 @Composable
-internal fun TapedNote(style: GameStyle, modifier: Modifier, angle: Float = -1f, content: @Composable ColumnScope.() -> Unit) {
+internal fun TapedNote(style: Palette, modifier: Modifier, angle: Float = -1f, content: @Composable ColumnScope.() -> Unit) {
     Box(modifier.rotate(angle), contentAlignment = Alignment.TopCenter) {
         Column(
             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -151,7 +150,7 @@ internal fun TapedNote(style: GameStyle, modifier: Modifier, angle: Float = -1f,
 @Composable
 internal fun BigButton(
     text: String,
-    style: GameStyle,
+    style: Palette,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     before: String? = null,
@@ -191,7 +190,7 @@ private fun ButtonIcon(path: String, ink: Color) {
  * for TalkBack: Retry or Map on Result.
  */
 @Composable
-internal fun SquareButton(path: String, label: String, style: GameStyle, onClick: () -> Unit) {
+internal fun SquareButton(path: String, label: String, style: Palette, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
@@ -210,7 +209,7 @@ internal fun SquareButton(path: String, label: String, style: GameStyle, onClick
 @Composable
 internal fun SmallButton(
     text: String,
-    style: GameStyle,
+    style: Palette,
     onClick: () -> Unit,
     modifier: Modifier,
     height: Dp = 48.dp,
@@ -229,7 +228,7 @@ internal fun SmallButton(
 }
 
 @Composable
-private fun SmallIcon(path: String, label: String, style: GameStyle, onClick: () -> Unit) {
+private fun SmallIcon(path: String, label: String, style: Palette, onClick: () -> Unit) {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier

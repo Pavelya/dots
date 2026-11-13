@@ -18,6 +18,8 @@ import dots.campaign.Campaign
 import dots.campaign.Level
 import dots.campaign.Progress
 import io.github.pavelya.dots.data.SampleProgress
+import io.github.pavelya.dots.ui.theme.DotsTheme
+import io.github.pavelya.dots.ui.theme.GameTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -40,14 +42,14 @@ class MapScreenTest {
 
     private val opened = mutableListOf<Level>()
 
-    private fun show(progress: Progress) {
+    private fun show(progress: Progress, theme: GameTheme = GameTheme.PLAIN, dark: Boolean = false) {
         val map = Campaign.map(progress)
         val actions = MapActions(
             onLevel = { opened += it },
             onDaily = {}, onPlay = {}, onRules = {}, onStats = {}, onShop = {}, onSettings = {},
         )
         compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
+            DotsTheme(theme, dark) {
                 Surface { MapScreen(map, actions) }
             }
         }
@@ -72,6 +74,18 @@ class MapScreenTest {
         compose.onNodeWithContentDescription("Level 2-9, 1 star").assertIsDisplayed()
         compose.onNodeWithContentDescription("World 2, Garden", substring = true).assertIsDisplayed()
         capture("map_mid_world")
+    }
+
+    @Test
+    fun `mid-world in the Notebook theme`() {
+        show(SampleProgress.midWorld, GameTheme.NOTEBOOK)
+        capture("theme_map_notebook")
+    }
+
+    @Test
+    fun `mid-world in the Notebook theme, dark`() {
+        show(SampleProgress.midWorld, GameTheme.NOTEBOOK, dark = true)
+        capture("theme_map_notebook_dark")
     }
 
     @Test
