@@ -86,7 +86,9 @@ private val STEP_LABEL: TextStyle
     get() = NoteText.small.copy(fontSize = 11.sp, lineHeight = 14.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.06.em)
 
 /** The step's sentence in handwriting (Caveat 24 on the wireframe, V-03). */
-private val SENTENCE = HAND.copy(fontSize = 22.sp, lineHeight = 26.sp)
+private val SENTENCE: TextStyle
+    @Composable @ReadOnlyComposable
+    get() = HAND.copy(fontSize = 22.sp, lineHeight = 26.sp)
 
 @StringRes
 private fun lessonName(lesson: Lesson): Int = when (lesson) {
