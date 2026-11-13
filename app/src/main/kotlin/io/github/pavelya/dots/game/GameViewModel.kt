@@ -84,14 +84,49 @@ data class GameUiState(
      * like, then end the game with done.
      */
     val collecting: Boolean = false,
+    /**
+     * The campaign's boosters the player may use now (A-05): on their turn, while the computer is
+     * not thinking and no booster preview is open. Empty outside the campaign.
+     */
+    val usable: Set<Booster> = emptySet(),
+    /** The booster preview, while one is open over the board; null otherwise. */
+    val aim: BoosterAim? = null,
+    /** The point a Hint showed, circled until the player's dot lands; null otherwise. */
+    val hint: Pos? = null,
+    /** After a Double dot, the dots the player still places this turn: 2, then 1. Null otherwise. */
+    val doubleDots: Int? = null,
 ) {
     /** True when Result can open: the game is over and, in a level, its end is saved. */
     val showsResult: Boolean get() = isOver && (level == null || levelEnd != null)
 }
 
 /**
+ * An open booster preview (docs/design/flows.md, "Booster preview"): the [booster], the [point]
+ * chosen for it, and what the board shows of it. Wall and Bomb need a point; the others have none.
+ */
+data class BoosterAim(
+    val booster: Booster,
+    /** The chosen point, or the point under the finger while it drags; null until one is chosen. */
+    val point: Pos? = null,
+    /** The points it may be aimed at; empty for a booster without a point. */
+    val targets: List<Pos> = emptyList(),
+    /** The bomb's plus of 5 points around [point], on the board. */
+    val plus: List<Pos> = emptyList(),
+    /** The pieces it would take away: the bomb's hits, or the turn Undo takes back. */
+    val gone: List<Pos> = emptyList(),
+) {
+    /** True once Confirm can apply it: it has its point, or needs none. */
+    val ready: Boolean get() = point != null || !needsPoint(booster)
+
+    companion object {
+        fun needsPoint(booster: Booster): Boolean = booster == Booster.WALL || booster == Booster.BOMB
+    }
+}
+
+/**
  * Holds one game and turns screen events into game actions. The screen sends events ([onTap],
- * [aim], [release], [undo], [stop], [done], [playAgain]) and draws [ui]; all rules are the engine's.
+ * [aim], [release], [undo], [stop], [done], [playAgain], and for boosters [chooseBooster],
+ * [confirmBooster] and [cancelBooster]) and draws [ui]; all rules are the engine's.
  *
  * A game is described by a [GameLogEntry]: a new one, or the saved one when the app was closed
  * mid-game (its moves are replayed). Every change is reported to the [journal], which saves it
@@ -110,6 +145,7 @@ data class GameUiState(
  * @param clock the time now in milliseconds, for the log
  * @param placing how dots are placed now, for the log: the game log records the method with the
  *   touches and dots it took, so that `cli placing-report` can compare methods (A-13)
+ * @param hintFor the Hint booster's point for a position, found on [computerDispatcher]
  */
 class GameViewModel(
     start: GameLogEntry,
@@ -121,6 +157,7 @@ class GameViewModel(
     private val replyDelayMillis: Long = 400,
     private val clock: () -> Long = System::currentTimeMillis,
     private val placing: () -> PlacingMethod = { PlacingMethod.TWO_TAPS },
+    private val hintFor: (GameState) -> Action.Hint? = { Hints.hint(it) },
 ) : ViewModel() {
     val human: Player = Player.RED
 
@@ -133,6 +170,12 @@ class GameViewModel(
 
     /** When the game last changed (or was opened), to add up the time spent playing. */
     private var lastActive = clock()
+
+    /**
+     * The point last chosen in the booster preview. While a finger drags, the preview follows it;
+     * lifting it off a target comes back here (A-05).
+     */
+    private var chosen: Pos? = null
 
     /** True once the player skipped the tutorial's guided steps on this screen. */
     private var skipped = false
@@ -164,6 +207,7 @@ class GameViewModel(
      */
     fun onTap(point: Pos?) {
         if (!humanToMove()) return
+        if (_ui.value.aim != null) return aimAt(point, lifted = true)
         touched()
         val result = Placement.onTap(_ui.value.preview, point) { game.state.isLegal(it) }
         val placed = result.placed
@@ -181,6 +225,7 @@ class GameViewModel(
      */
     fun aim(point: Pos?) {
         if (!humanToMove()) return
+        if (_ui.value.aim != null) return aimAt(point, lifted = false)
         val preview = point?.takeIf { game.state.isLegal(it) }
         if (preview != _ui.value.preview) showPreview(preview)
     }
@@ -192,6 +237,7 @@ class GameViewModel(
      */
     fun release(point: Pos?) {
         if (!humanToMove()) return
+        if (_ui.value.aim != null) return aimAt(point, lifted = true)
         touched()
         if (point == null || !game.state.isLegal(point)) {
             showPreview(null)
@@ -218,6 +264,98 @@ class GameViewModel(
         entry = entry.copy(placed = entry.placed + 1)
         changed()
         _ui.value = snapshot(lastMove = point, captured = move)
+        letComputerMove()
+    }
+
+    /**
+     * Opens [booster]'s preview over the board, if the player may use it now. Nothing is spent
+     * until [confirmBooster].
+     */
+    fun chooseBooster(booster: Booster) {
+        if (booster !in _ui.value.usable) return
+        val state = game.state
+        val targets = when (booster) {
+            Booster.WALL -> state.points().filter { state.isLegal(Action.Wall(it)) }
+            Booster.BOMB -> state.points().filter { state.isLegal(Action.Bomb(it)) }
+            else -> emptyList()
+        }
+        chosen = null
+        showAim(BoosterAim(booster, targets = targets))
+    }
+
+    /**
+     * In the booster preview, a touch at [point] chooses it the way the player places a dot: a tap
+     * (two taps), or a finger [lifted] there (drag), while a moving finger only shows it. A touch
+     * off the targets keeps the point already chosen.
+     */
+    private fun aimAt(point: Pos?, lifted: Boolean) {
+        val aim = _ui.value.aim ?: return
+        val target = point?.takeIf { it in aim.targets }
+        if (lifted && target != null) chosen = target
+        val shown = target ?: chosen
+        if (shown != aim.point) showAim(aim.copy(point = shown))
+    }
+
+    /** Shows [aim] with what it would do at its point, and the board as it would look. */
+    private fun showAim(aim: BoosterAim) {
+        val state = game.state
+        val point = aim.point
+        val shown = when {
+            aim.booster == Booster.BOMB && point != null -> aim.copy(plus = plusAround(state, point), gone = state.bombHits(point))
+            aim.booster == Booster.UNDO -> {
+                val before = state.useBooster(Action.Undo)
+                aim.copy(gone = state.points().filter { state.ownerAt(it) != null && before.ownerAt(it) == null })
+            }
+            else -> aim.copy(plus = emptyList(), gone = emptyList())
+        }
+        _ui.value = snapshot(lastMove = lastPlaced(), aim = shown)
+    }
+
+    /** Applies the booster of the open preview: Wall and Bomb at its point, Hint once it is found. */
+    fun confirmBooster() {
+        val aim = _ui.value.aim ?: return
+        if (!humanToMove() || !aim.ready) return
+        val action = when (aim.booster) {
+            Booster.WALL -> Action.Wall(aim.point!!)
+            Booster.BOMB -> Action.Bomb(aim.point!!)
+            Booster.DOUBLE_DOT -> Action.DoubleDot
+            Booster.UNDO -> Action.Undo
+            Booster.HINT -> return findHint()
+        }
+        if (!game.state.isLegal(action)) return cancelBooster()
+        use(action)
+    }
+
+    /** Closes the booster preview; nothing is spent. */
+    fun cancelBooster() {
+        if (_ui.value.aim == null) return
+        chosen = null
+        _ui.value = snapshot(lastMove = lastPlaced())
+    }
+
+    /** The Hint looks for the player's best move as the computer would, off the main thread. */
+    private fun findHint() {
+        val position = game.state
+        chosen = null
+        _ui.value = snapshot(lastMove = lastPlaced()).copy(thinking = true, usable = emptySet())
+        thinking = viewModelScope.launch {
+            val hint = withContext(computerDispatcher) { hintFor(position) }
+            ensureActive()
+            if (game.state !== position) return@launch // the game changed meanwhile
+            if (hint == null) {
+                _ui.value = snapshot(lastMove = lastPlaced())
+            } else {
+                use(hint)
+            }
+        }
+    }
+
+    private fun use(action: Action.UseBooster) {
+        chosen = null
+        game.apply(action)
+        if (action == Action.Undo) entry = entry.copy(undos = entry.undos + 1)
+        changed()
+        _ui.value = snapshot(lastMove = lastPlaced())
         letComputerMove()
     }
 
@@ -290,6 +428,7 @@ class GameViewModel(
         computer = computerFor(entry)
         levelEnd = null
         shownGuide = null
+        chosen = null
         round++
         lastActive = clock()
         journal?.start(entry)
@@ -371,17 +510,38 @@ class GameViewModel(
         return step ?: shownGuide
     }
 
-    private fun lastPlaced(): Pos? = game.record.actions.lastOrNull { it is Action.Place }?.let { (it as Action.Place).pos }
+    /** The last dot placed that is still on the board: after an Undo, the dot before the turn it took back. */
+    private fun lastPlaced(): Pos? {
+        val state = game.state
+        return when (val last = game.record.actions.lastOrNull { it is Action.Place || it == Action.Undo }) {
+            is Action.Place -> last.pos
+            Action.Undo -> state.lastPlaced(state.toMove.opponent)
+            else -> null
+        }
+    }
+
+    /** After a Double dot this turn, the dots the player still places: 2, then 1; else null. */
+    private fun doubleDotsLeft(state: GameState): Int? {
+        if (state.toMove != human || !state.boosterUsed || game.isOver) return null
+        val actions = game.record.actions
+        val used = actions.lastIndexOf(Action.DoubleDot)
+        if (used < 0) return null
+        val placed = actions.subList(used + 1, actions.size)
+        if (placed.any { it !is Action.Place } || placed.size >= 2) return null
+        return 2 - placed.size
+    }
 
     /** What the screen draws now; [captured] is the move just played, if any, for the computer's face. */
-    private fun snapshot(lastMove: Pos?, captured: MoveResult? = null): GameUiState {
+    private fun snapshot(lastMove: Pos?, captured: MoveResult? = null, aim: BoosterAim? = null): GameUiState {
         val state = game.state
         val level = level
         val mission = level?.status(state)
         val over = game.isOver
         val openEnded = level == null && (entry.record as? GameRecord)?.settings?.dotsPerPlayer == null
         val peopleToMove = computer == null || state.toMove == human
-        val dangers = if (entry.threatHighlight && !over) Player.entries.flatMap { Hints.dangers(state, it) } else emptyList()
+        // Undo's preview shows the board as it was before the turn it takes back, threats included.
+        val shownState = if (aim?.booster == Booster.UNDO) state.useBooster(Action.Undo) else state
+        val dangers = if (entry.threatHighlight && !over) Player.entries.flatMap { Hints.dangers(shownState, it) } else emptyList()
         val opponent = computer?.let {
             val lastCapture = captured?.captures?.takeIf { it.isNotEmpty() }?.let { captures ->
                 LastCapture(captures.first().by, captures.sumOf { c -> c.points })
@@ -397,8 +557,10 @@ class GameViewModel(
                 mission.outcome == MissionOutcome.PASSED -> Ending.WON
                 else -> Ending.LOST
             }
-            OpponentLook.of(state, human, lastCapture, inDanger, ending)
+            if (aim?.booster == Booster.UNDO) OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK) else OpponentLook.of(state, human, lastCapture, inDanger, ending)
         }
+        val humanTurn = !over && (computer == null || state.toMove == human)
+        val usable = if (level == null || !humanTurn || aim != null) emptySet() else Booster.entries.filter { game.canUse(it) }.toSet()
         return GameUiState(
             state = state,
             lastMove = lastMove,
@@ -418,6 +580,18 @@ class GameViewModel(
             openEnded = openEnded,
             canStop = openEnded && peopleToMove && state.isLegal(Action.Stop),
             collecting = openEnded && peopleToMove && !over && state.isCleanup,
+            usable = usable,
+            aim = aim,
+            hint = (game.record.actions.lastOrNull() as? Action.Hint)?.pos?.takeIf { humanTurn },
+            doubleDots = doubleDotsLeft(state),
         )
     }
 }
+
+/** Every point of the board, row by row. */
+private fun GameState.points(): List<Pos> = (0 until height).flatMap { y -> (0 until width).map { x -> Pos(x, y) } }
+
+/** The bomb's plus of 5 points around [center]: those on the board. */
+private fun plusAround(state: GameState, center: Pos): List<Pos> =
+    listOf(center, Pos(center.x, center.y - 1), Pos(center.x - 1, center.y), Pos(center.x + 1, center.y), Pos(center.x, center.y + 1))
+        .filter { state.inBounds(it.x, it.y) && !state.isHole(it) }

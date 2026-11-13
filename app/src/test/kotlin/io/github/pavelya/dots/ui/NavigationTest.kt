@@ -11,6 +11,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
@@ -174,8 +175,8 @@ class NavigationTest {
         assertEquals(1, nav.currentBackStackEntry?.arguments?.getInt("world"))
         assertEquals(2, nav.currentBackStackEntry?.arguments?.getInt("number"))
         waitFor("World 1 · Level 2")
-        // Boosters opens from a booster chip on the card of a level that allows one (LevelCardTest).
-        compose.runOnUiThread { nav.navigate(Routes.BOOSTERS) }
+        // Boosters opens from a booster chip on the card (a booster on the Level card opens Boosters).
+        compose.runOnUiThread { nav.navigate(Routes.boosters(1, 2)) }
         at(Routes.BOOSTERS)
         back()
         at(Routes.LEVEL)
@@ -530,6 +531,23 @@ class NavigationTest {
         reopen(Routes.MAP)
         assertEquals(setOf(Routes.LOADING, Routes.MAP), visited)
         assertEquals("1-2", savedLevel)
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp") // the whole Level card, Start included, fits on the screen
+    fun `a booster on the Level card opens Boosters with the level's counts, and Close returns to the card`() {
+        launch()
+        compose.onNodeWithContentDescription("Level 1-2, next").performClick()
+        at(Routes.LEVEL)
+        waitFor("World 1 · Level 2")
+        compose.onNodeWithContentDescription("Undo, 1. What it does").performClick()
+        at(Routes.BOOSTERS)
+        compose.onNode(hasContentDescription("Undo, you have 1. Take back your last dot and the computer’s answer.")).assertExists()
+        compose.onNode(hasContentDescription("Bomb, you have 0.", substring = true)).assertExists()
+        val inBoosters = hasAnyAncestor(SemanticsMatcher.expectValue(SemanticsProperties.PaneTitle, "Boosters"))
+        compose.onNode(hasContentDescription("Close") and inBoosters).performClick()
+        at(Routes.LEVEL)
+        waitFor("World 1 · Level 2")
     }
 
     @Test

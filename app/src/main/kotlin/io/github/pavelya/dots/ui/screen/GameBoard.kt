@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dots.campaign.Mission
 import dots.campaign.Tutorial
+import dots.engine.Booster
 import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.R
@@ -73,6 +74,7 @@ import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.OpponentLook
 import io.github.pavelya.dots.ui.board.BoardInput
+import io.github.pavelya.dots.ui.board.BoardMarks
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.PlayableBoard
 import kotlinx.coroutines.delay
@@ -91,7 +93,7 @@ import kotlin.math.min
  * - **The board,** edge to edge, at the largest whole-dp spacing that fits ([boardSpacing]). Dots
  *   are placed by the [input]'s method ([PlayableBoard]).
  * - **The player below the board:** piece, name, tally and score, and the dots left.
- * - **The tool bar:** the campaign's boosters (A-05), or Undo in free play (decision 0023). Two
+ * - **The tool bar:** the campaign's five boosters ([BoosterBar], A-05), or Undo in free play (decision 0023). Two
  *   players have none. An open-ended game (decision 0025) adds Stop, which asks for a second tap,
  *   and, for the side that collects after the other stopped, Done with a line saying what to do.
  * - **The tutorial** (the wireframes' "Tutorial level"): a [guided] level has no tool bar and
@@ -99,6 +101,10 @@ import kotlin.math.min
  *   place of the mission note; the board circles the point to tap, with a hand pointing at it.
  *   Skip calls [onSkipGuide]. When there is no room above the board, the note lies over its top
  *   rows.
+ *
+ * In a booster preview the board shows where the booster can act and what it would do ([BoardMarks]);
+ * after a Hint its point stays circled until the dot lands, and after a Double dot a chip beside
+ * the player's name counts the dots still to place this turn.
  *
  * A pen stroke under a name marks the side to move. Between two people, a banner names the side to
  * play at each change of turn. Spare height goes to the opponent; when there is too little for the
@@ -190,19 +196,23 @@ internal fun GameBoard(
                 dangers = ui.dangers,
                 marked = ui.level?.mission?.let(::missionDot)?.takeUnless { ui.isOver },
                 pointer = guide?.point,
+                marks = boardMarks(ui),
             )
             Row(
                 modifier = Modifier.fillMaxWidth().height(PLAYER_LINE).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SideLine(below, names.of(below), state.score(below), toMove = isToMove(ui, below), style)
+                ui.doubleDots?.let { DoubleDotChip(it, style, Modifier.padding(start = 10.dp)) }
                 Spacer(Modifier.weight(1f))
                 state.dotsLeft(below)?.let { DotsLeft(it, style) }
             }
             if (toolBar) {
+                // Five boosters in the campaign fit with less room around them (draw.py, `toolbar`).
+                val side = if (campaign != null) 12.dp else 18.dp
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(TOOL_BAR).padding(start = 18.dp, end = 18.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                    modifier = Modifier.fillMaxWidth().height(TOOL_BAR).padding(start = side, end = side, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(if (campaign != null) 10.dp else 14.dp),
                 ) {
                     // At the end the tools leave, and Result takes their place (motion.md, End of game).
                     when {
@@ -311,6 +321,37 @@ private fun turnBanner(ui: GameUiState): Player? {
 /** How long the turn banner shows. */
 internal const val BANNER_MILLIS = 1_200L
 
+/** What the boosters add to the board: the open preview's marks and a Hint's point. */
+private fun boardMarks(ui: GameUiState): BoardMarks {
+    val aim = ui.aim ?: return if (ui.hint == null) BoardMarks.NONE else BoardMarks(hint = ui.hint)
+    return BoardMarks(
+        targets = aim.targets,
+        point = aim.point,
+        wall = aim.point.takeIf { aim.booster == Booster.WALL },
+        plus = aim.plus,
+        gone = aim.gone,
+        hint = ui.hint,
+    )
+}
+
+/** After a Double dot, beside the player's name: "×2", then "×1" (motion.md, Boosters: Double dot). */
+@Composable
+private fun DoubleDotChip(left: Int, style: GameStyle, modifier: Modifier) {
+    val description = pluralStringResource(R.plurals.double_dot_left, left, left)
+    Text(
+        "×$left",
+        style = HAND.copy(fontSize = 20.sp, lineHeight = 24.sp),
+        color = style.red,
+        modifier = modifier
+            .border(1.5.dp, style.red, RoundedCornerShape(12.dp))
+            .padding(horizontal = 8.dp)
+            .clearAndSetSemantics {
+                contentDescription = description
+                liveRegion = LiveRegionMode.Polite
+            },
+    )
+}
+
 /** The top row: the pause icon and the [content], the game's name or, on a small phone, the opponent's line. */
 @Composable
 private fun TopRow(showPause: Boolean, style: GameStyle, onPause: () -> Unit, content: @Composable BoxScope.() -> Unit) {
@@ -376,6 +417,7 @@ private fun bubbleText(bubble: Bubble): String = stringResource(
         Bubble.OUCH -> R.string.bubble_ouch
         Bubble.WELL_PLAYED -> R.string.bubble_well_played
         Bubble.AGAIN -> R.string.bubble_again
+        Bubble.TAKE_IT_BACK -> R.string.bubble_take_it_back
     },
 )
 

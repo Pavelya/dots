@@ -6,9 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -30,7 +33,8 @@ import kotlin.math.max
  * target), circled twice in the player's ink. [guides] draws the preview's row and column across
  * the board, around a finger that hides the point itself (placing by drag). [pointer] is the point
  * the tutorial asks the player to tap: circled in the player's ink, with a hand pointing at it (the
- * wireframes' "Tutorial level").
+ * wireframes' "Tutorial level"). Blocked points, a wall booster's among them, carry the wall's mark;
+ * [marks] adds the booster preview and the Hint's circle (A-05).
  */
 @Composable
 fun BoardView(
@@ -45,6 +49,7 @@ fun BoardView(
     marked: Pos? = null,
     guides: Boolean = false,
     pointer: Pos? = null,
+    marks: BoardMarks = BoardMarks.NONE,
 ) {
     Canvas(
         modifier = modifier
@@ -52,9 +57,29 @@ fun BoardView(
             .semantics { contentDescription = description },
     ) {
         val geometry = BoardGeometry(state.width, state.height, size.width, size.height)
-        drawPosition(state, geometry, style, lastMove, preview, showLinks, dangers, marked)
-        if (preview != null && guides) drawGuides(state, preview, geometry, style)
+        drawPosition(state, geometry, style, lastMove, preview, showLinks, dangers, marked, marks)
+        val guided = preview ?: marks.point
+        if (guided != null && guides) drawGuides(state, guided, geometry, style)
         pointer?.let { drawPointer(geometry.center(it), geometry, style) }
+    }
+}
+
+/**
+ * What a booster adds to the board (A-05). In the booster preview: the [targets] it may be aimed
+ * at, the [point] chosen (drag's guides follow it), a [wall] about to go up, the bomb's [plus] and the pieces it would take away ([gone]: the
+ * bomb's hits, or the turn Undo takes back), pale in dashed rings. After a Hint: its [hint] point,
+ * circled twice in the player's ink.
+ */
+data class BoardMarks(
+    val targets: List<Pos> = emptyList(),
+    val point: Pos? = null,
+    val wall: Pos? = null,
+    val plus: List<Pos> = emptyList(),
+    val gone: List<Pos> = emptyList(),
+    val hint: Pos? = null,
+) {
+    companion object {
+        val NONE = BoardMarks()
     }
 }
 
@@ -106,17 +131,23 @@ private fun DrawScope.drawPosition(
     showLinks: Boolean,
     dangers: List<Danger>,
     marked: Pos?,
+    marks: BoardMarks,
 ) {
     drawRect(style.background)
     drawAreas(state, geometry, style)
     drawGrid(state, geometry, style)
+    drawWalls(state, geometry, style)
+    drawTargets(state, marks.targets, geometry, style)
+    marks.wall?.let { drawWall(geometry.center(it), geometry, style, preview = true) }
     if (showLinks) drawLinks(state, geometry, style)
     drawDots(state, geometry, style)
+    drawGone(state, marks.gone, geometry, style)
+    drawPlus(state, marks.plus, geometry, style)
     drawDangers(state, dangers, geometry, style)
-    marked?.let {
+    for (circled in listOfNotNull(marked, marks.hint)) {
         val ink = style.color(Player.RED)
-        drawRing(geometry.center(it), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
-        drawRing(geometry.center(it), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
+        drawRing(geometry.center(circled), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
+        drawRing(geometry.center(circled), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
     }
     lastMove?.let { drawRing(geometry.center(it), geometry.spacing * 0.42f, style.grid, geometry.spacing * 0.06f) }
     preview?.let {
@@ -124,6 +155,67 @@ private fun DrawScope.drawPosition(
         drawCircle(color.copy(alpha = 0.45f), geometry.spacing * style.dotRadius, geometry.center(it))
         drawRing(geometry.center(it), geometry.spacing * 0.45f, color, geometry.spacing * 0.08f)
     }
+}
+
+/** Every blocked point, a wall booster's or the level's own, with the wall's mark. */
+private fun DrawScope.drawWalls(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
+    for (y in 0 until state.height) for (x in 0 until state.width) {
+        if (state.isBlocked(x, y) && !state.isHole(x, y)) drawWall(geometry.center(x, y), geometry, style, preview = false)
+    }
+}
+
+/**
+ * The wall's mark (motion.md, Boosters: Wall): a square, 0.7 of the spacing, round the point in one
+ * Pencil stroke, filled with five hatch lines in Graphite. In the [preview] its outline is dashed.
+ */
+private fun DrawScope.drawWall(at: Offset, geometry: BoardGeometry, style: BoardStyle, preview: Boolean) {
+    val half = geometry.spacing * 0.35f
+    val width = max(geometry.spacing * 0.075f, 1.5.dp.toPx())
+    val left = at.x - half
+    val top = at.y - half
+    clipRect(left, top, at.x + half, at.y + half) {
+        val graphite = style.pencil.copy(alpha = 0.55f)
+        for (i in 1..5) {
+            // Lines rising to the right, evenly across the square's diagonal.
+            val d = 4 * half * i / 6f
+            drawLine(graphite, Offset(left, top + d), Offset(left + d, top), width * 0.6f)
+        }
+    }
+    val effect = if (preview) PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 2.dp.toPx())) else null
+    drawRect(style.pencil, Offset(left, top), Size(2 * half, 2 * half), style = Stroke(width, pathEffect = effect))
+}
+
+/** The points a booster may be aimed at: a small dot in the ink of the side to move. */
+private fun DrawScope.drawTargets(state: GameState, targets: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
+    val ink = style.color(state.toMove).copy(alpha = 0.4f)
+    for (point in targets) drawCircle(ink, geometry.spacing * 0.1f, geometry.center(point))
+}
+
+/** The bomb's plus: each point in a dashed ring in the ink of the side to move, washed faintly. */
+private fun DrawScope.drawPlus(state: GameState, plus: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
+    val ink = style.color(state.toMove)
+    for (point in plus) {
+        val c = geometry.center(point)
+        drawCircle(ink.copy(alpha = 0.12f), geometry.spacing * 0.46f, c)
+        drawDashedRing(c, geometry.spacing * 0.46f, ink, 1.5.dp.toPx())
+    }
+}
+
+/** Pieces a booster would take away: pale, in a dashed Graphite ring (Undo's preview, motion.md). */
+private fun DrawScope.drawGone(state: GameState, gone: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
+    val radius = geometry.spacing * style.dotRadius
+    for (point in gone) {
+        val owner = state.ownerAt(point.x, point.y) ?: continue
+        val c = geometry.center(point)
+        drawCircle(style.background, radius * 1.1f, c)
+        drawCircle(style.color(owner).copy(alpha = 0.35f), radius, c)
+        drawDashedRing(c, geometry.spacing * 0.45f, style.pencil.copy(alpha = 0.7f), 1.5.dp.toPx())
+    }
+}
+
+private fun DrawScope.drawDashedRing(center: Offset, radius: Float, color: Color, width: Float) {
+    val dash = 3.dp.toPx()
+    drawCircle(color, radius, center, style = Stroke(width, pathEffect = PathEffect.dashPathEffect(floatArrayOf(dash, dash))))
 }
 
 /**
@@ -203,6 +295,6 @@ private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style:
     }
 }
 
-private fun DrawScope.drawRing(center: Offset, radius: Float, color: androidx.compose.ui.graphics.Color, width: Float) {
+private fun DrawScope.drawRing(center: Offset, radius: Float, color: Color, width: Float) {
     drawCircle(color, radius, center, style = Stroke(width))
 }

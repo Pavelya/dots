@@ -48,6 +48,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.pavelya.dots.R
@@ -154,11 +155,18 @@ internal fun BigButton(
     modifier: Modifier = Modifier,
     before: String? = null,
     after: String? = null,
+    enabled: Boolean = true,
 ) {
     Button(
         onClick = onClick,
+        enabled = enabled,
         shape = BIG_BUTTON_SHAPE,
-        colors = ButtonDefaults.buttonColors(containerColor = style.blue, contentColor = style.paper),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = style.blue,
+            contentColor = style.paper,
+            disabledContainerColor = style.bluePale,
+            disabledContentColor = style.blue,
+        ),
         modifier = modifier.height(56.dp),
     ) {
         before?.let { ButtonIcon(it, style.paper) }
@@ -197,14 +205,15 @@ internal fun SquareButton(path: String, label: String, style: GameStyle, onClick
     }
 }
 
+/** A button beside or under the big one: blue ink outlined on the note's card. */
 @Composable
-private fun SmallButton(text: String, style: GameStyle, onClick: () -> Unit, modifier: Modifier) {
+internal fun SmallButton(text: String, style: GameStyle, onClick: () -> Unit, modifier: Modifier, height: Dp = 48.dp) {
     OutlinedButton(
         onClick = onClick,
         shape = TOOL_SHAPE,
         border = BorderStroke(2.dp, style.blue),
         colors = ButtonDefaults.outlinedButtonColors(containerColor = style.card, contentColor = style.blue),
-        modifier = modifier.height(48.dp),
+        modifier = modifier.height(height),
     ) {
         Text(text, style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold)
     }

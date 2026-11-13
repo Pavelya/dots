@@ -39,6 +39,9 @@ object Doodles {
     const val MAP = "M3 6l6-2 6 2 6-2v14l-6 2-6-2-6 2z M9 4v14 M15 6v14"
     const val WALL = "M3 7.5h18v11H3z M3 13h18 M9 7.5v5.5 M15 13v5.5 M6 13v5.5 M18 7.5v5.5"
     const val HINT = "M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.8.8 1 1.5 1 2.5h6c0-1 .2-1.7 1-2.5A6 6 0 0 0 12 3z M12 0.5v0 M3 4l1 1 M21 4l-1 1"
+    /** The Undo booster (D-14, draw.py `ICONS["undo"]`): a pen stroke from a dot, looping back to an arrowhead; see [undoBooster]. */
+    const val UNDO_BOOSTER = "M10.6 19.6 q2.4 -.2 4.5 -.1 q5.3 .1 5.4 -5.5 q-.1 -5.4 -5.5 -5.5 q-4.7 .1 -9.4 0 " +
+        "M8.9 4.7 q-2 2 -3.7 3.8 q1.7 1.8 3.8 3.8"
     const val BOMB = "M11 21a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M15 8l3-3 M18 5l1.5-1.5 M19.5 7.5h2 M17 2.5V1 M8 12.5a3 3 0 0 1 3-2.5"
 
     /** A 24 x 24 line icon in one [ink]. */
@@ -72,6 +75,12 @@ object Doodles {
     fun doubleDot(ink: Color): ImageVector = vector(30f, 16f) {
         fill(ellipse(7f, 8f, 6f), ink)
         fill("M23 1 L30 8 L23 15 L16 8 Z", ink)
+    }
+
+    /** The Undo booster's icon: [UNDO_BOOSTER] and the dot it starts from. Free play's Undo is the plain [UNDO] arrow. */
+    fun undoBooster(ink: Color, width: Float = 1.8f): ImageVector = vector(24f, 24f) {
+        stroke(UNDO_BOOSTER, ink, width)
+        fill(ellipse(7f, 19.6f, 2.4f), ink)
     }
 
     /** The arrow from "next!" to the next level, 34 x 20, pointing left. */

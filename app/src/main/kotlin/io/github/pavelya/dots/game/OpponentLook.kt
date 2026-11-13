@@ -7,7 +7,7 @@ import dots.engine.Player
 enum class Mood { HAPPY, SMUG, UPSET, DETERMINED, SULKY }
 
 /** What the computer says in its speech bubble (the canvas and the wireframes, D-06 and D-07). */
-enum class Bubble { GOOD_LUCK, YOUR_MOVE, HEY, OUCH, WELL_PLAYED, AGAIN }
+enum class Bubble { GOOD_LUCK, YOUR_MOVE, HEY, OUCH, WELL_PLAYED, AGAIN, TAKE_IT_BACK }
 
 /** How a game ended for the human: won (a level passed), lost (a level failed) or a draw. */
 enum class Ending { WON, LOST, DRAW }

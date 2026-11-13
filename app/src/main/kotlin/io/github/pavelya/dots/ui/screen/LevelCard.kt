@@ -167,8 +167,9 @@ private fun Modifier.tornTop(ink: Color): Modifier = drawBehind {
     drawPath(path, ink)
 }
 
+/** The note's Close icon, 48 dp, in the top right corner. */
 @Composable
-private fun CloseButton(style: GameStyle, onClose: () -> Unit) {
+internal fun CloseButton(style: GameStyle, onClose: () -> Unit) {
     val label = stringResource(R.string.close)
     Box(
         contentAlignment = Alignment.Center,
@@ -273,7 +274,7 @@ private fun BoosterChip(booster: Booster, count: Int, style: GameStyle, onClick:
     }
 }
 
-/** A booster's icon: the canvas's line icons, a dot beside a diamond for the double dot, and the Undo arrow. */
+/** A booster's icon: the canvas's line icons, a dot beside a diamond for the double dot, and Undo's dot and loop (D-14). */
 @Composable
 internal fun BoosterIcon(booster: Booster, ink: Color, modifier: Modifier) {
     val icon = remember(booster, ink) {
@@ -282,7 +283,7 @@ internal fun BoosterIcon(booster: Booster, ink: Color, modifier: Modifier) {
             Booster.HINT -> Doodles.icon(Doodles.HINT, ink, width = 2f)
             Booster.BOMB -> Doodles.icon(Doodles.BOMB, ink, width = 2f)
             Booster.DOUBLE_DOT -> Doodles.doubleDot(ink)
-            Booster.UNDO -> Doodles.icon(Doodles.UNDO, ink, width = 2f) // free play's Undo icon, until D-14 draws the booster's
+            Booster.UNDO -> Doodles.undoBooster(ink, width = 2f)
         }
     }
     Icon(icon, contentDescription = null, tint = Color.Unspecified, modifier = modifier)

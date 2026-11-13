@@ -21,11 +21,14 @@ import dots.campaign.Mission
 import dots.campaign.StarMeasure
 import dots.campaign.Stars
 import dots.campaign.Strength
+import dots.engine.Booster
 import dots.engine.GameSettings
 import dots.engine.GameState
 import dots.engine.MoveResult
 import dots.engine.Player
 import dots.engine.Pos
+import io.github.pavelya.dots.data.PlacingMethod
+import io.github.pavelya.dots.game.BoosterAim
 import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.LastCapture
@@ -48,7 +51,10 @@ import org.robolectric.annotation.GraphicsMode
  * shown next to its frame in the PR. Reference images in app/src/test/screenshots; they are
  * recorded in CI (CLAUDE.md, "Recording screenshots").
  *
- * The boards are the canvas's own game of Level 7 (draw.py, `POSITIONS`), played by the rules.
+ * The boards are the canvas's own game of Level 7 (draw.py, `POSITIONS`), played by the rules,
+ * with the canvas's boosters in the tool bar (draw.py, `BOOSTERS`). The booster previews (A-05) are
+ * drawn on the threat position: Undo's as the canvas frame `game-undo`, Wall's and Bomb's as the
+ * wireframes' "Booster aimed" in the same note.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -104,6 +110,56 @@ class GameScreenshotTest {
     fun threatOnASmallPhone() {
         show { Board(ui(CanvasGame.threat)) }
         capture("game_threat_small_phone")
+    }
+
+    /** Undo's preview (canvas frame `game-undo`): the turn it takes back pale in dashed rings, its threat marks gone. */
+    @Test
+    fun undoPreview() {
+        show { Preview(undoUi()) }
+        capture("game_undo")
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun undoPreviewOnASmallPhone() {
+        show { Preview(undoUi()) }
+        capture("game_undo_small_phone")
+    }
+
+    /** The Bomb aimed at Red's dot in danger: the plus of 5 points, and the three blue dots it would remove. */
+    @Test
+    fun bombAimed() {
+        val state = CanvasGame.threat.state
+        val center = Pos(9, 8)
+        val hits = state.bombHits(center)
+        assertEquals(3, hits.size)
+        val plus = listOf(center, Pos(9, 7), Pos(8, 8), Pos(10, 8), Pos(9, 9))
+        val targets = state.legalMoves().filter { state.bombHits(it).isNotEmpty() }
+        val aim = BoosterAim(Booster.BOMB, point = center, targets = targets, plus = plus, gone = hits)
+        show { Preview(ui(CanvasGame.threat).copy(aim = aim)) }
+        capture("game_bomb_aimed")
+    }
+
+    /** The Wall before a point is chosen: every empty point it may block is marked, and the button says how to choose one. */
+    @Test
+    fun wallBeforeAPoint() {
+        val state = CanvasGame.threat.state
+        show { Preview(ui(CanvasGame.threat).copy(aim = BoosterAim(Booster.WALL, targets = state.legalMoves()))) }
+        capture("game_wall_choosing")
+    }
+
+    /** After a Hint and a Double dot (the engine allows one booster a turn; the frame shows both marks): the circled point and the "×2" chip. */
+    @Test
+    fun hintAndDoubleDot() {
+        show { Board(ui(CanvasGame.threat).copy(hint = Pos(10, 9), doubleDots = 2)) }
+        capture("game_hint_double_dot")
+    }
+
+    /** The Boosters screen (canvas frame `boosters`) with the canvas's counts. */
+    @Test
+    fun boostersScreen() {
+        show { BoostersNote(mapOf(Booster.WALL to 2, Booster.HINT to 1, Booster.DOUBLE_DOT to 1, Booster.UNDO to 1), onClose = {}) }
+        capture("boosters")
     }
 
     @Test
@@ -169,6 +225,33 @@ class GameScreenshotTest {
         GameBoard(ui, human, campaign, input = BoardInput.NONE, onUndo = {}, onPause = {})
     }
 
+    /** The board with [ui]'s booster preview open over the player's line and the tool bar, as GameScreen lays it. */
+    @Composable
+    private fun Preview(ui: GameUiState) {
+        Box(Modifier.fillMaxSize()) {
+            Board(ui)
+            BoosterNote(
+                aim = ui.aim!!,
+                method = PlacingMethod.TWO_TAPS,
+                style = rememberGameStyle(),
+                onCancel = {},
+                onConfirm = {},
+                modifier = Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+            )
+        }
+    }
+
+    /** Undo's preview on the threat position, as the canvas draws it: Red's (9, 8) and Blue's answer (7, 7) go. */
+    private fun undoUi(): GameUiState {
+        val gone = listOf(Pos(9, 8), Pos(7, 7))
+        val threat = ui(CanvasGame.threat)
+        return threat.copy(
+            aim = BoosterAim(Booster.UNDO, gone = gone),
+            dangers = threat.dangers.filter { danger -> danger.group.none { it in gone } },
+            opponent = OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK),
+        )
+    }
+
     /** What the screen shows against the computer after [move], with the threat highlight on, as the view model makes it. */
     private fun ui(move: MoveResult, lastMove: Pos? = move.state.lastPlaced(move.state.toMove.opponent)): GameUiState {
         val state = move.state
@@ -207,13 +290,25 @@ private object CanvasGame {
         Level(1, 7, "Siege", Strength.HARD, 30, LevelMap(rows), Mission.Capture(8, 30), stars = Stars(StarMeasure.MOVES, 8, 14))
     }
 
-    /** Level 7's name and its mission note, as it stands in [state]; while the level opens there is no [note]. The boosters are A-05's. */
+    /**
+     * Level 7's name, its mission note as it stands in [state] (while the level opens there is no
+     * [note]), and the canvas's boosters: Wall 2, Hint 1, Bomb 0, Double dot 1, Undo 1, which
+     * waits until the player has placed a dot.
+     */
     fun parts(state: GameState, note: Boolean = true): CampaignParts {
         val status = level.status(state)
+        val waiting = state.dotsPlaced(Player.RED) == 0
+        val tools = listOf(
+            BoosterTool(Booster.WALL, 2, usable = true),
+            BoosterTool(Booster.HINT, 1, usable = true),
+            BoosterTool(Booster.BOMB, 0, usable = false),
+            BoosterTool(Booster.DOUBLE_DOT, 1, usable = true),
+            BoosterTool(Booster.UNDO, 1, usable = !waiting, waiting = waiting),
+        )
         return CampaignParts(
             title = "Level 7",
             mission = if (note) missionNote(level, status) else null,
-            boosters = {},
+            boosters = { BoosterBar(tools, rememberGameStyle()) {} },
         )
     }
 
