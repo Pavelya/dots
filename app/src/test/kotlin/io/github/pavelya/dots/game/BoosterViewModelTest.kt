@@ -1,8 +1,11 @@
 package io.github.pavelya.dots.game
 
 import dots.ai.Ai
+import dots.campaign.Campaign
 import dots.campaign.Level
+import dots.campaign.Campaign
 import dots.campaign.LevelMap
+import dots.campaign.Campaign
 import dots.campaign.LevelRecord
 import dots.campaign.Mission
 import dots.campaign.Strength
@@ -69,6 +72,7 @@ class BoosterViewModelTest {
     private fun game(
         journal: GameJournal? = null,
         hintFor: (GameState) -> Action.Hint? = { Action.Hint(hintPoint) },
+        level: Level = this.level,
     ) = GameViewModel(
         start = levelGame(level, threatHighlight = false, now = 0),
         nextGame = { levelGame(level, threatHighlight = false, now = 0) },
@@ -269,17 +273,21 @@ class BoosterViewModelTest {
 
     @Test
     fun `a level played with all five boosters replays from its log line, as cli log-check replays it`() = runTest(dispatcher) {
+        // A record names its level by world and number, so the game is a real one: Rocky Shore
+        // allows one of each booster.
+        val rockyShore = Campaign.level(4, 6)
+        assertEquals(Booster.entries.toSet(), rockyShore.boosters.keys)
         val journal = LastEntry()
-        val vm = game(journal, hintFor = { dots.ai.Hints.hint(it) }) // the real Hint
+        val vm = game(journal, hintFor = { dots.ai.Hints.hint(it) }, level = rockyShore) // the real Hint
         fun turn(play: () -> Unit) {
             play()
             advanceUntilIdle()
             assertEquals(Player.RED, vm.state.toMove)
         }
 
-        turn { vm.place(Pos(4, 4)) }
+        turn { vm.place(Pos(6, 6)) }
         turn { vm.chooseBooster(Booster.UNDO); vm.confirmBooster() }
-        turn { vm.chooseBooster(Booster.WALL); vm.onTap(Pos(2, 2)); vm.confirmBooster(); vm.place(Pos(4, 4)) }
+        turn { vm.chooseBooster(Booster.WALL); vm.onTap(Pos(7, 7)); vm.confirmBooster(); vm.place(Pos(6, 6)) }
         turn {
             vm.chooseBooster(Booster.HINT)
             vm.confirmBooster()
@@ -292,13 +300,13 @@ class BoosterViewModelTest {
             vm.chooseBooster(Booster.BOMB)
             vm.onTap(vm.ui.value.aim!!.targets.first())
             vm.confirmBooster()
-            vm.place(vm.free(Pos(4, 6), Pos(6, 4), Pos(1, 5), Pos(5, 1)))
+            vm.place(vm.free(Pos(6, 8), Pos(8, 6), Pos(5, 6), Pos(6, 5)))
         }
         turn {
             vm.chooseBooster(Booster.DOUBLE_DOT)
             vm.confirmBooster()
-            vm.place(vm.free(Pos(2, 4), Pos(1, 4), Pos(6, 2)))
-            vm.place(vm.free(Pos(2, 5), Pos(1, 6), Pos(6, 3)))
+            vm.place(vm.free(Pos(8, 8), Pos(5, 8), Pos(8, 5)))
+            vm.place(vm.free(Pos(5, 5), Pos(7, 5), Pos(5, 7)))
         }
 
         for (booster in Booster.entries) assertEquals("$booster used", 0, vm.left(booster))
