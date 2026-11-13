@@ -54,6 +54,10 @@ internal const val OPENING_MILLIS = 1_500L
  * Result's buttons: Retry and Play again start the next game here; Map goes to [onToMap]; Next, in
  * the campaign, goes to [onNext] with the level whose card the map should open.
  *
+ * In the campaign the tool bar holds the five boosters (A-05). A tap on one opens its preview, a
+ * note over the player's line and the tool bar; on the board the player chooses the booster's
+ * point by the same [placing] method as a dot. Confirm applies it, Cancel or Back closes it.
+ *
  * In the tutorial's levels (A-06) the guided steps show once the level opening has gone, unless
  * [guidesSkipped]. Skip hides them and calls [onSkipGuides], which saves that. In a practice game
  * of the tutorial, Next plays its next level here, and after the last one goes to the map.
@@ -75,6 +79,9 @@ fun GameScreen(
     // Saved, so Pause is still open after Rules, opened from it, closes.
     var paused by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = !ui.isOver) { paused = !paused }
+    // Registered later, so it comes first: Back closes an open booster preview.
+    BackHandler(enabled = ui.aim != null && !paused) { viewModel.cancelBooster() }
+    val style = rememberGameStyle()
     val level = ui.level
     // Each new game of a level opens with its mission; the first move, or a moment, ends it.
     var opening by rememberSaveable(ui.round) { mutableStateOf(level != null && ui.fresh) }
@@ -91,7 +98,11 @@ fun GameScreen(
     val campaign = level?.let { playing ->
         val mission = ui.mission
         val note = if (opening || mission == null) null else missionNote(playing, mission)
-        CampaignParts(title = stringResource(R.string.level_number, playing.number), mission = note, boosters = {})
+        CampaignParts(
+            title = stringResource(R.string.level_number, playing.number),
+            mission = note,
+            boosters = { BoosterBar(boosterTools(ui, viewModel.human), style, viewModel::chooseBooster) },
+        )
     }
     BoxWithConstraints {
         GameBoard(
@@ -114,6 +125,17 @@ fun GameScreen(
         )
         if (opening && level != null) {
             LevelOpening(level, Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp))
+        }
+        val aim = ui.aim
+        if (aim != null && !ui.isOver) {
+            BoosterNote(
+                aim = aim,
+                method = placing,
+                style = style,
+                onCancel = viewModel::cancelBooster,
+                onConfirm = viewModel::confirmBooster,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+            )
         }
         if (paused && !ui.isOver) {
             PauseNote(

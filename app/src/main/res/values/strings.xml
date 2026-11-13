@@ -102,6 +102,7 @@
     <string name="bubble_ouch">Ouch!</string>
     <string name="bubble_well_played">Well played.</string>
     <string name="bubble_again">Again?</string>
+    <string name="bubble_take_it_back">Take it back?</string>
     <string name="game_play_again">Play again</string>
     <string name="board_description">Board, %1$d × %2$d. %3$s.</string>
     <string name="settings_board">Board</string>
@@ -138,6 +139,29 @@
     <string name="booster_bomb">Bomb</string>
     <string name="booster_double_dot">Double dot</string>
     <string name="booster_undo">Undo</string>
+    <!-- The Boosters screen: what each booster does (canvas frame "boosters"). -->
+    <string name="booster_wall_what">Mark one empty point nobody can use.</string>
+    <string name="booster_hint_what">The computer shows your best move.</string>
+    <string name="booster_bomb_what">Removes the computer’s dots in a + of 5 points.</string>
+    <string name="booster_double_dot_what">Place two dots in one turn.</string>
+    <string name="booster_undo_what">Take back your last dot and the computer’s answer.</string>
+    <string name="boosters_footer">Earned by playing: stars, chests and the daily streak. Never sold. One booster a turn, and Undo on top. Every level can be won without them.</string>
+    <string name="boosters_count">×%1$d</string>
+    <!-- The booster preview: the booster's name, then the rest of its one line. -->
+    <string name="booster_wall_line">blocks one empty point.</string>
+    <string name="booster_hint_line">shows your best move.</string>
+    <string name="booster_bomb_line">removes the computer’s dots in a +.</string>
+    <string name="booster_double_dot_line">places two dots this turn.</string>
+    <string name="booster_undo_line">takes back the pale dots.</string>
+    <string name="booster_cancel">Cancel</string>
+    <string name="booster_tap_point">Tap a point</string>
+    <string name="booster_drag_point">Drag to a point</string>
+    <string name="booster_wall_go">Block it</string>
+    <string name="booster_hint_go">Show me</string>
+    <string name="booster_bomb_go">Bomb it</string>
+    <string name="booster_double_dot_go">Use it</string>
+    <string name="booster_undo_go">Take back</string>
+    <string name="booster_tool_none">%1$s, none left</string>
     <string name="mission_win">Win</string>
     <string name="mission_win_by">Win by %1$s</string>
     <string name="mission_win_fewer">Win with only %1$s</string>
@@ -272,6 +296,22 @@
     <plurals name="booster_chip">
         <item quantity="one">%1$s, %2$d. What it does</item>
         <item quantity="other">%1$s, %2$d. What it does</item>
+    </plurals>
+    <plurals name="booster_tool">
+        <item quantity="one">%1$s, %2$d left</item>
+        <item quantity="other">%1$s, %2$d left</item>
+    </plurals>
+    <plurals name="booster_tool_waiting">
+        <item quantity="one">%1$s, %2$d left, after your first move</item>
+        <item quantity="other">%1$s, %2$d left, after your first move</item>
+    </plurals>
+    <plurals name="boosters_row">
+        <item quantity="one">%1$s, you have %2$d. %3$s</item>
+        <item quantity="other">%1$s, you have %2$d. %3$s</item>
+    </plurals>
+    <plurals name="double_dot_left">
+        <item quantity="one">%1$d more dot this turn</item>
+        <item quantity="other">%1$d dots this turn</item>
     </plurals>
     <plurals name="mission_moves_left">
         <item quantity="one">%1$d move left</item>

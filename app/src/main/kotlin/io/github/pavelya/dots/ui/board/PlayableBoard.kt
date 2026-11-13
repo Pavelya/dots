@@ -44,7 +44,9 @@ class BoardInput(
  *   it off the board places nothing.
  *
  * It decides nothing about the game: which points are playable comes back as the [preview]. The
- * tutorial's [pointer] is drawn as [BoardView] draws it.
+ * tutorial's [pointer] and the boosters' [marks] are drawn as [BoardView] draws them. In a booster
+ * preview the same touches choose the booster's point (the game decides), and drag's guides follow
+ * the finger there too.
  */
 @Composable
 fun PlayableBoard(
@@ -58,6 +60,7 @@ fun PlayableBoard(
     dangers: List<Danger> = emptyList(),
     marked: Pos? = null,
     pointer: Pos? = null,
+    marks: BoardMarks = BoardMarks.NONE,
 ) {
     val method = input.method
     var fingerDown by remember { mutableStateOf(false) }
@@ -105,5 +108,6 @@ fun PlayableBoard(
         marked = marked,
         guides = method == PlacingMethod.DRAG && fingerDown,
         pointer = pointer,
+        marks = marks,
     )
 }

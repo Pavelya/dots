@@ -51,6 +51,7 @@ import io.github.pavelya.dots.game.computerFor
 import io.github.pavelya.dots.game.freeGame
 import io.github.pavelya.dots.game.freeGameLike
 import io.github.pavelya.dots.game.levelGame
+import io.github.pavelya.dots.ui.screen.BoostersNote
 import io.github.pavelya.dots.ui.screen.DeveloperScreen
 import io.github.pavelya.dots.ui.screen.GameScreen
 import io.github.pavelya.dots.ui.screen.LevelCard
@@ -88,8 +89,9 @@ object Routes {
     const val LEVEL = "level/{world}/{number}"
     fun level(world: Int, number: Int) = "level/$world/$number"
 
-    /** Over the Level card: the boosters the player has. */
-    const val BOOSTERS = "boosters"
+    /** Over the Level card: the boosters the player has in that level, and what each does. */
+    const val BOOSTERS = "boosters/{world}/{number}"
+    fun boosters(world: Int, number: Int) = "boosters/$world/$number"
 
     /** Over the map, after every 10th level: pick one of two rewards. */
     const val CHEST = "chest"
@@ -222,13 +224,20 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                     navController.navigate(Routes.game(GameMode.CAMPAIGN)) { popUpTo(Routes.MAP) }
                                 }
                             },
-                            onBooster = { navController.navigate(Routes.BOOSTERS) },
+                            onBooster = { navController.navigate(Routes.boosters(level.world, level.number)) },
                             onClose = back,
                         )
                     }
                 }
-                dialog(Routes.BOOSTERS) {
-                    StandInNote(stringResource(R.string.screen_boosters), "A-05", onClose = back)
+                dialog(
+                    Routes.BOOSTERS,
+                    arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
+                    dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+                ) { entry ->
+                    val world = entry.arguments?.getInt("world") ?: 1
+                    val number = entry.arguments?.getInt("number") ?: 1
+                    val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
+                    BoostersNote(left = level?.boosters.orEmpty(), onClose = back)
                 }
                 dialog(Routes.CHEST) {
                     StandInNote(stringResource(R.string.screen_chest), "A-04", onClose = toMap)
