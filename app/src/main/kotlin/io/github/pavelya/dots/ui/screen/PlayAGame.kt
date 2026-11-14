@@ -225,12 +225,12 @@ private fun PlayCard(
         // A short card, on a small phone, gives its room to the name.
         Icon(icon, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(if (height < 88.dp) 40.dp else 52.dp))
         Column(Modifier.weight(1f)) {
-            // The handwriting is wider than the wireframe's Caveat until V-03: it shrinks to fit.
+            // A long name shrinks to fit, never below the 24 sp that Caveat needs.
             BasicText(
                 stringResource(title),
                 style = NoteText.display.copy(fontSize = 28.sp, lineHeight = 32.sp, color = style.paper),
                 maxLines = 1,
-                autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 28.sp),
+                autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 28.sp),
             )
             Text(stringResource(detail), style = NoteText.small.copy(fontSize = 13.sp), color = style.paper.copy(alpha = 0.9f))
         }

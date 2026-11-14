@@ -113,8 +113,8 @@ import kotlinx.coroutines.delay
  * photo, only the opponent's line stays, and on a small phone that line moves into the top row in
  * place of the game's name, as the wireframes' small frames show.
  *
- * Every ink, size and text style comes from the theme ([Palette], [BoardStyle], [NoteText]); the
- * Notebook theme (V-03) brings the paper, fonts and hand-drawn icons, V-12 the faces.
+ * Every ink, size and text style comes from the theme ([Palette], [BoardStyle], [NoteText]); V-12
+ * brings the faces, V-16 the hand-drawn icons.
  */
 @Composable
 internal fun GameBoard(
@@ -341,7 +341,7 @@ private fun DoubleDotChip(left: Int, style: Palette, modifier: Modifier) {
     val description = pluralStringResource(R.plurals.double_dot_left, left, left)
     Text(
         "×$left",
-        style = HAND.copy(fontSize = 20.sp, lineHeight = 24.sp),
+        style = NoteText.label,
         color = style.red,
         modifier = modifier
             .border(1.5.dp, style.red, RoundedCornerShape(12.dp))

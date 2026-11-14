@@ -3,14 +3,17 @@ package io.github.pavelya.dots.ui.board
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
@@ -19,16 +22,24 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dots.ai.Danger
+import dots.engine.Area
 import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
+import dots.engine.areas
+import io.github.pavelya.dots.ui.theme.BoardLook
+import kotlin.math.floor
+import kotlin.math.hypot
 import kotlin.math.max
+import kotlin.math.sqrt
+import kotlin.random.Random
 
 /**
- * Draws a position: grid, enclosed areas shaded in the colour of the player who closed them, live
- * and captured dots, the last move, and a placement preview. It decides nothing about the game;
- * [PlayableBoard] adds touch. [showLinks] draws the links between neighbouring dots of one colour,
- * which makes chains and rings visible (used to teach the rules). [dangers] marks groups close to
+ * Draws a position: grid, captured areas (washed and hatched in the captor's colours, inside a ring
+ * drawn like a pen stroke), live and captured dots, the last move, and a placement preview. It
+ * decides nothing about the game; [PlayableBoard] adds touch. [showLinks] draws the links between
+ * neighbouring dots of one colour, which makes chains and rings visible; by default the theme
+ * decides ([BoardLook.links]). [dangers] marks groups close to
  * capture (the threat highlight). [marked] is the dot a level's mission is about (rescue or
  * target), circled twice in the player's ink. [guides] draws the preview's row and column across
  * the board, around a finger that hides the point itself (placing by drag). [pointer] is the point
@@ -44,22 +55,22 @@ fun BoardView(
     modifier: Modifier = Modifier,
     lastMove: Pos? = null,
     preview: Pos? = null,
-    showLinks: Boolean = false,
+    showLinks: Boolean = style.look.links,
     dangers: List<Danger> = emptyList(),
     marked: Pos? = null,
     guides: Boolean = false,
     pointer: Pos? = null,
     marks: BoardMarks = BoardMarks.NONE,
 ) {
+    val areas = remember(state) { state.areas() }
     Canvas(
         modifier = modifier
             .aspectRatio(state.width.toFloat() / state.height)
             .semantics { contentDescription = description },
     ) {
         val geometry = BoardGeometry(state.width, state.height, size.width, size.height)
-        drawPosition(state, geometry, style, lastMove, preview, showLinks, dangers, marked, marks)
-        val guided = preview ?: marks.point
-        if (guided != null && guides) drawGuides(state, guided, geometry, style)
+        val guided = if (guides) preview ?: marks.point else null
+        drawPosition(state, areas, geometry, style, lastMove, preview, showLinks, dangers, marked, marks, guided)
         pointer?.let { drawPointer(geometry.center(it), geometry, style) }
     }
 }
@@ -121,9 +132,15 @@ private val HAND: Path = Path().apply {
     close()
 }
 
-/** Every layer of the position, in the theme's drawing order. */
+/**
+ * Every layer of the position, in the theme's drawing order (theme-notebook.md, "The board"):
+ * paper, washes, hatching, grid, links, drag's guides along [guided]'s row and column, rings,
+ * threat rings, pieces, the last move, closing points, the preview. The booster marks lie with
+ * the pieces they are about, and the circled points on top.
+ */
 private fun DrawScope.drawPosition(
     state: GameState,
+    areas: List<Area>,
     geometry: BoardGeometry,
     style: BoardStyle,
     lastMove: Pos?,
@@ -132,33 +149,111 @@ private fun DrawScope.drawPosition(
     dangers: List<Danger>,
     marked: Pos?,
     marks: BoardMarks,
+    guided: Pos?,
 ) {
     drawRect(style.paper)
-    drawAreas(state, geometry, style)
+    val strokes = areas.map { ringStroke(it, geometry, style.look) }
+    for ((area, stroke) in areas.zip(strokes)) drawArea(area.by, stroke, style)
     drawGrid(state, geometry, style)
     drawWalls(state, geometry, style)
     drawTargets(state, marks.targets, geometry, style)
     marks.wall?.let { drawWall(geometry.center(it), geometry, style, preview = true) }
     if (showLinks) drawLinks(state, geometry, style)
+    guided?.let { drawGuides(state, it, geometry, style) }
+    for ((area, stroke) in areas.zip(strokes)) drawAreaRing(area.by, stroke, style)
+    drawThreatRings(dangers, geometry, style)
     drawDots(state, geometry, style)
     drawGone(state, marks.gone, geometry, style)
     drawPlus(state, marks.plus, geometry, style)
-    drawDangers(state, dangers, geometry, style)
-    for (circled in listOfNotNull(marked, marks.hint)) {
-        val ink = style.color(Player.RED)
-        drawRing(geometry.center(circled), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
-        drawRing(geometry.center(circled), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
-    }
     val look = style.look
     val spacing = geometry.spacing
     lastMove?.let {
         drawRing(geometry.center(it), look.lastMoveRing.px(spacing, density) / 2, style.grid, look.lastMoveLine.px(spacing, density))
+    }
+    drawClosingPoints(state, dangers, geometry, style)
+    for (circled in listOfNotNull(marked, marks.hint)) {
+        val ink = style.color(Player.RED)
+        drawRing(geometry.center(circled), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
+        drawRing(geometry.center(circled), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
     }
     preview?.let {
         val center = geometry.center(it)
         drawPiece(style.piece(state.toMove), center, look.dot.px(spacing, density), style.palette.pale(state.toMove))
         drawRing(center, look.previewRing.px(spacing, density) / 2, style.color(state.toMove), look.previewLine.px(spacing, density))
     }
+}
+
+/**
+ * A captured area's ring as a pen stroke (theme-notebook.md, "The ring"): its [outline], through the
+ * centres of the ring's dots, each side bowed a little, and the [sides] one by one, each with its
+ * own width. The bow and the width come from a seed taken from the area, so the same ring looks
+ * the same on every frame.
+ */
+private class RingStroke(val outline: Path, val sides: List<Pair<Path, Float>>)
+
+private fun DrawScope.ringStroke(area: Area, geometry: BoardGeometry, look: BoardLook): RingStroke {
+    val first = area.region.first()
+    val random = Random(31 * (31 * area.by.ordinal + first.x) + first.y)
+    val points = area.ring.map(geometry::center)
+    val bow = look.ringBow.dp.toPx()
+    val width = look.ring.px(geometry.spacing, density)
+    val outline = Path()
+    val sides = ArrayList<Pair<Path, Float>>(points.size)
+    for (i in points.indices) {
+        val a = points[i]
+        val b = points[(i + 1) % points.size]
+        val length = hypot(b.x - a.x, b.y - a.y)
+        // A quadratic curve's middle lies halfway to its control point: the control point sits
+        // twice the bow off the straight line.
+        val offset = if (length > 0f) 2 * bow * (random.nextFloat() * 2 - 1) / length else 0f
+        val cx = (a.x + b.x) / 2 - (b.y - a.y) * offset
+        val cy = (a.y + b.y) / 2 + (b.x - a.x) * offset
+        val sideWidth = width * (1 + look.ringWobble * (random.nextFloat() * 2 - 1))
+        if (i == 0) outline.moveTo(a.x, a.y)
+        outline.quadraticTo(cx, cy, b.x, b.y)
+        sides += Path().apply {
+            moveTo(a.x, a.y)
+            quadraticTo(cx, cy, b.x, b.y)
+        } to sideWidth
+    }
+    outline.close()
+    return RingStroke(outline, sides)
+}
+
+/**
+ * Inside a ring: the captor's wash, then its hatching, clipped to the ring (theme-notebook.md,
+ * "Captured areas"). Red's lines rise to the right, Blue's fall, one every [BoardLook.hatchGap] dp
+ * at every spacing.
+ */
+private fun DrawScope.drawArea(by: Player, stroke: RingStroke, style: BoardStyle) {
+    drawPath(stroke.outline, style.palette.wash(by))
+    val width = style.look.hatch.px(0f, density)
+    if (width <= 0f) return
+    val ink = style.palette.pale(by)
+    // Lines x + y = c rise to the right; lines x - y = c fall. A gap of g between lines is g times
+    // the square root of 2 along an axis.
+    val step = style.look.hatchGap.dp.toPx() * sqrt(2f)
+    val box = stroke.outline.getBounds()
+    val rising = by == Player.RED
+    val from = if (rising) box.left + box.top else box.left - box.bottom
+    val to = if (rising) box.right + box.bottom else box.right - box.top
+    clipPath(stroke.outline) {
+        var c = floor(from / step) * step
+        while (c <= to) {
+            if (rising) {
+                drawLine(ink, Offset(c - box.top, box.top), Offset(c - box.bottom, box.bottom), width)
+            } else {
+                drawLine(ink, Offset(c + box.top, box.top), Offset(c + box.bottom, box.bottom), width)
+            }
+            c += step
+        }
+    }
+}
+
+/** The ring round a captured area, in the captor's ink, each side with round ends. */
+private fun DrawScope.drawAreaRing(by: Player, stroke: RingStroke, style: BoardStyle) {
+    val ink = style.color(by)
+    for ((side, width) in stroke.sides) drawPath(side, ink, style = Stroke(width, cap = StrokeCap.Round))
 }
 
 /** Every blocked point, a wall booster's or the level's own, with the wall's mark. */
@@ -225,22 +320,29 @@ private fun DrawScope.drawDashedRing(center: Offset, radius: Float, color: Color
 }
 
 /**
- * The preview's row and column across the board, in the ink of the side to move. A fingertip
- * covers about 60 dp; the lines run past it.
+ * Drag's guides (theme-notebook.md, "Drag's guides"): four arms from the preview's ring along its
+ * row and column to the board's outermost grid lines, in the ink of the side to move, dashed in
+ * the theme's dashes, each arm's dashes starting at the ring. A fingertip covers about 60 dp; the
+ * arms run past it.
  */
-private fun DrawScope.drawGuides(state: GameState, preview: Pos, geometry: BoardGeometry, style: BoardStyle) {
-    val ink = style.color(state.toMove).copy(alpha = style.look.guideAlpha)
-    val width = style.look.guide.px(geometry.spacing, density)
-    drawLine(ink, geometry.center(0, preview.y), geometry.center(state.width - 1, preview.y), width)
-    drawLine(ink, geometry.center(preview.x, 0), geometry.center(preview.x, state.height - 1), width)
-}
-
-private fun DrawScope.drawAreas(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
-    val half = geometry.spacing / 2
-    for (y in 0 until state.height) for (x in 0 until state.width) {
-        val by = state.enclosedBy(x, y) ?: continue
-        val c = geometry.center(x, y)
-        drawRect(style.palette.wash(by), Offset(c.x - half, c.y - half), Size(geometry.spacing, geometry.spacing))
+private fun DrawScope.drawGuides(state: GameState, point: Pos, geometry: BoardGeometry, style: BoardStyle) {
+    val look = style.look
+    val ink = style.color(state.toMove).copy(alpha = look.guideAlpha)
+    val width = look.guide.px(geometry.spacing, density)
+    val dashes = if (look.guideDash > 0f) PathEffect.dashPathEffect(floatArrayOf(look.guideDash.dp.toPx(), look.guideGap.dp.toPx())) else null
+    val center = geometry.center(point)
+    val ring = look.previewRing.px(geometry.spacing, density) / 2
+    val ends = listOf(
+        geometry.center(0, point.y),
+        geometry.center(state.width - 1, point.y),
+        geometry.center(point.x, 0),
+        geometry.center(point.x, state.height - 1),
+    )
+    for (end in ends) {
+        val length = hypot(end.x - center.x, end.y - center.y)
+        if (length <= ring) continue
+        val start = Offset(center.x + (end.x - center.x) * ring / length, center.y + (end.y - center.y) * ring / length)
+        drawLine(ink, start, end, width, pathEffect = dashes)
     }
 }
 
@@ -276,12 +378,8 @@ private fun DrawScope.drawLinks(state: GameState, geometry: BoardGeometry, style
 /** Each touching pair once: right, down, and the two diagonals going right. */
 private val LINK_DIRECTIONS = listOf(1 to 0, 0 to 1, 1 to 1, 1 to -1)
 
-/**
- * A Highlighter ring around every dot of a group close to capture: solid when one dot away, faint
- * when two. When one dot away, the point that would close the ring gets a small circle in the
- * attacker's ink.
- */
-private fun DrawScope.drawDangers(state: GameState, dangers: List<Danger>, geometry: BoardGeometry, style: BoardStyle) {
+/** A Highlighter ring around every dot of a group close to capture: solid when one dot away, faint when two. */
+private fun DrawScope.drawThreatRings(dangers: List<Danger>, geometry: BoardGeometry, style: BoardStyle) {
     val look = style.look
     val spacing = geometry.spacing
     val radius = look.threatRing.px(spacing, density) / 2
@@ -290,11 +388,18 @@ private fun DrawScope.drawDangers(state: GameState, dangers: List<Danger>, geome
         val ring = if (near) style.palette.highlighter else style.palette.highlighterFaint
         val width = (if (near) look.threatNear else look.threatFar).px(spacing, density)
         for (dot in danger.group) drawRing(geometry.center(dot), radius, ring, width)
-        if (near) {
-            val attacker = state.ownerAt(danger.group.first())?.opponent ?: continue
-            for (point in danger.closingPoints) {
-                drawRing(geometry.center(point), look.closingPoint.px(spacing, density) / 2, style.color(attacker), look.closingLine.px(spacing, density))
-            }
+    }
+}
+
+/** For a group one dot from capture, a small circle in the attacker's ink on the point that would close the ring. */
+private fun DrawScope.drawClosingPoints(state: GameState, dangers: List<Danger>, geometry: BoardGeometry, style: BoardStyle) {
+    val look = style.look
+    val spacing = geometry.spacing
+    for (danger in dangers) {
+        if (danger.dotsNeeded != 1) continue
+        val attacker = state.ownerAt(danger.group.first())?.opponent ?: continue
+        for (point in danger.closingPoints) {
+            drawRing(geometry.center(point), look.closingPoint.px(spacing, density) / 2, style.color(attacker), look.closingLine.px(spacing, density))
         }
     }
 }

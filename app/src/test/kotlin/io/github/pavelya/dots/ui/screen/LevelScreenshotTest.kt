@@ -53,7 +53,7 @@ class LevelScreenshotTest {
     val compose = createComposeRule()
 
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
-    private fun show(theme: GameTheme = GameTheme.PLAIN, dark: Boolean = false, content: @Composable () -> Unit) {
+    private fun show(theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
             DotsTheme(theme, dark) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
@@ -64,11 +64,11 @@ class LevelScreenshotTest {
     private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
 
     /** The card of [level] over the map, with every level before it passed, the map dimmed behind it. */
-    private fun card(level: Level, saved: Boolean = false) {
+    private fun card(level: Level, saved: Boolean = false, dark: Boolean = false) {
         val before = Campaign.levels.takeWhile { it != level }
         val map = Campaign.map(Progress(before.withIndex().associate { (i, it) -> it.code to listOf(3, 2, 1)[i % 3] }))
         val actions = MapActions(onLevel = {}, onDaily = {}, onPlay = {}, onRules = {}, onStats = {}, onShop = {}, onSettings = {})
-        show {
+        show(dark = dark) {
             Box {
                 MapScreen(map, actions)
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
@@ -81,6 +81,12 @@ class LevelScreenshotTest {
     fun levelCard() {
         card(Campaign.level(1, 7))
         capture("level_card")
+    }
+
+    @Test
+    fun levelCardDark() {
+        card(Campaign.level(1, 7), dark = true)
+        capture("level_card_dark")
     }
 
     @Test
@@ -128,7 +134,7 @@ class LevelScreenshotTest {
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isNotEmpty() }
 
     /** Level 1-1 passed with a move to spare, in [theme]: two stars of three, and Level 1-2 opens. */
-    private fun win(name: String, theme: GameTheme = GameTheme.PLAIN, dark: Boolean = false) {
+    private fun win(name: String, theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false) {
         val journal = CampaignJournal { _: Level, result: LevelResult -> LevelEnd(result, CampaignMap.Opened(emptyList(), listOf(Campaign.level(1, 2))), 0, Campaign.level(1, 2)) }
         val vm = level11(journal)
         show(theme, dark) { GameScreen(vm, onToMap = {}, onRules = {}) }
@@ -142,10 +148,7 @@ class LevelScreenshotTest {
     fun resultWin() = win("result_level_win")
 
     @Test
-    fun resultWinInNotebook() = win("theme_result_notebook", GameTheme.NOTEBOOK)
-
-    @Test
-    fun resultWinInNotebookDark() = win("theme_result_notebook_dark", GameTheme.NOTEBOOK, dark = true)
+    fun resultWinDark() = win("result_level_win_dark", dark = true)
 
     @Test
     fun resultLossAfterTheThirdFailure() {

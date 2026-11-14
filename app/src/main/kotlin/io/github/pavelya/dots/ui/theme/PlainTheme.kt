@@ -36,6 +36,12 @@ internal val PlainTheme: GameTheme = GameTheme(
         red = Piece(PieceShape.DOT),
         blue = Piece(PieceShape.DOT),
         capturedAlpha = 0.35f,
+        ring = Measure(ofSpacing = 0.06f),
+        ringBow = 0f,
+        ringWobble = 0f,
+        hatch = Measure(),
+        hatchGap = 5f,
+        links = false,
         link = Measure(ofSpacing = 0.08f),
         threatRing = Measure(ofSpacing = 0.84f),
         threatNear = Measure(ofSpacing = 0.09f),
@@ -48,6 +54,8 @@ internal val PlainTheme: GameTheme = GameTheme(
         lastMoveLine = Measure(ofSpacing = 0.06f),
         guide = Measure(ofSpacing = 0.08f, min = 2f),
         guideAlpha = 0.6f,
+        guideDash = 0f,
+        guideGap = 0f,
     ),
     type = TypeScale(
         // Handwriting is italics in the plain look.

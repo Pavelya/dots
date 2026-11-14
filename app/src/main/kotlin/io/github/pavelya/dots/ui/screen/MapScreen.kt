@@ -38,11 +38,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.RectangleShape
@@ -60,7 +63,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -73,6 +75,7 @@ import dots.campaign.LevelState
 import dots.campaign.LevelStop
 import dots.campaign.WorldStop
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.theme.Palette
 import kotlin.math.sin
 
 /** Where the map's entries lead (docs/design/flows.md, "Navigation in short"). */
@@ -97,15 +100,15 @@ const val MAP_PATH_TAG = "map-path"
  * level low on the screen, near the thumb. A level opens its Level card; a locked level or world
  * says what opens it. There are no Play buttons on levels.
  *
- * [map] is null while the progress is read. The inks come from the theme ([MapStyle]);
- * the Notebook theme (V-03) brings the paper, fonts and hand-drawn icons, V-11 the landscape,
- * A-04 the chest and the player's title, A-07 the streak on the puzzle note.
+ * [map] is null while the progress is read. The map lies on the menu screens' squared paper; the
+ * inks come from the theme ([MapStyle]). V-11 brings the landscape, A-04 the chest and the
+ * player's title, A-07 the streak on the puzzle note.
  */
 @Composable
 fun MapScreen(map: CampaignMap?, actions: MapActions) {
     val style = MapStyle.current
     var lock by remember { mutableStateOf<CampaignMap.Lock?>(null) }
-    Box(Modifier.fillMaxSize().background(style.paper)) {
+    Box(Modifier.fillMaxSize().squaredPaper(Palette.current)) {
         if (map != null) {
             val rows = remember(map) { rows(map) }
             // The list is drawn from the bottom up. One level below the start keeps it off the
@@ -279,12 +282,19 @@ private fun Header(world: WorldStop, style: MapStyle) {
     val stars = pluralStringResource(R.plurals.map_world_stars, most, world.stars, most)
     val number = stringResource(R.string.map_world_number, world.world.number)
     val description = "$number, ${world.world.name}, $stars"
-    // Paper behind the header, so the path scrolls away under it.
+    // Squared paper behind the header, fading out at its foot, so the path scrolls away under it.
+    // The header starts at the screen's top left, so its grid lies on the map's.
+    val palette = Palette.current
     Box(
         Modifier
             .fillMaxWidth()
             .height(124.dp)
-            .background(Brush.verticalGradient(0f to style.paper, 0.85f to style.paper, 1f to style.paper.copy(alpha = 0f))),
+            .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+            .drawWithContent {
+                drawContent()
+                drawRect(Brush.verticalGradient(0.85f to Color.Black, 1f to Color.Transparent), blendMode = BlendMode.DstIn)
+            }
+            .squaredPaper(palette),
     )
     Column(
         Modifier
@@ -550,9 +560,7 @@ private fun NextLabel(row: MapRow.Stop, style: MapStyle, centerX: Dp, centerY: D
         Text(
             stringResource(R.string.map_next_hand),
             color = style.next,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
-            fontStyle = FontStyle.Italic,
+            style = HAND,
         )
         if (onLeft) arrowIcon()
     }
@@ -609,11 +617,11 @@ private fun LockNote(lock: CampaignMap.Lock, onClose: () -> Unit) {
         Note {
             when (lock) {
                 is CampaignMap.Lock.PassFirst -> {
-                    Text(stringResource(R.string.map_locked_level_title), style = MaterialTheme.typography.headlineSmall)
+                    Text(stringResource(R.string.map_locked_level_title), style = NoteText.title)
                     Text(stringResource(R.string.map_pass_first, lock.level.code), style = MaterialTheme.typography.bodyLarge)
                 }
                 is CampaignMap.Lock.WorldClosed -> {
-                    Text(stringResource(R.string.map_world, lock.world.world.number, lock.world.world.name), style = MaterialTheme.typography.headlineSmall)
+                    Text(stringResource(R.string.map_world, lock.world.world.number, lock.world.world.name), style = NoteText.title)
                     for (line in lockLines(lock.world)) Text(line, style = MaterialTheme.typography.bodyLarge)
                 }
             }

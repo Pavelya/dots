@@ -20,6 +20,18 @@ data class BoardLook(
     val blue: Piece,
     /** How much ink a captured piece keeps: 1 is full ink. */
     val capturedAlpha: Float,
+    /** The ring round a captured area, through the centres of the capturing dots, in the captor's ink. */
+    val ring: Measure,
+    /** How far, in dp, each side of the ring may bow to either side of the straight line, like a pen stroke. */
+    val ringBow: Float,
+    /** How much the ring's width may vary along each side, as a share of it (0.15: up to 15% either way). */
+    val ringWobble: Float,
+    /** A hatch line across a captured area, in the captor's pale ink. No hatching when it is 0. */
+    val hatch: Measure,
+    /** The gap between two hatch lines, in dp, the same at every spacing. */
+    val hatchGap: Float,
+    /** True when the board always draws the links between touching dots of one side. */
+    val links: Boolean,
     /** A link between two touching dots of one side, in the side's pale ink. */
     val link: Measure,
     /** The threat ring around each dot of a group close to capture, across. */
@@ -40,10 +52,14 @@ data class BoardLook(
     val lastMoveRing: Measure,
     /** The last-move ring's line. */
     val lastMoveLine: Measure,
-    /** Drag's guides: the preview's row and column across the board (decision 0024). */
+    /** Drag's guides: the preview's row and column, from its ring to the board's edges (decision 0024). */
     val guide: Measure,
     /** How much of the ink of the side to move the guides show. */
     val guideAlpha: Float,
+    /** The guides' dashes, in dp; solid lines when it is 0. */
+    val guideDash: Float,
+    /** The gaps between the guides' dashes, in dp. */
+    val guideGap: Float,
 )
 
 /**

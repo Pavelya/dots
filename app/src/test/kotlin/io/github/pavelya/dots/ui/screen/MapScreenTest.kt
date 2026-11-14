@@ -42,7 +42,7 @@ class MapScreenTest {
 
     private val opened = mutableListOf<Level>()
 
-    private fun show(progress: Progress, theme: GameTheme = GameTheme.PLAIN, dark: Boolean = false) {
+    private fun show(progress: Progress, theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false) {
         val map = Campaign.map(progress)
         val actions = MapActions(
             onLevel = { opened += it },
@@ -77,15 +77,9 @@ class MapScreenTest {
     }
 
     @Test
-    fun `mid-world in the Notebook theme`() {
-        show(SampleProgress.midWorld, GameTheme.NOTEBOOK)
-        capture("theme_map_notebook")
-    }
-
-    @Test
-    fun `mid-world in the Notebook theme, dark`() {
-        show(SampleProgress.midWorld, GameTheme.NOTEBOOK, dark = true)
-        capture("theme_map_notebook_dark")
+    fun `mid-world, dark`() {
+        show(SampleProgress.midWorld, dark = true)
+        capture("map_mid_world_dark")
     }
 
     @Test

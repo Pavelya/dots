@@ -3,6 +3,7 @@ package io.github.pavelya.dots.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
@@ -17,8 +18,8 @@ import dots.engine.Player
  * background the screens draw with, in a [light] and a [dark] version. A new look is a new value
  * of this class, not new drawing code.
  *
- * [PLAIN] is the POC's look, the one the game uses until the Notebook theme is finished (V-03).
- * [NOTEBOOK] holds the values of docs/design/theme-notebook.md and pieces.md.
+ * [NOTEBOOK] is the game's look, with the values of docs/design/theme-notebook.md and pieces.md.
+ * [PLAIN] is the POC's look, kept to show that a look is data.
  */
 @Immutable
 data class GameTheme(
@@ -102,7 +103,10 @@ data class Palette(
     }
 }
 
-/** A theme's text styles (docs/design/theme-notebook.md, "Type"), without colour. */
+/**
+ * A theme's text styles (docs/design/theme-notebook.md, "Type"), without colour. [material] gives
+ * the plain Material parts of the screens the same fonts.
+ */
 @Immutable
 data class TypeScale(
     /** The result headline; level and world names. */
@@ -119,23 +123,51 @@ data class TypeScale(
     val label: TextStyle,
     /** Captions; the smallest text in the game. */
     val small: TextStyle,
-)
+) {
+    /**
+     * Material's text styles in this theme: its display and headline styles are [display] and
+     * [headline]; the large title, body and label are [title], [body] and [label]; the small body
+     * and label are [small]. The other styles keep Material's sizes in the [body] font.
+     */
+    val material: Typography by lazy {
+        val base = Typography()
+        val font = body.fontFamily
+        Typography(
+            displayLarge = display,
+            displayMedium = display,
+            displaySmall = display,
+            headlineLarge = headline,
+            headlineMedium = headline,
+            headlineSmall = headline,
+            titleLarge = title,
+            titleMedium = base.titleMedium.copy(fontFamily = font),
+            titleSmall = base.titleSmall.copy(fontFamily = font),
+            bodyLarge = body,
+            bodyMedium = base.bodyMedium.copy(fontFamily = font),
+            bodySmall = small,
+            labelLarge = label,
+            labelMedium = base.labelMedium.copy(fontFamily = font),
+            labelSmall = small,
+        )
+    }
+}
 
-private val LocalGameTheme = staticCompositionLocalOf { PlainTheme }
-private val LocalPalette = staticCompositionLocalOf { PlainTheme.light }
+private val LocalGameTheme = staticCompositionLocalOf { NotebookTheme }
+private val LocalPalette = staticCompositionLocalOf { NotebookTheme.light }
 
 /**
  * Draws [content] in [theme], in its dark version when [dark] (by default, when the phone's dark
- * theme is on). The Material parts of the screens take the theme's [Palette.material].
+ * theme is on). The Material parts of the screens take the theme's [Palette.material] and
+ * [TypeScale.material].
  */
 @Composable
 fun DotsTheme(
-    theme: GameTheme = GameTheme.PLAIN,
+    theme: GameTheme = GameTheme.NOTEBOOK,
     dark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     val palette = theme.palette(dark)
     CompositionLocalProvider(LocalGameTheme provides theme, LocalPalette provides palette) {
-        MaterialTheme(colorScheme = palette.material, content = content)
+        MaterialTheme(colorScheme = palette.material, typography = theme.type.material, content = content)
     }
 }

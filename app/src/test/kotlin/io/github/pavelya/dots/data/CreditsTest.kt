@@ -61,6 +61,9 @@ class CreditsTest {
         }
         val apache = main.resolve("assets").resolve(Credits.Licence.APACHE_2.file).readText()
         assertTrue(apache.contains("Apache License") && apache.contains("Version 2.0, January 2004"))
+        val ofl = main.resolve("assets").resolve(Credits.Licence.OFL_1_1.file).readText()
+        assertTrue(ofl.contains("SIL OPEN FONT LICENSE Version 1.1"))
+        for (font in Credits.fonts) assertTrue("${font.name}'s copyright line", ofl.contains("The ${font.name} Project Authors"))
     }
 
     @Test

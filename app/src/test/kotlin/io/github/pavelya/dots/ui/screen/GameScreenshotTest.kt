@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import dots.ai.Hints
@@ -33,6 +35,7 @@ import io.github.pavelya.dots.game.LastCapture
 import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.game.OpponentLook
 import io.github.pavelya.dots.game.gameViewModel
+import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.GameTheme
@@ -67,7 +70,7 @@ class GameScreenshotTest {
     private val human = Player.RED
 
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
-    private fun show(theme: GameTheme = GameTheme.PLAIN, dark: Boolean = false, content: @Composable () -> Unit) {
+    private fun show(theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
             DotsTheme(theme, dark) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
@@ -77,16 +80,21 @@ class GameScreenshotTest {
 
     private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
 
-    @Test
-    fun levelOpens() {
-        show {
+    private fun levelOpens(name: String, dark: Boolean) {
+        show(dark = dark) {
             BoxWithConstraints {
                 Board(ui(CanvasGame.opening, lastMove = null), campaign = CanvasGame.parts(CanvasGame.opening.state, note = false))
                 LevelOpening(CanvasGame.level, Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp))
             }
         }
-        capture("game_start")
+        capture(name)
     }
+
+    @Test
+    fun levelOpens() = levelOpens("game_start", dark = false)
+
+    @Test
+    fun levelOpensDark() = levelOpens("game_start_dark", dark = true)
 
     @Test
     fun threat() {
@@ -98,6 +106,12 @@ class GameScreenshotTest {
     }
 
     @Test
+    fun threatDark() {
+        show(dark = true) { Board(ui(CanvasGame.threat)) }
+        capture("game_threat_dark")
+    }
+
+    @Test
     fun bigCapture() {
         val big = CanvasGame.bigCapture
         assertEquals(OpponentLook(Mood.UPSET, Bubble.OUCH), ui(big).opponent)
@@ -106,17 +120,10 @@ class GameScreenshotTest {
         capture("game_big_capture")
     }
 
-    /** The threat (as `game_threat`) in the Notebook theme, light and dark. */
     @Test
-    fun threatInNotebook() {
-        show(GameTheme.NOTEBOOK) { Board(ui(CanvasGame.threat)) }
-        capture("theme_game_notebook")
-    }
-
-    @Test
-    fun threatInNotebookDark() {
-        show(GameTheme.NOTEBOOK, dark = true) { Board(ui(CanvasGame.threat)) }
-        capture("theme_game_notebook_dark")
+    fun bigCaptureDark() {
+        show(dark = true) { Board(ui(CanvasGame.bigCapture)) }
+        capture("game_big_capture_dark")
     }
 
     @Test
@@ -124,6 +131,13 @@ class GameScreenshotTest {
     fun threatOnASmallPhone() {
         show { Board(ui(CanvasGame.threat)) }
         capture("game_threat_small_phone")
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun threatOnASmallPhoneDark() {
+        show(dark = true) { Board(ui(CanvasGame.threat)) }
+        capture("game_threat_small_phone_dark")
     }
 
     /** Undo's preview (canvas frame `game-undo`): the turn it takes back pale in dashed rings, its threat marks gone. */
@@ -134,11 +148,52 @@ class GameScreenshotTest {
     }
 
     @Test
+    fun undoPreviewDark() {
+        show(dark = true) { Preview(undoUi()) }
+        capture("game_undo_dark")
+    }
+
+    @Test
     @Config(qualifiers = "w320dp-h568dp-xhdpi")
     fun undoPreviewOnASmallPhone() {
         show { Preview(undoUi()) }
         capture("game_undo_small_phone")
     }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun undoPreviewOnASmallPhoneDark() {
+        show(dark = true) { Preview(undoUi()) }
+        capture("game_undo_small_phone_dark")
+    }
+
+    /**
+     * Placing the first dot by drag (canvas frame `game-drag`): the finger is down on (10, 7), the
+     * preview sits there, and dashed guides run from its ring to the board's edges.
+     */
+    private fun drag(name: String, dark: Boolean) {
+        val point = Pos(10, 7)
+        val opening = ui(CanvasGame.opening, lastMove = null).copy(preview = point)
+        show(dark = dark) { Board(opening, input = BoardInput(PlacingMethod.DRAG, {}, {}, {})) }
+        compose.onNodeWithTag(BOARD_TAG).performTouchInput {
+            down(BoardGeometry(15, 15, width.toFloat(), height.toFloat()).center(point))
+        }
+        capture(name)
+    }
+
+    @Test
+    fun placingByDrag() = drag("game_drag", dark = false)
+
+    @Test
+    fun placingByDragDark() = drag("game_drag_dark", dark = true)
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun placingByDragOnASmallPhone() = drag("game_drag_small_phone", dark = false)
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun placingByDragOnASmallPhoneDark() = drag("game_drag_small_phone_dark", dark = true)
 
     /** The Bomb aimed at Red's dot in danger: the plus of 5 points, and the three blue dots it would remove. */
     @Test
@@ -170,11 +225,16 @@ class GameScreenshotTest {
     }
 
     /** The Boosters screen (canvas frame `boosters`) with the canvas's counts. */
-    @Test
-    fun boostersScreen() {
-        show { BoostersNote(mapOf(Booster.WALL to 2, Booster.HINT to 1, Booster.DOUBLE_DOT to 1, Booster.UNDO to 1), onClose = {}) }
-        capture("boosters")
+    private fun boostersScreen(name: String, dark: Boolean) {
+        show(dark = dark) { BoostersNote(mapOf(Booster.WALL to 2, Booster.HINT to 1, Booster.DOUBLE_DOT to 1, Booster.UNDO to 1), onClose = {}) }
+        capture(name)
     }
+
+    @Test
+    fun boostersScreen() = boostersScreen("boosters", dark = false)
+
+    @Test
+    fun boostersScreenDark() = boostersScreen("boosters_dark", dark = true)
 
     @Test
     fun freePlay() {
@@ -235,8 +295,8 @@ class GameScreenshotTest {
     }
 
     @Composable
-    private fun Board(ui: GameUiState, campaign: CampaignParts? = CanvasGame.parts(ui.state)) {
-        GameBoard(ui, human, campaign, input = BoardInput.NONE, onUndo = {}, onPause = {})
+    private fun Board(ui: GameUiState, campaign: CampaignParts? = CanvasGame.parts(ui.state), input: BoardInput = BoardInput.NONE) {
+        GameBoard(ui, human, campaign, input = input, onUndo = {}, onPause = {})
     }
 
     /** The board with [ui]'s booster preview open over the player's line and the tool bar, as GameScreen lays it. */

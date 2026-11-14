@@ -10,6 +10,7 @@ object Credits {
     /** A licence, with its full text in the app's assets at [file], shown on the Licences page. */
     enum class Licence(val title: String, val file: String) {
         APACHE_2("Apache License 2.0", "licences/apache-2.0.txt"),
+        OFL_1_1("SIL Open Font License 1.1", "licences/ofl-1.1.txt"),
     }
 
     /**
@@ -25,8 +26,21 @@ object Credits {
     /** The name under Made by. */
     const val MADE_BY = "School 25"
 
-    /** The fonts the app ships with. Caveat and Nunito arrive with the Notebook theme (V-03). */
-    val fonts: List<Asset> = emptyList()
+    /** The fonts the app ships with: the Notebook theme's Caveat and Nunito. */
+    val fonts: List<Asset> = listOf(
+        Asset(
+            "Caveat",
+            "The Caveat Project Authors, from Google Fonts",
+            Licence.OFL_1_1,
+            listOf("res/font/caveat_semibold.ttf", "res/font/caveat_bold.ttf"),
+        ),
+        Asset(
+            "Nunito",
+            "The Nunito Project Authors, from Google Fonts",
+            Licence.OFL_1_1,
+            listOf("res/font/nunito_medium.ttf", "res/font/nunito_bold.ttf", "res/font/nunito_extrabold.ttf"),
+        ),
+    )
 
     /** The sound effects and music the app ships with (V-08, V-09). */
     val sounds: List<Asset> = emptyList()

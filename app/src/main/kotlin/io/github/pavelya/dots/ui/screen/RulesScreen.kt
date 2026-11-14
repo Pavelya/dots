@@ -1,7 +1,6 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.annotation.StringRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -94,7 +93,7 @@ object RulePictures {
 fun RulesScreen(onBack: () -> Unit, onPlayTutorial: () -> Unit) {
     val style = Palette.current
     val boardStyle = BoardStyle.current
-    Column(Modifier.fillMaxSize().background(style.paper).padding(bottom = 16.dp)) {
+    Column(Modifier.fillMaxSize().squaredPaper(style, margin = false).padding(bottom = 16.dp)) {
         Column(Modifier.padding(horizontal = 16.dp)) { ScreenHeader(R.string.rules_title, onBack) }
         Column(
             verticalArrangement = Arrangement.spacedBy(14.dp),

@@ -58,7 +58,7 @@ import kotlin.math.roundToInt
 
 /**
  * The menu screens' paper (theme-notebook.md, Menu screens; the wireframes' Settings and Settings
- * details): squared paper with a line every 24 dp, the notebook margin line at 56 dp, Back and a
+ * details): squared paper with a line every 24 dp, the notebook margin line, Back and a
  * handwritten [title] at the top, and the [content] in a column right of the margin that scrolls
  * under the header, so Back never needs scrolling.
  */
@@ -86,12 +86,12 @@ internal fun PaperPage(
             ) {
                 Icon(remember(style) { Doodles.icon(Doodles.BACK, style.blue, width = 2f) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(26.dp))
             }
-            // The handwriting is wider than the wireframe's Caveat until V-03: a long title shrinks to fit.
+            // A long title shrinks to fit, never below the 24 sp that Caveat needs.
             BasicText(
                 title,
                 style = PAGE_TITLE.copy(color = style.blue),
                 maxLines = 1,
-                autoSize = TextAutoSize.StepBased(minFontSize = 20.sp, maxFontSize = 34.sp),
+                autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 34.sp),
                 modifier = Modifier.semantics { heading() },
             )
         }
@@ -106,27 +106,39 @@ internal fun PaperPage(
     }
 }
 
-/** Paper, the grid every 24 dp, and the margin line at 56 dp, as the wireframes draw the menu screens. */
-private fun Modifier.squaredPaper(style: Palette): Modifier {
+/**
+ * The menu screens' paper (theme-notebook.md, "Menu screens"): Paper, Grid lines 1 dp wide every
+ * 24 dp, and one Margin line at 58 dp from the left, placed as the canvas places them. The margin
+ * line never crosses text or buttons: a screen whose content starts further left goes without it
+ * ([margin] false).
+ */
+internal fun Modifier.squaredPaper(style: Palette, margin: Boolean = true): Modifier {
     val grid = style.grid
-    val margin = style.margin
+    val marginInk = style.margin
     return background(style.paper).drawBehind {
         val step = 24.dp.toPx()
         val line = 1.dp.toPx()
-        var x = 0f
+        // Each line's 1 dp band ends where its 24 dp square ends (the canvas's -1 dp offset).
+        val first = step - line / 2 - line
+        var x = first
         while (x < size.width) {
             drawLine(grid, Offset(x, 0f), Offset(x, size.height), line)
             x += step
         }
-        var y = 0f
+        var y = first
         while (y < size.height) {
             drawLine(grid, Offset(0f, y), Offset(size.width, y), line)
             y += step
         }
-        val left = 56.dp.toPx()
-        drawLine(margin, Offset(left, 0f), Offset(left, size.height), line)
+        if (margin) {
+            val left = MARGIN_LINE.toPx() + line / 2
+            drawLine(marginInk, Offset(left, 0f), Offset(left, size.height), line)
+        }
     }
 }
+
+/** Where the notebook margin line is drawn on the menu screens (the canvas's map frame). */
+internal val MARGIN_LINE = 58.dp
 
 /** A section's name in red handwriting, sitting on the bottom of its 40 dp line. */
 @Composable
@@ -274,7 +286,7 @@ private fun Modifier.dashedUnderline(style: Palette): Modifier = drawBehind {
     )
 }
 
-/** The wireframes' Caveat page title, 34 sp; italics until V-03 brings Caveat. */
+/** The wireframes' Caveat page title, 34 sp. */
 private val PAGE_TITLE: TextStyle
     @Composable @ReadOnlyComposable
     get() = NoteText.display.copy(fontSize = 34.sp, lineHeight = 40.sp)

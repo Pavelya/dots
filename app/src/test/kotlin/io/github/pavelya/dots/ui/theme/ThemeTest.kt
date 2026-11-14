@@ -6,6 +6,7 @@ import androidx.compose.ui.graphics.toArgb
 import dots.engine.Player
 import java.io.File
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -101,6 +102,67 @@ class ThemeTest {
         assertEquals(2f, px(look.previewLine, 24f))
         assertEquals(1f, look.capturedAlpha)
     }
+
+    @Test
+    fun `rings, hatching, links and drag's guides as the page draws them`() {
+        val look = notebook.board
+        fun px(measure: Measure, spacing: Float) = measure.px(spacing, density = 1f)
+        // The ring: 1/12 of the spacing, at least 1.5 dp, at most 3 dp; bowing by up to 0.4 dp and
+        // varying by up to 15%.
+        assertEquals(2f, px(look.ring, 24f), 0.001f)
+        assertEquals(1.5f, px(look.ring, 12f), 0.001f)
+        assertEquals(3f, px(look.ring, 60f), 0.001f)
+        assertEquals(0.4f, look.ringBow)
+        assertEquals(0.15f, look.ringWobble)
+        // Hatching: 1 dp, one line every 5 dp, at every spacing.
+        assertEquals(1f, px(look.hatch, 24f))
+        assertEquals(1f, px(look.hatch, 60f))
+        assertEquals(5f, look.hatchGap)
+        assertEquals(true, look.links)
+        // Drag's guides: 1.5 dp, dashes 4 dp long with 3 dp gaps, solid ink, at every spacing.
+        assertEquals(1.5f, px(look.guide, 24f))
+        assertEquals(1.5f, px(look.guide, 21f))
+        assertEquals(listOf(4f, 3f, 1f), listOf(look.guideDash, look.guideGap, look.guideAlpha))
+    }
+
+    @Test
+    fun `text styles are the page's sizes and weights`() {
+        val styles = with(notebook.type) {
+            mapOf("Display" to display, "Headline" to headline, "Title" to title, "Score" to score, "Body" to body, "Label" to label, "Small" to small)
+        }
+        // The section's second table, one row per style.
+        val rows = page.substringAfter("## Type\n").substringBefore("\n## ").lines()
+            .map { row -> row.trim().trim('|').split("|").map { it.trim() } }
+            .filter { it.size == 6 && it[0] in styles }
+        assertEquals(7, rows.size)
+        assertTrue("two fonts", caveat != null && nunito != null && caveat != nunito)
+        for ((name, font, weight, size, lineHeight) in rows) {
+            val style = styles.getValue(name)
+            assertEquals("$name weight", weight.toInt(), style.fontWeight?.weight)
+            assertEquals("$name size", size, "${style.fontSize.value.toInt()} sp")
+            assertEquals("$name line height", lineHeight, "${style.lineHeight.value.toInt()} sp")
+            val family = if (font == "Caveat") caveat else nunito
+            assertEquals("$name font", family, style.fontFamily)
+        }
+    }
+
+    @Test
+    fun `the Material styles use the theme's fonts`() {
+        val type = notebook.type
+        with(type.material) {
+            assertEquals(type.display, displaySmall)
+            assertEquals(type.headline, headlineSmall)
+            assertEquals(type.title, titleLarge)
+            assertEquals(type.body, bodyLarge)
+            assertEquals(type.label, labelLarge)
+            for (style in listOf(titleMedium, titleSmall, bodyMedium, bodySmall, labelMedium, labelSmall)) {
+                assertEquals(nunito, style.fontFamily)
+            }
+        }
+    }
+
+    private val caveat = notebook.type.display.fontFamily
+    private val nunito = notebook.type.body.fontFamily
 
     @Test
     fun `a palette gives each side its ink, wash and pale`() {
