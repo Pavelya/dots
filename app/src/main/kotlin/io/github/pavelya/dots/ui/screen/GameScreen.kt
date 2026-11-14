@@ -50,7 +50,8 @@ internal const val OPENING_MILLIS = 1_500L
  * campaign level opens with its mission big over the board for a moment, then the mission sits in
  * the corner note. The pause icon, or Back, opens Pause over the board; when the game ends, Result
  * opens over the final board (docs/design/flows.md, "Around the board"). [sound] is the setting the
- * sound icon in Pause turns on or off through [onSound]. Dots are placed by the [placing] method.
+ * sound icon in Pause turns on or off through [onSound]. Dots are placed by the [placing] method,
+ * and the board draws links between touching dots of one side when [links] is on.
  *
  * Result's buttons: Retry and Play again start the next game here; Map goes to [onToMap]; Next, in
  * the campaign, goes to [onNext] with the level whose card the map should open.
@@ -72,6 +73,7 @@ fun GameScreen(
     onSound: (Boolean) -> Unit = {},
     onNext: (Level?) -> Unit = { onToMap() },
     placing: PlacingMethod = PlacingMethod.TWO_TAPS,
+    links: Boolean = false,
     guidesSkipped: Boolean = false,
     onSkipGuides: () -> Unit = {},
 ) {
@@ -123,6 +125,7 @@ fun GameScreen(
                 viewModel.skipGuides()
                 onSkipGuides()
             },
+            links = links,
         )
         if (opening && level != null) {
             LevelOpening(level, Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp))

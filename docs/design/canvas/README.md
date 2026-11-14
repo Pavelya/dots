@@ -14,7 +14,8 @@ shared it with. The PNGs on this page are exported from the same drawing.
 The game frames are one game of Level 7, Siege: the mission is to capture 8 dots, and the
 computer starts 6 dots ahead. Each frame adds to the one before, so the board tells one story.
 Under the board, the tool bar holds the five boosters: Wall, Hint, Bomb, Double dot and Undo
-(decision 0023).
+(decision 0023). The boards show the default look, without the pale links between touching dots;
+one frame shows them turned on in Settings.
 
 | Frame | Light | Dark |
 | --- | --- | --- |
@@ -30,6 +31,7 @@ Under the board, the tool bar holds the five boosters: Wall, Hint, Bomb, Double 
 | **Small phone: Undo's preview.** Undo's note at 320 x 568, over the player's line and the tool bar, clear of the board. | <img src="small-game-undo-light.png" width="160" alt="Light: Undo's preview on a small phone"> | <img src="small-game-undo-dark.png" width="160" alt="Dark: Undo's preview on a small phone"> |
 | **Game: placing by drag.** Just after the level opens, the player places their first dot by drag (decision 0024). The thumb is on the point; dashed red guides run from the preview's ring along its row and column to the board's edges, under the pieces. Undo still waits. | <img src="game-drag-light.png" width="180" alt="Light: placing by drag"> | <img src="game-drag-dark.png" width="180" alt="Dark: placing by drag"> |
 | **Small phone: placing by drag.** The same drag on a 21 dp board: the guides keep their width and dashes. | <img src="small-game-drag-light.png" width="160" alt="Light: placing by drag on a small phone"> | <img src="small-game-drag-dark.png" width="160" alt="Dark: placing by drag on a small phone"> |
+| **Game: a threat, links on.** The threat with "Links between dots" turned on in Settings: a pale line joins every two touching dots of one side, across or diagonally. Captured dots have none. | <img src="game-threat-links-light.png" width="180" alt="Light: a threat, links on"> | <img src="game-threat-links-dark.png" width="180" alt="Dark: a threat, links on"> |
 
 ## Real size
 

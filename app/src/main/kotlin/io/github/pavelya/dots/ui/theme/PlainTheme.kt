@@ -41,7 +41,6 @@ internal val PlainTheme: GameTheme = GameTheme(
         ringWobble = 0f,
         hatch = Measure(),
         hatchGap = 5f,
-        links = false,
         link = Measure(ofSpacing = 0.08f),
         threatRing = Measure(ofSpacing = 0.84f),
         threatNear = Measure(ofSpacing = 0.09f),

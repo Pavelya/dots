@@ -306,6 +306,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 sound = settings.value?.sound ?: AppSettings().sound,
                                 onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
                                 placing = settings.value?.placing ?: AppSettings().placing,
+                                links = settings.value?.links ?: AppSettings().links,
                                 guidesSkipped = settings.value?.tutorialSkipped ?: false,
                                 onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
                                 // Next goes back to the map, which opens the next level's card.

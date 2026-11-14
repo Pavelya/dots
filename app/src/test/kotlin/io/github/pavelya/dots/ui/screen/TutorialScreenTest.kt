@@ -1,5 +1,9 @@
 package io.github.pavelya.dots.ui.screen
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasText
@@ -18,9 +22,11 @@ import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
+import io.github.pavelya.dots.ui.board.LinksShown
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -51,8 +57,8 @@ class TutorialScreenTest {
         }
     }
 
-    private fun practice(journal: CampaignJournal = Journal()) = GameViewModel(
-        start = levelGame(Tutorial.levels.first(), threatHighlight = false, now = 0, practice = true),
+    private fun practice(journal: CampaignJournal = Journal(), level: Level = Tutorial.levels.first()) = GameViewModel(
+        start = levelGame(level, threatHighlight = false, now = 0, practice = true),
         nextGame = { error("a practice game starts its next game itself") },
         computerFor = { entry -> (entry.record as dots.campaign.LevelRecord).level.computer(Random(1)) },
         campaign = journal,
@@ -170,5 +176,39 @@ class TutorialScreenTest {
         compose.mainClock.advanceTimeBy(OPENING_MILLIS + 100)
         compose.onNodeWithText("Tap the circled point.").assertDoesNotExist()
         compose.onNodeWithText("Skip").assertDoesNotExist()
+    }
+
+    /** Whether the game board draws the links between touching dots of one side. */
+    private fun linksShown() = compose.onNodeWithTag(BOARD_TAG).fetchSemanticsNode().config[LinksShown]
+
+    @Test
+    fun `the linking level shows links with the switch off while its steps are guided, and Skip hides them`() {
+        val vm = practice(level = Tutorial.levels[1])
+        compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}, links = false) } }
+        waitFor("STEP 2 OF 3 · LINKING")
+        assertTrue(linksShown())
+
+        compose.onNodeWithText("Skip").performClick()
+        compose.waitForIdle()
+        assertFalse(linksShown())
+    }
+
+    @Test
+    fun `the placing and capturing levels follow the switch`() {
+        var level by mutableStateOf(Tutorial.levels[0])
+        var links by mutableStateOf(false)
+        compose.setContent {
+            val vm = remember(level) { practice(level = level) }
+            DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}, links = links) }
+        }
+        for (lesson in listOf(0, 2)) {
+            level = Tutorial.levels[lesson]
+            links = false
+            compose.waitForIdle()
+            assertFalse(linksShown())
+            links = true
+            compose.waitForIdle()
+            assertTrue(linksShown())
+        }
     }
 }

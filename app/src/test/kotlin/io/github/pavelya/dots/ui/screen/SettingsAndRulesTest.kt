@@ -24,8 +24,10 @@ import androidx.compose.ui.test.performSemanticsAction
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.Credits
 import io.github.pavelya.dots.data.PlacingMethod
+import io.github.pavelya.dots.ui.board.LinksShown
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -84,6 +86,7 @@ class SettingsAndRulesTest {
             "Vibration" to { s: AppSettings -> s.vibration },
             "High-contrast pieces" to { s: AppSettings -> s.highContrast },
             "Threat highlights" to { s: AppSettings -> s.threatHighlight },
+            "Links between dots" to { s: AppSettings -> s.links },
         )
         for ((label, value) in switches) {
             val before = value(latest)
@@ -101,11 +104,12 @@ class SettingsAndRulesTest {
     }
 
     @Test
-    fun `vibration starts on, and high contrast and threats start off`() {
+    fun `vibration starts on, and high contrast, threats and links start off`() {
         settings()
         compose.onNodeWithText("Vibration").assertIsOn()
         compose.onNodeWithText("High-contrast pieces").assertIsOff()
         compose.onNodeWithText("Threat highlights").assertIsOff()
+        compose.onNodeWithText("Links between dots").performScrollTo().assertIsOff()
     }
 
     @Test
@@ -126,10 +130,11 @@ class SettingsAndRulesTest {
 
     @Test
     fun `the screen shows the saved settings`() {
-        settings(AppSettings(vibration = false, highContrast = true, threatHighlight = true, placing = PlacingMethod.DRAG, musicVolume = 10, effectsVolume = 90))
+        settings(AppSettings(vibration = false, highContrast = true, threatHighlight = true, links = true, placing = PlacingMethod.DRAG, musicVolume = 10, effectsVolume = 90))
         compose.onNodeWithText("Vibration").assertIsOff()
         compose.onNodeWithText("High-contrast pieces").assertIsOn()
         compose.onNodeWithText("Threat highlights").assertIsOn()
+        compose.onNodeWithText("Links between dots").performScrollTo().assertIsOn()
         compose.onNodeWithText("Drag").performScrollTo().assertIsSelected()
         compose.onNodeWithContentDescription("Music").assert(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(10f, 0f..100f)))
         compose.onNodeWithContentDescription("Sounds").assert(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(90f, 0f..100f)))
@@ -183,6 +188,7 @@ class SettingsAndRulesTest {
 
     @Test
     fun `How to play shows the five rules with their pictures, and Play the tutorial`() {
+        // The pictures teach the rules, so they show links whatever the player chose (A-20).
         var played = 0
         compose.setContent { DotsTheme { RulesScreen(onBack = {}, onPlayTutorial = { played++ }) } }
 
@@ -192,6 +198,9 @@ class SettingsAndRulesTest {
         compose.onNodeWithContentDescription("A red ring of four dots has captured a blue dot.").assertExists()
         compose.onNodeWithContentDescription("A red ring of four dots around an empty point.").assertExists()
         compose.onNodeWithContentDescription("A blue dot on the edge, with red dots around it, is safe.").assertExists()
+        val pictures = compose.onAllNodes(SemanticsMatcher.keyIsDefined(LinksShown)).fetchSemanticsNodes()
+        assertEquals(5, pictures.size)
+        assertTrue(pictures.all { it.config[LinksShown] })
 
         compose.onNodeWithText("Play the tutorial").assertIsDisplayed().performClick()
         assertEquals(1, played)
