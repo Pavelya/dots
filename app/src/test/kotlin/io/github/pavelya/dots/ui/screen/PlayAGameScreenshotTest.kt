@@ -4,9 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -19,6 +17,7 @@ import dots.campaign.Campaign
 import dots.campaign.Progress
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.GameMode
+import io.github.pavelya.dots.ui.theme.DotsTheme
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -43,7 +42,7 @@ class PlayAGameScreenshotTest {
         val map = Campaign.map(Progress(Campaign.levels.take(6).associate { it.code to 2 }))
         val actions = MapActions(onLevel = {}, onDaily = {}, onPlay = {}, onRules = {}, onStats = {}, onShop = {}, onSettings = {})
         compose.setContent {
-            MaterialTheme(colorScheme = lightColorScheme()) {
+            DotsTheme(dark = false) {
                 Surface {
                     Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) {
                         MapScreen(map, actions)

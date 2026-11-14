@@ -244,14 +244,22 @@ internal fun LinkRow(label: String, detail: String? = null, onClick: () -> Unit)
     }
 }
 
-/** A line of information that does nothing when tapped: its [label] and a [detail] in grey. */
+/** A line of information that does nothing when tapped: its [label] and a [detail] in grey, beside it or, for a long one, [detailBelow]. */
 @Composable
-internal fun InfoRow(label: String, detail: String) {
+internal fun InfoRow(label: String, detail: String, detailBelow: Boolean = false) {
     val style = Palette.current
+    val row = Modifier.fillMaxWidth().heightIn(min = 52.dp).dashedUnderline(style).semantics(mergeDescendants = true) {}
+    if (detailBelow) {
+        Column(row.padding(vertical = 6.dp), verticalArrangement = Arrangement.Center) {
+            Text(label, style = ROW_TEXT.copy(fontSize = 16.sp), color = style.pencil)
+            Text(detail, style = NoteText.small, color = style.graphite)
+        }
+        return
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).dashedUnderline(style).semantics(mergeDescendants = true) {},
+        modifier = row,
     ) {
         Text(label, style = ROW_TEXT.copy(fontSize = 16.sp), color = style.pencil, modifier = Modifier.weight(1f).padding(vertical = 4.dp))
         Text(detail, style = NoteText.small, color = style.graphite)

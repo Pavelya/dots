@@ -62,7 +62,7 @@ private fun AssetCredits(@StringRes title: Int, assets: List<Credits.Asset>) {
     if (assets.isEmpty()) return
     SectionHead(stringResource(title))
     for (asset in assets) {
-        InfoRow(asset.name, listOf(asset.source, asset.licence?.title ?: stringResource(R.string.credits_ours)).joinToString(" · "))
+        InfoRow(asset.name, listOf(asset.source, asset.licence?.title ?: stringResource(R.string.credits_ours)).joinToString(" · "), detailBelow = true)
     }
 }
 
