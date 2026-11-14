@@ -114,7 +114,7 @@ import kotlinx.coroutines.delay
  * place of the game's name, as the wireframes' small frames show.
  *
  * Every ink, size and text style comes from the theme ([Palette], [BoardStyle], [NoteText]); V-12
- * brings the faces, V-16 the hand-drawn icons.
+ * brings the faces.
  */
 @Composable
 internal fun GameBoard(

@@ -13,8 +13,8 @@ import io.github.pavelya.dots.game.Mood
  * The icons and doodles of the map, the game screen, the Level card and Result, with the same
  * outlines as the canvas (docs/design/canvas/draw.py: `ICONS`, `STAR`, the boss castle and the
  * computer's `face`) and the
- * wireframes (sound and undo), drawn in code until the hand-drawn icons of V-16 and the faces of
- * V-12 arrive.
+ * wireframes (sound and undo), drawn in code. The faces are stand-ins until V-12 brings the
+ * drawn ones.
  */
 object Doodles {
     const val PAUSE = "M12 2.5 q9.5 .3 9.5 9.5 q-.3 9.5 -9.5 9.5 q-9.5 -.3 -9.5 -9.5 q.3 -9.3 9.5 -9.5 M9.5 8 q-.3 4 0 8 M14.5 8 q.3 4 0 8"
