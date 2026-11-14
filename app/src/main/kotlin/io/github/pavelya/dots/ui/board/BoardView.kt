@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.semantics.SemanticsPropertyKey
+import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -38,8 +40,9 @@ import kotlin.random.Random
  * Draws a position: grid, captured areas (washed and hatched in the captor's colours, inside a ring
  * drawn like a pen stroke), live and captured dots, the last move, and a placement preview. It
  * decides nothing about the game; [PlayableBoard] adds touch. [showLinks] draws the links between
- * neighbouring dots of one colour, which makes chains and rings visible; by default the theme
- * decides ([BoardLook.links]). [dangers] marks groups close to
+ * neighbouring dots of one colour, which makes chains visible; they are off unless asked for (the
+ * player's setting, the tutorial's linking level, How to play), and the board tells tests whether
+ * they show ([LinksShown]). [dangers] marks groups close to
  * capture (the threat highlight). [marked] is the dot a level's mission is about (rescue or
  * target), circled twice in the player's ink. [guides] draws the preview's row and column across
  * the board, around a finger that hides the point itself (placing by drag). [pointer] is the point
@@ -55,7 +58,7 @@ fun BoardView(
     modifier: Modifier = Modifier,
     lastMove: Pos? = null,
     preview: Pos? = null,
-    showLinks: Boolean = style.look.links,
+    showLinks: Boolean = false,
     dangers: List<Danger> = emptyList(),
     marked: Pos? = null,
     guides: Boolean = false,
@@ -66,7 +69,10 @@ fun BoardView(
     Canvas(
         modifier = modifier
             .aspectRatio(state.width.toFloat() / state.height)
-            .semantics { contentDescription = description },
+            .semantics {
+                contentDescription = description
+                linksShown = showLinks
+            },
     ) {
         val geometry = BoardGeometry(state.width, state.height, size.width, size.height)
         val guided = if (guides) preview ?: marks.point else null
@@ -74,6 +80,10 @@ fun BoardView(
         pointer?.let { drawPointer(geometry.center(it), geometry, style) }
     }
 }
+
+/** Whether the board draws the links between touching dots of one side; for tests, TalkBack does not read it. */
+val LinksShown = SemanticsPropertyKey<Boolean>("LinksShown")
+private var SemanticsPropertyReceiver.linksShown by LinksShown
 
 /**
  * What a booster adds to the board (A-05). In the booster preview: the [targets] it may be aimed

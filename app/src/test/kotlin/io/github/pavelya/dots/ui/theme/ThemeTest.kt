@@ -118,7 +118,9 @@ class ThemeTest {
         assertEquals(1f, px(look.hatch, 24f))
         assertEquals(1f, px(look.hatch, 60f))
         assertEquals(5f, look.hatchGap)
-        assertEquals(true, look.links)
+        // Links: 1.5 dp at every spacing.
+        assertEquals(1.5f, px(look.link, 24f))
+        assertEquals(1.5f, px(look.link, 60f))
         // Drag's guides: 1.5 dp, dashes 4 dp long with 3 dp gaps, solid ink, at every spacing.
         assertEquals(1.5f, px(look.guide, 24f))
         assertEquals(1.5f, px(look.guide, 21f))

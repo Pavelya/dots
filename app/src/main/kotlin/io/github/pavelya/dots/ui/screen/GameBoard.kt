@@ -104,6 +104,10 @@ import kotlinx.coroutines.delay
  *   Skip calls [onSkipGuide]. When there is no room above the board, the note lies over its top
  *   rows.
  *
+ * The board draws the links between touching dots of one side when [links] is on (the player's
+ * setting), and always in the tutorial's linking level while its steps are guided: that level
+ * teaches them.
+ *
  * In a booster preview the board shows where the booster can act and what it would do ([BoardMarks]);
  * after a Hint its point stays circled until the dot lands, and after a Double dot a chip beside
  * the player's name counts the dots still to place this turn.
@@ -130,6 +134,7 @@ internal fun GameBoard(
     guided: Boolean = false,
     guide: Tutorial.Step? = null,
     onSkipGuide: () -> Unit = {},
+    links: Boolean = false,
 ) {
     val style = Palette.current
     val boardStyle = BoardStyle.current
@@ -197,6 +202,7 @@ internal fun GameBoard(
                 marked = ui.level?.mission?.let(::missionDot)?.takeUnless { ui.isOver },
                 pointer = guide?.point,
                 marks = boardMarks(ui),
+                showLinks = links || (guided && ui.level?.let(Tutorial::lesson) == Tutorial.Lesson.LINKING),
             )
             Row(
                 modifier = Modifier.fillMaxWidth().height(PLAYER_LINE).padding(horizontal = 16.dp),
