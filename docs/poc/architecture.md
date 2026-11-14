@@ -103,5 +103,5 @@ replay does not give.
 
 ## What is deliberately temporary
 
-Grey visuals, the one-screen rules card, the settings layout. Nothing in the temporary parts is
+The one-screen rules card, the settings layout. Nothing in the temporary parts is
 depended on by the kept parts.

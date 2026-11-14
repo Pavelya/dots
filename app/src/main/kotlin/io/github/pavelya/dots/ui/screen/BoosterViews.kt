@@ -45,7 +45,6 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -309,7 +308,7 @@ private fun BoosterRow(booster: Booster, left: Int, style: Palette) {
         }
         Text(
             stringResource(R.string.boosters_count, left),
-            style = HAND.copy(fontSize = 28.sp, fontStyle = FontStyle.Normal, fontWeight = FontWeight.ExtraBold),
+            style = NoteText.score,
             color = if (any) style.red else style.graphite,
         )
     }

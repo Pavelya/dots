@@ -197,6 +197,7 @@ private fun BoardPicture(level: Level, modifier: Modifier) {
         style = boardStyle,
         description = stringResource(R.string.level_board_picture),
         modifier = modifier.border(1.dp, boardStyle.grid),
+        showLinks = false,
         marked = marked,
     )
 }

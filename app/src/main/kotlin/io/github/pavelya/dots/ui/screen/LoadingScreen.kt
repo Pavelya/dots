@@ -122,7 +122,7 @@ internal fun LoadingPicture(
             )
             Text(
                 tip,
-                style = HAND.copy(fontSize = 18.sp, lineHeight = 24.sp),
+                style = NoteText.body,
                 color = ink.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.graphicsLayer { alpha = words() },

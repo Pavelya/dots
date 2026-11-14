@@ -30,7 +30,7 @@ class BoardScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val style = BoardStyle.of(GameTheme.PLAIN, dark = false)
+    private val style = BoardStyle.of(GameTheme.NOTEBOOK, dark = false)
 
     private fun capture(
         name: String,
