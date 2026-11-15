@@ -121,7 +121,7 @@ class ProgressScreensTest {
         show { StandInScreen(R.string.screen_stats, "A-11", onBack = {}) { TitleCard(21) } }
 
         // The card is read as one sentence.
-        compose.onNodeWithContentDescription("Your title: Apprentice. Stars: 21 of 45 for Strategist.").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Your title: Apprentice. Stars: 21. Strategist at 45.").assertIsDisplayed()
         capture("stats_title")
     }
 

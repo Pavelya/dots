@@ -44,7 +44,7 @@
     <string name="stats_your_title">YOUR TITLE</string>
     <string name="stats_title_next">%1$s next</string>
     <string name="stats_title_top">The highest title</string>
-    <string name="stats_title_description">Your title: %1$s. Stars: %2$d of %3$d for %4$s.</string>
+    <string name="stats_title_description">Your title: %1$s. Stars: %2$d. %4$s at %3$d.</string>
     <string name="stats_title_description_top">Your title: %1$s, the highest.</string>
     <string name="map_daily">Today’s puzzle</string>
     <string name="map_play">Play a game</string>
