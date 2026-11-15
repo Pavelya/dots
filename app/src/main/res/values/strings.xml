@@ -248,6 +248,7 @@
     <string name="settings_vibration">Vibration</string>
     <string name="settings_the_board">The board</string>
     <string name="settings_high_contrast">High-contrast pieces</string>
+    <string name="settings_links">Links between dots</string>
     <string name="settings_feedback">Send feedback</string>
     <string name="settings_privacy">Privacy</string>
     <string name="settings_backup">Play Games backup</string>

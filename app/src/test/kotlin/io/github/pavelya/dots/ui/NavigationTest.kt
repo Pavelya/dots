@@ -51,6 +51,7 @@ import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.data.SampleProgress
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
+import io.github.pavelya.dots.ui.board.LinksShown
 import io.github.pavelya.dots.ui.screen.BOARD_TAG
 import io.github.pavelya.dots.ui.screen.DEVELOPER_TAPS
 import kotlinx.coroutines.CoroutineScope
@@ -302,10 +303,10 @@ class NavigationTest {
         waitForSide("Music")
         compose.onNodeWithContentDescription("Music").performSemanticsAction(SemanticsActions.SetProgress) { it(20f) }
         compose.onNodeWithContentDescription("Sounds").performSemanticsAction(SemanticsActions.SetProgress) { it(45f) }
-        for (row in listOf("Vibration", "High-contrast pieces", "Threat highlights", "Drag")) {
+        for (row in listOf("Vibration", "High-contrast pieces", "Threat highlights", "Links between dots", "Drag")) {
             compose.onNodeWithText(row).performScrollTo().performClick()
         }
-        val changed = AppSettings(musicVolume = 20, effectsVolume = 45, vibration = false, highContrast = true, threatHighlight = true, placing = PlacingMethod.DRAG)
+        val changed = AppSettings(musicVolume = 20, effectsVolume = 45, vibration = false, highContrast = true, threatHighlight = true, links = true, placing = PlacingMethod.DRAG)
         // Watched off the main thread: DataStore runs each save's change on the main thread, so
         // blocking it to read the store while saves are queued would wait forever.
         val stored = AtomicReference<AppSettings>()
@@ -322,8 +323,47 @@ class NavigationTest {
         compose.onNodeWithText("Vibration").assertIsOff()
         compose.onNodeWithText("High-contrast pieces").performScrollTo().assertIsOn()
         compose.onNodeWithText("Threat highlights").performScrollTo().assertIsOn()
+        compose.onNodeWithText("Links between dots").performScrollTo().assertIsOn()
         compose.onNodeWithText("Drag").performScrollTo().assertIsSelected()
         assertEquals(changed, runBlocking { app.settings.settings.first() })
+    }
+
+    /** Whether the game board on screen draws the links between touching dots of one side. */
+    private fun linksShown() = compose.onNodeWithTag(BOARD_TAG).fetchSemanticsNode().config[LinksShown]
+
+    /** Opens the saved free game, or a new one, from the map. */
+    private fun freePlay() {
+        tap("Play a game")
+        tap("Against the computer")
+        at(Routes.GAME)
+        waitForSide("You, score 0, to move")
+    }
+
+    @Test
+    fun `links on the board start off, the switch in Settings shows them at once, and they stay on after a restart`() {
+        launch()
+        freePlay()
+        assertEquals(false, linksShown())
+        toMap()
+
+        tap("Settings")
+        at(Routes.SETTINGS)
+        waitFor("Links between dots")
+        compose.onNodeWithText("Links between dots").performScrollTo().assertIsOff().performClick()
+        // Watched off the main thread, as in the test above.
+        val stored = AtomicReference<AppSettings>()
+        val watching = CoroutineScope(Dispatchers.IO).launch { app.settings.settings.collect { stored.set(it) } }
+        compose.waitUntil(timeoutMillis = 5_000) { stored.get()?.links == true }
+        watching.cancel()
+        back()
+        at(Routes.MAP)
+
+        freePlay()
+        assertEquals(true, linksShown())
+
+        reopen(Routes.MAP)
+        freePlay()
+        assertEquals(true, linksShown())
     }
 
     @Test

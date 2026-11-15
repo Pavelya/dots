@@ -150,7 +150,9 @@ def bowed_segments(points, seed):
     return segs, " ".join(path) + " Z"
 
 
-def board_svg(t, key, uid, size=360, sp=24.0, mini=False):
+def board_svg(t, key, uid, size=360, sp=24.0, mini=False, links=False):
+    """The board of moment key. Links between touching dots of one side are drawn only when links is
+    True: the player turns them on in Settings, and they are off by default."""
     pos = POSITIONS[key]
     c = lambda p: (sp / 2 + p[0] * sp, sp / 2 + p[1] * sp)  # noqa: E731
     dot = min(20.0, max(9.0, sp / 2)) if not mini else sp * 0.62
@@ -177,15 +179,15 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False):
         sw = (1.5 if edge else 1) if not mini else (0.75 if edge else 0.5)
         grid.append(el("line", x1=f(x), y1=f(sp / 2), x2=f(x), y2=f(size - sp / 2), stroke=t["grid"], stroke_width=sw))
         grid.append(el("line", x1=f(sp / 2), y1=f(x), x2=f(size - sp / 2), y2=f(x), stroke=t["grid"], stroke_width=sw))
-    links = []
-    if not mini:
+    link_lines = []
+    if links and not mini:
         for side in ("red", "blue"):
             live = sorted(p for p in pos[side] if p not in captured)
             for i, p in enumerate(live):
                 for q in live[i + 1:]:
                     if max(abs(p[0] - q[0]), abs(p[1] - q[1])) == 1:
                         (x1, y1), (x2, y2) = c(p), c(q)
-                        links.append(el("line", x1=f(x1), y1=f(y1), x2=f(x2), y2=f(y2),
+                        link_lines.append(el("line", x1=f(x1), y1=f(y1), x2=f(x2), y2=f(y2),
                                         stroke=t[side + "_pale"], stroke_width=1.5, stroke_linecap="round"))
     drag = []
     if pos.get("drag"):
@@ -243,7 +245,7 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False):
                              x2=f(cx + math.cos(a) * r2), y2=f(cy + math.sin(a) * r2 * 1.1),
                              stroke=t["red"], stroke_width=2.5, stroke_linecap="round"))
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=size, height=size, fill=t["paper"]) +
-            "".join(washes) + "".join(grid) + "".join(links) + "".join(drag) + "".join(rings) + "".join(marks) + "".join(pieces))
+            "".join(washes) + "".join(grid) + "".join(link_lines) + "".join(drag) + "".join(rings) + "".join(marks) + "".join(pieces))
     return svg(size, size, body, label=None if mini else "The board, 15 by 15 points")
 
 
@@ -505,7 +507,7 @@ def margin_doodles(t):
                           stroke_linejoin="round"), style="position: absolute; left: 0; top: 0")
 
 
-def game_frame(t, key, uid):
+def game_frame(t, key, uid, links=False):
     m = MOMENTS[key]
     parts = [margin_doodles(t)]
     if key != "win":
@@ -521,7 +523,7 @@ def game_frame(t, key, uid):
     parts.append(bubble(t, m["bubble"], 198, 132))
     parts.append(f'<div style="position: absolute; left: 0; right: 0; top: 242px">'
                  f'{side_row(t, "blue", "Computer", m["opp"], False, "center")}</div>')
-    parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">{board_svg(t, key, uid)}</div>')
+    parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">{board_svg(t, key, uid, links=links)}</div>')
     # The player, below the board.
     you_turn = key in ("opening", "threat", "undo", "drag")
     row_top = 682 if key != "win" else -200
@@ -837,6 +839,8 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
     ("game-drag", "GameDrag", "Game: placing by drag", lambda t, u: game_frame(t, "drag", u), (W, H)),
     ("small-game-drag", "SmallGameDrag", "Small phone: placing by drag", lambda t, u: small_game_frame(t, "drag", u),
      SMALL_PHONE),
+    ("game-threat-links", "GameThreatLinks", "Game: a threat, links on",
+     lambda t, u: game_frame(t, "threat", u, links=True), (W, H)),
 ]
 
 

@@ -59,7 +59,7 @@ enum class SettingsPage(val key: String) {
 /**
  * Settings, as the wireframes' frame "Settings" draws it: one scrolling page on the notebook's
  * paper. Sound and feel (music and sound volumes, vibration), the board (high-contrast pieces,
- * threat highlights, and placing a dot by two taps or drag, decision 0024), and help (Replay the
+ * threat highlights, links between dots, and placing a dot by two taps or drag, decision 0024), and help (Replay the
  * tutorial, Send feedback, Privacy, Play Games backup, Credits and licences). Every change goes
  * to [onChange] at once. Language joins Help once a second language ships (A-10). Tapping the
  * version line [DEVELOPER_TAPS] times opens the developer menu.
@@ -88,6 +88,7 @@ fun SettingsScreen(
         SectionHead(stringResource(R.string.settings_the_board))
         SwitchRow(stringResource(R.string.settings_high_contrast), settings.highContrast) { on -> onChange { it.copy(highContrast = on) } }
         SwitchRow(stringResource(R.string.settings_threats), settings.threatHighlight) { on -> onChange { it.copy(threatHighlight = on) } }
+        SwitchRow(stringResource(R.string.settings_links), settings.links) { on -> onChange { it.copy(links = on) } }
         Text(
             stringResource(R.string.settings_placing),
             style = ROW_TEXT,

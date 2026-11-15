@@ -64,7 +64,6 @@ internal val NotebookTheme: GameTheme = GameTheme(
         ringWobble = 0.15f,
         hatch = Measure(dp = 1f),
         hatchGap = 5f,
-        links = true,
         link = Measure(dp = 1.5f),
         threatRing = Measure(ofSpacing = 0.84f),
         threatNear = Measure(dp = 2f),

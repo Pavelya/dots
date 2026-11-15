@@ -55,6 +55,7 @@ class SettingsRepositoryTest {
             effectsVolume = 35,
             vibration = false,
             highContrast = true,
+            links = true,
             placing = PlacingMethod.DRAG,
             tutorialSkipped = true,
         )

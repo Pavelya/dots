@@ -179,8 +179,9 @@ Settings is one scrolling screen. Changes take effect at once and survive a rest
 to the map.
 
 - **Sound and vibration:** music volume, sound-effects volume, vibration on or off.
-- **Board:** high-contrast pieces, threat highlights, placing a dot (two taps, the default, or
-  drag; decision 0024).
+- **Board:** high-contrast pieces, threat highlights, links between dots (off by default; the
+  [theme page](theme-notebook.md#the-board) says where links show anyway), placing a dot (two taps,
+  the default, or drag; decision 0024).
 - **Help and app:** Replay tutorial, Send feedback (an email, A-12), Language (shown once a second
   language ships, A-10), Privacy (the policy and ad choices, C-03), Play Games backup (O-02),
   Credits and licences.

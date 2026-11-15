@@ -25,6 +25,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs[EFFECTS_VOLUME] = next.effectsVolume
             prefs[VIBRATION] = next.vibration
             prefs[HIGH_CONTRAST] = next.highContrast
+            prefs[LINKS] = next.links
             prefs[PLACING] = next.placing.name
             prefs[TUTORIAL_SKIPPED] = next.tutorialSkipped
         }
@@ -41,6 +42,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             effectsVolume = volumeOrNull(prefs[EFFECTS_VOLUME]) ?: defaults.effectsVolume,
             vibration = prefs[VIBRATION] ?: defaults.vibration,
             highContrast = prefs[HIGH_CONTRAST] ?: defaults.highContrast,
+            links = prefs[LINKS] ?: defaults.links,
             placing = enumOrNull<PlacingMethod>(prefs[PLACING]) ?: defaults.placing,
             tutorialSkipped = prefs[TUTORIAL_SKIPPED] ?: defaults.tutorialSkipped,
         )
@@ -60,6 +62,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val EFFECTS_VOLUME = intPreferencesKey("effects_volume")
         val VIBRATION = booleanPreferencesKey("vibration")
         val HIGH_CONTRAST = booleanPreferencesKey("high_contrast")
+        val LINKS = booleanPreferencesKey("links")
         val PLACING = stringPreferencesKey("placing")
         val TUTORIAL_SKIPPED = booleanPreferencesKey("tutorial_skipped")
     }

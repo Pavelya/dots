@@ -64,7 +64,7 @@ smaller or larger spacing.
 | Blue diamond, corner to corner | 14 dp | 7/6 of the dot size | Blue ink |
 | Ring (capture outline) | 2 dp | 1/12 of the spacing, at least 1.5 dp, at most 3 dp | Ink of the side that captured |
 | Hatch line | 1 dp, one line every 5 dp | always the same | Red pale or Blue pale |
-| Link between two dots of one side | 1.5 dp | always 1.5 dp | Red pale or Blue pale |
+| Link between two dots of one side (only when shown; see below) | 1.5 dp | always 1.5 dp | Red pale or Blue pale |
 | Threat ring, one move from capture | 20 dp across, 2 dp line | 0.84 of the spacing across | Highlighter |
 | Threat ring, two moves from capture | 20 dp across, 1.5 dp line | 0.84 of the spacing across | Highlighter faint |
 | Closing point (where the attacker would close the ring) | 8 dp across, 1.5 dp line | a third of the spacing across | Ink of the attacker |
@@ -77,6 +77,15 @@ is plain paper without a grid, so the board's edge is clear.
 **Drawing order**, from the back: paper, washes, hatching, grid, links, drag's guides, rings,
 threat rings, pieces, last-move pinhole and captured cuts, closing points, preview. The grid lies on
 top of the washes, so the squared paper shows through a captured area.
+
+**Links** are pale lines between two touching dots of one side, across or diagonally, between
+live dots only. The game board draws them only when the player turns on "Links between dots" in
+Settings; they are off by default, so the board shows only the dots and the rings of real
+captures. Some players read links as rings. Places that teach the rules always draw them: the
+tutorial's linking level (1-2) while its steps are guided, and the pictures on How to play. The
+level card's small board never does.
+
+<img src="canvas/game-threat-links-light.png" width="180" alt="Light: the threat position with pale links between touching dots of each side"> <img src="canvas/game-threat-links-dark.png" width="180" alt="Dark: the same, links on">
 
 **Captured dots** keep their full ink colour. The wash and the hatching around them show that they
 are captured, and they stay at least 3:1 against both (see the contrast table). A cut across

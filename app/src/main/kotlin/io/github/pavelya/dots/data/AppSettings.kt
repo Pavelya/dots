@@ -45,6 +45,12 @@ data class AppSettings(
     val vibration: Boolean = true,
     /** High-contrast pieces (pieces.md); V-04 draws them. */
     val highContrast: Boolean = false,
+    /**
+     * The pale links between touching dots of one side on the game board. Off by default, so the
+     * board shows only the dots and the rings of real captures. The tutorial's linking level and
+     * the pictures on How to play show links whatever this says.
+     */
+    val links: Boolean = false,
     /** How a dot is placed (decision 0024). */
     val placing: PlacingMethod = PlacingMethod.TWO_TAPS,
     /** True once the player skipped the tutorial's guided steps; replaying the tutorial shows them again (A-06). */

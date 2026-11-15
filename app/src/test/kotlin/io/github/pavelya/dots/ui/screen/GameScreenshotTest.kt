@@ -111,6 +111,19 @@ class GameScreenshotTest {
         capture("game_threat_dark")
     }
 
+    /** The threat with the links between dots turned on in Settings (A-20); the frames above show the default, off. */
+    @Test
+    fun threatWithLinks() {
+        show { Board(ui(CanvasGame.threat), links = true) }
+        capture("game_threat_links")
+    }
+
+    @Test
+    fun threatWithLinksDark() {
+        show(dark = true) { Board(ui(CanvasGame.threat), links = true) }
+        capture("game_threat_links_dark")
+    }
+
     @Test
     fun bigCapture() {
         val big = CanvasGame.bigCapture
@@ -295,8 +308,8 @@ class GameScreenshotTest {
     }
 
     @Composable
-    private fun Board(ui: GameUiState, campaign: CampaignParts? = CanvasGame.parts(ui.state), input: BoardInput = BoardInput.NONE) {
-        GameBoard(ui, human, campaign, input = input, onUndo = {}, onPause = {})
+    private fun Board(ui: GameUiState, campaign: CampaignParts? = CanvasGame.parts(ui.state), input: BoardInput = BoardInput.NONE, links: Boolean = false) {
+        GameBoard(ui, human, campaign, input = input, onUndo = {}, onPause = {}, links = links)
     }
 
     /** The board with [ui]'s booster preview open over the player's line and the tool bar, as GameScreen lays it. */

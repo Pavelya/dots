@@ -30,9 +30,10 @@ data class BoardLook(
     val hatch: Measure,
     /** The gap between two hatch lines, in dp, the same at every spacing. */
     val hatchGap: Float,
-    /** True when the board always draws the links between touching dots of one side. */
-    val links: Boolean,
-    /** A link between two touching dots of one side, in the side's pale ink. */
+    /**
+     * A link between two touching dots of one side, in the side's pale ink. The board draws links
+     * only where it is asked to (the player's setting, the tutorial's linking level, How to play).
+     */
     val link: Measure,
     /** The threat ring around each dot of a group close to capture, across. */
     val threatRing: Measure,
