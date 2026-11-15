@@ -60,14 +60,15 @@ private val BIG_BUTTON_SHAPE = RoundedCornerShape(topStart = 16.dp, topEnd = 20.
  * Pause, as the wireframes draw it: a taped note over the dimmed board with Resume as the one big
  * button, Restart and To the map under it, and small icons for sound on or off and How to play.
  * Restart asks first, on the same note. Back resumes the game (handled by the screen), or, while
- * Restart asks, returns to Pause.
+ * Restart asks, returns to Pause. With no [onRestart] (the daily puzzle) only To the map is under
+ * Resume.
  */
 @Composable
 internal fun PauseNote(
     sound: Boolean,
     onSound: (Boolean) -> Unit,
     onResume: () -> Unit,
-    onRestart: () -> Unit,
+    onRestart: (() -> Unit)?,
     onToMap: () -> Unit,
     onRules: () -> Unit,
 ) {
@@ -84,7 +85,7 @@ internal fun PauseNote(
             .semantics { paneTitle = title },
     ) {
         TapedNote(style, Modifier.padding(start = 30.dp, end = 30.dp, bottom = 40.dp)) {
-            if (asking) {
+            if (asking && onRestart != null) {
                 Text(
                     stringResource(R.string.restart_question),
                     style = MaterialTheme.typography.titleMedium,
@@ -104,7 +105,7 @@ internal fun PauseNote(
                 )
                 BigButton(stringResource(R.string.pause_resume), style, onResume, Modifier.fillMaxWidth())
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SmallButton(stringResource(R.string.pause_restart), style, { asking = true }, Modifier.weight(1f))
+                    if (onRestart != null) SmallButton(stringResource(R.string.pause_restart), style, { asking = true }, Modifier.weight(1f))
                     SmallButton(stringResource(R.string.pause_to_map), style, onToMap, Modifier.weight(1f))
                 }
                 Row(

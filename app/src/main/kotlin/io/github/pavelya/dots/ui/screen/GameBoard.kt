@@ -88,7 +88,8 @@ import kotlinx.coroutines.delay
  * The game board as the canvas game frames lay it out (docs/design/canvas, `game-start`,
  * `game-threat`, `game-big-capture`; the wireframes' "Game board: the parts" and "Two players"):
  *
- * - **Top row:** the pause icon (left), the game's name, and in the campaign the mission note (right).
+ * - **Top row:** the pause icon (left), the game's name, and in the campaign and the daily puzzle
+ *   the mission note (right).
  * - **The opponent above the board:** against the computer, its face taped in like a photo, with a
  *   speech bubble; between two people, Blue's piece in the photo. Under it the opponent's piece,
  *   name, tally and score.
@@ -96,7 +97,7 @@ import kotlinx.coroutines.delay
  *   are placed by the [input]'s method ([PlayableBoard]).
  * - **The player below the board:** piece, name, tally and score, and the dots left.
  * - **The tool bar:** the campaign's five boosters ([BoosterBar], A-05), or Undo in free play (decision 0023). Two
- *   players have none. An open-ended game (decision 0025) adds Stop, which asks for a second tap,
+ *   players and the daily puzzle have none. An open-ended game (decision 0025) adds Stop, which asks for a second tap,
  *   and, for the side that collects after the other stopped, Done with a line saying what to do.
  * - **The tutorial** (the wireframes' "Tutorial level"): a [guided] level has no tool bar and
  *   keeps room just above the board for the step note ([guide], [TutorialNote]), which shows in
@@ -142,7 +143,8 @@ internal fun GameBoard(
     val names = Names(ui.vsComputer, human)
     val below = if (ui.vsComputer) human else Player.RED
     val above = below.opponent
-    val toolBar = !guided && (campaign != null || ui.vsComputer || ui.openEnded)
+    // The daily puzzle has no tool bar: no boosters and no undo (decision 0023).
+    val toolBar = !guided && (if (campaign != null) campaign.boosters != null else ui.vsComputer || ui.openEnded)
     val turnBanner = turnBanner(ui)
     BoxWithConstraints(modifier.fillMaxSize().background(style.paper)) {
         val bottom = PLAYER_LINE + if (toolBar) TOOL_BAR else 0.dp
@@ -224,7 +226,7 @@ internal fun GameBoard(
                     // A booster preview's note covers them (canvas frame `game-undo`).
                     when {
                         ui.isOver || ui.aim != null -> Spacer(Modifier.weight(1f))
-                        campaign != null -> campaign.boosters(this)
+                        campaign != null -> campaign.boosters?.invoke(this)
                         else -> {
                             var slots = 4
                             if (ui.vsComputer) {

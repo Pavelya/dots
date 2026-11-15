@@ -55,6 +55,11 @@ data class AppSettings(
     val placing: PlacingMethod = PlacingMethod.DRAG,
     /** True once the player skipped the tutorial's guided steps; replaying the tutorial shows them again (A-06). */
     val tutorialSkipped: Boolean = false,
+    /**
+     * The developer menu's "a year ahead": the daily puzzle's clock runs 365 days on
+     * ([PuzzleClock.shiftDays]), since the puzzles start on 1 January 2027. Players never see it.
+     */
+    val dailyAhead: Boolean = false,
 ) {
     /** Each player's dots, or null for an open-ended game. */
     val dotsPerPlayer: Int? get() = dotsFor(boardSize, length)

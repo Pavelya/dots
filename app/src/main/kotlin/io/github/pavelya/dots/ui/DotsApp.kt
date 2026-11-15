@@ -41,19 +41,27 @@ import dots.campaign.Level
 import dots.campaign.LevelRecord
 import dots.campaign.Progress
 import dots.campaign.Tutorial
+import dots.daily.Daily
+import dots.daily.DailyRecord
+import dots.engine.Player
+import dots.log.Outcome
 import dots.log.GameLogEntry
 import io.github.pavelya.dots.BuildConfig
 import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.GameMode
+import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.computerFor
+import io.github.pavelya.dots.game.dailyGame
 import io.github.pavelya.dots.game.freeGame
 import io.github.pavelya.dots.game.freeGameLike
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.screen.BoostersNote
 import io.github.pavelya.dots.ui.screen.ChestNote
+import io.github.pavelya.dots.ui.screen.DailyAction
+import io.github.pavelya.dots.ui.screen.DailyPuzzleNote
 import io.github.pavelya.dots.ui.screen.DeveloperScreen
 import io.github.pavelya.dots.ui.screen.GameScreen
 import io.github.pavelya.dots.ui.screen.LevelCard
@@ -65,7 +73,6 @@ import io.github.pavelya.dots.ui.screen.RulesScreen
 import io.github.pavelya.dots.ui.screen.SettingsDetailsScreen
 import io.github.pavelya.dots.ui.screen.SettingsPage
 import io.github.pavelya.dots.ui.screen.SettingsScreen
-import io.github.pavelya.dots.ui.screen.StandInNote
 import io.github.pavelya.dots.ui.screen.TitleCard
 import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.theme.DotsTheme
@@ -155,6 +162,11 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
         }
         Unit
     }
+    // The developer menu's "a year ahead" moves the daily puzzle's clock.
+    val appSettings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+    LaunchedEffect(appSettings?.dailyAhead) {
+        appSettings?.let { app.clock.shiftDays = if (it.dailyAhead) PuzzleClock.YEAR_AHEAD_DAYS else 0 }
+    }
     val top by navController.currentBackStackEntryAsState()
     val starting = top == null || top?.destination?.route == Routes.LOADING
     DotsTheme {
@@ -187,6 +199,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 }
                 composable(Routes.MAP) {
                     val map by app.progress.map.collectAsStateWithLifecycle()
+                    val daily by app.daily.saved.collectAsStateWithLifecycle()
                     MapScreen(
                         map,
                         MapActions(
@@ -199,6 +212,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             onSettings = { navController.navigate(Routes.SETTINGS) },
                             onChest = { navController.navigate(Routes.chest(it.after)) },
                         ),
+                        streak = daily?.streak(app.clock.today())?.days ?: 0,
                     )
                 }
                 dialog(
@@ -286,8 +300,42 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         )
                     }
                 }
-                dialog(Routes.DAILY) {
-                    StandInNote(stringResource(R.string.screen_daily), "A-07", onClose = back)
+                dialog(Routes.DAILY, dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
+                    val scope = rememberCoroutineScope()
+                    val saved by app.games.saved.collectAsStateWithLifecycle()
+                    val loaded by app.games.loaded.collectAsStateWithLifecycle()
+                    val progress by app.daily.saved.collectAsStateWithLifecycle()
+                    val daily = progress
+                    if (loaded && daily != null) {
+                        val today = app.clock.today()
+                        // An unfinished attempt is shown until it ends, even after midnight; then today's puzzle.
+                        val unfinished = (saved[GameMode.DAILY]?.record as? DailyRecord)?.puzzle
+                        val puzzle = unfinished ?: Daily.puzzle(today)
+                        val action = when {
+                            unfinished != null -> DailyAction.RESUME
+                            puzzle != null && daily.isSolved(puzzle.day) -> DailyAction.VIEW_RESULT
+                            else -> DailyAction.PLAY
+                        }
+                        DailyPuzzleNote(
+                            puzzle = puzzle,
+                            today = today,
+                            action = action,
+                            streak = daily.streak(today),
+                            toNextPuzzle = app.clock::toNextPuzzle,
+                            // Play writes a new attempt to the store before the board opens; Resume and
+                            // View result open the board, which finds the attempt (dailyStart).
+                            onAction = {
+                                scope.launch {
+                                    if (action == DailyAction.PLAY && puzzle != null && app.games.saved(GameMode.DAILY) == null) {
+                                        val settings = app.settings.settings.first()
+                                        app.games.start(dailyGame(puzzle, settings.threatHighlight, now = System.currentTimeMillis()))
+                                    }
+                                    navController.navigate(Routes.game(GameMode.DAILY)) { popUpTo(Routes.MAP) }
+                                }
+                            },
+                            onClose = back,
+                        )
+                    }
                 }
                 dialog(Routes.PLAY, dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
                     val scope = rememberCoroutineScope()
@@ -321,7 +369,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     val mode = GameMode.of(entry.arguments?.getString("mode")) ?: GameMode.CAMPAIGN
                     val loaded by app.games.loaded.collectAsStateWithLifecycle()
                     if (loaded) {
-                        val start = remember { app.games.saved(mode) }
+                        val start = remember { app.games.saved(mode) ?: if (mode == GameMode.DAILY) solvedDaily(app) else null }
                         if (start == null) {
                             // Nothing to resume (the app was restarted after the game ended).
                             LaunchedEffect(Unit) { toMap() }
@@ -334,10 +382,12 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         val now = System.currentTimeMillis()
                                         val chosen = settings.value ?: AppSettings()
                                         val level = (start.record as? LevelRecord)?.level
-                                        if (level != null) {
-                                            levelGame(level, chosen.threatHighlight, now, owned = app.progress.owned(level))
-                                        } else {
-                                            freeGameLike(start, chosen.threatHighlight, now)
+                                        val puzzle = (start.record as? DailyRecord)?.puzzle
+                                        when {
+                                            level != null -> levelGame(level, chosen.threatHighlight, now, owned = app.progress.owned(level))
+                                            // Retry plays the same day's puzzle again, also after midnight.
+                                            puzzle != null -> dailyGame(puzzle, chosen.threatHighlight, now)
+                                            else -> freeGameLike(start, chosen.threatHighlight, now)
                                         }
                                     },
                                     computerFor = ::computerFor,
@@ -345,9 +395,11 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                     campaign = app.progress,
                                     placing = { settings.value?.placing ?: AppSettings().placing },
                                     ownedFor = app.progress::owned,
+                                    daily = app.daily,
                                 )
                             }
                             val scope = rememberCoroutineScope()
+                            val context = LocalContext.current
                             GameScreen(
                                 game,
                                 onToMap = toMap,
@@ -358,6 +410,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 links = settings.value?.links ?: AppSettings().links,
                                 guidesSkipped = settings.value?.tutorialSkipped ?: false,
                                 onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
+                                onShare = { text -> shareText(context, text) },
+                                toNextPuzzle = app.clock::toNextPuzzle,
                                 // Next goes back to the map, which opens the chest the level made
                                 // ready, if any, and otherwise the next level's card.
                                 onNext = { end ->
@@ -419,6 +473,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     val loggedGames by app.games.loggedGames.collectAsStateWithLifecycle()
                     DeveloperScreen(
                         onProgress = { progress -> scope.launch { app.progress.replace(progress) } },
+                        dailyAhead = appSettings?.dailyAhead ?: false,
+                        onDailyAhead = { on -> appScope.launch { app.settings.update { it.copy(dailyAhead = on) } } },
+                        onClearDaily = { appScope.launch { app.daily.clear() } },
                         loggedGames = loggedGames,
                         onShareLog = { scope.launch { shareLog(context, app) } },
                         onBack = back,
@@ -452,6 +509,25 @@ private val GameLogEntry.levelCode: String? get() = (record as? LevelRecord)?.le
 
 /** The level of a saved campaign game, as its code, a practice game's included; null for any other game. */
 private val GameLogEntry.levelOrPractice: String? get() = (record as? LevelRecord)?.level?.code
+
+/**
+ * Today's solved puzzle as a finished game, for View result: the attempt that solved it, replayed
+ * to its final board. Null when today's puzzle is not solved (or there is none).
+ */
+private fun solvedDaily(app: DotsApplication): GameLogEntry? {
+    val puzzle = Daily.puzzle(app.clock.today()) ?: return null
+    val solution = app.daily.saved.value?.solution(puzzle.day) ?: return null
+    val record = DailyRecord(puzzle, solution.actions)
+    val end = runCatching { record.replay() }.getOrNull() ?: return null
+    return GameLogEntry.start(record, puzzle.strength.text, threatHighlight = false, now = solution.startedAt)
+        .copy(record = record, outcome = Outcome.FINISHED, red = end.score(Player.RED), blue = end.score(Player.BLUE))
+}
+
+/** Opens Android's share screen with [text]: the daily puzzle's result. */
+private fun shareText(context: Context, text: String) {
+    val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
+    context.startActivity(Intent.createChooser(send, context.getString(R.string.daily_share_title)))
+}
 
 /** True when [route] is on the back stack. */
 private fun NavHostController.isOnStack(route: String): Boolean = runCatching { getBackStackEntry(route) }.isSuccess

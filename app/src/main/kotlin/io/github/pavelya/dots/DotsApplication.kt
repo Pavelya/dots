@@ -6,8 +6,10 @@ import android.content.pm.ApplicationInfo
 import android.os.StrictMode
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
+import io.github.pavelya.dots.data.DailyRepository
 import io.github.pavelya.dots.data.GameStore
 import io.github.pavelya.dots.data.ProgressRepository
+import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.data.SettingsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,11 +23,19 @@ private val Context.settingsStore by preferencesDataStore(name = "settings")
 class DotsApplication : Application() {
     val settings: SettingsRepository by lazy { SettingsRepository(settingsStore) }
 
+    private val progressScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
+
+    /** The progress store, one for the campaign and the daily puzzle (a file has one DataStore). Backed up by Android. */
+    private val progressStore by lazy { ProgressRepository.store(progressScope) { preferencesDataStoreFile(ProgressRepository.NAME) } }
+
     /** Campaign progress: stars, the player's own boosters, chests and cosmetics. Backed up by Android. */
-    val progress: ProgressRepository by lazy {
-        val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-        ProgressRepository(ProgressRepository.store(scope) { preferencesDataStoreFile(ProgressRepository.NAME) }, scope)
-    }
+    val progress: ProgressRepository by lazy { ProgressRepository(progressStore, progressScope) }
+
+    /** The daily puzzle's clock; tests replace it with one they set. */
+    var clock: PuzzleClock = PuzzleClock()
+
+    /** The daily puzzles solved and the recent attempts, for the streak and Result. Backed up with the progress. */
+    val daily: DailyRepository by lazy { DailyRepository(progressStore, progressScope) { clock } }
 
     /** The saved game and the game log; files are written on one background thread, in order. */
     val games: GameStore by lazy {

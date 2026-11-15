@@ -449,6 +449,18 @@ pass it (`X/3` if no attempt passed). Then one row per attempt, one symbol per m
 player's: 🔴 the player captured, 🔵 the computer captured in its reply, ⚪ neither. ✅ ends a
 passed attempt and ❌ a failed one.
 
+**Days, attempts and the streak.** A new puzzle comes at midnight in the phone's own time zone
+(`DailyClock`), so a trip or a change of the clocks moves it with the phone. An attempt is recorded
+as `daily/1 2027-01-05 | e5 f6 ...` (`DailyRecord`): it names its day, so an attempt that runs past
+midnight still counts for the day it began. The daily puzzle has no undo and no boosters (decision
+0023); a failed attempt can be retried.
+
+The streak (`Streak`) counts the days solved in a row. Today does not break it while it lasts. One
+missed day a week (Monday to Sunday) is covered by a free **freeze**: it neither adds to the
+streak nor ends it. A second missed day in the same week ends it, and an unused freeze does not
+carry over. `DailyProgress` keeps the days solved and the last week's attempts, for Result and the
+share text.
+
 ## Computer opponent
 
 `SearchAi` is an alpha-beta search over captured dots. What makes it play purposefully is a

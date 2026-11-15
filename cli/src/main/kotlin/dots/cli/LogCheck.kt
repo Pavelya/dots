@@ -1,6 +1,7 @@
 package dots.cli
 
 import dots.campaign.LevelRecord
+import dots.daily.DailyRecord
 import dots.engine.Player
 import dots.log.GameLogEntry
 import dots.log.Outcome
@@ -55,7 +56,11 @@ object LogCheck {
             Outcome.FINISHED -> entry.winner?.let { "${it.name.lowercase()} wins" } ?: "draw"
             else -> entry.outcome.name.lowercase()
         }
-        val level = if (record is LevelRecord) "  level ${record.level.code}" else ""
+        val level = when (record) {
+            is LevelRecord -> "  level ${record.level.code}"
+            is DailyRecord -> "  daily ${record.day}"
+            else -> ""
+        }
         return "%s UTC  %-6s  %dx%d %2d dots  %-9s  red %2d - blue %2d  %3d moves  %4.1f min  %d undos%s".format(
             time.format(Instant.ofEpochMilli(entry.startedAt)),
             entry.opponent,

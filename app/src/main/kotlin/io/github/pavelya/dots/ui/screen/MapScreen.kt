@@ -110,11 +110,11 @@ const val MAP_PATH_TAG = "map-path"
  * opens it. The header shows the player's title beside the stars.
  *
  * [map] is null while the progress is read. The map lies on the menu screens' squared paper; the
- * inks come from the theme ([MapStyle]). V-11 brings the landscape, A-07 the streak on the puzzle
- * note, V-05 the motion of a level or world opening.
+ * inks come from the theme ([MapStyle]). Today's puzzle shows the [streak] when there is one. V-11
+ * brings the landscape, V-05 the motion of a level or world opening.
  */
 @Composable
-fun MapScreen(map: CampaignMap?, actions: MapActions) {
+fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0) {
     val style = MapStyle.current
     var lock by remember { mutableStateOf<CampaignMap.Lock?>(null) }
     var lockedChest by remember { mutableStateOf<Chest?>(null) }
@@ -154,7 +154,7 @@ fun MapScreen(map: CampaignMap?, actions: MapActions) {
             Doodles.SETTINGS, stringResource(R.string.home_settings), style, actions.onSettings,
             Modifier.align(Alignment.TopEnd).padding(top = 26.dp, end = 6.dp),
         )
-        DailyNote(style, actions.onDaily, Modifier.align(Alignment.TopEnd).padding(top = 120.dp, end = 12.dp))
+        DailyNote(style, streak, actions.onDaily, Modifier.align(Alignment.TopEnd).padding(top = 120.dp, end = 12.dp))
         Column(
             Modifier.align(Alignment.BottomStart).padding(start = 1.dp, bottom = 22.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -369,9 +369,10 @@ private fun TopIcon(path: String, label: String, style: MapStyle, onClick: () ->
     }
 }
 
-/** Today's puzzle: a note taped to the page. A-07 adds the streak. */
+/** Today's puzzle: a note taped to the page (canvas frame `map`), with the [streak] under it when there is one. */
 @Composable
-private fun DailyNote(style: MapStyle, onClick: () -> Unit, modifier: Modifier) {
+private fun DailyNote(style: MapStyle, streak: Int, onClick: () -> Unit, modifier: Modifier) {
+    val streakText = if (streak > 0) stringResource(R.string.map_streak, streak) else null
     Box(modifier.rotate(3f)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -384,7 +385,10 @@ private fun DailyNote(style: MapStyle, onClick: () -> Unit, modifier: Modifier) 
                 .padding(horizontal = 8.dp),
         ) {
             Icon(remember(style) { Doodles.icon(Doodles.CALENDAR, style.next) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
-            Text(stringResource(R.string.map_daily), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = style.pencil)
+            Column {
+                Text(stringResource(R.string.map_daily), style = HAND24, color = style.pencil, maxLines = 1, softWrap = false)
+                streakText?.let { Text(it, style = NoteText.small, fontWeight = FontWeight.Bold, color = style.graphite) }
+            }
         }
         // The strip of tape.
         Box(Modifier.offset(x = 40.dp, y = (-8).dp).rotate(-7f).size(width = 44.dp, height = 16.dp).background(style.tape))

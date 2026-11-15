@@ -208,7 +208,7 @@ internal fun CloseButton(style: Palette, onClose: () -> Unit) {
 
 /** The board at the start, small, with its grid, the dots on it and any dot the mission is about. */
 @Composable
-private fun BoardPicture(level: Level, modifier: Modifier) {
+internal fun BoardPicture(level: Level, modifier: Modifier) {
     val boardStyle = BoardStyle.current
     val start = remember(level) { level.newGame() }
     val marked = when (val mission = level.mission) {

@@ -18,21 +18,32 @@ import dots.engine.GameState
  */
 object DailyShare {
     const val GAME = "Pinfold"
-    const val CAPTURED = "🔴"
-    const val LOST = "🔵"
-    const val QUIET = "⚪"
+    const val CAPTURED_SYMBOL = "🔴"
+    const val LOST_SYMBOL = "🔵"
+    const val QUIET_SYMBOL = "⚪"
     const val PASSED = "✅"
     const val FAILED = "❌"
+
+    /** What one of the player's moves led to, as the share text shows it. */
+    enum class Mark(val symbol: String) {
+        /** The player captured. */
+        CAPTURED(CAPTURED_SYMBOL),
+
+        /** The computer captured in its reply. */
+        LOST(LOST_SYMBOL),
+
+        /** Neither side captured. */
+        QUIET(QUIET_SYMBOL),
+    }
 
     /** [attempts] are the actions of each attempt from the puzzle's start, in the order they were played. */
     fun text(puzzle: DailyPuzzle, attempts: List<List<Action>>): String {
         val played = attempts.map { play(puzzle, it) }
         val passed = played.firstOrNull { it.passed == true }
-        val score = (passed?.moves?.size?.toString() ?: "X") + "/" + puzzle.best
         return buildString {
-            append("$GAME #${puzzle.number} $score")
+            append(headline(puzzle, passed?.marks?.size))
             for (attempt in played) {
-                append('\n').append(attempt.moves.joinToString(""))
+                append('\n').append(attempt.marks.joinToString("") { it.symbol })
                 when (attempt.passed) {
                     true -> append(" $PASSED")
                     false -> append(" $FAILED")
@@ -42,12 +53,18 @@ object DailyShare {
         }
     }
 
-    /** One attempt: a symbol per move of the player's, and whether it passed (null while it goes on). */
-    private class Attempt(val moves: List<String>, val passed: Boolean?)
+    /** The share text's first line: the puzzle's number, then the [moves] of the pass and the best (`X/3` with no pass). */
+    fun headline(puzzle: DailyPuzzle, moves: Int?): String = "$GAME #${puzzle.number} ${moves?.toString() ?: "X"}/${puzzle.best}"
+
+    /** One mark for each of the player's moves in [actions], an attempt from the puzzle's start. */
+    fun marks(puzzle: DailyPuzzle, actions: List<Action>): List<Mark> = play(puzzle, actions).marks
+
+    /** One attempt: a mark per move of the player's, and whether it passed (null while it goes on). */
+    private class Attempt(val marks: List<Mark>, val passed: Boolean?)
 
     private fun play(puzzle: DailyPuzzle, actions: List<Action>): Attempt {
         var state: GameState = puzzle.newGame()
-        val moves = ArrayList<String>()
+        val marks = ArrayList<Mark>()
         for (action in actions) {
             require(!puzzle.isOver(state)) { "an action after the end of the puzzle: ${Action.word(action)}" }
             require(state.isLegal(action)) { "an illegal action: ${Action.word(action)}" }
@@ -55,16 +72,16 @@ object DailyShare {
             val before = state
             state = state.apply(action).state
             if (mover == puzzle.human) {
-                moves += QUIET
+                marks += Mark.QUIET
             }
-            if (moves.isEmpty()) continue
+            if (marks.isEmpty()) continue
             // A capture marks the player's last move: their own capture, or the computer's in reply.
             when {
-                state.score(puzzle.human) > before.score(puzzle.human) -> moves[moves.lastIndex] = CAPTURED
-                state.score(puzzle.computer) > before.score(puzzle.computer) && moves.last() != CAPTURED -> moves[moves.lastIndex] = LOST
+                state.score(puzzle.human) > before.score(puzzle.human) -> marks[marks.lastIndex] = Mark.CAPTURED
+                state.score(puzzle.computer) > before.score(puzzle.computer) && marks.last() != Mark.CAPTURED -> marks[marks.lastIndex] = Mark.LOST
             }
         }
         val passed = if (puzzle.isOver(state)) puzzle.isPassed(state) else null
-        return Attempt(moves, passed)
+        return Attempt(marks, passed)
     }
 }

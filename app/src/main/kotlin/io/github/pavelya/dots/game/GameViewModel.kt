@@ -10,6 +10,10 @@ import dots.campaign.Level
 import dots.campaign.LevelRecord
 import dots.campaign.MissionStatus
 import dots.campaign.Tutorial
+import dots.daily.DailyAttempt
+import dots.daily.DailyProgress
+import dots.daily.DailyPuzzle
+import dots.daily.DailyRecord
 import dots.campaign.Outcome as MissionOutcome
 import dots.engine.Action
 import dots.engine.Booster
@@ -22,6 +26,8 @@ import dots.engine.Pos
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.data.CampaignJournal
+import io.github.pavelya.dots.data.DailyEnd
+import io.github.pavelya.dots.data.DailyJournal
 import io.github.pavelya.dots.data.GameJournal
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PlacingMethod
@@ -52,12 +58,16 @@ data class GameUiState(
     val opponent: OpponentLook? = null,
     /** True once the game is over: no move is left or, in a campaign level, its mission is decided. */
     val isOver: Boolean = state.isOver,
-    /** The campaign level being played; null in free play and between two people. */
+    /** The campaign level being played; null in free play, between two people and in the daily puzzle. */
     val level: Level? = null,
-    /** Where the level's mission stands; null outside the campaign. */
+    /** The daily puzzle being played; null in every other mode. */
+    val daily: DailyPuzzle? = null,
+    /** Where the level's or the daily puzzle's mission stands; null in free play and between two people. */
     val mission: MissionStatus? = null,
     /** A finished level's end, once its stars are saved; Result opens then. Null until then, and outside the campaign. */
     val levelEnd: LevelEnd? = null,
+    /** A finished daily attempt's end, once it is saved; Result opens then. Null until then, and outside the daily puzzle. */
+    val dailyEnd: DailyEnd? = null,
     /** True before the game's first action: a level then opens by showing its mission. */
     val fresh: Boolean = false,
     /** Counts the games played on this screen, so that each new one opens afresh. */
@@ -96,8 +106,8 @@ data class GameUiState(
     /** After a Double dot, the dots the player still places this turn: 2, then 1. Null otherwise. */
     val doubleDots: Int? = null,
 ) {
-    /** True when Result can open: the game is over and, in a level, its end is saved. */
-    val showsResult: Boolean get() = isOver && (level == null || levelEnd != null)
+    /** True when Result can open: the game is over and, in a level or the daily puzzle, its end is saved. */
+    val showsResult: Boolean get() = isOver && (level == null || levelEnd != null) && (daily == null || dailyEnd != null)
 }
 
 /**
@@ -132,6 +142,8 @@ data class BoosterAim(
  * mid-game (its moves are replayed). Every change is reported to the [journal], which saves it
  * and logs the game once it is over. A campaign level's game ends as soon as its mission is
  * decided; its stars and failures then go to the [campaign], and Result opens once they are saved.
+ * A daily attempt likewise ends when its mission is decided; it goes to [daily], which counts the
+ * streak, and Result opens once it is saved. The daily puzzle has no undo and no boosters.
  *
  * Against the computer the human is red and moves first. The computer thinks on
  * [computerDispatcher], never on the main thread, and its thinking is cancelled by undo, a new
@@ -149,6 +161,7 @@ data class BoosterAim(
  *   the campaign), found on [computerDispatcher]: in a level, the move that serves its mission
  * @param ownedFor the player's own boosters a new game of a level takes (decision 0027); a game
  *   reports the ones it uses to [campaign]
+ * @param daily where a daily attempt's end is saved
  */
 class GameViewModel(
     start: GameLogEntry,
@@ -162,6 +175,7 @@ class GameViewModel(
     private val placing: () -> PlacingMethod = { PlacingMethod.TWO_TAPS },
     private val hintFor: (GameState, Level?) -> Action.Hint? = { state, level -> if (level != null) level.hint(state) else Hints.hint(state) },
     private val ownedFor: (Level) -> Map<Booster, Int> = { emptyMap() },
+    private val daily: DailyJournal? = null,
 ) : ViewModel() {
     val human: Player = Player.RED
 
@@ -170,6 +184,7 @@ class GameViewModel(
     private var computer: Ai? = computerFor(start)
     private var thinking: Job? = null
     private var levelEnd: LevelEnd? = null
+    private var dailyEnd: DailyEnd? = null
     private var round = 0
 
     /** When the game last changed (or was opened), to add up the time spent playing. */
@@ -198,6 +213,9 @@ class GameViewModel(
 
     /** The campaign level being played, or null. */
     private val level: Level? get() = (entry.record as? LevelRecord)?.level
+
+    /** The daily puzzle being played, or null. */
+    private val puzzle: DailyPuzzle? get() = (entry.record as? DailyRecord)?.puzzle
 
     private val _ui = MutableStateFlow(snapshot(lastMove = lastPlaced()))
     val ui: StateFlow<GameUiState> = _ui.asStateFlow()
@@ -388,9 +406,9 @@ class GameViewModel(
         _ui.value = snapshot(lastMove = lastPlaced())
     }
 
-    /** Takes back the human's last move and the computer's reply. */
+    /** Takes back the human's last move and the computer's reply; never in the daily puzzle (decision 0023). */
     fun undo() {
-        if (computer == null || game.isOver) return
+        if (computer == null || game.isOver || puzzle != null) return
         thinking?.cancel()
         if (game.undo(human)) {
             entry = entry.copy(undos = entry.undos + 1)
@@ -437,6 +455,7 @@ class GameViewModel(
         game = Game.from(entry.record)
         computer = computerFor(entry)
         levelEnd = null
+        dailyEnd = null
         ownedReported = emptyMap()
         shownGuide = null
         chosen = null
@@ -509,6 +528,7 @@ class GameViewModel(
      * nothing; in the tutorial, Next then plays its next level.
      */
     private fun levelOver() {
+        puzzle?.let { return dailyOver(it) }
         val level = level ?: return
         val result = level.result(game.state)
         val thisRound = round
@@ -521,6 +541,24 @@ class GameViewModel(
             if (round != thisRound) return@launch // another game has started meanwhile
             levelEnd = end
             _ui.value = _ui.value.copy(levelEnd = end)
+        }
+    }
+
+    /**
+     * Saves a finished daily attempt, then lets Result open. The attempt belongs to its puzzle's
+     * day, whenever it ended; the same attempt opened again (View result) counts once.
+     */
+    private fun dailyOver(puzzle: DailyPuzzle) {
+        val thisRound = round
+        val startedAt = entry.startedAt
+        val actions = game.record.actions
+        val passed = puzzle.isPassed(game.state)
+        viewModelScope.launch {
+            val end = daily?.finished(puzzle, startedAt, actions, passed)
+                ?: DailyAttempt(puzzle.day, startedAt, passed, actions).let { DailyEnd.of(puzzle, it, DailyProgress.NONE.finished(it), puzzle.day) }
+            if (round != thisRound) return@launch // another game has started meanwhile
+            dailyEnd = end
+            _ui.value = _ui.value.copy(dailyEnd = end)
         }
     }
 
@@ -561,9 +599,10 @@ class GameViewModel(
     private fun snapshot(lastMove: Pos?, captured: MoveResult? = null, aim: BoosterAim? = null): GameUiState {
         val state = game.state
         val level = level
-        val mission = level?.status(state)
+        val puzzle = puzzle
+        val mission = level?.status(state) ?: puzzle?.status(state)
         val over = game.isOver
-        val openEnded = level == null && (entry.record as? GameRecord)?.settings?.dotsPerPlayer == null
+        val openEnded = (entry.record as? GameRecord)?.let { it.settings.dotsPerPlayer == null } ?: false
         val peopleToMove = computer == null || state.toMove == human
         // Undo's preview shows the board as it was before the turn it takes back, threats included.
         val shownState = if (aim?.booster == Booster.UNDO) state.useBooster(Action.Undo) else state
@@ -590,14 +629,16 @@ class GameViewModel(
         return GameUiState(
             state = state,
             lastMove = lastMove,
-            canUndo = computer != null && level == null && !over && game.canUndo(human),
+            canUndo = computer != null && level == null && puzzle == null && !over && game.canUndo(human),
             vsComputer = computer != null,
             dangers = dangers,
             opponent = opponent,
             isOver = over,
             level = level,
+            daily = puzzle,
             mission = mission,
             levelEnd = levelEnd,
+            dailyEnd = dailyEnd,
             fresh = game.record.actions.isEmpty(),
             round = round,
             guide = guideFor(state, preview = null),

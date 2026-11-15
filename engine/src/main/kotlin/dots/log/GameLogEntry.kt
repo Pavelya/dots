@@ -1,6 +1,7 @@
 package dots.log
 
 import dots.campaign.LevelRecord
+import dots.daily.DailyRecord
 import dots.engine.GameRecord
 import dots.engine.GameSettings
 import dots.engine.Player
@@ -33,7 +34,7 @@ enum class Outcome {
  * @property threatHighlight whether threats were shown
  * @property undos how often the player took a move back
  * @property red dots captured by red at the time of writing; [blue] likewise
- * @property record a free game's [GameRecord] or a campaign level's [LevelRecord]
+ * @property record a free game's [GameRecord], a campaign level's [LevelRecord] or a daily puzzle's [DailyRecord]
  * @property placing how the players placed their dots (the app's placing method, e.g. "two-taps"),
  *   so that methods can be compared; empty in logs written before it was recorded
  * @property touches the touches on the board that ended on the players' turns: taps, presses and
@@ -171,12 +172,19 @@ data class GameLogEntry(
         }
 
         /**
-         * Reads a record of either kind: a level's (`level/1 ...`) or a free game's (`dots/1 ...`).
-         * A level record names a level of the campaign; if there is no such level any more, it
-         * throws [NoSuchElementException].
+         * Reads a record of any kind: a level's (`level/1 ...`), a daily puzzle's (`daily/1 ...`) or
+         * a free game's (`dots/1 ...`). A level record names a level of the campaign, and a daily
+         * record a day with a puzzle; if there is no such level or puzzle, it throws
+         * [NoSuchElementException].
          */
-        fun parseRecord(text: String): PlayRecord =
-            if (text.trimStart().startsWith(LevelRecord.FORMAT + " ")) LevelRecord.parse(text) else GameRecord.parse(text)
+        fun parseRecord(text: String): PlayRecord {
+            val start = text.trimStart()
+            return when {
+                start.startsWith(LevelRecord.FORMAT + " ") -> LevelRecord.parse(text)
+                start.startsWith(DailyRecord.FORMAT + " ") -> DailyRecord.parse(text)
+                else -> GameRecord.parse(text)
+            }
+        }
 
         /** Reads a whole log, skipping blank lines. Lines that cannot be read go to [onBadLine]. */
         fun parseLog(text: String, onBadLine: (lineNumber: Int, problem: String) -> Unit = { _, _ -> }): List<GameLogEntry> =

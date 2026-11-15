@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,17 +31,6 @@ fun StandInScreen(@StringRes title: Int, task: String, onBack: () -> Unit, links
         ScreenHeader(title, onBack)
         Text(stringResource(R.string.stand_in, task), style = MaterialTheme.typography.bodyLarge)
         links()
-    }
-}
-
-/** A note laid over the map whose real content a later task builds; see [StandInScreen]. */
-@Composable
-fun StandInNote(title: String, task: String, onClose: () -> Unit, links: @Composable ColumnScope.() -> Unit = {}) {
-    Note {
-        Text(title, style = MaterialTheme.typography.headlineSmall)
-        Text(stringResource(R.string.stand_in, task), style = MaterialTheme.typography.bodyLarge)
-        links()
-        TextButton(onClick = onClose) { Text(stringResource(R.string.close)) }
     }
 }
 

@@ -1,6 +1,7 @@
 package io.github.pavelya.dots.data
 
 import dots.campaign.LevelRecord
+import dots.daily.DailyRecord
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,8 +13,7 @@ import java.util.concurrent.Executor
 
 /**
  * The ways to play, each with its own saved game (docs/design/flows.md, "Saved games"). A saved
- * game in one mode never blocks the others. [key] names the mode in routes and file names. The
- * daily puzzle (A-07) adds its own.
+ * game in one mode never blocks the others. [key] names the mode in routes and file names.
  */
 enum class GameMode(val key: String) {
     /** A campaign level, a practice game of the tutorial included. */
@@ -24,11 +24,15 @@ enum class GameMode(val key: String) {
 
     /** Two players on one phone. */
     TWO_PLAYERS("two-players"),
+
+    /** The daily puzzle: an attempt at one day's puzzle. */
+    DAILY("daily"),
     ;
 
     companion object {
         fun of(entry: GameLogEntry): GameMode = when {
             entry.record is LevelRecord -> CAMPAIGN
+            entry.record is DailyRecord -> DAILY
             entry.vsComputer -> FREE_PLAY
             else -> TWO_PLAYERS
         }

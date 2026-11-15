@@ -32,15 +32,15 @@ import io.github.pavelya.dots.ui.theme.Palette
 import kotlinx.coroutines.delay
 
 /**
- * What only a campaign level adds to the board: the level's [title] in the top row, the
- * [mission] note's content ([MissionNoteContent]; null while the level opening shows the mission
- * big) and the [boosters] in the tool bar (A-05, with Undo among them, decision 0023). Free play
- * and two players leave it out.
+ * What only a campaign level or the daily puzzle adds to the board: the [title] in the top row,
+ * the [mission] note's content ([MissionNoteContent]; null while the opening shows the mission
+ * big) and, in a level, the [boosters] in the tool bar (A-05, with Undo among them, decision
+ * 0023). The daily puzzle has no tool bar ([boosters] null). Free play and two players leave it out.
  */
 class CampaignParts(
     val title: String,
     val mission: (@Composable () -> Unit)?,
-    val boosters: @Composable RowScope.() -> Unit,
+    val boosters: (@Composable RowScope.() -> Unit)?,
 )
 
 /** How long the level opening shows the mission big over the board (motion.md, Level opening: 1200 ms, then 300 ms to shrink). */
@@ -65,6 +65,10 @@ internal const val OPENING_MILLIS = 1_500L
  * In the tutorial's levels (A-06) the guided steps show once the level opening has gone, unless
  * [guidesSkipped]. Skip hides them and calls [onSkipGuides], which saves that. In a practice game
  * of the tutorial, Next plays its next level here, and after the last one goes to the map.
+ *
+ * The daily puzzle (A-07) opens with its mission, as a level does, and has no tool bar and no
+ * Restart in Pause: a failed attempt has Retry on Result. Its Result shows the streak and the time
+ * to the next puzzle ([toNextPuzzle]), and Share hands the share text to [onShare].
  */
 @Composable
 fun GameScreen(
@@ -78,6 +82,8 @@ fun GameScreen(
     links: Boolean = false,
     guidesSkipped: Boolean = false,
     onSkipGuides: () -> Unit = {},
+    onShare: (String) -> Unit = {},
+    toNextPuzzle: () -> Long = { 0L },
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val names = Names(ui.vsComputer, viewModel.human)
@@ -88,8 +94,9 @@ fun GameScreen(
     BackHandler(enabled = ui.aim != null && !paused) { viewModel.cancelBooster() }
     val style = Palette.current
     val level = ui.level
-    // Each new game of a level opens with its mission; the first move, or a moment, ends it.
-    var opening by rememberSaveable(ui.round) { mutableStateOf(level != null && ui.fresh) }
+    val daily = ui.daily
+    // Each new game of a level, and each daily attempt, opens with its mission; the first move, or a moment, ends it.
+    var opening by rememberSaveable(ui.round) { mutableStateOf((level != null || daily != null) && ui.fresh) }
     LaunchedEffect(ui.round, ui.fresh) {
         if (!ui.fresh) {
             opening = false
@@ -100,14 +107,19 @@ fun GameScreen(
     }
     val guided = ui.guided && !guidesSkipped
     val guide = ui.guide?.takeIf { guided && !opening }
-    val campaign = level?.let { playing ->
-        val mission = ui.mission
-        val note = if (opening || mission == null) null else missionNote(playing, mission)
-        CampaignParts(
-            title = stringResource(R.string.level_number, playing.number),
-            mission = note,
+    val mission = ui.mission
+    val campaign = when {
+        level != null -> CampaignParts(
+            title = stringResource(R.string.level_number, level.number),
+            mission = if (opening || mission == null) null else missionNote(level, mission),
             boosters = { BoosterBar(boosterTools(ui, viewModel.human), style, viewModel::chooseBooster) },
         )
+        daily != null -> CampaignParts(
+            title = stringResource(R.string.daily_number, daily.number),
+            mission = if (opening || mission == null) null else missionNote(daily.level, mission),
+            boosters = null,
+        )
+        else -> null
     }
     BoxWithConstraints {
         GameBoard(
@@ -129,8 +141,9 @@ fun GameScreen(
             },
             links = links,
         )
-        if (opening && level != null) {
-            LevelOpening(level, Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp))
+        if (opening) {
+            val place = Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp)
+            if (level != null) LevelOpening(level, place) else if (daily != null) DailyOpening(daily, place)
         }
         val aim = ui.aim
         if (aim != null && !ui.isOver) {
@@ -148,7 +161,7 @@ fun GameScreen(
                 sound = sound,
                 onSound = onSound,
                 onResume = { paused = false },
-                onRestart = { paused = false; viewModel.playAgain() },
+                onRestart = if (daily != null) null else ({ paused = false; viewModel.playAgain() }),
                 onToMap = onToMap,
                 onRules = onRules,
             )
@@ -168,6 +181,8 @@ fun GameScreen(
                 onAgain = { paused = false; viewModel.playAgain() },
                 onAgainWithHint = { paused = false; viewModel.retryWith(Booster.HINT) },
                 onMap = onToMap,
+                onShare = onShare,
+                toNextPuzzle = toNextPuzzle,
             )
         }
     }
@@ -205,7 +220,7 @@ internal fun outcome(state: GameState, names: Names): String {
 @Composable
 internal fun status(ui: GameUiState, names: Names): String {
     val state = ui.state
-    val level = ui.level
+    val level = ui.level ?: ui.daily?.level
     val mission = ui.mission
     if (ui.isOver && level != null && mission != null) {
         return if (ui.levelEnd?.result?.isPassed ?: level.isPassed(state)) stringResource(R.string.mission_done) else failureText(level, mission)

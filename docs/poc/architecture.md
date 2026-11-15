@@ -53,7 +53,9 @@ Both use one format, `GameLogEntry` in the engine (`dots.log`), one line of JSON
  "record":"dots/1 15x15 dots=33 ... | h8 g7 ..."}
 ```
 
-- `record` is the game record (settings, seed, every move), so the game replays exactly.
+- `record` is the game record (settings, seed, every move), so the game replays exactly: `dots/1`
+  for a free game, `level/1 1-7 ...` for a campaign level, `daily/1 2027-01-05 ...` for an attempt
+  at a daily puzzle.
 - `started` / `updated` are milliseconds since 1970 (UTC); `play_ms` is time spent playing, where a
   pause of over 2 minutes between moves counts as 2 minutes (the player put the phone down).
 - `opponent` is `human` (two players on one phone) or the computer's strength (`steady`): a
@@ -69,8 +71,8 @@ Both use one format, `GameLogEntry` in the engine (`dots.log`), one line of JSON
 
 Files, in the app's private folder (`files/games/`, excluded from backups):
 
-- `saved-campaign.json`, `saved-free-play.json`, `saved-two-players.json`: each mode's unfinished
-  game, rewritten after every move and undo (to a temporary file first, then renamed, so a kill
+- `saved-campaign.json`, `saved-free-play.json`, `saved-two-players.json`, `saved-daily.json`: each
+  mode's unfinished game, rewritten after every move and undo (to a temporary file first, then renamed, so a kill
   mid-write keeps the previous version). A saved game in one mode never replaces another mode's.
   A new game is written here *before* its screen opens; the game screen plays the saved game of
   its mode, so after Android kills and restarts the app it comes back to the same position, and
@@ -82,7 +84,9 @@ Files, in the app's private folder (`files/games/`, excluded from backups):
 `GameStore` writes both on one background thread, in order, so the main thread never waits for
 the disk. The campaign progress is kept apart, in `files/datastore/progress.preferences_pb`
 (`ProgressRepository`): the stars of each level, the player's own boosters, the chests opened and
-the cosmetics owned, one line each, and the failures in a row. It is the only file Android's backup
+the cosmetics owned, one line each, and the failures in a row. The daily puzzle keeps the days
+solved and the last week's attempts there too (`DailyRepository`, two more lines), so the streak is
+backed up with the stars. It is the only file Android's backup
 and device transfer take (`res/xml/data_extraction_rules.xml`), so a reinstall restores it. A part
 saved by an older version that lacks a line reads as empty; an entry that cannot be read is left
 out; a file that cannot be read at all starts empty instead of stopping the app. Testers share the log from the developer menu, "Share the game log" (Android share sheet, through
