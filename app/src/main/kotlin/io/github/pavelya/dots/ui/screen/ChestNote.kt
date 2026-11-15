@@ -65,6 +65,7 @@ fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit) {
             .semantics { paneTitle = title },
     ) {
         val tall = maxHeight >= 700.dp
+        val tallest = maxHeight - 48.dp
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
         Box(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 24.dp, top = 24.dp).rotate(1f)) {
             Column(
@@ -72,7 +73,7 @@ fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = maxHeight - 48.dp)
+                    .heightIn(max = tallest)
                     .shadow(6.dp, RectangleShape, clip = false)
                     .background(style.card)
                     .pointerInput(Unit) { detectTapGestures { } }
