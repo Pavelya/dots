@@ -214,7 +214,7 @@ private sealed interface MapRow {
 }
 
 private val STOP_HEIGHT = 72.dp
-private val CHEST_HEIGHT = 56.dp
+private val CHEST_HEIGHT = 64.dp
 private val BOSS_HEIGHT = 128.dp
 private val STOP_SIZE = 44.dp
 private val TOUCH_SIZE = 56.dp

@@ -133,7 +133,8 @@ class MapScreenTest {
     @Test
     fun `an opened chest is open and empty on the path, and does nothing`() {
         val chest = Campaign.chests.first()
-        show(Progress(Campaign.levels.take(11).associate { it.code to 3 }).open(chest, chest.choices.first()))
+        // Level 1-10 passed and its chest opened: 1-11 is next, with the chest right below it.
+        show(Progress(Campaign.levels.take(10).associate { it.code to 3 }).open(chest, chest.choices.first()))
 
         compose.onNodeWithContentDescription("Chest after level 1-10, opened").assertIsDisplayed()
         capture("map_chest_opened")
