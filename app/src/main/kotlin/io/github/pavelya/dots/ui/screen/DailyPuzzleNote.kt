@@ -227,7 +227,8 @@ internal fun rememberTicks(periodMillis: Long = 1_000): State<Long> =
 /** [day] as the player's language writes a date: "Sunday, November 8", with the year if [year]. */
 @Composable
 private fun dayText(day: Day, year: Boolean = false): String {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    // The configuration's locale, so the date changes with the phone's language.
+    val locale: Locale = LocalConfiguration.current.locales[0]
     return remember(day, year, locale) {
         val skeleton = if (year) "EEEEdMMMMyyyy" else "EEEEdMMMM"
         val format = SimpleDateFormat(android.text.format.DateFormat.getBestDateTimePattern(locale, skeleton), locale)
