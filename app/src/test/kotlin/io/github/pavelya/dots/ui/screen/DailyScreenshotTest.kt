@@ -9,8 +9,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -83,8 +85,8 @@ class DailyScreenshotTest {
 
     private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
 
-    private fun waitFor(text: String) =
-        compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isNotEmpty() }
+    private fun waitFor(text: String, substring: Boolean = false) =
+        compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodes(hasText(text, substring = substring)).fetchSemanticsNodes().isNotEmpty() }
 
     /** Today's puzzle over the dimmed map, as the dialog draws it. */
     private fun note(action: DailyAction, dark: Boolean = false, shown: DailyPuzzle? = puzzle, today: Day = puzzle.day) {
@@ -123,7 +125,8 @@ class DailyScreenshotTest {
     fun `Today's puzzle, to play`() {
         note(DailyAction.PLAY)
         compose.onNodeWithText("Play").assertIsDisplayed()
-        compose.onNodeWithText("14:22").assertIsDisplayed()
+        compose.onNodeWithContentDescription("14:22 to the next puzzle").assertIsDisplayed()
+        compose.onNodeWithContentDescription("6 days streak · 1 freeze left").assertIsDisplayed()
         capture("daily_puzzle")
     }
 
@@ -157,7 +160,7 @@ class DailyScreenshotTest {
     @Test
     fun `before the first puzzle`() {
         note(DailyAction.PLAY, shown = null, today = Day(2026, 11, 15))
-        waitFor("The first puzzle comes on")
+        waitFor("The first puzzle comes on", substring = true)
         capture("daily_puzzle_none_yet")
     }
 
@@ -214,12 +217,18 @@ class DailyScreenshotTest {
     @Test
     fun `the daily board has the mission and no tool bar`() {
         val vm = game(puzzle, Replies(line))
+        // The opening shows the puzzle's number and mission big for a moment: the clock waits.
+        compose.mainClock.autoAdvance = false
         show { GameScreen(vm, onToMap = {}, onRules = {}) }
-        // The opening shows the puzzle's number and mission big; the first move ends it.
-        waitFor("Same puzzle for everyone today.")
+        compose.mainClock.advanceTimeBy(100)
+        compose.onNodeWithText("Same puzzle for everyone today.").assertIsDisplayed()
         capture("daily_board_opening")
+        compose.mainClock.autoAdvance = true
+        // The first move ends it; the mission sits in the corner note, and there is no tool bar.
         play(vm, (line.first() as Action.Place).pos)
-        waitFor("Mission")
+        compose.waitUntil(timeoutMillis = 10_000) {
+            compose.onAllNodes(hasContentDescription("Mission", substring = true)).fetchSemanticsNodes().isNotEmpty()
+        }
         capture("daily_board")
     }
 

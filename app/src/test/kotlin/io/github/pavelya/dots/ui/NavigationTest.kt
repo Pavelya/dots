@@ -242,8 +242,10 @@ class NavigationTest {
         tap("Play")
         at(Routes.GAME)
         assertEquals(Day(2027, 1, 5), (app.games.saved(GameMode.DAILY)?.record as? DailyRecord)?.day)
-        // The opening goes, and the mission note stays in the corner.
-        waitFor("Mission")
+        // The opening goes, and the mission note stays in the corner (TalkBack reads it as one sentence).
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodes(hasContentDescription("Mission", substring = true)).fetchSemanticsNodes().isNotEmpty()
+        }
 
         back()
         waitFor("Resume")
