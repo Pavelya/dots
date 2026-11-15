@@ -137,7 +137,7 @@ class TutorialScreenTest {
     fun `level 1 teaches drag, the default, and says that two taps can be chosen in Settings`() {
         val vm = practice()
         compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}, placing = AppSettings().placing) } }
-        waitFor("Press, slide to the circled point and lift.")
+        waitFor("Drag to the circled point and lift.")
         compose.onNodeWithText("Rather tap twice than drag? Choose it in Settings.").assertIsDisplayed()
 
         val point = vm.ui.value.guide!!.point!!

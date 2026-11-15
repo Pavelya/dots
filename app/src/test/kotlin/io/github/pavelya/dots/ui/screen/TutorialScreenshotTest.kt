@@ -81,7 +81,7 @@ class TutorialScreenshotTest {
     @Test
     fun tutorialPlacing() {
         show { GameScreen(tutorialLevel(1), onToMap = {}, onRules = {}, placing = AppSettings().placing) }
-        waitFor("Press, slide to the circled point and lift.")
+        waitFor("Drag to the circled point and lift.")
         capture("tutorial_placing")
     }
 
