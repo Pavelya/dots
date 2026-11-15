@@ -58,7 +58,7 @@ class StatsRepositoryTest {
         val record = GameRecord(free, words.split(' ').map(Action::parse))
         val end = record.replay()
         return GameLogEntry.start(record, opponent, threatHighlight = true, now = startedAt)
-            .copy(outcome = outcome, red = end.score(Player.RED), blue = end.score(Player.BLUE))
+            .copy(outcome = outcome, red = end.score(Player.RED), blue = end.score(Player.BLUE), record = record)
     }
 
     /** Red closes a ring round c3 and wins 1-0. */
