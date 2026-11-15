@@ -1,9 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Android 11 and older: the same rule as data_extraction_rules.xml, nothing is backed up. -->
+<!-- Android 11 and older: the same rule as data_extraction_rules.xml, only the campaign progress
+     is backed up. -->
 <full-backup-content>
-    <exclude domain="root" path="." />
-    <exclude domain="file" path="." />
-    <exclude domain="database" path="." />
-    <exclude domain="sharedpref" path="." />
-    <exclude domain="external" path="." />
+    <include domain="file" path="datastore/progress.preferences_pb" />
 </full-backup-content>

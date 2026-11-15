@@ -147,6 +147,8 @@ data class BoosterAim(
  *   touches and dots it took, so that `cli placing-report` can compare methods (A-13)
  * @param hintFor the Hint booster's point for a position of the level being played (null outside
  *   the campaign), found on [computerDispatcher]: in a level, the move that serves its mission
+ * @param ownedFor the player's own boosters a new game of a level takes (decision 0027); a game
+ *   reports the ones it uses to [campaign]
  */
 class GameViewModel(
     start: GameLogEntry,
@@ -159,6 +161,7 @@ class GameViewModel(
     private val clock: () -> Long = System::currentTimeMillis,
     private val placing: () -> PlacingMethod = { PlacingMethod.TWO_TAPS },
     private val hintFor: (GameState, Level?) -> Action.Hint? = { state, level -> if (level != null) level.hint(state) else Hints.hint(state) },
+    private val ownedFor: (Level) -> Map<Booster, Int> = { emptyMap() },
 ) : ViewModel() {
     val human: Player = Player.RED
 
@@ -187,6 +190,9 @@ class GameViewModel(
      */
     private var shownGuide: Tutorial.Step? = null
 
+    /** The player's own boosters this game last reported as used ([reportOwned]). */
+    private var ownedReported: Map<Booster, Int> = emptyMap()
+
     /** How often the human took a move back in this game. */
     val undoCount: Int get() = entry.undos
 
@@ -197,7 +203,8 @@ class GameViewModel(
     val ui: StateFlow<GameUiState> = _ui.asStateFlow()
 
     init {
-        // A resumed level may have been closed between its last move and the saving of its stars.
+        // A resumed level may have been closed before the boosters it used, or its stars, were saved.
+        reportOwned(resumed = true)
         if (game.isOver) levelOver()
         letComputerMove() // a resumed game may have been closed while the computer was to move
     }
@@ -420,7 +427,8 @@ class GameViewModel(
      */
     fun retryWith(booster: Booster) {
         val level = level ?: return playAgain()
-        begin(levelGame(level, entry.threatHighlight, clock(), gift = mapOf(booster to 1), practice = entry.practice))
+        val owned = if (entry.practice) emptyMap() else ownedFor(level)
+        begin(levelGame(level, entry.threatHighlight, clock(), gift = mapOf(booster to 1), owned = owned, practice = entry.practice))
     }
 
     private fun begin(next: GameLogEntry) {
@@ -429,6 +437,7 @@ class GameViewModel(
         game = Game.from(entry.record)
         computer = computerFor(entry)
         levelEnd = null
+        ownedReported = emptyMap()
         shownGuide = null
         chosen = null
         round++
@@ -472,12 +481,27 @@ class GameViewModel(
             placing = placing().key,
         )
         lastActive = now
+        reportOwned()
         if (over) {
             journal?.finish(entry)
             levelOver()
         } else {
             journal?.save(entry)
         }
+    }
+
+    /**
+     * Tells [campaign] how many of the player's own boosters this game has used, when that changed
+     * (a booster, or an undo that gave one back). A [resumed] game reports what it has used so far,
+     * in case the app closed before it was saved; the report is the same, so nothing changes twice.
+     */
+    private fun reportOwned(resumed: Boolean = false) {
+        val record = entry.record as? LevelRecord ?: return
+        if (record.owned.isEmpty() || entry.practice) return
+        val used = record.ownedUsed(game.state)
+        if (used == ownedReported && !resumed) return
+        ownedReported = used
+        campaign?.spent(entry.startedAt, used)
     }
 
     /**

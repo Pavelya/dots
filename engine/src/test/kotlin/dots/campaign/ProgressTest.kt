@@ -1,5 +1,6 @@
 package dots.campaign
 
+import dots.engine.Booster
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -150,6 +151,88 @@ class ProgressTest {
     @Test
     fun `entries that cannot be read are left out`() {
         assertEquals(Progress(mapOf("1-1" to 3)), Progress.parse("1-1:3 1-2:4 x-1:2 1-3 :2 1-4:0"))
+    }
+
+    @Test
+    fun `owned boosters, opened chests and cosmetics are stored as lines and read back`() {
+        val progress = Progress(
+            stars = mapOf("1-10" to 3),
+            boosters = mapOf(Booster.BOMB to 2, Booster.WALL to 1),
+            chests = setOf("2-5", "1-10"),
+            cosmetics = setOf("ink-splash"),
+        )
+
+        assertEquals("wall:1 bomb:2", progress.boostersText)
+        assertEquals("1-10 2-5", progress.chestsText)
+        assertEquals("ink-splash", progress.cosmeticsText)
+        assertEquals(progress, Progress.parse(progress.text, progress.boostersText, progress.chestsText, progress.cosmeticsText))
+    }
+
+    @Test
+    fun `progress saved before boosters and chests existed reads with none of them`() {
+        val old = Progress.parse("1-1:3 1-2:2")
+
+        assertEquals(mapOf("1-1" to 3, "1-2" to 2), old.stars)
+        assertEquals(emptyMap(), old.boosters)
+        assertEquals(emptySet(), old.chests)
+        assertEquals(emptySet(), old.cosmetics)
+    }
+
+    @Test
+    fun `damaged boosters, chests and cosmetics lose only the entries that cannot be read`() {
+        val progress = Progress.parse(
+            stars = "1-1:3",
+            boosters = "wall:2 boom:1 bomb:0 hint:-1 double-dot:x bomb",
+            chests = "1-10 ten 2- 2-5",
+            cosmetics = "ink-splash Bad! -x",
+        )
+
+        assertEquals(mapOf(Booster.WALL to 2), progress.boosters)
+        assertEquals(setOf("1-10", "2-5"), progress.chests)
+        assertEquals(setOf("ink-splash"), progress.cosmetics)
+    }
+
+    @Test
+    fun `a chest opens once, after the level before it, and its reward is kept`() {
+        val chest = Campaign.chests.first()
+        val reward = chest.choices.last()
+        val before = passedUpTo("1-9")
+        assertFalse(before.isReady(chest))
+
+        val passed = before.record(level("1-10"), 2)
+        assertTrue(passed.isReady(chest))
+        assertEquals(ChestState.READY, Campaign.map(passed).chestAfter(level("1-10"))?.state)
+
+        val opened = passed.open(chest, reward)
+        assertEquals(mapOf(reward.booster to reward.count), opened.boosters)
+        assertFalse(opened.isReady(chest))
+        assertEquals(ChestState.OPENED, Campaign.map(opened).chests.first().state)
+        assertEquals(opened, opened.open(chest, chest.choices.first()), "a chest opens once")
+        assertFailsWith<IllegalArgumentException> { passed.open(chest, Reward(Booster.UNDO, 1)) }
+    }
+
+    @Test
+    fun `owned boosters go to the levels that allow them, are spent and given back`() {
+        val progress = Progress(boosters = mapOf(Booster.WALL to 2, Booster.BOMB to 1))
+
+        assertEquals(emptyMap(), progress.owned(level("1-11")), "World 1 allows only undo")
+        assertEquals(mapOf(Booster.WALL to 2), progress.owned(level("2-1")))
+        assertEquals(mapOf(Booster.WALL to 2, Booster.BOMB to 1), progress.owned(level("4-3")))
+
+        val spent = progress.spend(mapOf(Booster.WALL to 1, Booster.BOMB to 1))
+        assertEquals(mapOf(Booster.WALL to 1), spent.boosters)
+        assertEquals(progress, spent.spend(mapOf(Booster.WALL to -1, Booster.BOMB to -1)))
+        assertEquals(emptyMap(), spent.spend(mapOf(Booster.WALL to 5)).boosters, "a count never goes below 0")
+    }
+
+    @Test
+    fun `stars and chests keep each other's parts`() {
+        val chest = Campaign.chests.first()
+        val opened = passedUpTo("1-10").open(chest, chest.choices.first())
+
+        val replayed = opened.record(level("1-11"), 3)
+        assertEquals(opened.boosters, replayed.boosters)
+        assertEquals(opened.chests, replayed.chests)
     }
 
     @Test

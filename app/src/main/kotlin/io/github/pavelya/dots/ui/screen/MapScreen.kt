@@ -70,9 +70,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import dots.campaign.CampaignMap
+import dots.campaign.Chest
+import dots.campaign.ChestState
+import dots.campaign.ChestStop
 import dots.campaign.Level
 import dots.campaign.LevelState
 import dots.campaign.LevelStop
+import dots.campaign.Title
 import dots.campaign.WorldStop
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.ui.theme.Palette
@@ -87,6 +91,7 @@ class MapActions(
     val onStats: () -> Unit,
     val onShop: () -> Unit,
     val onSettings: () -> Unit,
+    val onChest: (Chest) -> Unit = {},
 )
 
 /** The scrolling path of the map, for tests. */
@@ -100,14 +105,19 @@ const val MAP_PATH_TAG = "map-path"
  * level low on the screen, near the thumb. A level opens its Level card; a locked level or world
  * says what opens it. There are no Play buttons on levels.
  *
+ * After every 10th level a chest sits on the path: closed with rays until it is opened, then open
+ * and empty. A ready chest opens the Chest ([MapActions.onChest]); one still ahead says which level
+ * opens it. The header shows the player's title beside the stars.
+ *
  * [map] is null while the progress is read. The map lies on the menu screens' squared paper; the
- * inks come from the theme ([MapStyle]). V-11 brings the landscape, A-04 the chest and the
- * player's title, A-07 the streak on the puzzle note.
+ * inks come from the theme ([MapStyle]). V-11 brings the landscape, A-07 the streak on the puzzle
+ * note, V-05 the motion of a level or world opening.
  */
 @Composable
 fun MapScreen(map: CampaignMap?, actions: MapActions) {
     val style = MapStyle.current
     var lock by remember { mutableStateOf<CampaignMap.Lock?>(null) }
+    var lockedChest by remember { mutableStateOf<Chest?>(null) }
     Box(Modifier.fillMaxSize().squaredPaper(Palette.current)) {
         if (map != null) {
             val rows = remember(map) { rows(map) }
@@ -125,6 +135,7 @@ fun MapScreen(map: CampaignMap?, actions: MapActions) {
                 style = style,
                 onLevel = { stop -> map.lock(stop.level)?.let { lock = it } ?: actions.onLevel(stop.level) },
                 onLockedWorld = { lock = CampaignMap.Lock.WorldClosed(it) },
+                onChest = { chest -> if (chest.state == ChestState.READY) actions.onChest(chest.chest) else lockedChest = chest.chest },
             )
             // The header names the world of the next level while it is on the screen, otherwise the
             // world in the middle of the screen; never a locked one, whose banner says what opens it.
@@ -137,7 +148,7 @@ fun MapScreen(map: CampaignMap?, actions: MapActions) {
                     world
                 }
             }
-            Header(map.worlds[inView - 1], style)
+            Header(map.worlds[inView - 1], map.title, style)
         }
         TopIcon(
             Doodles.SETTINGS, stringResource(R.string.home_settings), style, actions.onSettings,
@@ -155,6 +166,7 @@ fun MapScreen(map: CampaignMap?, actions: MapActions) {
         PlayAGame(style, actions.onPlay, Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 26.dp))
     }
     lock?.let { LockNote(it, onClose = { lock = null }) }
+    lockedChest?.let { ChestLockNote(it, onClose = { lockedChest = null }) }
 }
 
 /** The map's rows, from the bottom: each world's banner, then its levels; at the top, the end. */
@@ -182,12 +194,27 @@ private sealed interface MapRow {
         val height: Dp get() = if (stop.isBoss) BOSS_HEIGHT else STOP_HEIGHT
     }
 
+    /**
+     * A chest on the path, at [x] across the screen; the path goes on to the level after it, as for
+     * a [Stop].
+     */
+    data class ChestRow(
+        val chest: ChestStop,
+        val x: Float,
+        val nextX: Float?,
+        val nextHeight: Dp,
+        val nextOpen: Boolean,
+    ) : MapRow {
+        override val key get() = "chest-${chest.chest.after.code}"
+    }
+
     data object End : MapRow {
         override val key get() = "end"
     }
 }
 
 private val STOP_HEIGHT = 72.dp
+private val CHEST_HEIGHT = 64.dp
 private val BOSS_HEIGHT = 128.dp
 private val STOP_SIZE = 44.dp
 private val TOUCH_SIZE = 56.dp
@@ -207,14 +234,19 @@ private fun rows(map: CampaignMap): List<MapRow> {
         rows += MapRow.Banner(world)
         world.levels.forEachIndexed { i, stop ->
             val after = world.levels.getOrNull(i + 1)
-            rows += MapRow.Stop(
-                stop = stop,
-                x = pathX(i),
-                isNext = stop.level == next,
-                nextX = after?.let { pathX(i + 1) },
-                nextHeight = if (after?.isBoss == true) BOSS_HEIGHT else STOP_HEIGHT,
-                nextOpen = after != null && after.state != LevelState.LOCKED,
-            )
+            val x = pathX(i)
+            val afterX = after?.let { pathX(i + 1) }
+            val afterHeight = if (after?.isBoss == true) BOSS_HEIGHT else STOP_HEIGHT
+            val afterOpen = after != null && after.state != LevelState.LOCKED
+            val chest = map.chestAfter(stop.level)
+            if (chest == null) {
+                rows += MapRow.Stop(stop, x, stop.level == next, afterX, afterHeight, afterOpen)
+            } else {
+                // The chest sits on the path halfway to the next level.
+                val chestX = if (afterX == null) x else (x + afterX) / 2
+                rows += MapRow.Stop(stop, x, stop.level == next, chestX, CHEST_HEIGHT, chest.state != ChestState.LOCKED)
+                rows += MapRow.ChestRow(chest, chestX, afterX, afterHeight, afterOpen)
+            }
         }
     }
     rows += MapRow.End
@@ -238,6 +270,7 @@ private fun worldOf(rows: List<MapRow>, index: Int): Int {
         when (val row = rows[i]) {
             is MapRow.Banner -> return row.world.world.number
             is MapRow.Stop -> return row.stop.level.world
+            is MapRow.ChestRow -> return row.chest.chest.after.world
             MapRow.End -> Unit
         }
     }
@@ -251,6 +284,7 @@ private fun MapPath(
     style: MapStyle,
     onLevel: (LevelStop) -> Unit,
     onLockedWorld: (WorldStop) -> Unit,
+    onChest: (ChestStop) -> Unit,
 ) {
     LazyColumn(
         state = state,
@@ -263,6 +297,7 @@ private fun MapPath(
             when (val row = rows[i]) {
                 is MapRow.Banner -> Banner(row.world, style, onLocked = { onLockedWorld(row.world) })
                 is MapRow.Stop -> Stop(row, style, onOpen = { onLevel(row.stop) })
+                is MapRow.ChestRow -> ChestOnPath(row, style, onOpen = { onChest(row.chest) })
                 MapRow.End -> Text(
                     stringResource(R.string.map_more_coming),
                     style = MaterialTheme.typography.bodyLarge,
@@ -275,13 +310,14 @@ private fun MapPath(
     }
 }
 
-/** The world in view, its name and stars, over the top of the map. */
+/** The world in view, its name and stars, and the player's [title], over the top of the map. */
 @Composable
-private fun Header(world: WorldStop, style: MapStyle) {
+private fun Header(world: WorldStop, title: Title, style: MapStyle) {
     val most = world.world.maxStars
     val stars = pluralStringResource(R.plurals.map_world_stars, most, world.stars, most)
     val number = stringResource(R.string.map_world_number, world.world.number)
-    val description = "$number, ${world.world.name}, $stars"
+    val name = titleName(title)
+    val description = "$number, ${world.world.name}, $name, $stars"
     // Squared paper behind the header, fading out at its foot, so the path scrolls away under it.
     // The header starts at the screen's top left, so its grid lies on the map's.
     val palette = Palette.current
@@ -307,6 +343,8 @@ private fun Header(world: WorldStop, style: MapStyle) {
         Text(number, style = MaterialTheme.typography.labelLarge, color = style.graphite)
         Text(world.world.name, style = MaterialTheme.typography.displaySmall, color = style.done, fontWeight = FontWeight.Bold)
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(name, style = MaterialTheme.typography.labelLarge, color = style.pencil)
+            Text("·", style = MaterialTheme.typography.labelLarge, color = style.graphite)
             Icon(Doodles.star(style.next, filled = true), contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(16.dp))
             Text(
                 stringResource(R.string.map_world_stars_short, world.stars, most),
@@ -429,7 +467,7 @@ private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit) {
         Modifier
             .fillMaxWidth()
             .height(row.height)
-            .drawBehind { row.nextX?.let { drawPathTo(row, it, style) } },
+            .drawBehind { row.nextX?.let { drawPathTo(row.x, it, row.nextHeight, row.nextOpen, style) } },
     ) {
         val centerX = maxWidth * row.x
         val centerY = row.height / 2
@@ -581,20 +619,20 @@ private fun stopDescription(row: MapRow.Stop): String {
 }
 
 /**
- * The stretch of path from this level up to the next one: inked and dashed up to an open level,
- * dotted in graphite beyond it. The stops are drawn over its ends.
+ * The stretch of path from a stop at [x] up to the next one at [nextX], in a row [nextHeight] tall:
+ * inked and dashed up to a stop that is [inked] (open, or a chest reached), dotted in graphite
+ * beyond it. The stops are drawn over its ends.
  */
-private fun DrawScope.drawPathTo(row: MapRow.Stop, nextX: Float, style: MapStyle) {
-    val from = Offset(size.width * row.x, size.height / 2)
+private fun DrawScope.drawPathTo(x: Float, nextX: Float, nextHeight: Dp, inked: Boolean, style: MapStyle) {
+    val from = Offset(size.width * x, size.height / 2)
     // A boss's path ends under its castle's label, not through it.
-    val end = if (row.nextHeight == BOSS_HEIGHT) -row.nextHeight.toPx() / 2 + CASTLE_HEIGHT.toPx() / 2 else -row.nextHeight.toPx() / 2
+    val end = if (nextHeight == BOSS_HEIGHT) -nextHeight.toPx() / 2 + CASTLE_HEIGHT.toPx() / 2 else -nextHeight.toPx() / 2
     val to = Offset(size.width * nextX, end)
     val bend = (from.y - to.y) / 2
     val path = Path().apply {
         moveTo(from.x, from.y)
         cubicTo(from.x, from.y - bend, to.x, to.y + bend, to.x, to.y)
     }
-    val inked = row.nextOpen
     drawPath(
         path,
         color = if (inked) style.done else style.graphite,
@@ -609,6 +647,79 @@ private fun DrawScope.drawPathTo(row: MapRow.Stop, nextX: Float, style: MapStyle
         ),
     )
 }
+
+/**
+ * A chest on the path (canvas `map`, between levels 10 and 11), in the highlighter's ink: closed
+ * with rays until it is opened, then open and empty in graphite. A tap on a ready or locked chest
+ * calls [onOpen]; an opened one does nothing.
+ */
+@Composable
+private fun ChestOnPath(row: MapRow.ChestRow, style: MapStyle, onOpen: () -> Unit) {
+    val stop = row.chest
+    val opened = stop.state == ChestState.OPENED
+    val description = listOfNotNull(
+        stringResource(R.string.map_chest, stop.chest.after.code),
+        when (stop.state) {
+            ChestState.READY -> stringResource(R.string.map_chest_ready)
+            ChestState.OPENED -> stringResource(R.string.map_chest_opened)
+            ChestState.LOCKED -> stringResource(R.string.map_locked)
+        },
+    ).joinToString(", ")
+    val ink = if (opened) style.graphite else style.chest
+    BoxWithConstraints(
+        Modifier
+            .fillMaxWidth()
+            .height(CHEST_HEIGHT)
+            .drawBehind { row.nextX?.let { drawPathTo(row.x, it, row.nextHeight, row.nextOpen, style) } },
+    ) {
+        val centerX = maxWidth * row.x
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .offset(x = centerX - TOUCH_SIZE / 2, y = (CHEST_HEIGHT - TOUCH_SIZE) / 2)
+                .size(TOUCH_SIZE)
+                .then(if (opened) Modifier else Modifier.clickable(onClick = onOpen))
+                .clearAndSetSemantics {
+                    contentDescription = description
+                    if (!opened) {
+                        role = Role.Button
+                        onClick { onOpen(); true }
+                    }
+                },
+        ) {
+            Icon(
+                remember(ink, style, opened) { Doodles.chest(ink, style.card, opened) },
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(48.dp),
+            )
+        }
+    }
+}
+
+/** A note over the map on what opens a chest still ahead. */
+@Composable
+private fun ChestLockNote(chest: Chest, onClose: () -> Unit) {
+    Dialog(onDismissRequest = onClose) {
+        Note {
+            Text(stringResource(R.string.map_locked_level_title), style = NoteText.title)
+            Text(stringResource(R.string.map_chest_locked, chest.after.code), style = MaterialTheme.typography.bodyLarge)
+            TextButton(onClick = onClose) { Text(stringResource(R.string.close)) }
+        }
+    }
+}
+
+/** The player's title as the app names it. */
+@Composable
+internal fun titleName(title: Title): String = stringResource(
+    when (title) {
+        Title.NOVICE -> R.string.title_novice
+        Title.APPRENTICE -> R.string.title_apprentice
+        Title.STRATEGIST -> R.string.title_strategist
+        Title.MASTER -> R.string.title_master
+        Title.GRANDMASTER -> R.string.title_grandmaster
+    },
+)
 
 /** A note over the map on why a level or world is locked. */
 @Composable

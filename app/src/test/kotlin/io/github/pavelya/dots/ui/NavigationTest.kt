@@ -37,6 +37,7 @@ import dots.campaign.Campaign
 import dots.campaign.LevelRecord
 import dots.campaign.Progress
 import dots.engine.Action
+import dots.engine.Booster
 import dots.engine.GameRecord
 import dots.engine.GameSettings
 import dots.engine.Pos
@@ -203,9 +204,13 @@ class NavigationTest {
         back()
         at(Routes.MAP)
 
-        // The chest opens from the Result of every 10th level, which A-03 and A-04 build.
-        compose.runOnUiThread { nav.navigate(Routes.CHEST) }
+        // The chest after level 1-10 opens once that level is passed; Back closes it unopened.
+        val tenth = Campaign.level(1, 10)
+        val ready = CoroutineScope(Dispatchers.IO).launch { app.progress.replace(Progress(Campaign.levels.take(10).associate { it.code to 1 })) }
+        compose.waitUntil(timeoutMillis = 5_000) { ready.isCompleted && app.progress.saved.value?.isReady(Campaign.chests.first()) == true }
+        compose.runOnUiThread { nav.navigate(Routes.chest(tenth)) }
         at(Routes.CHEST)
+        waitFor("Ten levels done!")
         back()
         at(Routes.MAP)
 
@@ -625,6 +630,51 @@ class NavigationTest {
         tap("Resume")
         at(Routes.GAME)
         assertSame(saved, app.games.saved(GameMode.CAMPAIGN))
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp") // the whole Level card, Start included, fits on the screen
+    fun `a ready chest on the map opens the Chest, and a pick keeps the reward and opens the next level's card`() {
+        launch(Progress(Campaign.levels.take(10).associate { it.code to 1 }))
+        compose.onNodeWithContentDescription("Chest after level 1-10, ready to open").performClick()
+        at(Routes.CHEST)
+        waitFor("Ten levels done!")
+
+        compose.onNodeWithContentDescription("Bomb, 2 boosters. Keep it.").performClick()
+        at(Routes.LEVEL)
+        waitFor("World 1 · Level 11")
+        compose.waitUntil(timeoutMillis = 5_000) { app.progress.saved.value?.boosters == mapOf(Booster.BOMB to 2) }
+        assertTrue("1-10" in app.progress.saved.value!!.chests)
+
+        back()
+        at(Routes.MAP)
+        compose.onNodeWithContentDescription("Chest after level 1-10, opened").assertExists()
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp") // the whole Level card, Start included, fits on the screen
+    fun `Start on another level's card asks before the saved campaign game ends`() {
+        val first = Campaign.level(1, 1)
+        val move = first.newGame().legalMoves().first()
+        app.games.start(levelGame(first, threatHighlight = false, now = 1).copy(record = LevelRecord(first, listOf(Action.Place(move)))))
+        launch(Progress(mapOf("1-1" to 2, "1-2" to 2)))
+
+        compose.onNodeWithContentDescription("Level 1-3, next").performClick()
+        at(Routes.LEVEL)
+        // The card is turned a little and scrolls: its buttons are pressed through their click
+        // actions, without scrolling it.
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
+        waitFor("Replace your saved game?")
+        waitFor("Your unfinished game of level 1-1 ends, and this level takes its place.")
+        compose.onNodeWithText("Keep it").performSemanticsAction(SemanticsActions.OnClick)
+        gone("Replace your saved game?")
+        assertEquals("1-1", savedLevel)
+
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
+        waitFor("Replace your saved game?")
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
+        at(Routes.GAME)
+        assertEquals("1-3", savedLevel)
     }
 
     /**

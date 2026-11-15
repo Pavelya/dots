@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import com.github.takahirom.roborazzi.captureRoboImage
 import dots.campaign.Campaign
+import dots.campaign.Chest
 import dots.campaign.Level
 import dots.campaign.Progress
 import io.github.pavelya.dots.data.SampleProgress
@@ -41,12 +42,14 @@ class MapScreenTest {
     val compose = createComposeRule()
 
     private val opened = mutableListOf<Level>()
+    private val chests = mutableListOf<Chest>()
 
     private fun show(progress: Progress, theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false) {
         val map = Campaign.map(progress)
         val actions = MapActions(
             onLevel = { opened += it },
             onDaily = {}, onPlay = {}, onRules = {}, onStats = {}, onShop = {}, onSettings = {},
+            onChest = { chests += it },
         )
         compose.setContent {
             DotsTheme(theme, dark) {
@@ -62,7 +65,7 @@ class MapScreenTest {
         show(Progress.NONE)
 
         compose.onNodeWithContentDescription("Level 1-1, next").assertIsDisplayed()
-        compose.onNodeWithContentDescription("World 1, Notebook, 0 of 45 stars").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 1, Notebook, Novice, 0 of 45 stars").assertIsDisplayed()
         capture("map_new_player")
     }
 
@@ -88,7 +91,7 @@ class MapScreenTest {
 
         compose.onNodeWithContentDescription("Level 2-1, next").assertIsDisplayed()
         compose.onNodeWithText("Garden").assertIsDisplayed()
-        compose.onNodeWithContentDescription("World 2, Garden, 0 of 60 stars").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 2, Garden, Apprentice, 0 of 60 stars").assertIsDisplayed()
         compose.onNodeWithContentDescription("Level 1-15, Ink Bottle, 3 stars").assertIsDisplayed()
         capture("map_world_complete")
     }
@@ -98,12 +101,45 @@ class MapScreenTest {
         show(SampleProgress.worldNeedsStars)
 
         compose.onNodeWithText("Stars needed: 20. You have 15.").assertIsDisplayed()
-        compose.onNodeWithContentDescription("World 1, Notebook, 15 of 45 stars").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 1, Notebook, Apprentice, 15 of 45 stars").assertIsDisplayed()
         capture("map_world_needs_stars")
 
         compose.onNodeWithText("Garden").performClick()
         compose.onAllNodes(hasText("Stars needed: 20. You have 15.")).fetchSemanticsNodes().let { assertEquals(2, it.size) }
         assertTrue(opened.isEmpty())
+    }
+
+    @Test
+    fun `the title shows beside the stars, and the chest after level 10 is ready once it is passed`() {
+        show(Progress(Campaign.levels.take(10).associate { it.code to 2 }))
+
+        compose.onNodeWithContentDescription("World 1, Notebook, Apprentice, 20 of 45 stars").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Chest after level 1-10, ready to open").assertIsDisplayed()
+        capture("map_chest_ready")
+
+        compose.onNodeWithContentDescription("Chest after level 1-10, ready to open").performClick()
+        assertEquals(listOf(Campaign.chests.first()), chests)
+    }
+
+    @Test
+    fun `a chest still ahead says which level opens it`() {
+        show(Progress.NONE)
+        compose.onNodeWithTag(MAP_PATH_TAG).performScrollToNode(hasContentDescription("Chest after level 1-10", substring = true))
+        compose.onNodeWithContentDescription("Chest after level 1-10, locked").performClick()
+        compose.onNodeWithText("Pass level 1-10 to open this chest.").assertIsDisplayed()
+        assertTrue(chests.isEmpty())
+    }
+
+    @Test
+    fun `an opened chest is open and empty on the path, and does nothing`() {
+        val chest = Campaign.chests.first()
+        // Level 1-10 passed and its chest opened: 1-11 is next, with the chest right below it.
+        show(Progress(Campaign.levels.take(10).associate { it.code to 3 }).open(chest, chest.choices.first()))
+
+        compose.onNodeWithContentDescription("Chest after level 1-10, opened").assertIsDisplayed()
+        capture("map_chest_opened")
+        compose.onNodeWithContentDescription("Chest after level 1-10, opened").performClick()
+        assertTrue(chests.isEmpty())
     }
 
     @Test

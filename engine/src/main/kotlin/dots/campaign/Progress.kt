@@ -1,16 +1,34 @@
 package dots.campaign
 
+import dots.engine.Booster
+
 /**
- * The player's campaign progress: the most stars earned on each passed level, by level code
- * (`1-3`). A level that is not in [stars] has not been passed. Stars only ever grow.
+ * The player's campaign progress, everything that is saved and backed up:
+ *
+ * - [stars]: the most stars earned on each passed level, by level code (`1-3`). A level that is not
+ *   in it has not been passed. Stars only ever grow.
+ * - [boosters]: the boosters the player owns, from chests, on top of what each level gives
+ *   (decision 0027). A level game takes the ones its level allows ([owned]).
+ * - [chests]: the chests opened, by the code of the level each one follows.
+ * - [cosmetics]: the cosmetics owned, by name. None can be earned yet; the Shop (C-02) and later
+ *   chests bring them.
  */
-data class Progress(val stars: Map<String, Int> = emptyMap()) {
+data class Progress(
+    val stars: Map<String, Int> = emptyMap(),
+    val boosters: Map<Booster, Int> = emptyMap(),
+    val chests: Set<String> = emptySet(),
+    val cosmetics: Set<String> = emptySet(),
+) {
     init {
         require(stars.values.all { it in 1..Stars.MAX }) { "a passed level has 1 to ${Stars.MAX} stars" }
+        require(boosters.values.all { it >= 1 }) { "an owned booster is kept with a count of 1 or more" }
     }
 
     /** All stars earned. */
     val total: Int get() = stars.values.sum()
+
+    /** The player's title, from [total]. */
+    val title: Title get() = Title.of(total)
 
     fun stars(level: Level): Int = stars[level.code] ?: 0
 
@@ -20,26 +38,87 @@ data class Progress(val stars: Map<String, Int> = emptyMap()) {
     fun record(level: Level, earned: Int): Progress =
         if (earned <= stars(level)) this else copy(stars = stars + (level.code to earned))
 
-    /** One line for storage, read back by [parse]: `1-1:3 1-2:2`, in level order. */
+    /** The owned boosters a game of [level] takes: those of the kinds the level allows. */
+    fun owned(level: Level): Map<Booster, Int> = boosters.filterKeys { it in level.boosters }
+
+    /** True once [chest] has been opened. */
+    fun isOpened(chest: Chest): Boolean = chest.after.code in chests
+
+    /** True when [chest] can be opened: the level before it is passed, and it is not opened yet. */
+    fun isReady(chest: Chest): Boolean = isPassed(chest.after) && !isOpened(chest)
+
+    /**
+     * This progress after [chest] was opened and [reward], one of its choices, kept. A chest opens
+     * once: opening it again changes nothing.
+     */
+    fun open(chest: Chest, reward: Reward): Progress {
+        require(reward in chest.choices) { "$reward is not in the chest after ${chest.after.code}" }
+        if (isOpened(chest)) return this
+        return copy(
+            boosters = boosters + (reward.booster to (boosters[reward.booster] ?: 0) + reward.count),
+            chests = chests + chest.after.code,
+        )
+    }
+
+    /**
+     * This progress with [used] taken from the owned boosters; a negative count gives some back
+     * (an undo). A count never goes below 0.
+     */
+    fun spend(used: Map<Booster, Int>): Progress {
+        if (used.values.all { it == 0 }) return this
+        val left = (boosters.keys + used.keys).associateWith { ((boosters[it] ?: 0) - (used[it] ?: 0)).coerceAtLeast(0) }
+        return copy(boosters = left.filterValues { it > 0 })
+    }
+
+    /** The [stars] as one line for storage, read back by [parse]: `1-1:3 1-2:2`, in level order. */
     val text: String
         get() = stars.entries
             .sortedWith(compareBy({ order(it.key)?.first }, { order(it.key)?.second }))
             .joinToString(" ") { "${it.key}:${it.value}" }
 
+    /** The owned [boosters] as one line: `wall:2 bomb:1`. */
+    val boostersText: String get() = boosterText(boosters)
+
+    /** The opened [chests] as one line: `1-10 2-5`, in level order. */
+    val chestsText: String
+        get() = chests.sortedWith(compareBy({ order(it)?.first }, { order(it)?.second })).joinToString(" ")
+
+    /** The owned [cosmetics] as one line, sorted. */
+    val cosmeticsText: String get() = cosmetics.sorted().joinToString(" ")
+
     companion object {
         val NONE = Progress()
 
         /**
-         * Reads [text], as [Progress.text] writes it. An entry that cannot be read is left out, so
-         * damaged storage costs the player that level's stars, not the whole campaign.
+         * Reads the lines written by [text], [boostersText], [chestsText] and [cosmeticsText]. An
+         * entry that cannot be read is left out, so damaged storage costs the player that one entry,
+         * not the whole campaign. A line saved before its part existed is empty.
          */
-        fun parse(text: String): Progress = Progress(
-            text.split(' ').mapNotNull { entry ->
+        fun parse(stars: String, boosters: String = "", chests: String = "", cosmetics: String = ""): Progress = Progress(
+            stars = entries(stars).mapNotNull { entry ->
                 val code = entry.substringBefore(':', "")
-                val stars = entry.substringAfter(':', "").toIntOrNull()
-                if (order(code) != null && stars != null && stars in 1..Stars.MAX) code to stars else null
+                val count = entry.substringAfter(':', "").toIntOrNull()
+                if (order(code) != null && count != null && count in 1..Stars.MAX) code to count else null
             }.toMap(),
+            boosters = parseBoosters(boosters),
+            chests = entries(chests).filter { order(it) != null }.toSet(),
+            cosmetics = entries(cosmetics).filter { COSMETIC.matches(it) }.toSet(),
         )
+
+        /** Boosters by kind as one line, `wall:2 bomb:1`, read back by [parseBoosters]. */
+        fun boosterText(boosters: Map<Booster, Int>): String =
+            boosters.entries.filter { it.value > 0 }.sortedBy { it.key }.joinToString(" ") { "${it.key.text}:${it.value}" }
+
+        /** Reads [boosterText]; an entry that cannot be read, or a count below 1, is left out. */
+        fun parseBoosters(text: String): Map<Booster, Int> = entries(text).mapNotNull { entry ->
+            val booster = Booster.entries.firstOrNull { it.text == entry.substringBefore(':', "") }
+            val count = entry.substringAfter(':', "").toIntOrNull()
+            if (booster != null && count != null && count >= 1) booster to count else null
+        }.toMap()
+
+        private val COSMETIC = Regex("[a-z0-9][a-z0-9-]*")
+
+        private fun entries(text: String): List<String> = text.split(' ').filter { it.isNotEmpty() }
 
         /** World and number of a level [code], or null if it is not one. */
         private fun order(code: String): Pair<Int, Int>? {
@@ -83,15 +162,37 @@ data class WorldStop(
     val levels: List<LevelStop>,
 )
 
+/** Where a chest on the path stands for the player. */
+enum class ChestState {
+    /** The level before it is not passed yet. */
+    LOCKED,
+
+    /** The level before it is passed: the player can open it. */
+    READY,
+
+    /** Opened, its reward kept. */
+    OPENED,
+}
+
+/** A chest on the map and where it stands. */
+data class ChestStop(val chest: Chest, val state: ChestState)
+
 /**
  * What the world map shows for a player's [Progress]: each world open or locked, each level
- * locked, open or passed, and the [next] level to play.
+ * locked, open or passed, the [chests] on the path, the player's [title], and the [next] level to
+ * play.
  *
  * World 1 is always open; a later world opens when the previous world's last level is passed and
  * the player has its [World.starsToOpen] stars (decision 0022). In an open world, the first level
  * is open, and each other level opens when the one before it is passed.
  */
-class CampaignMap(val worlds: List<WorldStop>, val totalStars: Int) {
+class CampaignMap(val worlds: List<WorldStop>, val totalStars: Int, val chests: List<ChestStop> = emptyList()) {
+    /** The player's title, from [totalStars]. */
+    val title: Title get() = Title.of(totalStars)
+
+    /** The chest on the path right after [level], if there is one. */
+    fun chestAfter(level: Level): ChestStop? = chests.firstOrNull { it.chest.after.code == level.code }
+
     /**
      * The level to play next: the first open level. Null when every level is passed, or when the
      * next world still needs stars; then the player replays levels for more.
@@ -138,7 +239,7 @@ class CampaignMap(val worlds: List<WorldStop>, val totalStars: Int) {
     }
 
     companion object {
-        fun of(worlds: List<World>, progress: Progress): CampaignMap {
+        fun of(worlds: List<World>, progress: Progress, chests: List<Chest> = emptyList()): CampaignMap {
             val total = progress.total
             var previous: World? = null
             val stops = worlds.map { world ->
@@ -159,7 +260,15 @@ class CampaignMap(val worlds: List<WorldStop>, val totalStars: Int) {
                 previous = world
                 WorldStop(world, open, levels.sumOf { it.stars }, starsNeeded, boss, levels)
             }
-            return CampaignMap(stops, total)
+            val chestStops = chests.map { chest ->
+                val state = when {
+                    progress.isOpened(chest) -> ChestState.OPENED
+                    progress.isPassed(chest.after) -> ChestState.READY
+                    else -> ChestState.LOCKED
+                }
+                ChestStop(chest, state)
+            }
+            return CampaignMap(stops, total, chestStops)
         }
     }
 }

@@ -17,8 +17,14 @@ object Campaign {
     /** The [levels] grouped into worlds, with each world's name and the stars that open it. */
     val worlds: List<World> by lazy { World.of(levels) }
 
+    /** The chests on the path, one after every 10th level, in order. */
+    val chests: List<Chest> by lazy { Chest.of(levels) }
+
+    /** The chest on the path right after [level], if there is one. */
+    fun chestAfter(level: Level): Chest? = chests.firstOrNull { it.after.code == level.code }
+
     /** What the world map shows for [progress]. */
-    fun map(progress: Progress): CampaignMap = CampaignMap.of(worlds, progress)
+    fun map(progress: Progress): CampaignMap = CampaignMap.of(worlds, progress, chests)
 
     /**
      * The strength free play uses against the computer (decision 0003: no difficulty picker): the

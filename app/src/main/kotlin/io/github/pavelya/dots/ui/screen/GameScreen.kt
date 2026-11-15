@@ -23,6 +23,7 @@ import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Player
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
@@ -54,7 +55,8 @@ internal const val OPENING_MILLIS = 1_500L
  * and the board draws links between touching dots of one side when [links] is on.
  *
  * Result's buttons: Retry and Play again start the next game here; Map goes to [onToMap]; Next, in
- * the campaign, goes to [onNext] with the level whose card the map should open.
+ * the campaign, goes to [onNext] with the level's end: the chest it made ready, which opens first,
+ * and the level whose card the map should open.
  *
  * In the campaign the tool bar holds the five boosters (A-05). A tap on one opens its preview, a
  * note over the player's line and the tool bar; on the board the player chooses the booster's
@@ -71,7 +73,7 @@ fun GameScreen(
     onRules: () -> Unit,
     sound: Boolean = true,
     onSound: (Boolean) -> Unit = {},
-    onNext: (Level?) -> Unit = { onToMap() },
+    onNext: (LevelEnd?) -> Unit = { onToMap() },
     placing: PlacingMethod = PlacingMethod.TWO_TAPS,
     links: Boolean = false,
     guidesSkipped: Boolean = false,
@@ -158,7 +160,7 @@ fun GameScreen(
                 onNext = {
                     val next = ui.levelEnd?.next
                     when {
-                        !ui.practice -> onNext(next)
+                        !ui.practice -> onNext(ui.levelEnd)
                         next != null -> viewModel.practiceNext()
                         else -> onToMap()
                     }

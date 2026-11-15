@@ -10,7 +10,8 @@ import io.github.pavelya.dots.ui.theme.Palette
  * The world map's inks, by the roles the canvas gives them (docs/design/canvas, the map frame):
  * [done] for passed levels and the inked path, [next] for the next level, stars and flags,
  * [pencil] for text and the castle, [graphite] for locked levels, the dotted path and labels,
- * [paper] behind it all, [card] for notes, [tape] for the tape on them. Each is one of the
+ * [chest] for a chest still to open, [paper] behind it all, [card] for notes, [tape] for the tape
+ * on them. Each is one of the
  * theme's inks ([of]).
  */
 @Immutable
@@ -23,6 +24,7 @@ data class MapStyle(
     val pencil: Color,
     val graphite: Color,
     val tape: Color,
+    val chest: Color,
 ) {
     companion object {
         fun of(palette: Palette): MapStyle = MapStyle(
@@ -34,6 +36,7 @@ data class MapStyle(
             pencil = palette.pencil,
             graphite = palette.graphite,
             tape = palette.tape,
+            chest = palette.highlighter,
         )
 
         /** The map's inks in the theme the screen is drawn in. */

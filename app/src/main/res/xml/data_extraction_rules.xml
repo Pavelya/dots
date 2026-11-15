@@ -1,19 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Nothing the game stores (settings, saved game, test log) leaves the phone by backup or
-     device transfer: testers share their log themselves (docs/poc/README.md, constraints). -->
+<!-- Android 12 and newer. Backup and device transfer take only the campaign progress: stars, the
+     player's own boosters, chests opened and cosmetics owned (ProgressRepository). Settings, saved
+     games and the test log stay on the phone: an <include> leaves out everything it does not name. -->
 <data-extraction-rules>
     <cloud-backup>
-        <exclude domain="root" />
-        <exclude domain="file" />
-        <exclude domain="database" />
-        <exclude domain="sharedpref" />
-        <exclude domain="external" />
+        <include domain="file" path="datastore/progress.preferences_pb" />
     </cloud-backup>
     <device-transfer>
-        <exclude domain="root" />
-        <exclude domain="file" />
-        <exclude domain="database" />
-        <exclude domain="sharedpref" />
-        <exclude domain="external" />
+        <include domain="file" path="datastore/progress.preferences_pb" />
     </device-transfer>
 </data-extraction-rules>
