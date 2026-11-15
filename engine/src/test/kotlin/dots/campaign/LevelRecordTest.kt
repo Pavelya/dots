@@ -165,6 +165,37 @@ class LevelRecordTest {
     }
 
     @Test
+    fun `the player's own boosters are written apart from a gift and replayed`() {
+        val record = LevelRecord(level, emptyList(), gift = mapOf(Booster.HINT to 1), owned = mapOf(Booster.WALL to 2, Booster.HINT to 1))
+
+        assertEquals("level/1 2-5 +hint *wall *wall *hint |", record.toText())
+        assertEquals(record, LevelRecord.parse(record.toText()) { _, _ -> level })
+        val start = record.start()
+        assertEquals(boosters.getValue(Booster.WALL) + 2, start.boostersLeft(level.human, Booster.WALL))
+        assertEquals(boosters.getValue(Booster.HINT) + 2, start.boostersLeft(level.human, Booster.HINT))
+        // A record from before the player had boosters of their own reads as it did.
+        assertEquals(emptyMap(), LevelRecord.parse("level/1 2-5 +hint | c3") { _, _ -> level }.owned)
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-5 *boom |") { _, _ -> level } }
+    }
+
+    @Test
+    fun `the player's own boosters are used first, and an undo gives them back`() {
+        val record = LevelRecord(level, emptyList(), owned = mapOf(Booster.WALL to 1))
+        val game = dots.engine.Game(record)
+        assertEquals(mapOf(Booster.WALL to 0), record.ownedUsed(game.state))
+
+        game.apply(Action.Wall(Notation.parse("a1")!!))
+        game.apply(Action.Place(Notation.parse("g7")!!))
+        assertEquals(mapOf(Booster.WALL to 1), record.ownedUsed(game.state), "the first wall is the player's own")
+        // The wall does not count against the level's star targets: all its own boosters are left.
+        assertEquals(boosters.values.sum(), level.copy(stars = Stars(StarMeasure.BOOSTERS, 1, 2)).starScore(game.state))
+
+        game.apply(Action.Place(Notation.parse("b8")!!)) // the computer's reply
+        game.apply(Action.Undo)
+        assertEquals(mapOf(Booster.WALL to 0), record.ownedUsed(game.state), "undo takes the wall back")
+    }
+
+    @Test
     fun `a level game ends when its mission is decided, before the board is full`() {
         val capture = level.copy(mission = Mission.Capture(dots = 1, moves = 1))
         val game = dots.engine.Game(LevelRecord(capture, emptyList()))

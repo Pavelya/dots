@@ -137,7 +137,13 @@ fun PlayAGameNote(
                     CloseIcon(style, onClose)
                 }
                 if (asking != null) {
-                    ReplaceQuestion(style, onReplace = { onPlay(asking, true) }, onKeep = { askingKey = null })
+                    ReplaceQuestion(
+                        style,
+                        detail = stringResource(R.string.play_replace_detail),
+                        replace = stringResource(R.string.play_replace),
+                        onReplace = { onPlay(asking, true) },
+                        onKeep = { askingKey = null },
+                    )
                 } else {
                     if (setup) Setup(settings, style, onSettings)
                     PlayCard(
@@ -322,9 +328,12 @@ private val CHOICE_TEXT: TextStyle
     @Composable @ReadOnlyComposable
     get() = NoteText.label.copy(lineHeight = 18.sp)
 
-/** Before a new game takes the place of a saved one: New game, or Keep it. */
+/**
+ * Before a new game takes the place of a saved one of the same mode (flows.md, "Saved games"): what
+ * ends ([detail]), the button that starts the new game ([replace]), and Keep it.
+ */
 @Composable
-private fun ReplaceQuestion(style: Palette, onReplace: () -> Unit, onKeep: () -> Unit) {
+internal fun ReplaceQuestion(style: Palette, detail: String, replace: String, onReplace: () -> Unit, onKeep: () -> Unit) {
     Text(
         stringResource(R.string.play_replace_question),
         style = NoteText.title,
@@ -333,13 +342,13 @@ private fun ReplaceQuestion(style: Palette, onReplace: () -> Unit, onKeep: () ->
         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
     )
     Text(
-        stringResource(R.string.play_replace_detail),
+        detail,
         style = NoteText.body,
         color = style.graphite,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth(),
     )
-    BigButton(stringResource(R.string.play_replace), style, onReplace, Modifier.fillMaxWidth())
+    BigButton(replace, style, onReplace, Modifier.fillMaxWidth())
     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Text(
             stringResource(R.string.play_keep),

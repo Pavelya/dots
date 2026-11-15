@@ -37,6 +37,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.compose.ui.window.DialogProperties
 import dots.campaign.Campaign
+import dots.campaign.Level
 import dots.campaign.LevelRecord
 import dots.campaign.Progress
 import dots.campaign.Tutorial
@@ -52,6 +53,7 @@ import io.github.pavelya.dots.game.freeGame
 import io.github.pavelya.dots.game.freeGameLike
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.screen.BoostersNote
+import io.github.pavelya.dots.ui.screen.ChestNote
 import io.github.pavelya.dots.ui.screen.DeveloperScreen
 import io.github.pavelya.dots.ui.screen.GameScreen
 import io.github.pavelya.dots.ui.screen.LevelCard
@@ -64,6 +66,7 @@ import io.github.pavelya.dots.ui.screen.SettingsDetailsScreen
 import io.github.pavelya.dots.ui.screen.SettingsPage
 import io.github.pavelya.dots.ui.screen.SettingsScreen
 import io.github.pavelya.dots.ui.screen.StandInNote
+import io.github.pavelya.dots.ui.screen.TitleCard
 import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
@@ -93,8 +96,9 @@ object Routes {
     const val BOOSTERS = "boosters/{world}/{number}"
     fun boosters(world: Int, number: Int) = "boosters/$world/$number"
 
-    /** Over the map, after every 10th level: pick one of two rewards. */
-    const val CHEST = "chest"
+    /** Over the map: the chest after a level (every 10th), to pick one of two rewards. */
+    const val CHEST = "chest/{world}/{number}"
+    fun chest(after: Level) = "chest/${after.world}/${after.number}"
 
     /** Over the map: today's puzzle and the streak. */
     const val DAILY = "daily"
@@ -193,6 +197,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             onStats = { navController.navigate(Routes.STATS) },
                             onShop = { navController.navigate(Routes.SHOP) },
                             onSettings = { navController.navigate(Routes.SETTINGS) },
+                            onChest = { navController.navigate(Routes.chest(it.after)) },
                         ),
                     )
                 }
@@ -205,13 +210,18 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     val number = entry.arguments?.getInt("number") ?: 1
                     val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
                     val saved by app.games.saved.collectAsStateWithLifecycle()
+                    val progress by app.progress.saved.collectAsStateWithLifecycle()
                     val scope = rememberCoroutineScope()
                     if (level == null) {
                         LaunchedEffect(Unit) { back() }
                     } else {
+                        val campaignGame = saved[GameMode.CAMPAIGN]
                         LevelCard(
                             level = level,
-                            saved = saved[GameMode.CAMPAIGN]?.levelCode == level.code,
+                            saved = campaignGame?.levelCode == level.code,
+                            owned = progress?.owned(level).orEmpty(),
+                            // Start asks first when it would end another level's unfinished game.
+                            replaces = campaignGame?.takeIf { it.levelCode != level.code && it.record.actions.isNotEmpty() }?.levelOrPractice,
                             // Resume plays the saved game of this level; Start writes a new one to the
                             // store before the board opens, as Play a game does.
                             onStart = {
@@ -219,7 +229,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                     app.games.loaded.first { it }
                                     if (app.games.saved(GameMode.CAMPAIGN)?.levelCode != level.code) {
                                         val settings = app.settings.settings.first()
-                                        app.games.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis()))
+                                        val owned = app.progress.progress.first().owned(level)
+                                        app.games.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis(), owned = owned))
                                     }
                                     navController.navigate(Routes.game(GameMode.CAMPAIGN)) { popUpTo(Routes.MAP) }
                                 }
@@ -237,10 +248,43 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     val world = entry.arguments?.getInt("world") ?: 1
                     val number = entry.arguments?.getInt("number") ?: 1
                     val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
-                    BoostersNote(left = level?.boosters.orEmpty(), onClose = back)
+                    val progress by app.progress.saved.collectAsStateWithLifecycle()
+                    val owned = level?.let { progress?.owned(it) }.orEmpty()
+                    val left = level?.boosters.orEmpty().let { own -> (own.keys + owned.keys).associateWith { (own[it] ?: 0) + (owned[it] ?: 0) } }
+                    BoostersNote(left = left, onClose = back)
                 }
-                dialog(Routes.CHEST) {
-                    StandInNote(stringResource(R.string.screen_chest), "A-04", onClose = toMap)
+                dialog(
+                    Routes.CHEST,
+                    arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
+                    dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+                ) { entry ->
+                    val world = entry.arguments?.getInt("world") ?: 1
+                    val number = entry.arguments?.getInt("number") ?: 1
+                    val chest = remember(world, number) { Campaign.chests.firstOrNull { it.after.world == world && it.after.number == number } }
+                    val progress by app.progress.saved.collectAsStateWithLifecycle()
+                    var picked by remember { mutableStateOf(false) }
+                    when {
+                        chest == null -> LaunchedEffect(Unit) { back() }
+                        // Opened already (or not yet ready): nothing to pick.
+                        !picked && progress?.isReady(chest) == false -> LaunchedEffect(Unit) { back() }
+                        else -> ChestNote(
+                            chest,
+                            // Saved in the app's scope; then the next level's card opens over the map
+                            // (flows.md, "Around the board").
+                            onPick = { reward ->
+                                if (!picked) {
+                                    picked = true
+                                    appScope.launch {
+                                        app.progress.open(chest, reward)
+                                        val next = Campaign.map(app.progress.progress.first()).next
+                                        toMap()
+                                        if (next != null) navController.navigate(Routes.level(next.world, next.number))
+                                    }
+                                }
+                            },
+                            onClose = back,
+                        )
+                    }
                 }
                 dialog(Routes.DAILY) {
                     StandInNote(stringResource(R.string.screen_daily), "A-07", onClose = back)
@@ -290,12 +334,17 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         val now = System.currentTimeMillis()
                                         val chosen = settings.value ?: AppSettings()
                                         val level = (start.record as? LevelRecord)?.level
-                                        if (level != null) levelGame(level, chosen.threatHighlight, now) else freeGameLike(start, chosen.threatHighlight, now)
+                                        if (level != null) {
+                                            levelGame(level, chosen.threatHighlight, now, owned = app.progress.owned(level))
+                                        } else {
+                                            freeGameLike(start, chosen.threatHighlight, now)
+                                        }
                                     },
                                     computerFor = ::computerFor,
                                     journal = app.games,
                                     campaign = app.progress,
                                     placing = { settings.value?.placing ?: AppSettings().placing },
+                                    ownedFor = app.progress::owned,
                                 )
                             }
                             val scope = rememberCoroutineScope()
@@ -309,10 +358,15 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 links = settings.value?.links ?: AppSettings().links,
                                 guidesSkipped = settings.value?.tutorialSkipped ?: false,
                                 onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
-                                // Next goes back to the map, which opens the next level's card.
-                                onNext = { next ->
+                                // Next goes back to the map, which opens the chest the level made
+                                // ready, if any, and otherwise the next level's card.
+                                onNext = { end ->
                                     toMap()
-                                    if (next != null) navController.navigate(Routes.level(next.world, next.number))
+                                    val next = end?.next
+                                    when {
+                                        end?.chest != null -> navController.navigate(Routes.chest(end.chest.after))
+                                        next != null -> navController.navigate(Routes.level(next.world, next.number))
+                                    }
                                 },
                             )
                         }
@@ -322,7 +376,10 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     RulesScreen(onBack = back, onPlayTutorial = playTutorial)
                 }
                 composable(Routes.STATS) {
-                    StandInScreen(R.string.screen_stats, "A-11", onBack = back)
+                    val map by app.progress.map.collectAsStateWithLifecycle()
+                    StandInScreen(R.string.screen_stats, "A-11", onBack = back) {
+                        map?.let { TitleCard(it.totalStars) }
+                    }
                 }
                 composable(Routes.SHOP) {
                     StandInScreen(R.string.screen_shop, "C-02", onBack = back) {
@@ -392,6 +449,9 @@ internal fun openingRoute(progress: Progress, saved: GameLogEntry?): String {
  * game is left out, so the level's card starts the level for real.
  */
 private val GameLogEntry.levelCode: String? get() = (record as? LevelRecord)?.level?.code?.takeUnless { practice }
+
+/** The level of a saved campaign game, as its code, a practice game's included; null for any other game. */
+private val GameLogEntry.levelOrPractice: String? get() = (record as? LevelRecord)?.level?.code
 
 /** True when [route] is on the back stack. */
 private fun NavHostController.isOnStack(route: String): Boolean = runCatching { getBackStackEntry(route) }.isSuccess

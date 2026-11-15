@@ -80,7 +80,12 @@ Files, in the app's private folder (`files/games/`, excluded from backups):
 - `game-log.txt`: one line per finished or abandoned game (abandoned only if it had moves).
 
 `GameStore` writes both on one background thread, in order, so the main thread never waits for
-the disk. Testers share the log from the developer menu, "Share the game log" (Android share sheet, through
+the disk. The campaign progress is kept apart, in `files/datastore/progress.preferences_pb`
+(`ProgressRepository`): the stars of each level, the player's own boosters, the chests opened and
+the cosmetics owned, one line each, and the failures in a row. It is the only file Android's backup
+and device transfer take (`res/xml/data_extraction_rules.xml`), so a reinstall restores it. A part
+saved by an older version that lacks a line reads as empty; an entry that cannot be read is left
+out; a file that cannot be read at all starts empty instead of stopping the app. Testers share the log from the developer menu, "Share the game log" (Android share sheet, through
 a `FileProvider` that exposes only this folder). No network access and no identifiers: the
 tester's name is known from who sends the file.
 

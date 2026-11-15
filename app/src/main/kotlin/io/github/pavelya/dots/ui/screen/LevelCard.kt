@@ -1,5 +1,6 @@
 package io.github.pavelya.dots.ui.screen
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -24,7 +25,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,8 +72,11 @@ private val CHIP_SHAPE = RoundedCornerShape(24.dp)
  * card): a page torn from the notebook with the level's name, its mission in one line, a small
  * picture of the board at the start, the computer's face for its strength and its head start, the
  * dots and boosters the player has (a booster opens [onBooster]: Boosters), and the star targets.
- * A boss level adds the boss's rule, and the boss's name and face in red. One button: Start, or
- * Resume when this level's game is [saved]. Close, or a tap on the map around the card, closes it.
+ * The boosters are the level's own plus the player's [owned] ones of the kinds it allows. A boss
+ * level adds the boss's rule, and the boss's name and face in red. One button: Start, or Resume
+ * when this level's game is [saved]. When the campaign's saved game is of another level, [replaces]
+ * names it, and Start first asks before that game ends (flows.md, "Saved games"); Keep it, or
+ * Back, returns to the card. Close, or a tap on the map around the card, closes it.
  *
  * The card is drawn over the whole screen, anchored at the bottom; on a small phone it scrolls.
  */
@@ -80,8 +88,13 @@ fun LevelCard(
     onBooster: (Booster) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    owned: Map<Booster, Int> = emptyMap(),
+    replaces: String? = null,
 ) {
     val style = Palette.current
+    var asking by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = asking) { asking = false }
+    val boosters = (level.boosters.keys + owned.keys).associateWith { (level.boosters[it] ?: 0) + (owned[it] ?: 0) }
     val boss = level.rule != null
     val title = stringResource(R.string.level_title, level.world, level.number)
     BoxWithConstraints(
@@ -140,11 +153,22 @@ fun LevelCard(
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Opponent(level, style)
                     Allowance(level, style)
-                    BoosterChips(level.boosters, style, onBooster)
+                    BoosterChips(boosters, style, onBooster)
                 }
             }
             StarTargets(level, style)
-            BigButton(stringResource(if (saved) R.string.level_resume else R.string.level_start), style, onStart, Modifier.fillMaxWidth())
+            if (asking && replaces != null) {
+                ReplaceQuestion(
+                    style,
+                    detail = stringResource(R.string.level_replace_detail, replaces),
+                    replace = stringResource(R.string.level_start),
+                    onReplace = onStart,
+                    onKeep = { asking = false },
+                )
+            } else {
+                val start = if (!saved && replaces != null) ({ asking = true }) else onStart
+                BigButton(stringResource(if (saved) R.string.level_resume else R.string.level_start), style, start, Modifier.fillMaxWidth())
+            }
         }
     }
 }

@@ -8,22 +8,35 @@ import dots.engine.PlayRecord
 /**
  * A level game as the level plus the actions taken, boosters included, which replays to exactly
  * the same position. A record names its level by world and number, so it replays against the
- * level as its file is now. [gift] holds boosters given on top of the level's own, such as the
- * free Hint offered after three failures. Its text form is one line, with the same action words
- * as a [dots.engine.GameRecord], and a `+` word for each booster given:
+ * level as its file is now. Boosters come on top of the level's own in two ways: [gift] holds
+ * those given for this game, such as the free Hint offered after three failures, and [owned] those
+ * the player brought from their own (decision 0027). Its text form is one line, with the same
+ * action words as a [dots.engine.GameRecord], a `+` word for each booster given and a `*` word for
+ * each booster brought:
  *
- *     level/1 2-5 +hint | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3
+ *     level/1 2-5 +hint *wall | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3
  */
 data class LevelRecord(
     val level: Level,
     override val actions: List<Action>,
     val gift: Map<Booster, Int> = emptyMap(),
+    val owned: Map<Booster, Int> = emptyMap(),
 ) : PlayRecord {
     init {
         require(gift.values.all { it >= 1 }) { "a gift has 1 or more of each booster" }
+        require(owned.values.all { it >= 1 }) { "a player brings 1 or more of each booster" }
     }
 
-    override fun start(): GameState = level.newGame(gift)
+    override fun start(): GameState = level.newGame((gift.keys + owned.keys).associateWith { (gift[it] ?: 0) + (owned[it] ?: 0) })
+
+    /**
+     * How many of the player's [owned] boosters the game has used by [state], by kind: they are
+     * used before the gift and the level's own. An undo that gives a booster back lowers the count.
+     */
+    fun ownedUsed(state: GameState): Map<Booster, Int> = owned.mapValues { (booster, brought) ->
+        val had = (level.boosters[booster] ?: 0) + (gift[booster] ?: 0) + brought
+        (had - state.boostersLeft(level.human, booster)).coerceIn(0, brought)
+    }
 
     /** The level ends when its game is over or its mission is decided. */
     override fun isOver(state: GameState): Boolean = level.isOver(state)
@@ -33,6 +46,7 @@ data class LevelRecord(
     override fun toText(): String = buildString {
         append("$FORMAT ${level.code}")
         for ((booster, count) in gift.entries.sortedBy { it.key }) repeat(count) { append(" +").append(booster.text) }
+        for ((booster, count) in owned.entries.sortedBy { it.key }) repeat(count) { append(" *").append(booster.text) }
         append(" |")
         for (action in actions) append(' ').append(Action.word(action))
     }
@@ -47,12 +61,15 @@ data class LevelRecord(
             require(words.size >= 2 && words[0] == FORMAT) { "Not a $FORMAT record: $text" }
             val code = words[1].split('-').map { it.toIntOrNull() }
             require(code.size == 2 && code.all { it != null }) { "Bad level '${words[1]}' in: $text" }
-            val gift = words.drop(2).map { word ->
-                require(word.startsWith('+')) { "Bad gift '$word' in: $text" }
-                Booster.entries.firstOrNull { it.text == word.drop(1) } ?: throw IllegalArgumentException("Bad gift '$word' in: $text")
-            }.groupingBy { it }.eachCount()
+            val extras = words.drop(2).map { word ->
+                require(word.startsWith('+') || word.startsWith('*')) { "Bad gift '$word' in: $text" }
+                val booster = Booster.entries.firstOrNull { it.text == word.drop(1) } ?: throw IllegalArgumentException("Bad gift '$word' in: $text")
+                word[0] to booster
+            }
+            val gift = extras.filter { it.first == '+' }.groupingBy { it.second }.eachCount()
+            val owned = extras.filter { it.first == '*' }.groupingBy { it.second }.eachCount()
             val actions = if (body.isEmpty()) emptyList() else body.split(Regex("\\s+")).map(Action::parse)
-            return LevelRecord(find(code[0]!!, code[1]!!), actions, gift)
+            return LevelRecord(find(code[0]!!, code[1]!!), actions, gift, owned)
         }
     }
 }

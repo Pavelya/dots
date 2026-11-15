@@ -97,6 +97,29 @@ object Doodles {
     }
 
     /**
+     * The chest on the map's path, 48 x 48, as the canvas draws it: [ink] on [paper], closed with
+     * rays over it while it waits to be opened, or [open] and empty once it has been.
+     */
+    fun chest(ink: Color, paper: Color, open: Boolean): ImageVector = vector(48f, 48f) {
+        if (open) {
+            fill("M10 22 L6 8 q16 -6 32 0 l-4 14 z", paper, stroke = 2f, strokeInk = ink)
+            fill("M8 24 h32 v16 h-32 z", paper, stroke = 2f, strokeInk = ink)
+            stroke("M21 24 v5 h6 v-5", ink, 2f)
+        } else {
+            fill("M8 22 q16 -14 32 0 v18 h-32 z", paper, stroke = 2f, strokeInk = ink)
+            stroke("M8 26 h32 M21 24 h6 v7 h-6 z M12 12 l-3 -4 M24 7 v-5 M36 12 l3 -4", ink, 2f)
+        }
+    }
+
+    /** The chest on the Chest note, 96 x 96 (the wireframes' Chest): [ink] on [paper], with [rays] over it. */
+    fun bigChest(ink: Color, paper: Color, rays: Color): ImageVector = vector(96f, 96f) {
+        fill("M16 50 h64 v30 h-64 z", paper, stroke = 2.5f, strokeInk = ink)
+        fill("M16 50 l8 -24 h48 l8 24", paper, stroke = 2.5f, strokeInk = ink)
+        stroke("M42 50 h12 v12 h-12 z", ink, 2.5f)
+        stroke("M48 18 v-10 M30 22 l-6 -8 M66 22 l6 -8 M20 34 l-10 -4 M76 34 l10 -4", rays, 2.5f)
+    }
+
+    /**
      * The computer as the canvas draws it: a round blot of [ink] with a [shadow] under it, and a
      * face in the [mood] drawn in [line] (the paper's colour). The eyes keep their own colours in
      * both themes. 100 x 100.

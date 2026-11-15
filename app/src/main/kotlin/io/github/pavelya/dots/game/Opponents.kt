@@ -56,7 +56,8 @@ fun freeGameLike(game: GameLogEntry, threatHighlight: Boolean, now: Long, seed: 
 
 /**
  * A new game of [level], before its first move, against the computer at the level's strength.
- * [gift] gives the player boosters on top of the level's own (the free Hint after three failures).
+ * [gift] gives the player boosters on top of the level's own (the free Hint after three failures),
+ * and [owned] are the player's own boosters the game takes (decision 0027).
  * Threats show when [threatHighlight] is on, and always in the tutorial's levels (A-06). A
  * [practice] game, such as a replay of the tutorial, changes no campaign progress.
  */
@@ -65,9 +66,10 @@ fun levelGame(
     threatHighlight: Boolean,
     now: Long,
     gift: Map<Booster, Int> = emptyMap(),
+    owned: Map<Booster, Int> = emptyMap(),
     practice: Boolean = false,
 ): GameLogEntry = GameLogEntry.start(
-    LevelRecord(level, emptyList(), gift),
+    LevelRecord(level, emptyList(), gift, if (practice) emptyMap() else owned.filterValues { it > 0 }),
     level.strength.text,
     threatHighlight = threatHighlight || Tutorial.lesson(level) != null,
     now = now,

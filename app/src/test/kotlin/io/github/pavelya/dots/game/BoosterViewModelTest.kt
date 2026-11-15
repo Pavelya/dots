@@ -14,7 +14,11 @@ import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
 import dots.log.GameLogEntry
+import dots.campaign.CampaignMap
+import dots.campaign.LevelResult
+import io.github.pavelya.dots.data.CampaignJournal
 import io.github.pavelya.dots.data.GameJournal
+import io.github.pavelya.dots.data.LevelEnd
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -322,5 +326,48 @@ class BoosterViewModelTest {
             assertEquals("blocked at ($x, $y)", now.isBlocked(x, y), replayed.isBlocked(x, y))
         }
         assertEquals(now.score(Player.RED), replayed.score(Player.RED))
+    }
+
+    /** Keeps what a game reports of the player's own boosters. */
+    private class Spending : CampaignJournal {
+        val reports = mutableListOf<Pair<Long, Map<Booster, Int>>>()
+        override suspend fun finished(level: Level, result: LevelResult) = LevelEnd(result, CampaignMap.Opened.NOTHING, 0, null)
+        override fun spent(game: Long, used: Map<Booster, Int>) { reports += game to used }
+    }
+
+    @Test
+    fun `the player's own boosters come on top of the level's, and the game reports each one it uses or gets back`() = runTest(dispatcher) {
+        val spending = Spending()
+        val start = levelGame(level, threatHighlight = false, now = 7, owned = mapOf(Booster.WALL to 1))
+        val vm = GameViewModel(
+            start = start,
+            nextGame = { start },
+            computerFor = { TopRow() },
+            campaign = spending,
+            computerDispatcher = dispatcher,
+            replyDelayMillis = 0,
+            clock = { 0L },
+            ownedFor = { mapOf(Booster.WALL to 1) },
+        )
+        assertEquals(2, vm.left(Booster.WALL))
+        assertEquals("a new game reports nothing used yet", listOf(7L to mapOf(Booster.WALL to 0)), spending.reports)
+
+        vm.chooseBooster(Booster.WALL)
+        vm.onTap(Pos(2, 2))
+        vm.confirmBooster()
+        vm.place(Pos(4, 4))
+        advanceUntilIdle()
+        assertEquals(7L to mapOf(Booster.WALL to 1), spending.reports.last())
+        val reported = spending.reports.size
+
+        vm.chooseBooster(Booster.UNDO)
+        vm.confirmBooster()
+        assertEquals("the undo gives the wall back", 7L to mapOf(Booster.WALL to 0), spending.reports.last())
+        assertEquals(reported + 1, spending.reports.size)
+
+        // Retry with the free Hint takes the player's own boosters again.
+        vm.retryWith(Booster.HINT)
+        assertEquals(2, vm.left(Booster.WALL))
+        assertEquals(2, vm.left(Booster.HINT))
     }
 }
