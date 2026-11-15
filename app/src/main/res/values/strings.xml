@@ -230,7 +230,7 @@
     <string name="tutorial_skip">Skip</string>
     <string name="tutorial_two_taps_in_settings">Rather tap twice than drag? Choose it in Settings.</string>
     <string name="tutorial_place">Tap the circled point.</string>
-    <string name="tutorial_place_drag">Drag to the circled point and lift.</string>
+    <string name="tutorial_place_drag">Drag to the circled point.</string>
     <string name="tutorial_confirm">Tap it again to place your dot.</string>
     <string name="tutorial_confirm_drag">Lift your finger to place your dot.</string>
     <string name="tutorial_join">One dot can join two rings: tap the circled point.</string>

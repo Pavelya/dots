@@ -258,7 +258,7 @@ class NavigationTest {
         at(Routes.GAME)
         assertEquals("1-1", savedLevel)
         assertTrue(app.games.saved(GameMode.CAMPAIGN)!!.practice)
-        waitFor("Drag to the circled point and lift.")
+        waitFor("Drag to the circled point.")
 
         place(3, 4, size = 7)
         waitFor("You won!")
@@ -285,13 +285,13 @@ class NavigationTest {
         at(Routes.SETTINGS)
         compose.onNodeWithText("Replay the tutorial").performScrollTo().performClick()
         at(Routes.GAME)
-        waitFor("Drag to the circled point and lift.")
+        waitFor("Drag to the circled point.")
         assertEquals("1-1", savedLevel)
         assertTrue(app.games.saved(GameMode.CAMPAIGN)!!.practice)
         assertEquals(false, runBlocking { app.settings.settings.first() }.tutorialSkipped)
 
         tap("Skip")
-        gone("Drag to the circled point and lift.")
+        gone("Drag to the circled point.")
         compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.settings.settings.first() }.tutorialSkipped }
     }
 
@@ -512,7 +512,7 @@ class NavigationTest {
         launch(Progress.NONE, route = Routes.GAME)
         assertEquals("1-1", savedLevel)
         waitForSide("You, score 0, to move")
-        waitFor("Drag to the circled point and lift.")
+        waitFor("Drag to the circled point.")
 
         // Level 1-1: the ring around the computer's dot needs one more dot, below it. One press,
         // slide and lift places it: drag is the default.
