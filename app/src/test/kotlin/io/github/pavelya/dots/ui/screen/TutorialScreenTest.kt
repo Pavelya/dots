@@ -16,6 +16,7 @@ import dots.campaign.Level
 import dots.campaign.LevelResult
 import dots.campaign.Tutorial
 import dots.engine.Player
+import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.CampaignJournal
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PlacingMethod
@@ -133,25 +134,33 @@ class TutorialScreenTest {
     }
 
     @Test
-    fun `level 1 teaches two taps and says that drag can be chosen in Settings`() {
+    fun `level 1 teaches drag, the default, and says that two taps can be chosen in Settings`() {
         val vm = practice()
-        compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}) } }
+        compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}, placing = AppSettings().placing) } }
+        waitFor("Press, slide to the circled point and lift.")
+        compose.onNodeWithText("Rather tap twice than drag? Choose it in Settings.").assertIsDisplayed()
+
+        val point = vm.ui.value.guide!!.point!!
+        compose.onNodeWithTag(BOARD_TAG).performTouchInput {
+            down(BoardGeometry(7, 7, width.toFloat(), height.toFloat()).center(point))
+        }
+        waitFor("Lift your finger to place your dot.")
+        compose.onNodeWithTag(BOARD_TAG).performTouchInput { up() }
+        compose.waitUntil(timeoutMillis = 10_000) { vm.ui.value.state.ownerAt(point) == Player.RED }
+    }
+
+    @Test
+    fun `with two taps, level 1 says how to tap, and nothing about Settings`() {
+        val vm = practice()
+        compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}, placing = PlacingMethod.TWO_TAPS) } }
         waitFor("Tap the circled point.")
-        compose.onNodeWithText("Rather drag than tap twice? Choose it in Settings.").assertIsDisplayed()
+        compose.onNodeWithText("Rather tap twice than drag? Choose it in Settings.").assertDoesNotExist()
 
         val point = vm.ui.value.guide!!.point!!
         compose.onNodeWithTag(BOARD_TAG).performTouchInput {
             click(BoardGeometry(7, 7, width.toFloat(), height.toFloat()).center(point))
         }
         waitFor("Tap it again to place your dot.")
-    }
-
-    @Test
-    fun `with drag, level 1 says how to drag, and nothing about Settings`() {
-        val vm = practice()
-        compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}, placing = PlacingMethod.DRAG) } }
-        waitFor("Press, slide to the circled point and lift.")
-        compose.onNodeWithText("Rather drag than tap twice? Choose it in Settings.").assertDoesNotExist()
     }
 
     @Test

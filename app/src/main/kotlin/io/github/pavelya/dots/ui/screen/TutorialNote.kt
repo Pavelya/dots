@@ -40,9 +40,9 @@ import io.github.pavelya.dots.ui.theme.Palette
 
 /**
  * The tutorial's step note (the wireframes' "Tutorial level"): the step and its lesson in small
- * capitals, one sentence in handwriting, and Skip. In level 1, when dots are placed by two taps,
- * a line says that drag can be chosen in Settings (decision 0024). The sentence follows the
- * placing [method], so the tutorial works with either. TalkBack reads each new sentence.
+ * capitals, one sentence in handwriting, and Skip. In level 1, when dots are placed by drag, the
+ * default, a line says that two taps can be chosen in Settings (decision 0026). The sentence
+ * follows the placing [method], so the tutorial works with either. TalkBack reads each new sentence.
  */
 @Composable
 internal fun TutorialNote(step: Tutorial.Step, method: PlacingMethod, style: Palette, onSkip: () -> Unit, modifier: Modifier = Modifier) {
@@ -63,8 +63,8 @@ internal fun TutorialNote(step: Tutorial.Step, method: PlacingMethod, style: Pal
         ) {
             Text(label.uppercase(), style = STEP_LABEL, color = style.graphite)
             Text(stringResource(sentence(step, method)), style = SENTENCE, color = style.pencil)
-            if (step.lesson == Lesson.PLACING && method == PlacingMethod.TWO_TAPS) {
-                Text(stringResource(R.string.tutorial_drag_in_settings), style = NoteText.small, color = style.graphite)
+            if (step.lesson == Lesson.PLACING && method == PlacingMethod.DRAG) {
+                Text(stringResource(R.string.tutorial_two_taps_in_settings), style = NoteText.small, color = style.graphite)
             }
         }
         Box(

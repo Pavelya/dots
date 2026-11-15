@@ -59,9 +59,9 @@ enum class SettingsPage(val key: String) {
 /**
  * Settings, as the wireframes' frame "Settings" draws it: one scrolling page on the notebook's
  * paper. Sound and feel (music and sound volumes, vibration), the board (high-contrast pieces,
- * threat highlights, links between dots, and placing a dot by two taps or drag, decision 0024), and help (Replay the
- * tutorial, Send feedback, Privacy, Play Games backup, Credits and licences). Every change goes
- * to [onChange] at once. Language joins Help once a second language ships (A-10). Tapping the
+ * threat highlights, links between dots, and placing a dot by drag, the default, or two taps,
+ * decisions 0024 and 0026), and help (Replay the tutorial, Send feedback, Privacy, Play Games
+ * backup, Credits and licences). Every change goes to [onChange] at once. Language joins Help once a second language ships (A-10). Tapping the
  * version line [DEVELOPER_TAPS] times opens the developer menu.
  */
 @Composable
@@ -101,6 +101,7 @@ fun SettingsScreen(
                     label = stringResource(if (method == PlacingMethod.TWO_TAPS) R.string.placing_two_taps else R.string.placing_drag),
                     detail = stringResource(if (method == PlacingMethod.TWO_TAPS) R.string.placing_two_taps_detail else R.string.placing_drag_detail),
                     selected = settings.placing == method,
+                    tag = if (method == AppSettings().placing) stringResource(R.string.placing_default) else null,
                 ) { onChange { it.copy(placing = method) } }
             }
         }

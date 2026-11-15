@@ -15,6 +15,7 @@ import dots.ai.Ai
 import dots.campaign.Campaign
 import dots.engine.Action
 import dots.engine.GameState
+import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.levelGame
@@ -76,18 +77,19 @@ class TutorialScreenshotTest {
         compose.waitUntil(timeoutMillis = 5_000) { !vm.ui.value.thinking }
     }
 
+    /** Level 1 as a new player sees it: placing by drag, the default, and where to choose two taps. */
     @Test
     fun tutorialPlacing() {
-        show { GameScreen(tutorialLevel(1), onToMap = {}, onRules = {}) }
-        waitFor("Tap the circled point.")
+        show { GameScreen(tutorialLevel(1), onToMap = {}, onRules = {}, placing = AppSettings().placing) }
+        waitFor("Press, slide to the circled point and lift.")
         capture("tutorial_placing")
     }
 
     @Test
-    fun tutorialPlacingByDrag() {
-        show { GameScreen(tutorialLevel(1), onToMap = {}, onRules = {}, placing = PlacingMethod.DRAG) }
-        waitFor("Press, slide to the circled point and lift.")
-        capture("tutorial_placing_drag")
+    fun tutorialPlacingByTwoTaps() {
+        show { GameScreen(tutorialLevel(1), onToMap = {}, onRules = {}, placing = PlacingMethod.TWO_TAPS) }
+        waitFor("Tap the circled point.")
+        capture("tutorial_placing_two_taps")
     }
 
     @Test

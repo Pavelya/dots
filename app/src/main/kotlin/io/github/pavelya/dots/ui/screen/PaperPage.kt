@@ -203,9 +203,12 @@ internal fun SwitchRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) 
     }
 }
 
-/** One of several choices: a hand-drawn radio circle, its [label] and a [detail] line under it. */
+/**
+ * One of several choices: a hand-drawn radio circle, its [label] with a [tag] in grey beside it
+ * (such as "default"), and a [detail] line under it.
+ */
 @Composable
-internal fun RadioRow(label: String, detail: String?, selected: Boolean, onClick: () -> Unit) {
+internal fun RadioRow(label: String, detail: String?, selected: Boolean, tag: String? = null, onClick: () -> Unit) {
     val style = Palette.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -219,7 +222,10 @@ internal fun RadioRow(label: String, detail: String?, selected: Boolean, onClick
             if (selected) Box(Modifier.size(10.dp).clip(CircleShape).background(style.blue))
         }
         Column(Modifier.weight(1f)) {
-            Text(label, style = ROW_TEXT, color = style.pencil)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(label, style = ROW_TEXT, color = style.pencil, modifier = Modifier.alignByBaseline())
+                tag?.let { Text(it, style = NoteText.small, color = style.graphite, modifier = Modifier.alignByBaseline()) }
+            }
             detail?.let { Text(it, style = NoteText.small, color = style.graphite) }
         }
     }

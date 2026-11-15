@@ -17,6 +17,7 @@ import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -24,7 +25,6 @@ import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.click
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performSemanticsAction
@@ -258,7 +258,7 @@ class NavigationTest {
         at(Routes.GAME)
         assertEquals("1-1", savedLevel)
         assertTrue(app.games.saved(GameMode.CAMPAIGN)!!.practice)
-        waitFor("Tap the circled point.")
+        waitFor("Press, slide to the circled point and lift.")
 
         place(3, 4, size = 7)
         waitFor("You won!")
@@ -285,13 +285,13 @@ class NavigationTest {
         at(Routes.SETTINGS)
         compose.onNodeWithText("Replay the tutorial").performScrollTo().performClick()
         at(Routes.GAME)
-        waitFor("Tap the circled point.")
+        waitFor("Press, slide to the circled point and lift.")
         assertEquals("1-1", savedLevel)
         assertTrue(app.games.saved(GameMode.CAMPAIGN)!!.practice)
         assertEquals(false, runBlocking { app.settings.settings.first() }.tutorialSkipped)
 
         tap("Skip")
-        gone("Tap the circled point.")
+        gone("Press, slide to the circled point and lift.")
         compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.settings.settings.first() }.tutorialSkipped }
     }
 
@@ -303,10 +303,10 @@ class NavigationTest {
         waitForSide("Music")
         compose.onNodeWithContentDescription("Music").performSemanticsAction(SemanticsActions.SetProgress) { it(20f) }
         compose.onNodeWithContentDescription("Sounds").performSemanticsAction(SemanticsActions.SetProgress) { it(45f) }
-        for (row in listOf("Vibration", "High-contrast pieces", "Threat highlights", "Links between dots", "Drag")) {
+        for (row in listOf("Vibration", "High-contrast pieces", "Threat highlights", "Links between dots", "Two taps")) {
             compose.onNodeWithText(row).performScrollTo().performClick()
         }
-        val changed = AppSettings(musicVolume = 20, effectsVolume = 45, vibration = false, highContrast = true, threatHighlight = true, links = true, placing = PlacingMethod.DRAG)
+        val changed = AppSettings(musicVolume = 20, effectsVolume = 45, vibration = false, highContrast = true, threatHighlight = true, links = true, placing = PlacingMethod.TWO_TAPS)
         // Watched off the main thread: DataStore runs each save's change on the main thread, so
         // blocking it to read the store while saves are queued would wait forever.
         val stored = AtomicReference<AppSettings>()
@@ -324,7 +324,7 @@ class NavigationTest {
         compose.onNodeWithText("High-contrast pieces").performScrollTo().assertIsOn()
         compose.onNodeWithText("Threat highlights").performScrollTo().assertIsOn()
         compose.onNodeWithText("Links between dots").performScrollTo().assertIsOn()
-        compose.onNodeWithText("Drag").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("Two taps").performScrollTo().assertIsSelected()
         assertEquals(changed, runBlocking { app.settings.settings.first() })
     }
 
@@ -494,12 +494,16 @@ class NavigationTest {
         assertEquals(Routes.MAP, nav.currentDestination?.route)
     }
 
-    /** Taps board point ([x], [y]) twice, choose then place, on a board of [size] points across. */
+    /**
+     * Places a dot on board point ([x], [y]) of a board [size] points across by drag, the default:
+     * press the corner point, slide to the point and lift.
+     */
     private fun place(x: Int, y: Int, size: Int) {
-        repeat(2) {
-            compose.onNodeWithTag(BOARD_TAG).performTouchInput {
-                click(BoardGeometry(size, size, width.toFloat(), height.toFloat()).center(x, y))
-            }
+        compose.onNodeWithTag(BOARD_TAG).performTouchInput {
+            val board = BoardGeometry(size, size, width.toFloat(), height.toFloat())
+            down(board.center(0, 0))
+            moveTo(board.center(x, y))
+            up()
         }
     }
 
@@ -508,8 +512,10 @@ class NavigationTest {
         launch(Progress.NONE, route = Routes.GAME)
         assertEquals("1-1", savedLevel)
         waitForSide("You, score 0, to move")
+        waitFor("Press, slide to the circled point and lift.")
 
-        // Level 1-1: the ring around the computer's dot needs one more dot, below it.
+        // Level 1-1: the ring around the computer's dot needs one more dot, below it. One press,
+        // slide and lift places it: drag is the default.
         place(3, 4, size = 7)
         waitFor("You won!")
         compose.waitUntil(timeoutMillis = 5_000) { runBlocking { app.progress.progress.first() }.stars["1-1"] == 3 }
@@ -526,6 +532,15 @@ class NavigationTest {
         at(Routes.MAP)
         Espresso.pressBackUnconditionally()
         assertTrue(compose.activity.isFinishing)
+    }
+
+    @Test
+    fun `a fresh install shows drag chosen in Settings`() {
+        launch()
+        tap("Settings")
+        at(Routes.SETTINGS)
+        compose.onNodeWithText("Drag").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("Two taps").assertIsNotSelected()
     }
 
     @Test

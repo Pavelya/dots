@@ -110,10 +110,11 @@
     <string name="settings_length">Game length</string>
     <string name="settings_threats">Threat highlights</string>
     <string name="settings_placing">Placing a dot</string>
-    <string name="placing_two_taps">Two taps</string>
-    <string name="placing_two_taps_detail">Tap a point, then tap it again</string>
     <string name="placing_drag">Drag</string>
     <string name="placing_drag_detail">Press, slide to the point, lift your finger</string>
+    <string name="placing_default">default</string>
+    <string name="placing_two_taps">Two taps</string>
+    <string name="placing_two_taps_detail">Tap a point, then tap it again</string>
     <string name="log_title">Test log</string>
     <string name="log_share">Share the game log</string>
     <string name="log_share_subject">Pinfold game log</string>
@@ -227,7 +228,7 @@
     <string name="tutorial_lesson_linking">Linking</string>
     <string name="tutorial_lesson_capturing">Capturing</string>
     <string name="tutorial_skip">Skip</string>
-    <string name="tutorial_drag_in_settings">Rather drag than tap twice? Choose it in Settings.</string>
+    <string name="tutorial_two_taps_in_settings">Rather tap twice than drag? Choose it in Settings.</string>
     <string name="tutorial_place">Tap the circled point.</string>
     <string name="tutorial_place_drag">Press, slide to the circled point and lift.</string>
     <string name="tutorial_confirm">Tap it again to place your dot.</string>

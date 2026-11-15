@@ -13,15 +13,15 @@ enum class BoardSize(val points: Int) { SMALL(12), STANDARD(15), LARGE(20) }
 enum class GameLength(val percent: Int?) { SHORT(15), LONG(30), OPEN_ENDED(null) }
 
 /**
- * How the player places a dot, chosen in Settings (decision 0024). [key] names the method in the
- * game log, where `cli placing-report` reads it.
+ * How the player places a dot, chosen in Settings (decision 0024), in the order Settings lists
+ * them. [key] names the method in the game log, where `cli placing-report` reads it.
  */
 enum class PlacingMethod(val key: String) {
-    /** Tap a point to see the preview, tap it again to place the dot. The default. */
-    TWO_TAPS("two-taps"),
-
-    /** Press, drag to the point and lift; the point's row and column show around the finger. */
+    /** Press, drag to the point and lift; the point's row and column show around the finger. The default (decision 0026). */
     DRAG("drag"),
+
+    /** Tap a point to see the preview, tap it again to place the dot. */
+    TWO_TAPS("two-taps"),
 }
 
 /**
@@ -51,8 +51,8 @@ data class AppSettings(
      * the pictures on How to play show links whatever this says.
      */
     val links: Boolean = false,
-    /** How a dot is placed (decision 0024). */
-    val placing: PlacingMethod = PlacingMethod.TWO_TAPS,
+    /** How a dot is placed (decisions 0024 and 0026). */
+    val placing: PlacingMethod = PlacingMethod.DRAG,
     /** True once the player skipped the tutorial's guided steps; replaying the tutorial shows them again (A-06). */
     val tutorialSkipped: Boolean = false,
 ) {

@@ -113,29 +113,34 @@ class SettingsAndRulesTest {
     }
 
     @Test
-    fun `placing a dot starts as two taps, and drag can be chosen and changed back`() {
+    fun `placing a dot starts as drag, listed first as the default, and two taps can be chosen and changed back`() {
         settings()
-        compose.onNodeWithText("Two taps").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("Drag").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("Two taps").assertIsNotSelected()
+        compose.onNode(hasText("Drag") and hasText("default")).assertIsDisplayed()
+        compose.onNode(hasText("Two taps") and hasText("default")).assertDoesNotExist()
+        val drag = compose.onNodeWithText("Drag").fetchSemanticsNode().boundsInRoot
+        val twoTaps = compose.onNodeWithText("Two taps").fetchSemanticsNode().boundsInRoot
+        assertTrue("drag is listed above two taps", drag.bottom <= twoTaps.top)
+
+        compose.onNodeWithText("Two taps").performClick()
+        assertEquals(PlacingMethod.TWO_TAPS, latest.placing)
+        compose.onNodeWithText("Two taps").assertIsSelected()
         compose.onNodeWithText("Drag").assertIsNotSelected()
 
         compose.onNodeWithText("Drag").performClick()
         assertEquals(PlacingMethod.DRAG, latest.placing)
         compose.onNodeWithText("Drag").assertIsSelected()
-        compose.onNodeWithText("Two taps").assertIsNotSelected()
-
-        compose.onNodeWithText("Two taps").performClick()
-        assertEquals(PlacingMethod.TWO_TAPS, latest.placing)
-        compose.onNodeWithText("Two taps").assertIsSelected()
     }
 
     @Test
     fun `the screen shows the saved settings`() {
-        settings(AppSettings(vibration = false, highContrast = true, threatHighlight = true, links = true, placing = PlacingMethod.DRAG, musicVolume = 10, effectsVolume = 90))
+        settings(AppSettings(vibration = false, highContrast = true, threatHighlight = true, links = true, placing = PlacingMethod.TWO_TAPS, musicVolume = 10, effectsVolume = 90))
         compose.onNodeWithText("Vibration").assertIsOff()
         compose.onNodeWithText("High-contrast pieces").assertIsOn()
         compose.onNodeWithText("Threat highlights").assertIsOn()
         compose.onNodeWithText("Links between dots").performScrollTo().assertIsOn()
-        compose.onNodeWithText("Drag").performScrollTo().assertIsSelected()
+        compose.onNodeWithText("Two taps").performScrollTo().assertIsSelected()
         compose.onNodeWithContentDescription("Music").assert(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(10f, 0f..100f)))
         compose.onNodeWithContentDescription("Sounds").assert(SemanticsMatcher.expectValue(SemanticsProperties.ProgressBarRangeInfo, ProgressBarRangeInfo(90f, 0f..100f)))
     }
