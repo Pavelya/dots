@@ -180,8 +180,8 @@ to the map.
 
 - **Sound and vibration:** music volume, sound-effects volume, vibration on or off.
 - **Board:** high-contrast pieces, threat highlights, links between dots (off by default; the
-  [theme page](theme-notebook.md#the-board) says where links show anyway), placing a dot (two taps,
-  the default, or drag; decision 0024).
+  [theme page](theme-notebook.md#the-board) says where links show anyway), placing a dot (drag,
+  the default, or two taps; decisions 0024 and 0026).
 - **Help and app:** Replay tutorial, Send feedback (an email, A-12), Language (shown once a second
   language ships, A-10), Privacy (the policy and ad choices, C-03), Play Games backup (O-02),
   Credits and licences.
@@ -223,8 +223,8 @@ The first tap a new player makes is a move on the board.
    players in the EU and the UK first see Google's consent form (C-03). No sign-in is needed for
    anything offline.
 2. Level 1 starts with guided steps (A-06). Levels 1 to 3 teach placing, linking and capturing,
-   one step at a time, with threat highlights on. Level 1 teaches placing a dot by two taps and
-   says that drag can be chosen in Settings (decision 0024).
+   one step at a time, with threat highlights on. Level 1 teaches placing a dot by drag and says
+   that two taps can be chosen in Settings (decision 0026).
 3. Result shows the stars over the final board. Next opens the map for the first time: the stars
    fly to Level 1, and the Level card of Level 2 opens. Retry plays Level 1 again.
 4. Until Level 1 is finished, the app opens straight into it, where the player left off. To the

@@ -96,7 +96,7 @@ each captured piece marks it too.
 
 ## Drag's guides
 
-A player can place dots by drag instead of two taps (decision 0024, chosen in Settings). While the
+Dots are placed by drag unless the player chooses two taps in Settings (decision 0026). While the
 finger is down, the preview sits on the point under it, and the guides show which row and column
 that is. The finger hides the point itself, so the guides are what the player aims with.
 

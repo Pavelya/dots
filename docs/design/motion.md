@@ -74,8 +74,8 @@ does while the animation runs.
 
 ## Placing by drag
 
-A player who places dots by drag (decision 0024, chosen in Settings) presses the board, slides to
-the point and lifts. While the finger is down, the preview sits on the point under it, and the
+A player who places dots by drag (the default, decision 0026) presses the board, slides to the
+point and lifts. While the finger is down, the preview sits on the point under it, and the
 guides run from the preview's ring along its row and column to the board's edges (theme page,
 [Drag's guides](theme-notebook.md#drags-guides)). The finger hides the point, so the guides show
 around it. 0 ms is the moment the finger goes down.

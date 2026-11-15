@@ -27,6 +27,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs[HIGH_CONTRAST] = next.highContrast
             prefs[LINKS] = next.links
             prefs[PLACING] = next.placing.name
+            prefs.remove(OLD_PLACING)
             prefs[TUTORIAL_SKIPPED] = next.tutorialSkipped
         }
     }
@@ -63,7 +64,13 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val VIBRATION = booleanPreferencesKey("vibration")
         val HIGH_CONTRAST = booleanPreferencesKey("high_contrast")
         val LINKS = booleanPreferencesKey("links")
-        val PLACING = stringPreferencesKey("placing")
+        /**
+         * The placing method. Its name changed when drag became the default (decision 0026): every
+         * save wrote the method, chosen or not, so the value under [OLD_PLACING] is ignored, and
+         * every player who had the app starts on drag once. The next save removes it.
+         */
+        val PLACING = stringPreferencesKey("placing_method")
+        val OLD_PLACING = stringPreferencesKey("placing")
         val TUTORIAL_SKIPPED = booleanPreferencesKey("tutorial_skipped")
     }
 }

@@ -37,7 +37,8 @@ does:
 5. Level 2: the dot that leaves two rings one dot from closing, so the computer can block only one.
 6. Otherwise: start a ring, at the dot after which a second one captures.
 
-Level 1 also says that drag can be chosen in Settings, when the player places dots by two taps.
+Level 1 also says that two taps can be chosen in Settings, when the player places dots by drag, the
+default.
 Skip hides the steps in the tutorial's levels until the tutorial is replayed. Play the tutorial
 (How to play) and Replay the tutorial (Settings) play levels 1 to 3 as practice: Next goes from
 one to the next, and nothing is saved to the campaign.

@@ -1,6 +1,7 @@
 package io.github.pavelya.dots.data
 
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -56,7 +57,7 @@ class SettingsRepositoryTest {
             vibration = false,
             highContrast = true,
             links = true,
-            placing = PlacingMethod.DRAG,
+            placing = PlacingMethod.TWO_TAPS,
             tutorialSkipped = true,
         )
         for (property in AppSettings::class.java.declaredFields.filterNot { java.lang.reflect.Modifier.isStatic(it.modifiers) }) {
@@ -69,6 +70,37 @@ class SettingsRepositoryTest {
 
         val second = Session(file())
         assertEquals(chosen, second.repository.settings.first())
+        second.close()
+    }
+
+    @Test
+    fun `a fresh install places dots by drag`() = runBlocking {
+        val session = Session(file())
+        assertEquals(PlacingMethod.DRAG, session.repository.settings.first().placing)
+        session.close()
+    }
+
+    @Test
+    fun `a player who had the app switches to drag once, then keeps what they choose`() = runBlocking {
+        // What the app saved before drag became the default (decision 0026): every setting at each
+        // change, two taps included, here after the player turned vibration off.
+        val first = Session(file())
+        first.store.edit {
+            it[stringPreferencesKey("placing")] = "TWO_TAPS"
+            it[booleanPreferencesKey("vibration")] = false
+        }
+        val updated = first.repository.settings.first()
+        assertEquals(PlacingMethod.DRAG, updated.placing)
+        assertEquals(false, updated.vibration)
+
+        // The next save drops the old value, and two taps chosen now stays after a restart.
+        first.repository.update { it.copy(placing = PlacingMethod.TWO_TAPS) }
+        assertEquals(null, first.store.data.first()[stringPreferencesKey("placing")])
+        first.close()
+
+        val second = Session(file())
+        assertEquals(PlacingMethod.TWO_TAPS, second.repository.settings.first().placing)
+        assertEquals(false, second.repository.settings.first().vibration)
         second.close()
     }
 
