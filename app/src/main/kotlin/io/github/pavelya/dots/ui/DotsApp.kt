@@ -73,8 +73,8 @@ import io.github.pavelya.dots.ui.screen.RulesScreen
 import io.github.pavelya.dots.ui.screen.SettingsDetailsScreen
 import io.github.pavelya.dots.ui.screen.SettingsPage
 import io.github.pavelya.dots.ui.screen.SettingsScreen
-import io.github.pavelya.dots.ui.screen.TitleCard
 import io.github.pavelya.dots.ui.screen.StandInScreen
+import io.github.pavelya.dots.ui.screen.StatsScreen
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -118,6 +118,9 @@ object Routes {
     fun game(mode: GameMode) = "game/${mode.key}"
     const val RULES = "rules"
     const val STATS = "stats"
+
+    /** From Stats: the leaderboards and achievements of Google Play Games, which O-02 opens. */
+    const val LEADERBOARDS = "leaderboards"
     const val SHOP = "shop"
 
     /** An item from the Shop, on a sample board. */
@@ -131,7 +134,7 @@ object Routes {
     /** The POC's test settings; opens from the version line in Settings. */
     const val DEVELOPER = "developer"
 
-    val ALL = listOf(LOADING, MAP, LEVEL, BOOSTERS, CHEST, DAILY, PLAY, GAME, RULES, STATS, SHOP, COSMETIC, SETTINGS, SETTINGS_DETAILS, DEVELOPER)
+    val ALL = listOf(LOADING, MAP, LEVEL, BOOSTERS, CHEST, DAILY, PLAY, GAME, RULES, STATS, LEADERBOARDS, SHOP, COSMETIC, SETTINGS, SETTINGS_DETAILS, DEVELOPER)
 }
 
 @Composable
@@ -391,7 +394,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         }
                                     },
                                     computerFor = ::computerFor,
-                                    journal = app.games,
+                                    journal = app.journal,
                                     campaign = app.progress,
                                     placing = { settings.value?.placing ?: AppSettings().placing },
                                     ownedFor = app.progress::owned,
@@ -431,9 +434,23 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 }
                 composable(Routes.STATS) {
                     val map by app.progress.map.collectAsStateWithLifecycle()
-                    StandInScreen(R.string.screen_stats, "A-11", onBack = back) {
-                        map?.let { TitleCard(it.totalStars) }
+                    val stats by app.stats.stats.collectAsStateWithLifecycle()
+                    val daily by app.daily.saved.collectAsStateWithLifecycle()
+                    val shown = map
+                    val totals = stats
+                    if (shown != null && totals != null) {
+                        StatsScreen(
+                            map = shown,
+                            stats = totals,
+                            longestStreak = daily?.longestStreak ?: 0,
+                            onLeaderboards = { navController.navigate(Routes.LEADERBOARDS) },
+                            onAchievements = { navController.navigate(Routes.LEADERBOARDS) },
+                            onBack = back,
+                        )
                     }
+                }
+                composable(Routes.LEADERBOARDS) {
+                    StandInScreen(R.string.screen_leaderboards, "O-02", onBack = back)
                 }
                 composable(Routes.SHOP) {
                     StandInScreen(R.string.screen_shop, "C-02", onBack = back) {

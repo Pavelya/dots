@@ -107,4 +107,24 @@ class StreakTest {
     fun `the order the days come in does not matter`() {
         assertEquals(streak(3, 0, 1, 2, 3).days, Streak.of(listOf(day(3), day(0), day(2), day(1)), day(3)).days)
     }
+
+    @Test
+    fun `the longest streak is the best run ever, by the same rules`() {
+        fun longest(vararg solved: Int) = Streak.longest(solved.map(::day))
+        assertEquals(0, longest())
+        assertEquals(1, longest(3))
+        // 0, 1, 2 in a row; 3 and 4 missed in one week end it; then 8 to 11, 4 days.
+        assertEquals(4, longest(0, 1, 2, 8, 9, 10, 11))
+        // One missed day is frozen: 0, 1, 3, 4 is one streak of 4 days.
+        assertEquals(4, longest(0, 1, 3, 4))
+        // The best run is kept after a longer gap: 0 to 4, then 20 and 21.
+        assertEquals(5, longest(0, 1, 2, 3, 4, 20, 21))
+    }
+
+    @Test
+    fun `the longest streak is the most the streak has been on any day`() {
+        val solved = listOf(0, 1, 2, 5, 6, 7, 8, 9, 15, 16).map(::day)
+        val best = (0..20).maxOf { n -> Streak.of(solved.filter { it <= day(n) }, day(n)).days }
+        assertEquals(best, Streak.longest(solved))
+    }
 }

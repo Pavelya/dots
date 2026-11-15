@@ -46,6 +46,19 @@
     <string name="stats_title_top">The highest title</string>
     <string name="stats_title_description">Your title: %1$s. Stars: %2$d. %4$s at %3$d.</string>
     <string name="stats_title_description_top">Your title: %1$s, the highest.</string>
+    <string name="stats_back">Back to the map</string>
+    <string name="stats_played">games played</string>
+    <string name="stats_won">games won</string>
+    <string name="stats_captured">dots captured</string>
+    <string name="stats_best_capture">best capture</string>
+    <string name="stats_longest_streak">longest streak</string>
+    <string name="stats_stars">stars</string>
+    <string name="stats_stars_per_world">Stars per world</string>
+    <!-- A world's stars out of the most it has: 21/45. -->
+    <string name="stats_world_stars">%1$d/%2$d</string>
+    <string name="stats_leaderboards">Leaderboards</string>
+    <string name="stats_achievements">Achievements</string>
+    <string name="screen_leaderboards">Leaderboards and achievements</string>
     <string name="map_daily">Today’s puzzle</string>
     <string name="map_streak">Streak %1$d</string>
     <string name="map_play">Play a game</string>
