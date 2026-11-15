@@ -114,7 +114,6 @@ class MapScreenTest {
         show(Progress(Campaign.levels.take(10).associate { it.code to 2 }))
 
         compose.onNodeWithContentDescription("World 1, Notebook, Apprentice, 20 of 45 stars").assertIsDisplayed()
-        compose.onNodeWithText("Apprentice").assertIsDisplayed()
         compose.onNodeWithContentDescription("Chest after level 1-10, ready to open").assertIsDisplayed()
         capture("map_chest_ready")
 

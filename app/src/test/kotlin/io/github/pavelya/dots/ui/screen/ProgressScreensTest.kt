@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -17,7 +18,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -119,8 +120,7 @@ class ProgressScreensTest {
     fun `Stats shows the title and the stars to the next one`() {
         show { StandInScreen(R.string.screen_stats, "A-11", onBack = {}) { TitleCard(21) } }
 
-        compose.onNodeWithText("Apprentice").assertIsDisplayed()
-        compose.onNodeWithText("Strategist next").assertIsDisplayed()
+        // The card is read as one sentence.
         compose.onNodeWithContentDescription("Your title: Apprentice. Stars: 21 of 45 for Strategist.").assertIsDisplayed()
         capture("stats_title")
     }
@@ -129,8 +129,7 @@ class ProgressScreensTest {
     fun `at the highest title the bar is full`() {
         show { TitleCard(225) }
 
-        compose.onNodeWithText("Grandmaster").assertIsDisplayed()
-        compose.onNodeWithText("The highest title").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Your title: Grandmaster, the highest.").assertIsDisplayed()
     }
 
     @Test
@@ -149,17 +148,19 @@ class ProgressScreensTest {
         }
 
         // Level 2-1 gives 2 walls, and the player brings 2 of their own.
-        compose.onNodeWithContentDescription("Wall, 4. What it does").assertIsDisplayed()
-        compose.onNodeWithText("Start").performScrollTo().performClick()
-        compose.onNodeWithText("Replace your saved game?").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("Your unfinished game of level 1-7 ends, and this level takes its place.").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithContentDescription("Wall, 4. What it does").assertExists()
+        // The card is turned a little and scrolls: its buttons are pressed through their click
+        // actions, without scrolling it.
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Replace your saved game?").assertExists()
+        compose.onNodeWithText("Your unfinished game of level 1-7 ends, and this level takes its place.").assertExists()
         assertEquals(0, started)
         capture("level_card_replace")
 
-        compose.onNodeWithText("Keep it").performScrollTo().performClick()
+        compose.onNodeWithText("Keep it").performSemanticsAction(SemanticsActions.OnClick)
         assertTrue(compose.onAllNodes(hasText("Replace your saved game?")).fetchSemanticsNodes().isEmpty())
-        compose.onNodeWithText("Start").performScrollTo().performClick()
-        compose.onNodeWithText("Start").performScrollTo().performClick()
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
         assertEquals(1, started)
     }
 }

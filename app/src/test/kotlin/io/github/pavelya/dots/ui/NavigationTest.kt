@@ -661,16 +661,18 @@ class NavigationTest {
 
         compose.onNodeWithContentDescription("Level 1-3, next").performClick()
         at(Routes.LEVEL)
-        tap("Start")
+        // The card is turned a little and scrolls: its buttons are pressed through their click
+        // actions, without scrolling it.
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
         waitFor("Replace your saved game?")
         waitFor("Your unfinished game of level 1-1 ends, and this level takes its place.")
-        compose.onNodeWithText("Keep it").performScrollTo().performClick()
+        compose.onNodeWithText("Keep it").performSemanticsAction(SemanticsActions.OnClick)
         gone("Replace your saved game?")
         assertEquals("1-1", savedLevel)
 
-        compose.onNodeWithText("Start").performScrollTo().performClick()
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
         waitFor("Replace your saved game?")
-        compose.onNodeWithText("Start").performScrollTo().performClick()
+        compose.onNodeWithText("Start").performSemanticsAction(SemanticsActions.OnClick)
         at(Routes.GAME)
         assertEquals("1-3", savedLevel)
     }
