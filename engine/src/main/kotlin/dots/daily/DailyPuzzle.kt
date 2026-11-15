@@ -1,6 +1,7 @@
 package dots.daily
 
 import dots.ai.AiConfig
+import dots.ai.SearchAi
 import dots.campaign.Level
 import dots.campaign.LevelMap
 import dots.campaign.LevelResult
@@ -9,6 +10,7 @@ import dots.campaign.MissionStatus
 import dots.campaign.Strength
 import dots.engine.GameState
 import dots.engine.Player
+import kotlin.random.Random
 
 /**
  * The puzzle of one [day], the same for every player: a small board, a mission and a computer
@@ -45,12 +47,16 @@ class DailyPuzzle internal constructor(
     val ai: AiConfig get() = strength.config
 
     /**
-     * The puzzle as a level, for the solver and the rules. Its world and number mean nothing, so
-     * it stays inside the engine: a record of a daily game names the day, not a level.
+     * The puzzle as a level, for the solver, the rules and the app's pictures of the board and the
+     * mission. Its world, number and name mean nothing: never show or record them. A record of a
+     * daily game names the day ([DailyRecord]), not a level.
      */
-    internal val level: Level = Level(1, 1, "Puzzle ${day}", strength, best, map, mission)
+    val level: Level = Level(1, 1, "Puzzle ${day}", strength, best, map, mission)
 
     fun newGame(): GameState = level.newGame()
+
+    /** The computer that defends: [config], by default the puzzle's [strength], playing for the mission to fail. */
+    fun computer(random: Random = Random.Default, config: AiConfig = ai): SearchAi = level.computer(random, config)
 
     /** Where the mission stands in [state], a position of this puzzle's game. */
     fun status(state: GameState): MissionStatus = level.status(state)

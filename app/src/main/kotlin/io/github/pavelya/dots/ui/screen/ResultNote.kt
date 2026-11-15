@@ -1,6 +1,7 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -19,11 +20,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -32,15 +38,20 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dots.campaign.Level
 import dots.campaign.Mission
+import dots.campaign.MissionStatus
 import dots.campaign.Stars
+import dots.daily.DailyPuzzle
+import dots.daily.DailyShare
 import dots.engine.Booster
 import dots.engine.Player
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.data.DailyEnd
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.ui.theme.Palette
@@ -54,9 +65,12 @@ import io.github.pavelya.dots.ui.theme.Palette
  * - Campaign failure or draw: Retry, with a small Map. After the third failure in a row, Retry
  *   with a free Hint ([onAgainWithHint]) as well.
  * - Free play and two players: Play again, with a small Map.
+ * - Daily puzzle solved (the wireframes' Daily result): the moves against the fewest possible, the
+ *   streak, what the share text shows, and the time to the next puzzle ([toNextPuzzle]); Share
+ *   ([onShare], with the share text), with a small Map.
+ * - Daily puzzle failed: Retry, with a small Map, and the time to the next puzzle.
  *
- * Retry and Play again call [onAgain]. Back goes to the map ([onMap]). The daily puzzle's Result
- * (Share) comes with A-07.
+ * Retry and Play again call [onAgain]. Back goes to the map ([onMap]).
  */
 @Composable
 internal fun ResultNote(
@@ -66,11 +80,15 @@ internal fun ResultNote(
     onAgain: () -> Unit,
     onAgainWithHint: () -> Unit,
     onMap: () -> Unit,
+    onShare: (String) -> Unit = {},
+    toNextPuzzle: () -> Long = { 0L },
 ) {
     val style = Palette.current
     BackHandler(onBack = onMap)
     val level = ui.level
     val end = ui.levelEnd
+    val daily = ui.daily
+    val dailyEnd = ui.dailyEnd
     Box(
         contentAlignment = Alignment.BottomCenter,
         modifier = Modifier
@@ -85,6 +103,8 @@ internal fun ResultNote(
             ) {
                 if (level != null && end != null) {
                     LevelResult(level, end, style, onNext, onAgain, onAgainWithHint, onMap)
+                } else if (daily != null && dailyEnd != null) {
+                    DailyResult(daily, dailyEnd, ui.mission, style, toNextPuzzle, onShare, onAgain, onMap)
                 } else {
                     FreeResult(ui, names, style, onAgain, onMap)
                 }
@@ -139,6 +159,123 @@ private fun LevelResult(
         }
         if (end.failed >= LevelEnd.HELP_AFTER_FAILURES) HelpOffer(style, onAgainWithHint)
     }
+}
+
+@Composable
+private fun DailyResult(
+    puzzle: DailyPuzzle,
+    end: DailyEnd,
+    status: MissionStatus?,
+    style: Palette,
+    toNextPuzzle: () -> Long,
+    onShare: (String) -> Unit,
+    onAgain: () -> Unit,
+    onMap: () -> Unit,
+) {
+    val share = end.share
+    if (end.passed && share != null) {
+        Headline(stringResource(R.string.daily_solved), style.red)
+        Row(Modifier.fillMaxWidth().padding(top = 2.dp)) {
+            DailyFigure(end.moves.toString(), stringResource(R.string.daily_your_moves), style.pencil, Modifier.weight(1f))
+            DailyFigure(end.best.toString(), stringResource(R.string.daily_fewest), style.pencil, Modifier.weight(1f))
+            DailyFigure(end.streak.days.toString(), stringResource(R.string.daily_day_streak), style.red, Modifier.weight(1f))
+        }
+        ShareBox(end, style)
+        NextPuzzleLine(toNextPuzzle, style)
+        Buttons {
+            SquareButton(Doodles.MAP, stringResource(R.string.result_map), style, onMap)
+            BigButton(stringResource(R.string.daily_share), style, { onShare(share) }, Modifier.weight(1f))
+        }
+    } else {
+        val level = puzzle.level
+        val missed = status?.let { missedBy(level, it) }
+        Headline(stringResource(if (missed == 1) R.string.result_so_close else R.string.result_not_this_time), style.blue)
+        if (status != null) {
+            Text(failureText(level, status), style = NoteText.title, color = style.pencil, textAlign = TextAlign.Center)
+            val capture = level.mission as? Mission.Capture
+            if (capture != null) CaptureBar(status.captured, capture.dots, style)
+        }
+        NextPuzzleLine(toNextPuzzle, style)
+        Buttons {
+            SquareButton(Doodles.MAP, stringResource(R.string.result_map), style, onMap)
+            BigButton(stringResource(R.string.result_retry), style, onAgain, Modifier.weight(1f), before = Doodles.RETRY)
+        }
+    }
+}
+
+/** A number in handwriting over its label: the moves, the fewest possible, the streak. */
+@Composable
+private fun DailyFigure(value: String, label: String, ink: Color, modifier: Modifier) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.clearAndSetSemantics { contentDescription = "$value $label" },
+    ) {
+        Text(value, style = NoteText.headline, color = ink)
+        Text(label, style = NoteText.small, color = Palette.current.graphite, textAlign = TextAlign.Center)
+    }
+}
+
+/**
+ * What the share text shows, in a dashed box: its first line (the puzzle's number, the moves and
+ * the best) and a square for each move of the attempt (red, the player captured; blue, the
+ * computer did; empty, neither). Never the board or the moves.
+ */
+@Composable
+private fun ShareBox(end: DailyEnd, style: Palette) {
+    val head = stringResource(R.string.daily_what_you_share)
+    val headline = end.headline.orEmpty()
+    val shape = RoundedCornerShape(8.dp)
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+        modifier = Modifier
+            .toolOutline(style.bluePale, dashed = true, shape)
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .clearAndSetSemantics { contentDescription = "$head: $headline" },
+    ) {
+        Text(head.uppercase(), style = NoteText.small, fontWeight = FontWeight.ExtraBold, color = style.graphite)
+        Text(headline, style = NoteText.label, color = style.pencil)
+        ShareMarks(end.marks, style)
+    }
+}
+
+@Composable
+private fun ShareMarks(marks: List<DailyShare.Mark>, style: Palette) {
+    Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.padding(top = 2.dp)) {
+        for (mark in marks) {
+            Canvas(Modifier.size(12.dp)) {
+                val corner = CornerRadius(2.dp.toPx())
+                when (mark) {
+                    DailyShare.Mark.CAPTURED -> drawRoundRect(style.red, cornerRadius = corner)
+                    DailyShare.Mark.LOST -> drawRoundRect(style.blue, cornerRadius = corner)
+                    DailyShare.Mark.QUIET -> {
+                        val inset = 0.5.dp.toPx()
+                        drawRoundRect(
+                            style.graphite,
+                            topLeft = Offset(inset, inset),
+                            size = Size(size.width - 2 * inset, size.height - 2 * inset),
+                            cornerRadius = corner,
+                            style = Stroke(width = 1.dp.toPx()),
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** "Next puzzle in 14:22", kept up to date. */
+@Composable
+private fun NextPuzzleLine(toNextPuzzle: () -> Long, style: Palette) {
+    val tick by rememberTicks()
+    val left = remember(tick) { toNextPuzzle() }
+    Text(
+        stringResource(R.string.daily_next_in, countdown(left)),
+        style = NoteText.small,
+        color = style.graphite,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
 @Composable

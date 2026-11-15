@@ -47,6 +47,7 @@
     <string name="stats_title_description">Your title: %1$s. Stars: %2$d. %4$s at %3$d.</string>
     <string name="stats_title_description_top">Your title: %1$s, the highest.</string>
     <string name="map_daily">Today’s puzzle</string>
+    <string name="map_streak">Streak %1$d</string>
     <string name="map_play">Play a game</string>
     <string name="map_rules">How to play</string>
     <string name="map_stats">Stats</string>
@@ -82,7 +83,6 @@
     <string name="stand_in">A stand-in. %1$s builds this screen.</string>
     <string name="screen_boosters">Boosters</string>
     <string name="screen_chest">Chest</string>
-    <string name="screen_daily">Today’s puzzle</string>
     <string name="screen_stats">Stats</string>
     <string name="screen_shop">Shop</string>
     <string name="screen_cosmetic">Cosmetic preview</string>
@@ -282,8 +282,36 @@
     <string name="credits_sounds">Sounds and music</string>
     <string name="credits_ours">made for Pinfold</string>
     <string name="licences_title">Open-source licences</string>
+    <!-- Today's puzzle and the daily Result (the wireframes' Today's puzzle and Daily result). -->
+    <string name="daily_title">Today’s puzzle</string>
+    <string name="daily_number">No. %1$d</string>
+    <string name="daily_number_and_date">No. %1$d · %2$s</string>
+    <string name="daily_same_for_everyone">Same puzzle for everyone today.</string>
+    <string name="daily_none_yet">The first puzzle comes on %1$s.</string>
+    <string name="daily_none_left">New puzzles come with the next update.</string>
+    <string name="daily_play">Play</string>
+    <string name="daily_view_result">View result</string>
+    <string name="daily_freeze_left">streak · 1 freeze left</string>
+    <string name="daily_freeze_used">streak · freeze used this week</string>
+    <string name="daily_to_next">to the next puzzle</string>
+    <string name="daily_solved">Solved!</string>
+    <string name="daily_your_moves">your moves</string>
+    <string name="daily_fewest">fewest possible</string>
+    <string name="daily_day_streak">day streak</string>
+    <string name="daily_what_you_share">What you share</string>
+    <string name="daily_next_in">Next puzzle in %1$s</string>
+    <string name="daily_share">Share</string>
+    <string name="daily_share_title">Share your result</string>
+    <string name="developer_daily">Daily puzzle</string>
+    <string name="developer_daily_note">The puzzles start on 1 January 2027. A year ahead moves the puzzle’s clock 365 days on, to try them now.</string>
+    <string name="developer_daily_ahead">A year ahead</string>
+    <string name="developer_daily_clear">Clear the streak and attempts</string>
     <string name="licences_intro">Pinfold is built with these libraries. Each may be used under the licence printed below.</string>
 
+    <plurals name="daily_streak_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <plurals name="count_dots">
         <item quantity="one">%1$d dot</item>
         <item quantity="other">%1$d dots</item>

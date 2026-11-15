@@ -27,6 +27,9 @@ object Doodles {
     const val SETTINGS = "M12 15.2a3.2 3.2 0 1 0 0-6.4 3.2 3.2 0 0 0 0 6.4z M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3" +
         "M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"
     const val CALENDAR = "M3.5 5h17v15h-17z M3.5 10h17M8 3v4M16 3v4"
+
+    /** The streak's flame, as the wireframes' Today's puzzle draws it. */
+    const val FLAME = "M12 22c4 0 7-3 7-7 0-4-3-6-4-10-2 2-2 4-2 5-1-1-3-3-3-6-3 3-5 6-5 10 0 5 3 8 7 8z"
     const val STAR = "M12 2.8l2.7 5.6 6.1.8-4.5 4.2 1.1 6.1L12 16.6l-5.4 2.9 1.1-6.1-4.5-4.2 6.1-.8z"
     const val CLOSE = "M6 6l12 12M18 6L6 18"
     const val BACK = "M15 5l-7 7 7 7"

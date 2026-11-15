@@ -6,6 +6,8 @@ import dots.campaign.Level
 import dots.campaign.LevelRecord
 import dots.campaign.Strength
 import dots.campaign.Tutorial
+import dots.daily.DailyPuzzle
+import dots.daily.DailyRecord
 import dots.engine.Booster
 import dots.engine.GameRecord
 import dots.log.GameLogEntry
@@ -17,7 +19,8 @@ const val COMPUTER_TIME_LIMIT_MILLIS = 1_500L
 
 /**
  * The computer a game is played against, or null for two players on one phone. In a campaign level
- * it plays at the level's strength, for the level's mission ([dots.campaign.Level.computer]); in free play, at the strength the game was started with, the
+ * it plays at the level's strength, for the level's mission ([dots.campaign.Level.computer]), and in
+ * the daily puzzle likewise ([dots.daily.DailyPuzzle.computer]); in free play, at the strength the game was started with, the
  * one the player had reached in the campaign (decision 0003). Games saved before that name the
  * POC's test difficulty ("easy", "normal", "hard"), which are strengths of the same names.
  */
@@ -26,6 +29,10 @@ fun computerFor(game: GameLogEntry): Ai? {
     if (record is LevelRecord) {
         val level = record.level
         return level.computer(config = level.ai.copy(timeLimitMillis = COMPUTER_TIME_LIMIT_MILLIS))
+    }
+    if (record is DailyRecord) {
+        val puzzle = record.puzzle
+        return puzzle.computer(config = puzzle.ai.copy(timeLimitMillis = COMPUTER_TIME_LIMIT_MILLIS))
     }
     return Strength.entries.firstOrNull { it.text == game.opponent }?.computer()
 }
@@ -74,3 +81,11 @@ fun levelGame(
     threatHighlight = threatHighlight || Tutorial.lesson(level) != null,
     now = now,
 ).copy(practice = practice)
+
+/**
+ * A new attempt at the daily [puzzle], before its first move: no boosters and no undo (decision
+ * 0023). Threats show when [threatHighlight] is on. The attempt belongs to the puzzle's day,
+ * whenever it ends.
+ */
+fun dailyGame(puzzle: DailyPuzzle, threatHighlight: Boolean, now: Long): GameLogEntry =
+    GameLogEntry.start(DailyRecord(puzzle, emptyList()), puzzle.strength.text, threatHighlight = threatHighlight, now = now)

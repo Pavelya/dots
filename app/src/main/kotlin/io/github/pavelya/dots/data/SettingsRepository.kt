@@ -29,6 +29,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs[PLACING] = next.placing.name
             prefs.remove(OLD_PLACING)
             prefs[TUTORIAL_SKIPPED] = next.tutorialSkipped
+            prefs[DAILY_AHEAD] = next.dailyAhead
         }
     }
 
@@ -46,6 +47,7 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             links = prefs[LINKS] ?: defaults.links,
             placing = enumOrNull<PlacingMethod>(prefs[PLACING]) ?: defaults.placing,
             tutorialSkipped = prefs[TUTORIAL_SKIPPED] ?: defaults.tutorialSkipped,
+            dailyAhead = prefs[DAILY_AHEAD] ?: defaults.dailyAhead,
         )
     }
 
@@ -72,5 +74,6 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val PLACING = stringPreferencesKey("placing_method")
         val OLD_PLACING = stringPreferencesKey("placing")
         val TUTORIAL_SKIPPED = booleanPreferencesKey("tutorial_skipped")
+        val DAILY_AHEAD = booleanPreferencesKey("developer_daily_ahead")
     }
 }

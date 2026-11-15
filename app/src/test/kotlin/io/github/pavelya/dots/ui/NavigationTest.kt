@@ -36,6 +36,9 @@ import androidx.test.espresso.Espresso
 import dots.campaign.Campaign
 import dots.campaign.LevelRecord
 import dots.campaign.Progress
+import dots.daily.DailyClock
+import dots.daily.DailyRecord
+import dots.daily.Day
 import dots.engine.Action
 import dots.engine.Booster
 import dots.engine.GameRecord
@@ -44,11 +47,13 @@ import dots.engine.Pos
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.DotsApplication
+import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicReference
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.GameLength
 import io.github.pavelya.dots.data.GameMode
 import io.github.pavelya.dots.data.PlacingMethod
+import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.data.SampleProgress
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
@@ -223,6 +228,48 @@ class NavigationTest {
         at(Routes.MAP)
 
         assertEquals(Routes.ALL.toSet(), visited)
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp")
+    fun `Today's puzzle plays the day's puzzle, with no Restart in Pause, and then offers Resume`() {
+        // Noon on Tuesday 5 January 2027, in UTC.
+        app.clock = PuzzleClock(millis = { Day(2027, 1, 5).epochDay * DailyClock.DAY_MILLIS + 12 * 3_600_000L }, zone = { TimeZone.getTimeZone("UTC") })
+        launch()
+        tap("Today’s puzzle")
+        at(Routes.DAILY)
+        waitFor("No. 5", substring = true)
+        tap("Play")
+        at(Routes.GAME)
+        assertEquals(Day(2027, 1, 5), (app.games.saved(GameMode.DAILY)?.record as? DailyRecord)?.day)
+        // The opening goes, and the mission note stays in the corner (TalkBack reads it as one sentence).
+        compose.waitUntil(timeoutMillis = 5_000) {
+            compose.onAllNodes(hasContentDescription("Mission", substring = true)).fetchSemanticsNodes().isNotEmpty()
+        }
+
+        back()
+        waitFor("Resume")
+        assertTrue(compose.onAllNodes(hasText("Restart")).fetchSemanticsNodes().isEmpty())
+        tap("To the map")
+        at(Routes.MAP)
+
+        tap("Today’s puzzle")
+        at(Routes.DAILY)
+        waitFor("Resume")
+        tap("Resume")
+        at(Routes.GAME)
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp")
+    fun `before 1 January 2027 Today's puzzle says when the puzzles start`() {
+        app.clock = PuzzleClock(millis = { Day(2026, 11, 15).epochDay * DailyClock.DAY_MILLIS }, zone = { TimeZone.getTimeZone("UTC") })
+        launch()
+        tap("Today’s puzzle")
+        at(Routes.DAILY)
+        waitFor("The first puzzle comes on", substring = true)
+        back()
+        at(Routes.MAP)
     }
 
     @Test
@@ -686,9 +733,11 @@ class NavigationTest {
     fun `forget the progress and the settings`() {
         val reset = CoroutineScope(Dispatchers.IO).launch {
             app.progress.replace(Progress.NONE)
+            app.daily.clear()
             app.settings.update { AppSettings() }
         }
         compose.waitUntil(timeoutMillis = 10_000) { reset.isCompleted }
+        app.clock = PuzzleClock()
     }
 
     private companion object {

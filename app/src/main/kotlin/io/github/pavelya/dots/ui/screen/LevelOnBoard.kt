@@ -36,6 +36,7 @@ import dots.campaign.Level
 import dots.campaign.Mission
 import dots.campaign.MissionStatus
 import dots.campaign.Outcome
+import dots.daily.DailyPuzzle
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.ui.theme.Palette
 
@@ -128,6 +129,29 @@ fun LevelOpening(level: Level, modifier: Modifier = Modifier) {
             level.rule?.let {
                 Text(ruleText(it), style = NoteText.body, color = style.red, textAlign = TextAlign.Center, modifier = Modifier.padding(top = 4.dp))
             }
+        }
+    }
+}
+
+/**
+ * The daily puzzle's opening, as a level's ([LevelOpening]): a taped note over the board with
+ * "Today's puzzle", its number and its mission, for a moment. Takes no taps.
+ */
+@Composable
+fun DailyOpening(puzzle: DailyPuzzle, modifier: Modifier = Modifier) {
+    val style = Palette.current
+    TapedNote(style, modifier.semantics { liveRegion = LiveRegionMode.Polite }, angle = -1.5f) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.daily_title), style = NoteText.label, color = style.graphite)
+            Text(stringResource(R.string.daily_number, puzzle.number), style = NoteText.display, color = style.red, textAlign = TextAlign.Center)
+            MissionLine(puzzle.level, style, Modifier.padding(top = 4.dp))
+            Text(
+                stringResource(R.string.daily_same_for_everyone),
+                style = NoteText.body,
+                color = style.graphite,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }
