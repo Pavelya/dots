@@ -450,7 +450,7 @@ class NavigationTest {
         }
         compose.onNodeWithText("Credits and licences").performScrollTo().performClick()
         at(Routes.SETTINGS_DETAILS)
-        tap("Open-source licences")
+        compose.onNodeWithText("Open-source licences").performScrollTo().performClick()
         compose.waitUntil(timeoutMillis = 5_000) { nav.currentBackStackEntry?.arguments?.getString("page") == "licences" }
         compose.waitForIdle()
         back()
