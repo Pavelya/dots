@@ -38,7 +38,9 @@ import kotlin.random.Random
 
 /**
  * Draws a position: grid, captured areas (washed and hatched in the captor's colours, inside a ring
- * drawn like a pen stroke), live and captured dots, the last move, and a placement preview. It
+ * drawn like a pen stroke), live and captured pieces (a cut across each captured one), the last
+ * move's pinhole, and a placement preview. With high-contrast pieces ([BoardLook.halo]) each piece
+ * sits in a band of the paper or wash under it. It
  * decides nothing about the game; [PlayableBoard] adds touch. [showLinks] draws the links between
  * neighbouring dots of one colour, which makes chains visible; they are off unless asked for (the
  * player's setting, the tutorial's linking level, How to play), and the board tells tests whether
@@ -144,9 +146,10 @@ private val HAND: Path = Path().apply {
 
 /**
  * Every layer of the position, in the theme's drawing order (theme-notebook.md, "The board"):
- * paper, washes, hatching, grid, links, drag's guides along [guided]'s row and column, rings,
- * threat rings, pieces, the last move, closing points, the preview. The booster marks lie with
- * the pieces they are about, and the circled points on top.
+ * paper, washes, hatching, grid, links, drag's guides along [guided]'s row and column, the
+ * high-contrast bands round the pieces, rings, threat rings, pieces and their cuts, the last
+ * move, closing points, the preview. The booster marks lie with the pieces they are about, and
+ * the circled points on top.
  */
 private fun DrawScope.drawPosition(
     state: GameState,
@@ -169,7 +172,8 @@ private fun DrawScope.drawPosition(
     drawTargets(state, marks.targets, geometry, style)
     marks.wall?.let { drawWall(geometry.center(it), geometry, style, preview = true) }
     if (showLinks) drawLinks(state, geometry, style)
-    guided?.let { drawGuides(state, it, geometry, style) }
+    guided?.let { drawGuides(state, it, geometry, style, areas, strokes) }
+    drawHalos(state, geometry, style, areas, strokes)
     for ((area, stroke) in areas.zip(strokes)) drawAreaRing(area.by, stroke, style)
     drawThreatRings(dangers, geometry, style)
     drawDots(state, geometry, style)
@@ -177,9 +181,7 @@ private fun DrawScope.drawPosition(
     drawPlus(state, marks.plus, geometry, style)
     val look = style.look
     val spacing = geometry.spacing
-    lastMove?.let {
-        drawRing(geometry.center(it), look.lastMoveRing.px(spacing, density) / 2, style.grid, look.lastMoveLine.px(spacing, density))
-    }
+    lastMove?.let { drawLastMove(geometry.center(it), geometry, style) }
     drawClosingPoints(state, dangers, geometry, style)
     for (circled in listOfNotNull(marked, marks.hint)) {
         val ink = style.color(Player.RED)
@@ -188,7 +190,11 @@ private fun DrawScope.drawPosition(
     }
     preview?.let {
         val center = geometry.center(it)
-        drawPiece(style.piece(state.toMove), center, look.dot.px(spacing, density), style.palette.pale(state.toMove))
+        val piece = style.piece(state.toMove)
+        val dot = look.dot.px(spacing, density)
+        drawPiece(piece, center, dot, style.palette.pale(state.toMove))
+        val outline = look.previewOutline.px(spacing, density)
+        if (outline > 0f) drawPiece(piece, center, dot, style.color(state.toMove), outline)
         drawRing(center, look.previewRing.px(spacing, density) / 2, style.color(state.toMove), look.previewLine.px(spacing, density))
     }
 }
@@ -335,7 +341,7 @@ private fun DrawScope.drawDashedRing(center: Offset, radius: Float, color: Color
  * the theme's dashes, each arm's dashes starting at the ring. A fingertip covers about 60 dp; the
  * arms run past it.
  */
-private fun DrawScope.drawGuides(state: GameState, point: Pos, geometry: BoardGeometry, style: BoardStyle) {
+private fun DrawScope.drawGuides(state: GameState, point: Pos, geometry: BoardGeometry, style: BoardStyle, areas: List<Area>, strokes: List<RingStroke>) {
     val look = style.look
     val ink = style.color(state.toMove).copy(alpha = look.guideAlpha)
     val width = look.guide.px(geometry.spacing, density)
@@ -348,11 +354,54 @@ private fun DrawScope.drawGuides(state: GameState, point: Pos, geometry: BoardGe
         geometry.center(point.x, 0),
         geometry.center(point.x, state.height - 1),
     )
-    for (end in ends) {
+    val arms = ends.mapNotNull { end ->
         val length = hypot(end.x - center.x, end.y - center.y)
-        if (length <= ring) continue
-        val start = Offset(center.x + (end.x - center.x) * ring / length, center.y + (end.y - center.y) * ring / length)
-        drawLine(ink, start, end, width, pathEffect = dashes)
+        if (length <= ring) return@mapNotNull null
+        Offset(center.x + (end.x - center.x) * ring / length, center.y + (end.y - center.y) * ring / length) to end
+    }
+    // High contrast: each arm on a strip of the paper or wash under it, hiding the grid and hatching there.
+    val casing = look.guideCasing.px(geometry.spacing, density)
+    if (casing > 0f) onSurface(areas, strokes, style) { surface -> for ((start, end) in arms) drawLine(surface, start, end, width + 2 * casing) }
+    for ((start, end) in arms) drawLine(ink, start, end, width, pathEffect = dashes)
+}
+
+/**
+ * Draws [layer] in the paper, then again inside each captured area's ring in its wash, so it takes
+ * the colour of whatever lies under it (high contrast's bands and strips).
+ */
+private fun DrawScope.onSurface(areas: List<Area>, strokes: List<RingStroke>, style: BoardStyle, layer: DrawScope.(Color) -> Unit) {
+    layer(style.paper)
+    for ((area, stroke) in areas.zip(strokes)) clipPath(stroke.outline) { layer(style.palette.wash(area.by)) }
+}
+
+/**
+ * High contrast (pieces.md, "High contrast"): a band [BoardLook.halo] wide round every piece, in the
+ * paper or wash under it, so grid lines, hatching, links and guides stop short of the piece. Rings
+ * and threat rings are drawn after it and stay whole.
+ */
+private fun DrawScope.drawHalos(state: GameState, geometry: BoardGeometry, style: BoardStyle, areas: List<Area>, strokes: List<RingStroke>) {
+    val halo = style.look.halo.px(geometry.spacing, density)
+    if (halo <= 0f) return
+    val dot = style.look.dot.px(geometry.spacing, density)
+    onSurface(areas, strokes, style) { surface ->
+        for (y in 0 until state.height) for (x in 0 until state.width) {
+            val owner = state.ownerAt(x, y) ?: continue
+            drawPiece(style.piece(owner).grown(halo, dot), geometry.center(x, y), dot, surface)
+        }
+    }
+}
+
+/**
+ * The last move: a Paper pinhole in the middle of the newest piece (pieces.md), or, in a theme
+ * without one, a Grid ring round it.
+ */
+private fun DrawScope.drawLastMove(at: Offset, geometry: BoardGeometry, style: BoardStyle) {
+    val look = style.look
+    val spacing = geometry.spacing
+    if (look.pinhole > 0f) {
+        drawCircle(style.paper, look.dot.px(spacing, density) * look.pinhole / 2, at)
+    } else {
+        drawRing(at, look.lastMoveRing.px(spacing, density) / 2, style.grid, look.lastMoveLine.px(spacing, density))
     }
 }
 
@@ -414,14 +463,27 @@ private fun DrawScope.drawClosingPoints(state: GameState, dangers: List<Danger>,
     }
 }
 
-/** Each side's pieces; captured ones keep the theme's share of their ink. */
+/**
+ * Each side's pieces. Captured ones keep the theme's share of their ink and carry its cut
+ * (pieces.md): a band in the captor's wash through the middle of the piece, along the captor's
+ * hatching, rising for Red and falling for Blue.
+ */
 private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
-    val dot = style.look.dot.px(geometry.spacing, density)
+    val look = style.look
+    val dot = look.dot.px(geometry.spacing, density)
     for (y in 0 until state.height) for (x in 0 until state.width) {
         val owner = state.ownerAt(x, y) ?: continue
         val color = style.color(owner)
-        val ink = if (state.isCaptured(x, y)) color.copy(alpha = style.look.capturedAlpha) else color
-        drawPiece(style.piece(owner), geometry.center(x, y), dot, ink)
+        val captured = state.isCaptured(x, y)
+        val center = geometry.center(x, y)
+        drawPiece(style.piece(owner), center, dot, if (captured) color.copy(alpha = look.capturedAlpha) else color)
+        if (captured && look.cut > 0f) {
+            val captor = owner.opponent
+            // Half the cut's length along each axis, at 45°.
+            val d = dot * look.cutLength / 2 / sqrt(2f)
+            val dy = if (captor == Player.RED) -d else d
+            drawLine(style.palette.wash(captor), Offset(center.x - d, center.y - dy), Offset(center.x + d, center.y + dy), dot * look.cut)
+        }
     }
 }
 

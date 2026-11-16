@@ -49,10 +49,29 @@ data class BoardLook(
     val previewRing: Measure,
     /** The preview ring's line. */
     val previewLine: Measure,
-    /** The ring marking the last move, across. */
+    /**
+     * The last move's pinhole: a Paper dot in the middle of the newest piece, across, as a share of
+     * the dot size (pieces.md). When it is 0, a ring marks the last move instead ([lastMoveRing]).
+     */
+    val pinhole: Float,
+    /** The ring marking the last move, across, when there is no [pinhole]. */
     val lastMoveRing: Measure,
     /** The last-move ring's line. */
     val lastMoveLine: Measure,
+    /**
+     * The cut across a captured piece: a band in the captor's wash along the captor's hatching,
+     * its width a share of the dot size (pieces.md). No cut when it is 0.
+     */
+    val cut: Float,
+    /** The cut's length, as a share of the dot size; longer than the piece, so it runs right through it. */
+    val cutLength: Float,
+    /**
+     * High contrast: a band round each piece in the colour of the paper or wash under it, so no
+     * grid line, hatch line, link or guide touches a piece. None when it is 0.
+     */
+    val halo: Measure,
+    /** High contrast: an outline round the preview's pale piece, in the ink of the side to move. None when it is 0. */
+    val previewOutline: Measure,
     /** Drag's guides: the preview's row and column, from its ring to the board's edges (decision 0024). */
     val guide: Measure,
     /** How much of the ink of the side to move the guides show. */
@@ -61,6 +80,11 @@ data class BoardLook(
     val guideDash: Float,
     /** The gaps between the guides' dashes, in dp. */
     val guideGap: Float,
+    /**
+     * High contrast: a strip under the guides, this much wider than them on each side, in the
+     * colour of the paper or wash under it. None when it is 0.
+     */
+    val guideCasing: Measure,
 )
 
 /**

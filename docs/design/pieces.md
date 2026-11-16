@@ -38,6 +38,36 @@ area, hatched rising (`/`), so its cut rises. The piece looks as if the hatching
 **Drawing order.** The pinhole and the cut are drawn straight on top of their piece, before the
 closing points and the preview. The full order is on the theme page.
 
+## High contrast
+
+Settings has **High-contrast pieces** (off by default). It is for players who find the pieces hard
+to pick out: on a small phone, in sunlight, or with low vision. It changes every board in the game:
+the game board, the level card's small board and the pictures on How to play. Colours, shapes and
+marks stay the same.
+
+| Element | Usual | High contrast, at 24 dp spacing | Other spacings |
+| --- | --- | --- | --- |
+| Dot size | half the spacing, 9 to 20 dp | 14.4 dp (diamond 16.8 dp) | 0.6 of the spacing, at least 9 dp, at most 24 dp |
+| Band round each piece | none | 1.5 dp, in the Paper or wash under the piece | always 1.5 dp |
+| Preview | pale piece in the preview ring | the pale piece outlined in the ink of the side to move, 1.5 dp | always 1.5 dp |
+| Drag's guides | 1.5 dp dashes on the grid line | 2 dp dashes on a solid strip 4 dp wide, in the Paper or wash under it | always the same |
+
+The pinhole and the cut keep their shares of the dot size, so they grow with the piece.
+
+- **The band.** Each piece sits in a band of the surface under it: Paper outside captured areas,
+  the area's wash inside one. Grid lines, hatching, links and drag's guides stop 1.5 dp short of
+  the piece, so its edge always meets a flat colour. A piece on a ring has Paper on the outside and
+  the wash on the inside. The band is drawn after drag's guides and before the rings, so rings and
+  threat rings stay whole.
+- **The strip under drag's guides** hides the grid line and the hatching along the row and column,
+  so the dashes stand on a flat colour too.
+
+**Contrast.** Without the bands, the weakest place for a piece is where it crosses a hatch line:
+3.24 (Blue ink on Red pale, dark). With them, a piece only meets Paper or a wash, so its weakest
+pair is Red ink on Red wash: 4.17 light, and Blue ink on Red wash: 4.66 dark (theme page,
+Contrast). The same holds for drag's guides on their strip. The preview's pale piece is 1.53 to 1.71
+against Paper; its ink outline brings it to the same figures as a piece.
+
 ## Why these shapes
 
 - **Round and diamond, not filled and hollow.** Rings already mean something on the board: the

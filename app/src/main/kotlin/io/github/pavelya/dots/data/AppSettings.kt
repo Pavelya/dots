@@ -43,7 +43,7 @@ data class AppSettings(
     val effectsVolume: Int = DEFAULT_VOLUME,
     /** Vibration when a dot lands and a ring closes (motion.md, rule 6); V-07 makes the phone vibrate. */
     val vibration: Boolean = true,
-    /** High-contrast pieces (pieces.md); V-04 draws them. */
+    /** High-contrast pieces on every board (pieces.md, "High contrast"). */
     val highContrast: Boolean = false,
     /**
      * The pale links between touching dots of one side on the game board. Off by default, so the

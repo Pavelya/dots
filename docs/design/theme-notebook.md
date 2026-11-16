@@ -74,7 +74,8 @@ smaller or larger spacing.
 Paper fills the board and half a spacing around its outermost points. Outside the board the screen
 is plain paper without a grid, so the board's edge is clear.
 
-**Drawing order**, from the back: paper, washes, hatching, grid, links, drag's guides, rings,
+**Drawing order**, from the back: paper, washes, hatching, grid, links, drag's guides, the bands
+round the pieces (only with high-contrast pieces; [Piece shapes](pieces.md#high-contrast)), rings,
 threat rings, pieces, last-move pinhole and captured cuts, closing points, preview. The grid lies on
 top of the washes, so the squared paper shows through a captured area.
 

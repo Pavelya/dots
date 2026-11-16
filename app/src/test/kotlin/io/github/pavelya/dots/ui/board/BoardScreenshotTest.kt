@@ -137,6 +137,52 @@ class BoardScreenshotTest {
         compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
     }
 
+    /**
+     * Every piece and mark of pieces.md on one board: a red capture and a blue capture (each
+     * captured piece with its cut), Red's last move (the pinhole), a blue piece one move from
+     * capture with its closing point, and Blue's preview with drag's guides, one arm running
+     * through the red area.
+     */
+    private val allPieces: GameState = GameState.fromAscii(
+        """
+        .........
+        ....R....
+        ...RBR...
+        .........
+        ......B..
+        .....BRB.
+        .R.......
+        RBR......
+        .........
+        """,
+        dotsPerPlayer = 20,
+    ).play(Pos(4, 3)).state.play(Pos(6, 6)).state.play(Pos(7, 1)).state
+
+    private fun capturePieces(name: String, dark: Boolean, highContrast: Boolean) {
+        val dangers = Player.entries.flatMap { Hints.dangers(allPieces, it) }
+        compose.setContent {
+            Box(Modifier.size(360.dp)) {
+                BoardView(
+                    allPieces, BoardStyle.of(GameTheme.NOTEBOOK, dark, highContrast), "board", Modifier.fillMaxSize(),
+                    lastMove = Pos(7, 1), preview = Pos(4, 6), dangers = dangers, guides = true,
+                )
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+    }
+
+    @Test
+    fun pieces() = capturePieces("board_pieces", dark = false, highContrast = false)
+
+    @Test
+    fun piecesDark() = capturePieces("board_pieces_dark", dark = true, highContrast = false)
+
+    @Test
+    fun piecesHighContrast() = capturePieces("board_pieces_contrast", dark = false, highContrast = true)
+
+    @Test
+    fun piecesHighContrastDark() = capturePieces("board_pieces_contrast_dark", dark = true, highContrast = true)
+
     @Test
     fun plainTheme() = captureThemed("theme_board_plain", GameTheme.PLAIN, dark = false)
 

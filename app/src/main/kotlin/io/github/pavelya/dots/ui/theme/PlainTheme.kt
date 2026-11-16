@@ -49,12 +49,18 @@ internal val PlainTheme: GameTheme = GameTheme(
         closingLine = Measure(ofSpacing = 0.06f),
         previewRing = Measure(ofSpacing = 0.9f),
         previewLine = Measure(ofSpacing = 0.08f),
+        pinhole = 0f,
         lastMoveRing = Measure(ofSpacing = 0.84f),
         lastMoveLine = Measure(ofSpacing = 0.06f),
+        cut = 0f,
+        cutLength = 0f,
+        halo = Measure(),
+        previewOutline = Measure(),
         guide = Measure(ofSpacing = 0.08f, min = 2f),
         guideAlpha = 0.6f,
         guideDash = 0f,
         guideGap = 0f,
+        guideCasing = Measure(),
     ),
     type = TypeScale(
         // Handwriting is italics in the plain look.
