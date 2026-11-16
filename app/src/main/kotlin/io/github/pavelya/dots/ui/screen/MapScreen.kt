@@ -57,7 +57,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -92,6 +91,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.Unlocking
 import io.github.pavelya.dots.ui.motion.rememberTimeline
+import io.github.pavelya.dots.ui.motion.writeIn
 import io.github.pavelya.dots.ui.theme.Palette
 import kotlin.math.sin
 import kotlinx.coroutines.flow.first
@@ -736,7 +736,7 @@ private fun NextLabel(row: MapRow.Stop, style: MapStyle, centerX: Dp, centerY: D
             .offset(x = if (onLeft) centerX - reach - width else centerX + reach, y = centerY - 16.dp)
             .width(width)
             // It writes in, left to right, when an unlock circles the level.
-            .drawWithContent { clipRect(right = size.width * written()) { this@drawWithContent.drawContent() } }
+            .writeIn(written)
             .clearAndSetSemantics { },
     ) {
         // The arrow points left as drawn: towards a level on the left of the label. Mirrored, it

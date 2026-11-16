@@ -16,6 +16,10 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -124,4 +128,19 @@ fun <T> rememberChangeTimeline(value: T, length: Float, plays: (old: T, new: T) 
 /** The last value [rememberChangeTimeline] saw, and how many of its changes played. */
 private class Seen<T>(var value: T) {
     var changes = 0
+}
+
+/**
+ * Handwriting that writes in, left to right, as [written] goes from 0 to 1. Slanted letters reach
+ * past their box, so while it writes the edge runs a little beyond the box, and once written
+ * nothing is cut.
+ */
+fun Modifier.writeIn(written: () -> Float): Modifier = drawWithContent {
+    val p = written()
+    if (p >= 1f) {
+        drawContent()
+    } else if (p > 0f) {
+        val reach = size.width + 12.dp.toPx()
+        clipRect(left = -12.dp.toPx(), right = reach * p) { this@drawWithContent.drawContent() }
+    }
 }

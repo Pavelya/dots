@@ -11,12 +11,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
@@ -43,6 +43,7 @@ import io.github.pavelya.dots.ui.motion.RunningOut
 import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.capturing
 import io.github.pavelya.dots.ui.motion.rememberChangeTimeline
+import io.github.pavelya.dots.ui.motion.writeIn
 import io.github.pavelya.dots.ui.theme.Palette
 
 /**
@@ -82,7 +83,9 @@ internal fun CaptureOverlay(moment: BoardMoment?, clock: Timeline, columns: Int,
         val cx = ring.sumOf { it.x.toDouble() }.toFloat() / ring.size
         val cy = ring.sumOf { it.y.toDouble() }.toFloat() / ring.size
         val bottom = ring.maxOf { it.y }
-        val anchor = screen.localPositionOf(board, if (timing.big) Offset(cx, bottom + geometry.spacing * 0.9f) else Offset(cx, cy))
+        // A big capture's +N sits below the area, to the lower right, clear of the words under it.
+        val right = ring.maxOf { it.x }
+        val anchor = screen.localPositionOf(board, if (timing.big) Offset((cx + right) / 2 + geometry.spacing, bottom + geometry.spacing * 0.6f) else Offset(cx, cy))
         val tally = spots.tally[first.by]?.takeIf { it.isAttached }
         val target = tally?.let { screen.localPositionOf(it, Offset(it.size.width / 2f, it.size.height / 2f)) } ?: anchor
         if (t < timing.plusLands) {
@@ -134,6 +137,7 @@ internal fun DotsLeft(left: Int, player: Player, style: Palette) {
     val low = left in 1..RunningOut.LOW
     val clock = rememberChangeTimeline(left, RunningOut.LENGTH) { old, new -> new < old && new in 1..RunningOut.LOW }
     val reduce = LocalReduceMotion.current
+    val shrinking by remember(clock) { derivedStateOf { clock.now < RunningOut.PIECE } }
     val ink by animateColorAsState(if (low) style.highlighter else style.pencil, if (reduce) snap() else tween(RunningOut.COLOUR.toInt()), label = "dots left")
     Row(
         horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -143,7 +147,7 @@ internal fun DotsLeft(left: Int, player: Player, style: Palette) {
         if (low) {
             Row(horizontalArrangement = Arrangement.spacedBy(3.dp), verticalAlignment = Alignment.CenterVertically) {
                 // The row writes in when the count reaches 5; after that the piece just used shrinks away.
-                val shown = if (left < RunningOut.LOW) left + 1 else left
+                val shown = if (left < RunningOut.LOW && shrinking) left + 1 else left
                 for (i in 0 until shown) {
                     Piece(
                         player,
@@ -166,9 +170,7 @@ internal fun DotsLeft(left: Int, player: Player, style: Palette) {
                 stringResource(R.string.game_last_dot),
                 style = HAND,
                 color = style.highlighter,
-                modifier = Modifier.drawWithContent {
-                    clipRect(right = size.width * RunningOut.lastDot(clock.now)) { this@drawWithContent.drawContent() }
-                },
+                modifier = Modifier.writeIn { RunningOut.lastDot(clock.now) },
             )
         } else {
             Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {

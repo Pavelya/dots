@@ -60,6 +60,7 @@ import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.ui.motion.ResultReveal
 import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.rememberTimeline
+import io.github.pavelya.dots.ui.motion.writeIn
 import io.github.pavelya.dots.ui.theme.Palette
 
 /**
@@ -331,9 +332,7 @@ private fun Headline(text: String, ink: Color, reveal: Timeline) {
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .semantics { heading() }
-                .drawWithContent {
-                    clipRect(right = size.width * ResultReveal.headline(reveal.now)) { this@drawWithContent.drawContent() }
-                },
+                .writeIn { ResultReveal.headline(reveal.now) },
         )
     }
 }

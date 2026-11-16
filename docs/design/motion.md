@@ -415,7 +415,9 @@ python3 docs/design/motion/draw.py capture    # only the ones named
 ```
 
 It needs Python 3, Google Chrome, ffmpeg and a network connection (the fonts come from Google
-Fonts). Change a time on this page and in the script together.
+Fonts). Change a time on this page, in the script and in the app together: the app reads every
+time from `app/src/main/kotlin/io/github/pavelya/dots/ui/motion/Times.kt`, and `MotionTimesTest`
+checks them against this page.
 
 **On a phone.** Every GIF frame is 360 dp wide, drawn at 1.5 px per dp. Open a GIF on the phone
 and fit it to the screen width. On a phone about 360 dp wide it then shows at the size the game
