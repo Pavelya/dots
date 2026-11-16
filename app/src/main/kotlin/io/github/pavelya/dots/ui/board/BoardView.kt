@@ -35,6 +35,7 @@ import dots.engine.Pos
 import dots.engine.areas
 import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.CapturedArea
+import io.github.pavelya.dots.game.ThreatMark
 import io.github.pavelya.dots.ui.motion.Announce
 import io.github.pavelya.dots.ui.motion.Capturing
 import io.github.pavelya.dots.ui.motion.EndOfGame
@@ -683,7 +684,7 @@ private val STILL_THREAT = ThreatLook(1f, 0f)
 
 private fun Frame.threat(danger: Danger): ThreatLook? {
     val moment = moment ?: return STILL_THREAT
-    if (t >= Threat.LENGTH || danger.group.toSet() !in moment.freshThreats) return STILL_THREAT
+    if (t >= Threat.LENGTH || ThreatMark.of(danger) !in moment.freshThreats) return STILL_THREAT
     val since = t - Threat.DELAY
     if (since < 0f) return null
     return ThreatLook(Threat.drawIn(since), if (danger.dotsNeeded == 1) Threat.pulse(since) else 0f)

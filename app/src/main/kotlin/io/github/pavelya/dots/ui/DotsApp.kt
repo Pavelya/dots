@@ -229,8 +229,6 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         val daily by app.daily.saved.collectAsStateWithLifecycle()
                         MapScreen(
                             map,
-                            unlock = unlock,
-                            onUnlocked = { unlock = null },
                             MapActions(
                                 onLevel = { navController.navigate(Routes.level(it.world, it.number)) },
                                 onDaily = { navController.navigate(Routes.DAILY) },
@@ -242,6 +240,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 onChest = { navController.navigate(Routes.chest(it.after)) },
                             ),
                             streak = daily?.streak(app.clock.today())?.days ?: 0,
+                            unlock = unlock,
+                            onUnlocked = { unlock = null },
                         )
                     }
                     dialog(

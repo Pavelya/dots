@@ -1,5 +1,6 @@
 package io.github.pavelya.dots.game
 
+import dots.ai.Danger
 import dots.campaign.MissionStatus
 import dots.engine.Capture
 import dots.engine.Player
@@ -15,7 +16,7 @@ import dots.engine.Pos
  * - [captures] are the areas it closed, played at the same time.
  * - Until the new dot settles the pinhole stays on [pinholeBefore]; the edge marks of an earlier
  *   dot, at [marksGone], shrink back.
- * - [freshThreats] are the groups (as sets of dots) that are newly close to capture: only they pulse.
+ * - [freshThreats] are the threats that are new with this dot: only they draw in and pulse.
  * - Until the capture's points land, the screen shows the mission as it was ([missionBefore]),
  *   and until the face changes, the opponent's old look ([opponentBefore]).
  */
@@ -27,7 +28,7 @@ data class BoardMoment(
     val captures: List<Capture> = emptyList(),
     val pinholeBefore: Pos? = null,
     val marksGone: Pos? = null,
-    val freshThreats: Set<Set<Pos>> = emptySet(),
+    val freshThreats: Set<ThreatMark> = emptySet(),
     val missionBefore: MissionStatus? = null,
     val opponentBefore: OpponentLook? = null,
 ) {
@@ -36,6 +37,16 @@ data class BoardMoment(
 
     /** The points the capture adds to [by]'s score once they land. */
     val points: Int get() = captures.sumOf { it.points }
+}
+
+/**
+ * A threat as the screen marks it: the [group] close to capture and how many dots it needs. A group
+ * that comes one dot closer is a new threat.
+ */
+data class ThreatMark(val group: Set<Pos>, val dotsNeeded: Int) {
+    companion object {
+        fun of(danger: Danger): ThreatMark = ThreatMark(danger.group.toSet(), danger.dotsNeeded)
+    }
 }
 
 /** A captured area at the end of a game: its first point (the board's areas are found by it) and its captor. */

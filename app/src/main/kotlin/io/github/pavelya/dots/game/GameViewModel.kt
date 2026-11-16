@@ -331,8 +331,8 @@ class GameViewModel(
         val marksGone = edgeMarks
         edgeMarks = if (announced) dot else null
         val shown = snapshot(lastMove = dot, captured = move, aim = null, landing = null)
-        val known = before.dangers.map { it.group.toSet() }.toSet()
-        val fresh = shown.dangers.map { it.group.toSet() }.filter { it !in known }.toSet()
+        val known = before.dangers.map(ThreatMark::of).toSet()
+        val fresh = shown.dangers.map(ThreatMark::of).filter { it !in known }.toSet()
         moment = BoardMoment(
             id = ++moments,
             dot = dot,

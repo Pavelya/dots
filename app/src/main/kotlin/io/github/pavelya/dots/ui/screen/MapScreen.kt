@@ -532,16 +532,16 @@ private fun lockLines(world: WorldStop): List<String> = buildList {
 private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit, motion: UnlockMotion? = null) {
     val stop = row.stop
     val description = stopDescription(row)
-    val role = motion?.roleOf(stop.level)
+    val part = motion?.roleOf(stop.level)
     val clock = motion?.clock
     val times = motion?.times
     // The level just passed still looks next until its stop fills; the level it opens looks locked until it is circled.
     val first = motion?.unlock?.firstPass == true
     val before = motion?.unlock?.starsBefore ?: 0
-    val stillNext by remember(role, clock) { derivedStateOf { role == StopRole.PASSED && first && clock != null && clock.now < Unlocking.FILL_FROM } }
-    val filled by remember(role, clock) { derivedStateOf { role != StopRole.PASSED || !first || clock == null || clock.now >= (Unlocking.FILL_FROM + Unlocking.FILL_TO) / 2 } }
-    val circled by remember(role, clock) { derivedStateOf { role != StopRole.OPENED || clock == null || times == null || times.circle(clock.now) > 0f } }
-    val inking = if (role == StopRole.PASSED && first && row.nextX != null) motion else null
+    val stillNext by remember(part, clock) { derivedStateOf { part == StopRole.PASSED && first && clock != null && clock.now < Unlocking.FILL_FROM } }
+    val filled by remember(part, clock) { derivedStateOf { part != StopRole.PASSED || !first || clock == null || clock.now >= (Unlocking.FILL_FROM + Unlocking.FILL_TO) / 2 } }
+    val circled by remember(part, clock) { derivedStateOf { part != StopRole.OPENED || clock == null || times == null || times.circle(clock.now) > 0f } }
+    val inking = if (part == StopRole.PASSED && first && row.nextX != null) motion else null
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
@@ -576,8 +576,8 @@ private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit, motion: 
             }
             val draws = when {
                 clock == null || times == null -> null
-                role == StopRole.PASSED && first -> StopDraw.Fill { times.fill(clock.now) to times.rings(clock.now) }
-                role == StopRole.OPENED -> StopDraw.Circle { times.circle(clock.now) }
+                part == StopRole.PASSED && first -> StopDraw.Fill { times.fill(clock.now) to times.rings(clock.now) }
+                part == StopRole.OPENED -> StopDraw.Circle { times.circle(clock.now) }
                 else -> null
             }
             if (stop.isBoss) Castle(look, style) else Node(look, style, draws)
@@ -595,7 +595,7 @@ private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit, motion: 
             ) {
                 repeat(3) {
                     val earned = it < stop.stars
-                    val flight = if (role == StopRole.PASSED && clock != null && times != null && it >= before && earned) Modifier.graphicsLayer {
+                    val flight = if (part == StopRole.PASSED && clock != null && times != null && it >= before && earned) Modifier.graphicsLayer {
                         val p = times.star(clock.now, it - before)
                         // From where the result note showed it, low in the middle of the screen.
                         translationX = (window.width / 2f - at.x - 13.dp.toPx() * (it + 0.5f)) * (1f - p)
@@ -615,7 +615,7 @@ private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit, motion: 
         }
         if (stillNext) NextLabel(row, style, centerX, centerY)
         if (row.isNext && circled) {
-            val write = if (role == StopRole.OPENED && clock != null && times != null) ({ times.next(clock.now) }) else ({ 1f })
+            val write = if (part == StopRole.OPENED && clock != null && times != null) ({ times.next(clock.now) }) else ({ 1f })
             NextLabel(row, style, centerX, centerY, write)
         }
     }
