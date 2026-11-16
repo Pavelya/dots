@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,12 +44,16 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.inset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -73,14 +78,25 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.OpponentLook
+import io.github.pavelya.dots.ui.board.AreaGlow
 import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.board.BoardMarks
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.PlayableBoard
 import io.github.pavelya.dots.ui.board.drawPiece
+import io.github.pavelya.dots.ui.motion.Ease
+import io.github.pavelya.dots.ui.motion.EndOfGame
+import io.github.pavelya.dots.ui.motion.Placing
+import io.github.pavelya.dots.ui.motion.RunningOut
+import io.github.pavelya.dots.ui.motion.Timeline
+import io.github.pavelya.dots.ui.motion.capturing
+import io.github.pavelya.dots.ui.motion.phase
+import io.github.pavelya.dots.ui.motion.rememberChangeTimeline
+import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
 import io.github.pavelya.dots.ui.theme.Palette
 import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.max
 import kotlin.math.min
 import kotlinx.coroutines.delay
 
@@ -120,6 +136,14 @@ import kotlinx.coroutines.delay
  *
  * Every ink, size and text style comes from the theme ([Palette], [BoardStyle], [NoteText]); V-12
  * brings the faces.
+ *
+ * Motion (docs/design/motion.md): the [moment] clock plays the last dot's moment on the board. In a
+ * capture the captor's tally and score, and the mission note, take the points when the "+N" lands,
+ * then swell; the opponent's face changes on its beat; a big capture shakes the board. A touch on
+ * the board finishes the moment. From 5 dots left the count shows the last dots, and at 3 the
+ * mission note swings once. At the end of a game the [ending] clock, when there is one, plays the
+ * pause icon and the tool bar leaving and the captured areas lighting up, and the face keeps its
+ * look until the result note comes.
  */
 @Composable
 internal fun GameBoard(
@@ -136,17 +160,50 @@ internal fun GameBoard(
     guide: Tutorial.Step? = null,
     onSkipGuide: () -> Unit = {},
     links: Boolean = false,
+    moment: Timeline = rememberMomentTimeline(ui.moment),
+    ending: Timeline? = null,
 ) {
     val style = Palette.current
     val boardStyle = BoardStyle.current
     val state = ui.state
+    val landed = ui.moment
+    val capture = landed?.capturing
+    val spots = remember { Spots() }
+    // What the moment holds back until its beat: the points, the mission note and the face.
+    val pointsIn by remember(landed, moment) { derivedStateOf { capture == null || moment.now >= capture.score } }
+    val faceIn by remember(landed, moment) { derivedStateOf { capture == null || moment.now >= capture.face } }
+    val endTimes = remember(ui.captureOrder) { EndOfGame(ui.captureOrder.size) }
+    val toolsGone by remember(ui.isOver, ending) { derivedStateOf { ui.isOver && (ending == null || ending.now >= EndOfGame.TOOLS_OUT) } }
+    val endFace by remember(ui.isOver, ending, endTimes) { derivedStateOf { ui.isOver && ending != null && ending.now < endTimes.noteStart } }
+    val shownScore = { player: Player ->
+        val held = landed?.takeIf { !pointsIn && it.by == player }?.points ?: 0
+        state.score(player) - held
+    }
+    val scoreSwell = { player: Player ->
+        val captured = if (capture != null && landed?.by == player) capture.scoreScale(moment.now) else 1f
+        val lit = if (ending != null && ui.isOver) {
+            ui.captureOrder.withIndex().maxOfOrNull { (i, area) -> if (area.by == player) 1f + 0.3f * endTimes.glow(ending.now, i) else 1f } ?: 1f
+        } else {
+            1f
+        }
+        max(captured, lit)
+    }
+    val look = when {
+        endFace -> ui.opponentInPlay ?: ui.opponent
+        !faceIn -> landed?.opponentBefore ?: ui.opponent
+        else -> ui.opponent
+    }
+    val toolsOut = { if (ending != null && ui.isOver) endTimes.toolsOut(ending.now) else if (ui.isOver) 1f else 0f }
+    val left = state.dotsLeft(if (ui.vsComputer) human else Player.RED)
+    val missionOpen = ui.mission?.isDecided != true
+    val nudge = rememberChangeTimeline(left, RunningOut.NUDGE) { old, new -> missionOpen && new == RunningOut.NUDGE_AT && old != null && old > RunningOut.NUDGE_AT }
     val names = Names(ui.vsComputer, human)
     val below = if (ui.vsComputer) human else Player.RED
     val above = below.opponent
     // The daily puzzle has no tool bar: no boosters and no undo (decision 0023).
     val toolBar = !guided && (if (campaign != null) campaign.boosters != null else ui.vsComputer || ui.openEnded)
     val turnBanner = turnBanner(ui)
-    BoxWithConstraints(modifier.fillMaxSize().background(style.paper)) {
+    BoxWithConstraints(modifier.fillMaxSize().background(style.paper).onGloballyPositioned { spots.screen = it }) {
         val bottom = PLAYER_LINE + if (toolBar) TOOL_BAR else 0.dp
         val spacing = boardSpacing(maxWidth, maxHeight - TOP_ROW - bottom, state.width, state.height)
         val boardHeight = spacing * state.height
@@ -157,11 +214,11 @@ internal fun GameBoard(
         // On a small phone the opponent's line moves into the top row, and the mission note narrows to make room.
         val compact = room < OPPONENT_LINE
         val opponentLine = @Composable { inTopRow: Boolean ->
-            SideLine(above, names.of(above), state.score(above), toMove = isToMove(ui, above), style, inTopRow)
+            SideLine(above, names.of(above), shownScore(above), toMove = isToMove(ui, above), style, inTopRow, swell = { scoreSwell(above) }, onTally = { spots.tally[above] = it })
         }
         Column(Modifier.fillMaxSize()) {
             val title = campaign?.title ?: stringResource(if (ui.vsComputer) R.string.play_free else R.string.play_two)
-            TopRow(showPause = !ui.isOver, style = style, onPause = onPause) {
+            TopRow(showPause = !toolsGone, style = style, onPause = onPause, leaving = toolsOut) {
                 if (compact) {
                     Box(Modifier.align(Alignment.CenterStart).padding(start = 52.dp)) { opponentLine(true) }
                 } else {
@@ -180,7 +237,7 @@ internal fun GameBoard(
                 verticalArrangement = Arrangement.Bottom,
             ) {
                 if (room >= OPPONENT_WITH_PHOTO) {
-                    Photo(above, ui.opponent, style)
+                    Photo(above, look, style)
                     Spacer(Modifier.height(8.dp))
                 }
                 if (room >= OPPONENT_LINE) {
@@ -198,6 +255,9 @@ internal fun GameBoard(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .size(spacing * state.width, boardHeight)
+                    .onGloballyPositioned { spots.board = it }
+                    // A big capture shakes the board sideways (motion.md, "Big capture").
+                    .graphicsLayer { translationX = (capture?.shake(moment.now) ?: 0f).dp.toPx() }
                     .testTag(BOARD_TAG),
                 lastMove = ui.lastMove,
                 dangers = ui.dangers,
@@ -205,27 +265,36 @@ internal fun GameBoard(
                 pointer = guide?.point,
                 marks = boardMarks(ui),
                 showLinks = links || (guided && ui.level?.let(Tutorial::lesson) == Tutorial.Lesson.LINKING),
+                moment = landed,
+                time = { moment.now },
+                edgeMarks = ui.edgeMarks,
+                glow = if (ending != null && ui.isOver) AreaGlow(ui.captureOrder, endTimes) { ending.now } else null,
+                onTouch = moment::finish,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().height(PLAYER_LINE).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                SideLine(below, names.of(below), state.score(below), toMove = isToMove(ui, below), style)
+                SideLine(below, names.of(below), shownScore(below), toMove = isToMove(ui, below), style, swell = { scoreSwell(below) }, onTally = { spots.tally[below] = it })
                 ui.doubleDots?.let { DoubleDotChip(it, style, Modifier.padding(start = 10.dp)) }
                 Spacer(Modifier.weight(1f))
-                state.dotsLeft(below)?.let { DotsLeft(it, style) }
+                state.dotsLeft(below)?.let { DotsLeft(it, below, style) }
             }
             if (toolBar) {
                 // Five boosters in the campaign fit with less room around them (draw.py, `toolbar`).
                 val side = if (campaign != null) 12.dp else 18.dp
                 Row(
-                    modifier = Modifier.fillMaxWidth().height(TOOL_BAR).padding(start = side, end = side, bottom = 8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(TOOL_BAR)
+                        .graphicsLayer { translationY = toolsOut() * size.height }
+                        .padding(start = side, end = side, bottom = 8.dp),
                     horizontalArrangement = Arrangement.spacedBy(if (campaign != null) 10.dp else 14.dp),
                 ) {
-                    // At the end the tools leave, and Result takes their place (motion.md, End of game).
+                    // At the end the tools slide down and leave, and Result takes their place (motion.md, End of game).
                     // A booster preview's note covers them (canvas frame `game-undo`).
                     when {
-                        ui.isOver || ui.aim != null -> Spacer(Modifier.weight(1f))
+                        toolsGone || ui.aim != null -> Spacer(Modifier.weight(1f))
                         campaign != null -> campaign.boosters?.invoke(this)
                         else -> {
                             var slots = 4
@@ -253,7 +322,19 @@ internal fun GameBoard(
                 }
             }
         }
-        if (guide == null) campaign?.mission?.let { MissionNote(style, Modifier.align(Alignment.TopEnd), if (compact) 120.dp else 136.dp, it) }
+        if (guide == null) {
+            // The note ticks its boxes when the capture's points land, then swells; at 3 dots left it swings once.
+            val content = if (pointsIn) campaign?.mission else campaign?.missionBefore ?: campaign?.mission
+            content?.let {
+                val swing = Modifier.graphicsLayer {
+                    val size = if (capture != null) capture.noteScale(moment.now) else 1f
+                    scaleX = size
+                    scaleY = size
+                    rotationZ = RunningOut.nudge(nudge.now)
+                }
+                MissionNote(style, Modifier.align(Alignment.TopEnd).then(swing), if (compact) 120.dp else 136.dp, it)
+            }
+        }
         if (guide != null) {
             // Its bottom 4 dp above the board; with no room there, over the board's top rows.
             val place = if (guideRoom > 0.dp) {
@@ -264,6 +345,7 @@ internal fun GameBoard(
             TutorialNote(guide, input.method, style, onSkipGuide, place.padding(horizontal = 14.dp))
         }
         turnBanner?.let { TurnBanner(it, style, Modifier.offset(y = maxHeight * 0.38f)) }
+        CaptureOverlay(landed, moment, state.width, state.height, spots, style)
     }
 }
 
@@ -361,9 +443,12 @@ private fun DoubleDotChip(left: Int, style: Palette, modifier: Modifier) {
     )
 }
 
-/** The top row: the pause icon and the [content], the game's name or, on a small phone, the opponent's line. */
+/**
+ * The top row: the pause icon and the [content], the game's name or, on a small phone, the
+ * opponent's line. At the end of a game the icon slides up off the screen as [leaving] goes to 1.
+ */
 @Composable
-private fun TopRow(showPause: Boolean, style: Palette, onPause: () -> Unit, content: @Composable BoxScope.() -> Unit) {
+private fun TopRow(showPause: Boolean, style: Palette, onPause: () -> Unit, leaving: () -> Float = { 0f }, content: @Composable BoxScope.() -> Unit) {
     Box(Modifier.fillMaxWidth().height(TOP_ROW)) {
         if (showPause) {
             val label = stringResource(R.string.pause)
@@ -371,6 +456,7 @@ private fun TopRow(showPause: Boolean, style: Palette, onPause: () -> Unit, cont
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .align(Alignment.CenterStart)
+                    .graphicsLayer { translationY = -leaving() * TOP_ROW.toPx() }
                     .padding(start = 4.dp)
                     .size(48.dp)
                     .clip(CircleShape)
@@ -462,8 +548,19 @@ internal fun Tape(style: Palette, modifier: Modifier) {
  * line, for the top row of a small phone, is smaller and has no tally.
  */
 @Composable
-private fun SideLine(player: Player, name: String, score: Int, toMove: Boolean, style: Palette, compact: Boolean = false) {
+private fun SideLine(
+    player: Player,
+    name: String,
+    score: Int,
+    toMove: Boolean,
+    style: Palette,
+    compact: Boolean = false,
+    swell: () -> Float = { 1f },
+    onTally: (LayoutCoordinates) -> Unit = {},
+) {
     val ink = style.ink(player)
+    // The pen stroke is drawn left to right under the side whose turn begins (motion.md, "Placing a dot").
+    val stroke = rememberChangeTimeline(toMove, Placing.PEN_STROKE) { old, new -> !old && new }
     val description = stringResource(if (toMove) R.string.side_to_move else R.string.side_waiting, name, score)
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -482,10 +579,21 @@ private fun SideLine(player: Player, name: String, score: Int, toMove: Boolean, 
             fontWeight = FontWeight.Bold,
             color = ink,
             maxLines = 1,
-            modifier = if (toMove) Modifier.penStroke(ink) else Modifier,
+            modifier = if (toMove) Modifier.penStroke(ink) { phase(stroke.now, 0f, Placing.PEN_STROKE, Ease.OUT) } else Modifier,
         )
-        if (!compact) Tally(score, ink)
-        Text(score.toString(), style = if (compact) NoteText.score.copy(fontSize = 18.sp) else NoteText.score, color = ink)
+        if (!compact) Tally(score, ink, Modifier.onGloballyPositioned(onTally))
+        Text(
+            score.toString(),
+            style = if (compact) NoteText.score.copy(fontSize = 18.sp) else NoteText.score,
+            color = ink,
+            modifier = Modifier
+                .then(if (compact) Modifier.onGloballyPositioned(onTally) else Modifier)
+                .graphicsLayer {
+                    val size = swell()
+                    scaleX = size
+                    scaleY = size
+                },
+        )
     }
 }
 
@@ -501,8 +609,8 @@ internal fun Piece(player: Player, style: Palette, modifier: Modifier) {
     Canvas(modifier) { drawPiece(piece, center, size.minDimension * 6f / 7f, ink) }
 }
 
-/** The canvas's pen stroke under a name: a slightly wavy line, 4 dp under the text. */
-private fun Modifier.penStroke(ink: Color): Modifier = drawWithContent {
+/** The canvas's pen stroke under a name: a slightly wavy line, 4 dp under the text, drawn as far as [drawn] says. */
+private fun Modifier.penStroke(ink: Color, drawn: () -> Float = { 1f }): Modifier = drawWithContent {
     drawContent()
     val w = size.width + 10.dp.toPx()
     val left = -4.dp.toPx()
@@ -513,7 +621,16 @@ private fun Modifier.penStroke(ink: Color): Modifier = drawWithContent {
         quadraticTo(left + w * 0.4f, top + unit, left + w * 0.7f, top + 4 * unit)
         quadraticTo(left + w, top + 7 * unit, left + w - 2 * unit, top + 3 * unit)
     }
-    drawPath(path, ink, style = Stroke(width = 2.2f * unit, cap = StrokeCap.Round))
+    val part = drawn()
+    if (part <= 0f) return@drawWithContent
+    val shown = if (part >= 1f) {
+        path
+    } else {
+        val measure = PathMeasure()
+        measure.setPath(path, false)
+        Path().also { measure.getSegment(0f, measure.length * part, it, true) }
+    }
+    drawPath(shown, ink, style = Stroke(width = 2.2f * unit, cap = StrokeCap.Round))
 }
 
 /** The most marks a tally draws; the score beside it gives the rest. Keeps the line on a 320 dp phone. */
@@ -521,10 +638,10 @@ private const val TALLY_MARKS = 15
 
 /** A score as ink tally marks, in fives (docs/design/canvas/draw.py, `tally`). */
 @Composable
-private fun Tally(score: Int, ink: Color) {
+private fun Tally(score: Int, ink: Color, modifier: Modifier = Modifier) {
     val marks = score.coerceIn(0, TALLY_MARKS)
     val groups = ceil(marks / 5f).toInt().coerceAtLeast(1)
-    Canvas(Modifier.size(width = 24.dp * groups, height = 18.dp)) {
+    Canvas(modifier.size(width = 24.dp * groups, height = 18.dp)) {
         val u = 1.dp.toPx()
         val path = Path()
         for (i in 0 until marks) {
@@ -543,25 +660,6 @@ private fun Tally(score: Int, ink: Color) {
             }
         }
         drawPath(path, ink, style = Stroke(width = 1.8f * u, cap = StrokeCap.Round))
-    }
-}
-
-/** The dots the player below the board has left: a big number and a label. */
-@Composable
-private fun DotsLeft(left: Int, style: Palette) {
-    val description = pluralStringResource(R.plurals.game_dots_left, left, left)
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier.clearAndSetSemantics { contentDescription = description },
-    ) {
-        Text(left.toString(), style = NoteText.score, color = style.pencil, modifier = Modifier.alignByBaseline())
-        Text(
-            pluralStringResource(R.plurals.game_dots_left_label, left),
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = style.graphite,
-            modifier = Modifier.alignByBaseline(),
-        )
     }
 }
 

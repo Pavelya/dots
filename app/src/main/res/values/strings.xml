@@ -439,4 +439,18 @@
         <item quantity="one">Your turn · %1$d dot left</item>
         <item quantity="other">Your turn · %1$d dots left</item>
     </plurals>
+    <!-- A big capture: the dots captured at once, in words (motion.md, "Big capture"). From 5 to 12; more is big_capture_many. -->
+    <string-array name="big_capture_words">
+        <item>Five at once!</item>
+        <item>Six at once!</item>
+        <item>Seven at once!</item>
+        <item>Eight at once!</item>
+        <item>Nine at once!</item>
+        <item>Ten at once!</item>
+        <item>Eleven at once!</item>
+        <item>Twelve at once!</item>
+    </string-array>
+    <string name="big_capture_many">So many at once!</string>
+    <!-- In place of the dots-left count when one is left (motion.md, "Dots running out"). -->
+    <string name="game_last_dot">Last dot!</string>
 </resources>

@@ -25,11 +25,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -54,6 +57,9 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.DailyEnd
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.game.GameUiState
+import io.github.pavelya.dots.ui.motion.ResultReveal
+import io.github.pavelya.dots.ui.motion.Timeline
+import io.github.pavelya.dots.ui.motion.rememberTimeline
 import io.github.pavelya.dots.ui.theme.Palette
 
 /**
@@ -71,6 +77,10 @@ import io.github.pavelya.dots.ui.theme.Palette
  * - Daily puzzle failed: Retry, with a small Map, and the time to the next puzzle.
  *
  * Retry and Play again call [onAgain]. Back goes to the map ([onMap]).
+ *
+ * Motion (docs/design/motion.md, "End of game" and "Star reveal"): the note slides up from below,
+ * tips and settles at its slant; then the headline writes in and each star is stamped, or drawn in
+ * outline when not earned. The buttons work at once; a tap elsewhere on the note finishes the reveal.
  */
 @Composable
 internal fun ResultNote(
@@ -89,24 +99,29 @@ internal fun ResultNote(
     val end = ui.levelEnd
     val daily = ui.daily
     val dailyEnd = ui.dailyEnd
+    val reveal = rememberTimeline(ui.round, ResultReveal.LENGTH)
     Box(
         contentAlignment = Alignment.BottomCenter,
         modifier = Modifier
             .fillMaxSize()
-            .pointerInput(Unit) { detectTapGestures { } }, // the final board takes no taps
+            .pointerInput(reveal) { detectTapGestures { reveal.finish() } }, // the final board takes no taps
     ) {
-        TapedNote(style, Modifier.padding(start = 20.dp, end = 20.dp, bottom = 22.dp), angle = -1.5f) {
+        val coming = Modifier.graphicsLayer {
+            translationY = (1f - ResultReveal.slide(reveal.now)) * (size.height + 22.dp.toPx())
+            rotationZ = ResultReveal.tip(reveal.now)
+        }
+        TapedNote(style, coming.padding(start = 20.dp, end = 20.dp, bottom = 22.dp), angle = -1.5f) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(6.dp),
                 modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
             ) {
                 if (level != null && end != null) {
-                    LevelResult(level, end, style, onNext, onAgain, onAgainWithHint, onMap)
+                    LevelResult(level, end, style, onNext, onAgain, onAgainWithHint, onMap, reveal)
                 } else if (daily != null && dailyEnd != null) {
-                    DailyResult(daily, dailyEnd, ui.mission, style, toNextPuzzle, onShare, onAgain, onMap)
+                    DailyResult(daily, dailyEnd, ui.mission, style, toNextPuzzle, onShare, onAgain, onMap, reveal)
                 } else {
-                    FreeResult(ui, names, style, onAgain, onMap)
+                    FreeResult(ui, names, style, onAgain, onMap, reveal)
                 }
             }
         }
@@ -122,12 +137,13 @@ private fun LevelResult(
     onAgain: () -> Unit,
     onAgainWithHint: () -> Unit,
     onMap: () -> Unit,
+    reveal: Timeline,
 ) {
     val result = end.result
     val status = result.status
     if (result.isPassed) {
-        Headline(stringResource(R.string.result_won), style.red)
-        StarRow(result.stars, style)
+        Headline(stringResource(R.string.result_won), style.red, reveal)
+        StarRow(result.stars, style, reveal)
         val captured = pluralStringResource(R.plurals.result_captured, status.captured, status.captured)
         val score = result.starScore
         Text(
@@ -149,7 +165,7 @@ private fun LevelResult(
         }
     } else {
         val missed = missedBy(level, status)
-        Headline(stringResource(if (missed == 1) R.string.result_so_close else R.string.result_not_this_time), style.blue)
+        Headline(stringResource(if (missed == 1) R.string.result_so_close else R.string.result_not_this_time), style.blue, reveal)
         Text(failureText(level, status), style = NoteText.title, color = style.pencil, textAlign = TextAlign.Center)
         val capture = level.mission as? Mission.Capture
         if (capture != null) CaptureBar(status.captured, capture.dots, style)
@@ -171,10 +187,11 @@ private fun DailyResult(
     onShare: (String) -> Unit,
     onAgain: () -> Unit,
     onMap: () -> Unit,
+    reveal: Timeline,
 ) {
     val share = end.share
     if (end.passed && share != null) {
-        Headline(stringResource(R.string.daily_solved), style.red)
+        Headline(stringResource(R.string.daily_solved), style.red, reveal)
         Row(Modifier.fillMaxWidth().padding(top = 2.dp)) {
             DailyFigure(end.moves.toString(), stringResource(R.string.daily_your_moves), style.pencil, Modifier.weight(1f))
             DailyFigure(end.best.toString(), stringResource(R.string.daily_fewest), style.pencil, Modifier.weight(1f))
@@ -189,7 +206,7 @@ private fun DailyResult(
     } else {
         val level = puzzle.level
         val missed = status?.let { missedBy(level, it) }
-        Headline(stringResource(if (missed == 1) R.string.result_so_close else R.string.result_not_this_time), style.blue)
+        Headline(stringResource(if (missed == 1) R.string.result_so_close else R.string.result_not_this_time), style.blue, reveal)
         if (status != null) {
             Text(failureText(level, status), style = NoteText.title, color = style.pencil, textAlign = TextAlign.Center)
             val capture = level.mission as? Mission.Capture
@@ -279,7 +296,7 @@ private fun NextPuzzleLine(toNextPuzzle: () -> Long, style: Palette) {
 }
 
 @Composable
-private fun FreeResult(ui: GameUiState, names: Names, style: Palette, onAgain: () -> Unit, onMap: () -> Unit) {
+private fun FreeResult(ui: GameUiState, names: Names, style: Palette, onAgain: () -> Unit, onMap: () -> Unit, reveal: Timeline) {
     val state = ui.state
     val winner = state.winner
     val (headline, ink) = when {
@@ -288,7 +305,7 @@ private fun FreeResult(ui: GameUiState, names: Names, style: Palette, onAgain: (
         winner == names.human -> stringResource(R.string.result_won) to style.red
         else -> stringResource(R.string.result_computer_won) to style.blue
     }
-    Headline(headline, ink)
+    Headline(headline, ink, reveal)
     val description = outcome(state, names)
     val first = if (names.vsComputer) names.human else Player.RED
     Text(
@@ -303,21 +320,31 @@ private fun FreeResult(ui: GameUiState, names: Names, style: Palette, onAgain: (
     }
 }
 
-/** The outcome in handwriting, as the note's heading. */
+/** The outcome in handwriting, as the note's heading. It writes in, left to right, once the note has settled. */
 @Composable
-private fun Headline(text: String, ink: Color) {
-    Text(
-        text,
-        style = NoteText.display,
-        color = ink,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().semantics { heading() },
-    )
+private fun Headline(text: String, ink: Color, reveal: Timeline) {
+    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+        Text(
+            text,
+            style = NoteText.display,
+            color = ink,
+            textAlign = TextAlign.Center,
+            modifier = Modifier
+                .semantics { heading() }
+                .drawWithContent {
+                    clipRect(right = size.width * ResultReveal.headline(reveal.now)) { this@drawWithContent.drawContent() }
+                },
+        )
+    }
 }
 
-/** Three stars, the middle one bigger and higher (draw.py, the `win` frame); [earned] of them filled. */
+/**
+ * Three stars, the middle one bigger and higher (draw.py, the `win` frame); [earned] of them
+ * filled. One after another, each earned star is stamped: it shrinks from 180% and turns from −15°
+ * to straight. A star not earned is drawn in outline.
+ */
 @Composable
-private fun StarRow(earned: Int, style: Palette) {
+private fun StarRow(earned: Int, style: Palette, reveal: Timeline) {
     val description = stringResource(R.string.result_stars, earned)
     Row(
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -327,7 +354,22 @@ private fun StarRow(earned: Int, style: Palette) {
         for (i in 0 until Stars.MAX) {
             val filled = i < earned
             val middle = i == 1
-            ResultStar(filled, if (middle) 56.dp else 48.dp, style, Modifier.offset(y = if (middle) (-4).dp else 4.dp))
+            val stamp = Modifier
+                .graphicsLayer {
+                    val p = ResultReveal.star(reveal.now, i, filled)
+                    if (filled) {
+                        val size = if (p >= 1f) 1f else 1.8f - 0.8f * p
+                        scaleX = size
+                        scaleY = size
+                        rotationZ = -15f * (1f - p)
+                        alpha = if (p > 0f) 1f else 0f
+                    }
+                }
+                .drawWithContent {
+                    val p = ResultReveal.star(reveal.now, i, filled)
+                    if (filled) drawContent() else clipRect(right = size.width * p) { this@drawWithContent.drawContent() }
+                }
+            ResultStar(filled, if (middle) 56.dp else 48.dp, style, Modifier.offset(y = if (middle) (-4).dp else 4.dp).then(stamp))
         }
     }
 }

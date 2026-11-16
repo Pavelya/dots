@@ -10,7 +10,8 @@ import dots.engine.Booster
  * How a campaign level's game ended, once it is saved: the [result] (stars included), the worlds
  * and levels the pass [opened], how many times in a row the level has now been [failed] (0 after a
  * pass), the level [next] opens over the map, if it is open, and the [chest] the pass made ready,
- * which Next opens first.
+ * which Next opens first. [starsBefore] is the level's stars before this game: the map's unlock
+ * plays the new ones (motion.md, "Level unlock").
  */
 data class LevelEnd(
     val result: LevelResult,
@@ -18,6 +19,7 @@ data class LevelEnd(
     val failed: Int,
     val next: Level?,
     val chest: Chest? = null,
+    val starsBefore: Int = 0,
 ) {
     companion object {
         /** After this many failures in a row, Result offers help (docs/design/flows.md, Campaign). */
