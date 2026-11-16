@@ -24,15 +24,12 @@ import kotlinx.coroutines.withContext
 
 /**
  * A page Settings opens, on the same paper (the wireframes' frame "Settings details"): Privacy,
- * Credits, the open-source licences, and stand-ins for Send feedback (A-12) and the Play Games
- * backup (O-02). Credits opens the licences with [onPage].
+ * Credits, the open-source licences, and a stand-in for the Play Games backup (O-02). Credits
+ * opens the licences with [onPage].
  */
 @Composable
 fun SettingsDetailsScreen(page: SettingsPage, onPage: (SettingsPage) -> Unit, onBack: () -> Unit) {
     when (page) {
-        SettingsPage.FEEDBACK -> PaperPage(stringResource(R.string.settings_feedback), onBack, stringResource(R.string.back_to_settings)) {
-            IntroCard(stringResource(R.string.stand_in, "A-12"))
-        }
         SettingsPage.PRIVACY -> PaperPage(stringResource(R.string.settings_privacy), onBack, stringResource(R.string.back_to_settings)) {
             IntroCard(stringResource(R.string.privacy_intro))
         }

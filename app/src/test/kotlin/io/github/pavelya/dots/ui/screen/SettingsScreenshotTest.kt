@@ -46,7 +46,7 @@ class SettingsScreenshotTest {
     private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
 
     private fun showSettings(dark: Boolean = false) = show(dark) {
-        SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onPage = {}, onDeveloperMenu = {}, onReplayTutorial = {}, onBack = {})
+        SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onPage = {}, onDeveloperMenu = {}, onReplayTutorial = {}, onFeedback = {}, onBack = {})
     }
 
     @Test

@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -31,6 +32,20 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs[TUTORIAL_SKIPPED] = next.tutorialSkipped
             prefs[DAILY_AHEAD] = next.dailyAhead
         }
+    }
+
+    /**
+     * Marks Google Play's review prompt as asked at [now] and returns true, if [ReviewRule.isDue];
+     * otherwise changes nothing and returns false. Checked and marked in one save, so one ask
+     * never turns into two. Not a setting: the player never sees it.
+     */
+    suspend fun askReview(now: Long): Boolean {
+        var asked = false
+        store.edit { prefs ->
+            asked = ReviewRule.isDue(prefs[REVIEW_ASKED], now)
+            if (asked) prefs[REVIEW_ASKED] = now
+        }
+        return asked
     }
 
     private fun read(prefs: Preferences): AppSettings {
@@ -75,5 +90,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val OLD_PLACING = stringPreferencesKey("placing")
         val TUTORIAL_SKIPPED = booleanPreferencesKey("tutorial_skipped")
         val DAILY_AHEAD = booleanPreferencesKey("developer_daily_ahead")
+
+        /** When the review prompt was last asked for, in milliseconds since 1970 ([askReview]). */
+        val REVIEW_ASKED = longPreferencesKey("review_asked_at")
     }
 }

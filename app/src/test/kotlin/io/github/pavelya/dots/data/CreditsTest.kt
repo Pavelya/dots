@@ -64,6 +64,8 @@ class CreditsTest {
         val ofl = main.resolve("assets").resolve(Credits.Licence.OFL_1_1.file).readText()
         assertTrue(ofl.contains("SIL OPEN FONT LICENSE Version 1.1"))
         for (font in Credits.fonts) assertTrue("${font.name}'s copyright line", ofl.contains("The ${font.name} Project Authors"))
+        val play = main.resolve("assets").resolve(Credits.Licence.PLAY_CORE_TERMS.file).readText()
+        assertTrue(play.contains("Play Core Software Development Kit Terms of Service"))
     }
 
     @Test

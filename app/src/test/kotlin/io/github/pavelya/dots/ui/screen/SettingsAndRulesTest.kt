@@ -47,6 +47,7 @@ class SettingsAndRulesTest {
     private val pages = mutableListOf<SettingsPage>()
     private var developerMenus = 0
     private var replays = 0
+    private var feedbacks = 0
 
     /** Settings over [start], saving each change as the app does: applied to the latest settings. */
     private fun settings(start: AppSettings = AppSettings()) {
@@ -60,6 +61,7 @@ class SettingsAndRulesTest {
                 onPage = { pages += it },
                 onDeveloperMenu = { developerMenus++ },
                 onReplayTutorial = { replays++ },
+                onFeedback = { feedbacks++ },
                 onBack = {},
             )
         }
@@ -157,16 +159,20 @@ class SettingsAndRulesTest {
     }
 
     @Test
-    fun `Help replays the tutorial and opens each of its pages`() {
+    fun `Help replays the tutorial, sends feedback and opens each of its pages`() {
         settings()
         compose.onNodeWithText("Help").performScrollTo().assertIsDisplayed()
         compose.onNodeWithText("Replay the tutorial").performScrollTo().performClick()
         assertEquals(1, replays)
 
-        for (row in listOf("Send feedback", "Privacy", "Play Games backup", "Credits and licences")) {
+        compose.onNodeWithText("Send feedback").performScrollTo().performClick()
+        assertEquals(1, feedbacks)
+
+        for (row in listOf("Privacy", "Play Games backup", "Credits and licences")) {
             compose.onNodeWithText(row).performScrollTo().performClick()
         }
-        assertEquals(listOf(SettingsPage.FEEDBACK, SettingsPage.PRIVACY, SettingsPage.BACKUP, SettingsPage.CREDITS), pages)
+        assertEquals(listOf(SettingsPage.PRIVACY, SettingsPage.BACKUP, SettingsPage.CREDITS), pages)
+        assertEquals(1, feedbacks)
         // Language joins Help once a second language ships (A-10).
         compose.onNodeWithText("Language").assertDoesNotExist()
     }

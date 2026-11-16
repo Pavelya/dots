@@ -1,8 +1,13 @@
 package io.github.pavelya.dots.ui
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -25,6 +30,7 @@ import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.FileProvider
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -51,7 +57,9 @@ import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.GameMode
+import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PuzzleClock
+import io.github.pavelya.dots.data.ReviewRule
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.computerFor
 import io.github.pavelya.dots.game.dailyGame
@@ -150,6 +158,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
         Unit
     }
     val appScope = rememberCoroutineScope()
+    val activity = LocalActivity.current
     // Play the tutorial (Rules) and Replay the tutorial (Settings): level 1 as practice, which
     // changes no progress, with its guided steps shown again. It replaces the saved game, as
     // Restart does, and the map stays under it.
@@ -415,6 +424,10 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
                                 onShare = { text -> shareText(context, text) },
                                 toNextPuzzle = app.clock::toNextPuzzle,
+                                // Google Play's review prompt, after a level won with three stars, at most once a month.
+                                onLevelResult = { level, end, practice ->
+                                    activity?.let { over -> appScope.launch { askForReview(app, over, level, end, practice, System.currentTimeMillis()) } }
+                                },
                                 // Next goes back to the map, which opens the chest the level made
                                 // ready, if any, and otherwise the next level's card.
                                 onNext = { end ->
@@ -462,6 +475,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                 }
                 composable(Routes.SETTINGS) {
                     val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+                    val context = LocalContext.current
                     settings?.let {
                         SettingsScreen(
                             settings = it,
@@ -472,6 +486,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             onPage = { navController.navigate(Routes.settingsDetails(it)) },
                             onDeveloperMenu = { navController.navigate(Routes.DEVELOPER) },
                             onReplayTutorial = playTutorial,
+                            onFeedback = { sendFeedback(context) },
                             onBack = back,
                         )
                     }
@@ -545,6 +560,37 @@ private fun shareText(context: Context, text: String) {
     val send = Intent(Intent.ACTION_SEND).setType("text/plain").putExtra(Intent.EXTRA_TEXT, text)
     context.startActivity(Intent.createChooser(send, context.getString(R.string.daily_share_title)))
 }
+
+/**
+ * Asks Google Play for its review prompt over [activity], now that [level] has ended with [end],
+ * if [ReviewRule] allows it at [now]: a level won with three stars, not practice and not the
+ * tutorial, and no ask in the last month. Any other end leaves the month's ask unspent. Returns
+ * true when it asked; Google decides whether the prompt shows.
+ */
+internal suspend fun askForReview(app: DotsApplication, activity: Activity, level: Level, end: LevelEnd, practice: Boolean, now: Long): Boolean {
+    if (!ReviewRule.earns(level, end.result, practice) || !app.settings.askReview(now)) return false
+    app.reviews.show(activity)
+    return true
+}
+
+/**
+ * Opens the phone's email app with a message to the game's support address, which names the
+ * build and the phone under the player's words. Without an email app, says where to write.
+ */
+private fun sendFeedback(context: Context) {
+    try {
+        context.startActivity(feedbackEmail(context))
+    } catch (_: ActivityNotFoundException) {
+        val address = context.getString(R.string.feedback_address)
+        Toast.makeText(context, context.getString(R.string.feedback_no_email, address), Toast.LENGTH_LONG).show()
+    }
+}
+
+/** The feedback email of [sendFeedback], for Android's email apps (`mailto:`). */
+internal fun feedbackEmail(context: Context): Intent = Intent(Intent.ACTION_SENDTO, "mailto:".toUri())
+    .putExtra(Intent.EXTRA_EMAIL, arrayOf(context.getString(R.string.feedback_address)))
+    .putExtra(Intent.EXTRA_SUBJECT, context.getString(R.string.feedback_subject))
+    .putExtra(Intent.EXTRA_TEXT, context.getString(R.string.feedback_details, BuildConfig.VERSION_NAME, Build.VERSION.RELEASE, Build.MODEL))
 
 /** True when [route] is on the back stack. */
 private fun NavHostController.isOnStack(route: String): Boolean = runCatching { getBackStackEntry(route) }.isSuccess
