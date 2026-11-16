@@ -138,6 +138,24 @@ still separate the sides.
 then has about 4 mm between points, as in the game. Check that red and blue pieces, the pinhole
 and the cuts are easy to tell apart at arm's length, in every image.
 
+**In the app.** The same views of the app's own board, from its screenshot tests
+(`board_pieces*` in `app/src/test/screenshots/`): a red and a blue capture, the last move, a
+threat with its closing point, and Blue's preview with drag's guides, with the usual and with
+high-contrast pieces. The board is 9x9, so the spacing is 40 dp and the pieces are larger than on
+a 15x15 board.
+
+| | As seen | Greyscale | Protanopia | Deuteranopia | Tritanopia |
+| --- | --- | --- | --- | --- | --- |
+| Usual, light | <img src="pieces/app-usual-light-seen.png" width="140" alt="The app's light board as seen"> | <img src="pieces/app-usual-light-greyscale.png" width="140" alt="The app's light board in greyscale"> | <img src="pieces/app-usual-light-protanopia.png" width="140" alt="The app's light board with protanopia"> | <img src="pieces/app-usual-light-deuteranopia.png" width="140" alt="The app's light board with deuteranopia"> | <img src="pieces/app-usual-light-tritanopia.png" width="140" alt="The app's light board with tritanopia"> |
+| Usual, dark | <img src="pieces/app-usual-dark-seen.png" width="140" alt="The app's dark board as seen"> | <img src="pieces/app-usual-dark-greyscale.png" width="140" alt="The app's dark board in greyscale"> | <img src="pieces/app-usual-dark-protanopia.png" width="140" alt="The app's dark board with protanopia"> | <img src="pieces/app-usual-dark-deuteranopia.png" width="140" alt="The app's dark board with deuteranopia"> | <img src="pieces/app-usual-dark-tritanopia.png" width="140" alt="The app's dark board with tritanopia"> |
+| High contrast, light | <img src="pieces/app-contrast-light-seen.png" width="140" alt="The app's light board with high-contrast pieces as seen"> | <img src="pieces/app-contrast-light-greyscale.png" width="140" alt="The app's light board with high-contrast pieces in greyscale"> | <img src="pieces/app-contrast-light-protanopia.png" width="140" alt="The app's light board with high-contrast pieces with protanopia"> | <img src="pieces/app-contrast-light-deuteranopia.png" width="140" alt="The app's light board with high-contrast pieces with deuteranopia"> | <img src="pieces/app-contrast-light-tritanopia.png" width="140" alt="The app's light board with high-contrast pieces with tritanopia"> |
+| High contrast, dark | <img src="pieces/app-contrast-dark-seen.png" width="140" alt="The app's dark board with high-contrast pieces as seen"> | <img src="pieces/app-contrast-dark-greyscale.png" width="140" alt="The app's dark board with high-contrast pieces in greyscale"> | <img src="pieces/app-contrast-dark-protanopia.png" width="140" alt="The app's dark board with high-contrast pieces with protanopia"> | <img src="pieces/app-contrast-dark-deuteranopia.png" width="140" alt="The app's dark board with high-contrast pieces with deuteranopia"> | <img src="pieces/app-contrast-dark-tritanopia.png" width="140" alt="The app's dark board with high-contrast pieces with tritanopia"> |
+
+In every view the round dots and the diamonds separate the sides, and the pinhole and the cuts
+show.
+
 **Redrawing.** [`pieces/draw.py`](pieces/draw.py) draws the sheets and the board images from the
-values on this page and the theme page. Run `python3 docs/design/pieces/draw.py` from the
-repository root; it needs Python 3 and `rsvg-convert` (from librsvg).
+values on this page and the theme page. [`pieces/simulate.py`](pieces/simulate.py) makes the
+app's images from its screenshots; record them first (CLAUDE.md, Commands). Run
+`python3 docs/design/pieces/draw.py` or `python3 docs/design/pieces/simulate.py` from the
+repository root; both need Python 3 and `rsvg-convert` (from librsvg).
