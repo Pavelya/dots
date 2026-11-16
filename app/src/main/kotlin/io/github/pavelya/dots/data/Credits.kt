@@ -51,8 +51,30 @@ object Credits {
         ),
     )
 
-    /** The sound effects and music the app ships with (V-08, V-09). */
-    val sounds: List<Asset> = emptyList()
+    /**
+     * The sound effects and music the app ships with (V-08, V-09). The effects come from
+     * docs/design/sound/make_effects.py: three from the owner's Suno sounds, the rest made in code.
+     */
+    val sounds: List<Asset> = listOf(
+        Asset(
+            "Pen and paper sounds",
+            "$MADE_BY, with Suno",
+            null,
+            listOf("place_1", "place_2", "place_3", "ring_draw", "bomb").map(::effect),
+        ),
+        Asset(
+            "Notes and chimes",
+            "$MADE_BY, made in code",
+            null,
+            listOf(
+                "ring_close", "captured", "capture_big", "threat", "dots_low", "boss_turn", "double_dot",
+                "area_light", "win", "lose", "draw", "star", "world_open", "reward",
+            ).map(::effect),
+        ),
+    )
+
+    /** A sound effect's file in the app's assets: `sfx_win` is `assets/audio/sfx_win.ogg`. */
+    private fun effect(name: String) = "assets/audio/sfx_$name.ogg"
 
     val libraries: List<Library> = listOf(
         Library("Kotlin", Licence.APACHE_2, listOf("org.jetbrains.kotlin")),
