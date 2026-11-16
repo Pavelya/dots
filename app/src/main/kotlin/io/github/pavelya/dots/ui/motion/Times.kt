@@ -324,7 +324,8 @@ object DoubleDotEffect {
 /**
  * Undo: the turn is rubbed out newest first, the opponent's answer from [ANSWER], the player's dots
  * from [OWN], each in [RUB] ms, while three Graphite strokes scrub across them. A booster used in
- * that turn flies back to its button from [FLIGHT_FROM] to [FLIGHT_TO], and its count swells. At
+ * that turn flies back to its button from [FLIGHT_FROM] to [FLIGHT_TO], and its count swells; dots
+ * a bomb took in that turn grow back in while the player's dots are rubbed out. At
  * [SETTLED] the dots left, the pinhole and the face are as after the undo; the strokes shrink away.
  */
 object UndoEffect {
@@ -344,6 +345,9 @@ object UndoEffect {
 
     /** How far the strokes have slid along their slant, in dp: three times back and forth. */
     fun scrub(t: Float, from: Float): Float = 3f * sin(2 * PI * 3 * phase(t, from, from + RUB)).toFloat()
+
+    /** A dot a bomb took in the turn, growing back in: its size from 0 to 1. */
+    fun growBack(t: Float): Float = phase(t, OWN, SETTLED, Ease.OUT)
 
     /** The booster given back, on its way to its button. */
     fun flight(t: Float): Float = phase(t, FLIGHT_FROM, FLIGHT_TO, Ease.IN_OUT)
