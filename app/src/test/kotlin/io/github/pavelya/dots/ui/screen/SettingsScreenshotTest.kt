@@ -89,6 +89,15 @@ class SettingsScreenshotTest {
     }
 
     @Test
+    fun `licences scrolled to the end`() {
+        show { SettingsDetailsScreen(SettingsPage.LICENCES, onPage = {}, onBack = {}) }
+        val playTerms = hasText("Redistributable Code", substring = true)
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(playTerms).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(playTerms).performScrollTo()
+        capture("settings_licences_end")
+    }
+
+    @Test
     fun privacy() {
         show { SettingsDetailsScreen(SettingsPage.PRIVACY, onPage = {}, onBack = {}) }
         capture("settings_privacy")
