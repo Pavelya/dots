@@ -277,7 +277,7 @@ object ResultReveal {
     fun slide(t: Float): Float = phase(t, 0f, SLIDE, Ease.OUT)
 
     /** The note's turn beyond its slant, in degrees: −1 while it slides, back to 0 as it settles. */
-    fun tip(t: Float): Float = -1f * (1f - phase(t, TIP_FROM, SETTLED, Ease.IN_OUT))
+    fun tip(t: Float): Float = phase(t, TIP_FROM, SETTLED, Ease.IN_OUT) - 1f
 
     /** How much of the headline is written, left to right. */
     fun headline(t: Float): Float = phase(t, SETTLED, SETTLED + HEADLINE, Ease.LINEAR)

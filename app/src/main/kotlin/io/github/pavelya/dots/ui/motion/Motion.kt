@@ -16,8 +16,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlin.math.PI
-import kotlin.math.sin
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -59,7 +57,8 @@ fun phase(t: Float, start: Float, end: Float, easing: Easing = Ease.LINEAR): Flo
  */
 fun swell(t: Float, start: Float, end: Float): Float {
     if (t <= start || t >= end) return 0f
-    return sin(PI * Ease.IN_OUT.transform((t - start) / (end - start))).toFloat()
+    val p = (t - start) / (end - start)
+    return Ease.IN_OUT.transform(if (p <= 0.5f) 2 * p else 2 * (1 - p))
 }
 
 /**

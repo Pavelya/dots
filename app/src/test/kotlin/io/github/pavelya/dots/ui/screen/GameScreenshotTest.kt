@@ -383,7 +383,7 @@ private fun GameState.near(x: Int, y: Int): Pos = legalMoves().minBy { (it.x - x
  * the computer, six dots ahead. Played by the rules, Blue's last dot at (7, 7) also captures Red's
  * (8, 7), which the canvas leaves on the board; Red's (9, 8) is then the dot in danger.
  */
-private object CanvasGame {
+internal object CanvasGame {
     private fun points(vararg xy: Int) = xy.toList().chunked(2).map { Pos(it[0], it[1]) }
 
     private val openingRed = points(6, 7, 8, 7)
@@ -434,16 +434,19 @@ private object CanvasGame {
     private val red = openingRed + redRing + points(11, 3, 9, 8) + (bigRing - Pos(5, 7))
     private val blue = openingBlue + blueRing + blueAttack + cluster + points(4, 11, 11, 11, 12, 12)
 
-    /** Each side has closed a ring, and Blue has just played (7, 7). Red to move, 13 dots left. */
-    val threat: MoveResult
+    /** Blue has closed its ring at (11, 2); Red is to move, and closes its own at (4, 9) in [smallCapture]. */
+    val beforeSmallCapture: GameState
         get() {
-            val closingBlue = Pos(11, 2)
-            val closingRed = Pos(4, 9)
-            val last = Pos(7, 7)
-            val dots = (red - closingRed).associateWith { Player.RED } + (blue - closingBlue - last).associateWith { Player.BLUE }
+            val dots = (red - Pos(4, 9)).associateWith { Player.RED } + (blue - Pos(11, 2) - Pos(7, 7)).associateWith { Player.BLUE }
             val start = GameState.start(15, 15, dotsPerPlayer = 14, first = Player.BLUE, dots = dots)
-            return start.play(closingBlue).state.play(closingRed).state.play(last)
+            return start.play(Pos(11, 2)).state
         }
+
+    /** Red closes its ring at (4, 9): two blue dots (the motion page's "Capture"). */
+    val smallCapture: MoveResult get() = beforeSmallCapture.play(Pos(4, 9))
+
+    /** Each side has closed a ring, and Blue has just played (7, 7). Red to move, 13 dots left. */
+    val threat: MoveResult get() = smallCapture.state.play(Pos(7, 7))
 
     /** Red closes the big ring at (5, 7): six blue dots at once. */
     val bigCapture: MoveResult get() = threat.state.play(Pos(5, 7))
