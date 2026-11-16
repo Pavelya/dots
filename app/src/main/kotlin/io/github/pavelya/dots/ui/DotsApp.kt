@@ -174,14 +174,14 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
         }
         Unit
     }
-    // The developer menu's "a year ahead" moves the daily puzzle's clock.
+    // The developer menu's "a year ahead" moves the daily puzzle's clock; high-contrast pieces go to every board.
     val appSettings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     LaunchedEffect(appSettings?.dailyAhead) {
         appSettings?.let { app.clock.shiftDays = if (it.dailyAhead) PuzzleClock.YEAR_AHEAD_DAYS else 0 }
     }
     val top by navController.currentBackStackEntryAsState()
     val starting = top == null || top?.destination?.route == Routes.LOADING
-    DotsTheme {
+    DotsTheme(highContrast = appSettings?.highContrast ?: false) {
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             // Paper under the system bars too, as on Android's own start-up screen.

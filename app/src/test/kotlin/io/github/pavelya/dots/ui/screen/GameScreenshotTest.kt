@@ -70,9 +70,9 @@ class GameScreenshotTest {
     private val human = Player.RED
 
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
-    private fun show(theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false, content: @Composable () -> Unit) {
+    private fun show(theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false, highContrast: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
-            DotsTheme(theme, dark) {
+            DotsTheme(theme, dark, highContrast) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
             }
         }
@@ -139,6 +139,19 @@ class GameScreenshotTest {
         capture("game_big_capture_dark")
     }
 
+    /** The big capture with high-contrast pieces turned on in Settings (pieces.md, "High contrast"). */
+    @Test
+    fun bigCaptureHighContrast() {
+        show(highContrast = true) { Board(ui(CanvasGame.bigCapture)) }
+        capture("game_big_capture_contrast")
+    }
+
+    @Test
+    fun bigCaptureHighContrastDark() {
+        show(dark = true, highContrast = true) { Board(ui(CanvasGame.bigCapture)) }
+        capture("game_big_capture_contrast_dark")
+    }
+
     @Test
     @Config(qualifiers = "w320dp-h568dp-xhdpi")
     fun threatOnASmallPhone() {
@@ -184,10 +197,10 @@ class GameScreenshotTest {
      * Placing the first dot by drag (canvas frame `game-drag`): the finger is down on (10, 7), the
      * preview sits there, and dashed guides run from its ring to the board's edges.
      */
-    private fun drag(name: String, dark: Boolean) {
+    private fun drag(name: String, dark: Boolean, highContrast: Boolean = false) {
         val point = Pos(10, 7)
         val opening = ui(CanvasGame.opening, lastMove = null).copy(preview = point)
-        show(dark = dark) { Board(opening, input = BoardInput(PlacingMethod.DRAG, {}, {}, {})) }
+        show(dark = dark, highContrast = highContrast) { Board(opening, input = BoardInput(PlacingMethod.DRAG, {}, {}, {})) }
         compose.onNodeWithTag(BOARD_TAG).performTouchInput {
             down(BoardGeometry(15, 15, width.toFloat(), height.toFloat()).center(point))
         }
@@ -199,6 +212,13 @@ class GameScreenshotTest {
 
     @Test
     fun placingByDragDark() = drag("game_drag_dark", dark = true)
+
+    /** Drag with high-contrast pieces: the preview outlined in ink, the guides wider, on a strip of paper. */
+    @Test
+    fun placingByDragHighContrast() = drag("game_drag_contrast", dark = false, highContrast = true)
+
+    @Test
+    fun placingByDragHighContrastDark() = drag("game_drag_contrast_dark", dark = true, highContrast = true)
 
     @Test
     @Config(qualifiers = "w320dp-h568dp-xhdpi")

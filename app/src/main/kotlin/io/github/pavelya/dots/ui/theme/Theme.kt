@@ -28,6 +28,8 @@ data class GameTheme(
     val dark: Palette,
     val board: BoardLook,
     val type: TypeScale,
+    /** The board with the player's "High-contrast pieces" setting on (pieces.md, "High contrast"). */
+    val highContrastBoard: BoardLook = board,
     /**
      * Each sound effect, by its name in docs/design/sound.md (`sfx_place_1`, `sfx_ring_draw` and
      * so on), as a raw resource. Empty until the sounds come into the game (V-08, V-10).
@@ -38,6 +40,9 @@ data class GameTheme(
 ) {
     fun palette(dark: Boolean): Palette = if (dark) this.dark else light
 
+    /** The board's look, with high-contrast pieces when [highContrast]. */
+    fun board(highContrast: Boolean): BoardLook = if (highContrast) highContrastBoard else board
+
     companion object {
         val PLAIN: GameTheme get() = PlainTheme
         val NOTEBOOK: GameTheme get() = NotebookTheme
@@ -46,6 +51,11 @@ data class GameTheme(
         val current: GameTheme
             @Composable @ReadOnlyComposable
             get() = LocalGameTheme.current
+
+        /** Whether the player turned on high-contrast pieces; [DotsTheme] passes it on. */
+        val highContrast: Boolean
+            @Composable @ReadOnlyComposable
+            get() = LocalHighContrast.current
     }
 }
 
@@ -154,20 +164,22 @@ data class TypeScale(
 
 private val LocalGameTheme = staticCompositionLocalOf { NotebookTheme }
 private val LocalPalette = staticCompositionLocalOf { NotebookTheme.light }
+private val LocalHighContrast = staticCompositionLocalOf { false }
 
 /**
  * Draws [content] in [theme], in its dark version when [dark] (by default, when the phone's dark
  * theme is on). The Material parts of the screens take the theme's [Palette.material] and
- * [TypeScale.material].
+ * [TypeScale.material]. Every board draws high-contrast pieces when [highContrast].
  */
 @Composable
 fun DotsTheme(
     theme: GameTheme = GameTheme.NOTEBOOK,
     dark: Boolean = isSystemInDarkTheme(),
+    highContrast: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val palette = theme.palette(dark)
-    CompositionLocalProvider(LocalGameTheme provides theme, LocalPalette provides palette) {
+    CompositionLocalProvider(LocalGameTheme provides theme, LocalPalette provides palette, LocalHighContrast provides highContrast) {
         MaterialTheme(colorScheme = palette.material, typography = theme.type.material, content = content)
     }
 }

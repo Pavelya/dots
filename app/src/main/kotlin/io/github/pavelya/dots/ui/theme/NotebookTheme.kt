@@ -27,6 +27,41 @@ private val Nunito = FontFamily(
     Font(R.font.nunito_extrabold, FontWeight.ExtraBold),
 )
 
+/** The Notebook board: theme-notebook.md, "The board", and pieces.md. */
+private val NotebookBoard = BoardLook(
+    grid = Measure(dp = 1f),
+    edge = Measure(dp = 1.5f),
+    dot = Measure(ofSpacing = 0.5f, min = 9f, max = 20f),
+    red = Piece(PieceShape.DOT),
+    blue = Piece(PieceShape.DIAMOND, across = 7f / 6),
+    capturedAlpha = 1f,
+    ring = Measure(ofSpacing = 1f / 12, min = 1.5f, max = 3f),
+    ringBow = 0.4f,
+    ringWobble = 0.15f,
+    hatch = Measure(dp = 1f),
+    hatchGap = 5f,
+    link = Measure(dp = 1.5f),
+    threatRing = Measure(ofSpacing = 0.84f),
+    threatNear = Measure(dp = 2f),
+    threatFar = Measure(dp = 1.5f),
+    closingPoint = Measure(ofSpacing = 1f / 3),
+    closingLine = Measure(dp = 1.5f),
+    previewRing = Measure(ofSpacing = 0.9f),
+    previewLine = Measure(dp = 2f),
+    pinhole = 0.3f,
+    lastMoveRing = Measure(),
+    lastMoveLine = Measure(),
+    cut = 1f / 6,
+    cutLength = 1.5f,
+    halo = Measure(),
+    previewOutline = Measure(),
+    guide = Measure(dp = 1.5f),
+    guideAlpha = 1f,
+    guideDash = 4f,
+    guideGap = 3f,
+    guideCasing = Measure(),
+)
+
 /**
  * The launch look (decision 0012): red and blue ink on squared school paper, Caveat for big
  * headings and Nunito for everything else. Every value comes from docs/design/theme-notebook.md
@@ -52,33 +87,15 @@ internal val NotebookTheme: GameTheme = GameTheme(
         highlighter = 0xFFF0B04A, highlighterFaint = 0xFF6E5428,
         pencil = 0xFFEDE8DF, graphite = 0xFFA8A399, margin = 0xFF5A3531,
     ),
-    board = BoardLook(
-        grid = Measure(dp = 1f),
-        edge = Measure(dp = 1.5f),
-        dot = Measure(ofSpacing = 0.5f, min = 9f, max = 20f),
-        red = Piece(PieceShape.DOT),
-        blue = Piece(PieceShape.DIAMOND, across = 7f / 6),
-        capturedAlpha = 1f,
-        ring = Measure(ofSpacing = 1f / 12, min = 1.5f, max = 3f),
-        ringBow = 0.4f,
-        ringWobble = 0.15f,
-        hatch = Measure(dp = 1f),
-        hatchGap = 5f,
-        link = Measure(dp = 1.5f),
-        threatRing = Measure(ofSpacing = 0.84f),
-        threatNear = Measure(dp = 2f),
-        threatFar = Measure(dp = 1.5f),
-        closingPoint = Measure(ofSpacing = 1f / 3),
-        closingLine = Measure(dp = 1.5f),
-        previewRing = Measure(ofSpacing = 0.9f),
-        previewLine = Measure(dp = 2f),
-        // The last-move pinhole comes with V-04; until then, Plain's ring.
-        lastMoveRing = Measure(ofSpacing = 0.84f),
-        lastMoveLine = Measure(ofSpacing = 0.06f),
-        guide = Measure(dp = 1.5f),
-        guideAlpha = 1f,
-        guideDash = 4f,
-        guideGap = 3f,
+    board = NotebookBoard,
+    highContrastBoard = NotebookBoard.copy(
+        // High-contrast pieces (pieces.md, "High contrast"): larger, each in a band of the paper or
+        // wash under it; the preview outlined in ink; drag's guides wider, on a strip.
+        dot = Measure(ofSpacing = 0.6f, min = 9f, max = 24f),
+        halo = Measure(dp = 1.5f),
+        previewOutline = Measure(dp = 1.5f),
+        guide = Measure(dp = 2f),
+        guideCasing = Measure(dp = 1f),
     ),
     type = TypeScale(
         display = TextStyle(fontFamily = Caveat, fontSize = 40.sp, lineHeight = 48.sp, fontWeight = FontWeight.Bold),

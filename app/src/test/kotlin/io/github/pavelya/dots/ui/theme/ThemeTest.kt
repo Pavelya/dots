@@ -128,6 +128,48 @@ class ThemeTest {
     }
 
     @Test
+    fun `the last-move pinhole and the captured cut as pieces md draws them`() {
+        val look = notebook.board
+        val dot = look.dot.px(24f, density = 1f)
+        // At 24 dp spacing: a 3.6 dp pinhole; a cut 2 dp wide and 18 dp long.
+        assertEquals(3.6f, dot * look.pinhole, 0.001f)
+        assertEquals(2f, dot * look.cut, 0.001f)
+        assertEquals(18f, dot * look.cutLength, 0.001f)
+        // The usual board has no high-contrast bands.
+        assertEquals(0f, look.halo.px(24f, 1f))
+        assertEquals(0f, look.previewOutline.px(24f, 1f))
+        assertEquals(0f, look.guideCasing.px(24f, 1f))
+        assertEquals(look, notebook.board(highContrast = false))
+    }
+
+    @Test
+    fun `high-contrast pieces as pieces md draws them`() {
+        val look = notebook.board(highContrast = true)
+        fun px(measure: Measure, spacing: Float) = measure.px(spacing, density = 1f)
+        // 0.6 of the spacing, at least 9 dp, at most 24 dp: 1.2 times the usual dot size from 18 dp spacing up.
+        assertEquals(9f, px(look.dot, 12f), 0.001f)
+        assertEquals(9.6f, px(look.dot, 16f), 0.001f)
+        for (spacing in listOf(18f, 24f, 40f)) {
+            assertEquals(1.2f * px(notebook.board.dot, spacing), px(look.dot, spacing), 0.001f)
+        }
+        assertEquals(24f, px(look.dot, 60f), 0.001f)
+        assertEquals(14.4f, px(look.dot, 24f), 0.001f)
+        assertEquals(16.8f, px(look.dot, 24f) * look.blue.across, 0.001f)
+        assertEquals(1.5f, px(look.halo, 24f))
+        assertEquals(1.5f, px(look.previewOutline, 24f))
+        assertEquals(2f, px(look.guide, 24f))
+        assertEquals(1f, px(look.guideCasing, 24f))
+        // Everything else is the usual board's.
+        val usual = notebook.board
+        assertEquals(
+            usual,
+            look.copy(dot = usual.dot, halo = usual.halo, previewOutline = usual.previewOutline, guide = usual.guide, guideCasing = usual.guideCasing),
+        )
+        // A theme without high-contrast pieces draws its usual board.
+        assertEquals(GameTheme.PLAIN.board, GameTheme.PLAIN.board(highContrast = true))
+    }
+
+    @Test
     fun `text styles are the page's sizes and weights`() {
         val styles = with(notebook.type) {
             mapOf("Display" to display, "Headline" to headline, "Title" to title, "Score" to score, "Body" to body, "Label" to label, "Small" to small)
