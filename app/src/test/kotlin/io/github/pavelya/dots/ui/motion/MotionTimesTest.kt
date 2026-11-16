@@ -1,11 +1,13 @@
 package io.github.pavelya.dots.ui.motion
 
+import dots.engine.Booster
 import dots.engine.Capture
 import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.ThreatMark
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -205,5 +207,88 @@ class MotionTimesTest {
         val threat = BoardMoment(4, dot, Player.BLUE, announced = true, freshThreats = setOf(ThreatMark(setOf(Pos(1, 1)), 1)))
         assertEquals(Announce.LENGTH, threat.playOut)
         assertEquals(Threat.LENGTH, threat.length)
+    }
+
+    @Test
+    fun `booster effects stay under 1500 ms, Wall 400, Hint 500, Bomb 450, Double dot 300 then 250 per dot, Undo 600`() {
+        near(400f, BoosterTimes.length(Booster.WALL))
+        near(500f, BoosterTimes.length(Booster.HINT))
+        near(450f, BoosterTimes.length(Booster.BOMB))
+        near(300f, BoosterTimes.length(Booster.DOUBLE_DOT))
+        near(250f, DoubleDotEffect.SPARK)
+        near(600f, BoosterTimes.length(Booster.UNDO))
+        assertTrue(Booster.entries.all { BoosterTimes.length(it) < 1_500f })
+        assertTrue(DoubleDotEffect.CHIP_IN + 2 * DoubleDotEffect.SPARK < 1_500f)
+        // The used booster's count swells to 135% and back in 200 ms.
+        assertEquals(1.35f, BoosterTimes.countScale(100f), 0.001f)
+        assertEquals(1f, BoosterTimes.countScale(200f))
+        assertEquals(listOf(Booster.BOMB, Booster.UNDO), Booster.entries.filter(BoosterTimes::tapFinishes))
+    }
+
+    @Test
+    fun `a wall's square is drawn by 200 ms and hatched by 400 ms`() {
+        assertEquals(0f, WallEffect.square(0f))
+        near(200f, ends { WallEffect.square(it) })
+        near(200f, starts { WallEffect.hatch(it) })
+        near(400f, ends { WallEffect.hatch(it) })
+    }
+
+    @Test
+    fun `a hint circles its point twice, 250 ms per loop, and the circles shrink away in 150 ms`() {
+        assertEquals(0f, HintEffect.loops(0f))
+        assertEquals(1f, HintEffect.loops(250f), 0.001f)
+        assertEquals(2f, HintEffect.loops(500f))
+        assertEquals(1f, HintEffect.shrink(0f))
+        near(150f, ends { 1f - HintEffect.shrink(it) })
+    }
+
+    @Test
+    fun `a bomb drops in 150 ms, then its hits swell to 130 percent and are gone at 350 ms, the board shakes and the specks fly until 450 ms`() {
+        assertEquals(0.6f, BombEffect.drop(0f))
+        assertTrue(BombEffect.drop(149f) > 0.99f)
+        assertEquals(0f, BombEffect.drop(150f))
+        assertEquals(1f, BombEffect.hit(150f))
+        assertEquals(1.3f, BombEffect.hit(220f), 0.001f)
+        assertEquals(0f, BombEffect.hit(350f))
+        assertEquals(0f, BombEffect.shake(150f))
+        assertTrue((150..300).all { abs(BombEffect.shake(it.toFloat())) <= 2f })
+        assertEquals(0f, BombEffect.shake(300f))
+        assertNull(BombEffect.specks(149f))
+        assertEquals(0f, BombEffect.specks(150f))
+        assertNull(BombEffect.specks(450f))
+    }
+
+    @Test
+    fun `a double dot's chip grows in in 300 ms, swells to 125 percent at the first dot and leaves in 150 ms after the second`() {
+        near(300f, ends { DoubleDotEffect.chipIn(it) })
+        assertEquals(1.25f, DoubleDotEffect.chipSwell(100f), 0.001f)
+        assertEquals(1f, DoubleDotEffect.chipSwell(200f))
+        near(150f, ends { 1f - DoubleDotEffect.chipOut(it) })
+        assertEquals(0f, DoubleDotEffect.spark(0f))
+        assertNull(DoubleDotEffect.spark(250f))
+    }
+
+    @Test
+    fun `Undo rubs out the answer from 0 ms and the player's dot from 200 ms, 250 ms each, and is done at 600 ms`() {
+        assertEquals(1f, UndoEffect.rubOut(250f, UndoEffect.ANSWER))
+        near(200f, starts { UndoEffect.rubOut(it, UndoEffect.OWN) })
+        near(450f, ends { UndoEffect.rubOut(it, UndoEffect.OWN) })
+        assertEquals(0f, UndoEffect.strokes(100f, UndoEffect.OWN))
+        assertTrue(UndoEffect.strokes(300f, UndoEffect.OWN) > 0f)
+        assertEquals(0f, UndoEffect.strokes(600f, UndoEffect.ANSWER))
+        near(200f, starts { UndoEffect.flight(it) })
+        near(400f, ends { UndoEffect.flight(it) })
+        assertEquals(1.35f, UndoEffect.countScale(500f), 0.001f)
+        assertEquals(1f, UndoEffect.countScale(600f))
+        near(450f, UndoEffect.SETTLED)
+        near(600f, UndoEffect.LENGTH)
+    }
+
+    @Test
+    fun `a dot placed after a Double dot plays out its sparks, and one after a Hint its circles`() {
+        val dot = Pos(3, 3)
+        assertEquals(DoubleDotEffect.SPARK, BoardMoment(1, dot, Player.RED, announced = false, doubleDots = 2).playOut)
+        assertEquals(Placing.LENGTH, BoardMoment(2, dot, Player.RED, announced = false, hintBefore = dot).playOut)
+        assertNotNull(DoubleDotEffect.spark(Placing.LENGTH))
     }
 }

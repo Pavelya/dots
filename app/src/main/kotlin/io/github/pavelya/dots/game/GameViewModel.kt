@@ -108,6 +108,8 @@ data class GameUiState(
     val doubleDots: Int? = null,
     /** The dot that has just landed, for the screen to play its moment (motion.md); null after an undo, a booster or a new game. */
     val moment: BoardMoment? = null,
+    /** The booster just used, for the screen to play its effect (motion.md, "Boosters"); null once a dot lands, after free play's undo and in a new game. */
+    val booster: BoosterMoment? = null,
     /**
      * The dot whose row and column the edge marks show: the computer's last dot until the player's
      * next dot lands, or between two people the last dot (motion.md, "The computer's move").
@@ -229,6 +231,9 @@ class GameViewModel(
     private var moment: BoardMoment? = null
     private var moments = 0
 
+    /** The booster just used, for its effect; see [GameUiState.booster]. */
+    private var boosterMoment: BoosterMoment? = null
+
     /** The dot the edge marks show; see [GameUiState.edgeMarks]. */
     private var edgeMarks: Pos? = null
 
@@ -330,6 +335,7 @@ class GameViewModel(
         val announced = computer == null || by != human
         val marksGone = edgeMarks
         edgeMarks = if (announced) dot else null
+        boosterMoment = null
         val shown = snapshot(lastMove = dot, captured = move, aim = null, landing = null)
         val known = before.dangers.map(ThreatMark::of).toSet()
         val fresh = shown.dangers.map(ThreatMark::of).filter { it !in known }.toSet()
@@ -344,13 +350,16 @@ class GameViewModel(
             freshThreats = fresh,
             missionBefore = before.mission,
             opponentBefore = before.opponent,
+            hintBefore = before.hint,
+            doubleDots = before.doubleDots?.takeIf { by == human },
         )
         _ui.value = shown.copy(moment = moment)
     }
 
-    /** Nothing to play: after an undo, a booster or a new game the board shows its state at once. */
+    /** No dot to play: after an undo, a booster or a new game the board shows its state at once, or plays the booster. */
     private fun still() {
         moment = null
+        boosterMoment = null
     }
 
     /**
@@ -439,8 +448,19 @@ class GameViewModel(
 
     private fun use(action: Action.UseBooster) {
         chosen = null
-        game.apply(action)
+        val before = game.state
+        val record = game.record
+        val opponentBefore = _ui.value.opponent
+        val result = game.apply(action)
         still()
+        boosterMoment = BoosterMoment(
+            id = ++moments,
+            booster = action.booster,
+            by = before.toMove,
+            point = result.booster?.pos,
+            removed = result.booster?.removed.orEmpty(),
+            undone = if (action == Action.Undo) undoneTurn(before, result.state, record.actions, opponentBefore) else null,
+        )
         if (action == Action.Undo) {
             entry = entry.copy(undos = entry.undos + 1)
             edgeMarks = null
@@ -468,6 +488,31 @@ class GameViewModel(
         game.apply(Action.Finish)
         changed()
         _ui.value = snapshot(lastMove = lastPlaced())
+    }
+
+    /**
+     * The turn an Undo took back, to go from [before] to [after]: the pieces gone, and the booster
+     * the player used in that turn, found in the [actions] played until the Undo.
+     */
+    private fun undoneTurn(before: GameState, after: GameState, actions: List<Action>, opponentBefore: OpponentLook?): UndoneTurn {
+        val gone = before.points().filter { before.ownerAt(it) != null && after.ownerAt(it) == null }
+        val player = before.toMove
+        val givenBack = Booster.entries.firstOrNull { it != Booster.UNDO && after.boostersLeft(player, it) > before.boostersLeft(player, it) }
+        val used = actions.lastOrNull { it is Action.UseBooster && it.booster == givenBack }
+        val at = when (used) {
+            is Action.Wall -> used.pos
+            is Action.Hint -> used.pos
+            is Action.Bomb -> used.pos
+            else -> null
+        }
+        return UndoneTurn(
+            before = before,
+            answer = gone.filter { before.ownerAt(it) != player },
+            own = gone.filter { before.ownerAt(it) == player },
+            givenBack = givenBack,
+            givenBackAt = at,
+            opponentBefore = opponentBefore,
+        )
     }
 
     /** Takes back the human's last move and the computer's reply; never in the daily puzzle (decision 0023). */
@@ -766,6 +811,7 @@ class GameViewModel(
             hint = (game.record.actions.lastOrNull() as? Action.Hint)?.pos?.takeIf { humanTurn },
             doubleDots = doubleDotsLeft(state),
             moment = landing,
+            booster = boosterMoment,
             edgeMarks = edgeMarks,
             captureOrder = if (over) captureOrder() else emptyList(),
             opponentInPlay = inPlay,

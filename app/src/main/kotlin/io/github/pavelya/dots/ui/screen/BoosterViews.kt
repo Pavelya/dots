@@ -34,6 +34,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -75,6 +77,8 @@ internal fun boosterTools(ui: GameUiState, human: Player): List<BoosterTool> = B
  * icons with a count on each. A booster with none left is dashed and grey, with 0. One that cannot
  * be used now (the computer's turn, a booster already used this turn, Undo before there is a turn
  * to take back) is grey on paper, with its count still red. A tap opens its preview ([onBooster]).
+ * On the game board a used booster's count swells, and one Undo gives back counts up once it has
+ * flown back ([ToolMotion]).
  */
 @Composable
 internal fun RowScope.BoosterBar(tools: List<BoosterTool>, style: Palette, onBooster: (Booster) -> Unit) {
@@ -85,12 +89,14 @@ internal fun RowScope.BoosterBar(tools: List<BoosterTool>, style: Palette, onBoo
 private fun BoosterButton(tool: BoosterTool, style: Palette, modifier: Modifier, onClick: () -> Unit) {
     val any = tool.left > 0
     val name = boosterName(tool.booster)
+    val motion = LocalToolMotion.current
+    val shown = if (motion?.held?.invoke(tool.booster) == true) tool.left - 1 else tool.left
     val label = when {
         !any -> stringResource(R.string.booster_tool_none, name)
         tool.waiting -> pluralStringResource(R.plurals.booster_tool_waiting, tool.left, name, tool.left)
         else -> pluralStringResource(R.plurals.booster_tool, tool.left, name, tool.left)
     }
-    Box(modifier.height(56.dp)) {
+    Box(modifier.height(56.dp).onGloballyPositioned { motion?.spots?.tools?.set(tool.booster, it) }) {
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier
@@ -110,11 +116,16 @@ private fun BoosterButton(tool: BoosterTool, style: Palette, modifier: Modifier,
                 .offset(x = 6.dp, y = (-7).dp)
                 .widthIn(min = 22.dp)
                 .height(22.dp)
+                .graphicsLayer {
+                    val size = motion?.scale?.invoke(tool.booster) ?: 1f
+                    scaleX = size
+                    scaleY = size
+                }
                 .background(if (any) style.red else style.graphite, CircleShape)
                 .padding(horizontal = 5.dp)
                 .clearAndSetSemantics {},
         ) {
-            Text(tool.left.toString(), fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.ExtraBold, color = style.paper)
+            Text(shown.toString(), fontSize = 12.sp, lineHeight = 14.sp, fontWeight = FontWeight.ExtraBold, color = style.paper)
         }
     }
 }

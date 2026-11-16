@@ -22,6 +22,8 @@ import dots.campaign.Campaign
 import dots.campaign.CampaignMap
 import dots.campaign.Level
 import dots.campaign.Progress
+import dots.engine.Action
+import dots.engine.Booster
 import dots.engine.MoveResult
 import dots.engine.Player
 import dots.engine.Pos
@@ -29,12 +31,16 @@ import dots.engine.areas
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.BoardMoment
+import io.github.pavelya.dots.game.BoosterMoment
+import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.CapturedArea
 import io.github.pavelya.dots.game.Ending
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.LastCapture
+import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.game.OpponentLook
 import io.github.pavelya.dots.game.ThreatMark
+import io.github.pavelya.dots.game.UndoneTurn
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.motion.EndOfGame
@@ -259,4 +265,124 @@ class MotionScreenshotTest {
         compose.mainClock.advanceTimeByFrame()
         frames("drag", 50, 100)
     }
+
+    /** The threat position with one booster of each kind, as the booster strip starts: Blue's (7, 7) last, its edge marks on. */
+    private val boosted: GameUiState get() = ui(CanvasGame.boosted, lastMove = Pos(7, 7)).copy(edgeMarks = Pos(7, 7))
+
+    /**
+     * The screen just after Red uses [action] in the [boosted] position, as the view model makes it,
+     * with the booster's effect to play.
+     */
+    private fun used(action: Action.UseBooster): GameUiState {
+        val before = CanvasGame.boosted.state
+        val result = before.apply(action)
+        val state = result.state
+        val undone = if (action == Action.Undo) {
+            val gone = before.boardPoints().filter { before.ownerAt(it) != null && state.ownerAt(it) == null }
+            UndoneTurn(
+                before = before,
+                answer = gone.filter { before.ownerAt(it) == Player.BLUE },
+                own = gone.filter { before.ownerAt(it) == Player.RED },
+                opponentBefore = OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK),
+            )
+        } else {
+            null
+        }
+        val moment = BoosterMoment(1, action.booster, Player.RED, result.booster?.pos, result.booster?.removed.orEmpty(), undone)
+        val lastMove = if (undone != null) state.lastPlaced(Player.BLUE) else Pos(7, 7)
+        return ui(result, lastMove).copy(
+            booster = moment,
+            edgeMarks = if (undone != null) null else Pos(7, 7),
+            hint = (action as? Action.Hint)?.pos,
+            doubleDots = if (action == Action.DoubleDot) 2 else null,
+        )
+    }
+
+    /** Level 7's parts with the tool bar as [ui]'s position counts the boosters. */
+    private fun boosterParts(ui: GameUiState): CampaignParts {
+        val tools = Booster.entries.map { val left = ui.state.boostersLeft(Player.RED, it); BoosterTool(it, left, usable = left > 0) }
+        return CampaignParts(
+            title = "Level 7",
+            mission = missionNote(CanvasGame.level, CanvasGame.level.status(ui.state)),
+            boosters = { BoosterBar(tools, Palette.current) {} },
+        )
+    }
+
+    @Composable
+    private fun BoostedBoard(ui: GameUiState) {
+        GameBoard(ui, human, boosterParts(ui), input = BoardInput.NONE, onUndo = {}, onPause = {})
+    }
+
+    /** Wall (strip-boosters, first row): the square drawn round (9, 9) by 200 ms, hatched by 400 ms. */
+    @Test
+    fun wall() {
+        show { BoostedBoard(used(Action.Wall(Pos(9, 9)))) }
+        frames("wall", 0, 100, 200, 300, 400)
+    }
+
+    /** Hint (second row): (9, 9) circled twice, 250 ms per loop. */
+    @Test
+    fun hint() {
+        show { BoostedBoard(used(Action.Hint(Pos(9, 9)))) }
+        frames("hint", 0, 125, 250, 375, 500)
+    }
+
+    /** Hint, then the player's dot lands on (9, 9): the circles shrink away in 150 ms. */
+    @Test
+    fun hintThenDot() {
+        val hinted = used(Action.Hint(Pos(9, 9))).copy(booster = null)
+        val move = hinted.state.play(Pos(9, 9))
+        val landed = landing(hinted, move, Pos(9, 9), Player.RED, edgeMarks = null)
+        show { BoostedBoard(landed.copy(moment = landed.moment?.copy(hintBefore = Pos(9, 9)))) }
+        frames("hint_dot", 75)
+    }
+
+    /** Bomb (third row): it drops on (8, 7), and at 150 ms the four blue dots round it swell, shrink away, and the specks fly. */
+    @Test
+    fun bomb() {
+        show { BoostedBoard(used(Action.Bomb(Pos(8, 7)))) }
+        frames("bomb", 0, 150, 220, 300, 450)
+    }
+
+    /** Double dot (fourth row, 0 to 300 ms): the "×2" chip grows in beside "You". */
+    @Test
+    fun doubleDot() {
+        show { BoostedBoard(used(Action.DoubleDot)) }
+        frames("double_dot", 0, 150, 300)
+    }
+
+    /** Double dot, the first dot (the row's 700 ms): (9, 9) sparks, and the chip turns to ×1 and swells. */
+    @Test
+    fun doubleDotFirst() {
+        val chosen = used(Action.DoubleDot).copy(booster = null)
+        val move = chosen.state.play(Pos(9, 9))
+        val landed = landing(chosen, move, Pos(9, 9), Player.RED, edgeMarks = null)
+        show { BoostedBoard(landed.copy(moment = landed.moment?.copy(doubleDots = 2), doubleDots = 1)) }
+        frames("double_dot_first", 100)
+    }
+
+    /** Double dot, the second dot (the row's 1200 and 1350 ms): (10, 9) sparks, the chip shrinks away, and the turn passes. */
+    @Test
+    fun doubleDotSecond() {
+        val chosen = used(Action.DoubleDot).copy(booster = null)
+        val first = chosen.state.play(Pos(9, 9))
+        val between = ui(first, lastMove = Pos(9, 9)).copy(doubleDots = 1)
+        val move = first.state.play(Pos(10, 9))
+        val landed = landing(between, move, Pos(10, 9), Player.RED, edgeMarks = null)
+        show { BoostedBoard(landed.copy(moment = landed.moment?.copy(doubleDots = 1))) }
+        frames("double_dot_second", 0, 150)
+    }
+
+    /**
+     * Undo (fifth row): Blue's answer (7, 7) rubbed out from 0 ms, Red's (9, 8) from 200 ms, the
+     * strokes gone at 600 ms, with 14 dots left and the pinhole on Blue's (12, 12).
+     */
+    @Test
+    fun undo() {
+        show { BoostedBoard(used(Action.Undo)) }
+        frames("undo", 0, 125, 300, 450, 600)
+    }
 }
+
+/** Every point of the board, row by row. */
+private fun dots.engine.GameState.boardPoints(): List<Pos> = (0 until height).flatMap { y -> (0 until width).map { x -> Pos(x, y) } }

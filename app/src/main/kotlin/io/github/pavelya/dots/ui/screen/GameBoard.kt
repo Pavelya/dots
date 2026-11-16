@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.derivedStateOf
@@ -84,13 +85,18 @@ import io.github.pavelya.dots.ui.board.BoardMarks
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.PlayableBoard
 import io.github.pavelya.dots.ui.board.drawPiece
+import io.github.pavelya.dots.ui.motion.BombEffect
+import io.github.pavelya.dots.ui.motion.BoosterTimes
+import io.github.pavelya.dots.ui.motion.DoubleDotEffect
 import io.github.pavelya.dots.ui.motion.Ease
 import io.github.pavelya.dots.ui.motion.EndOfGame
 import io.github.pavelya.dots.ui.motion.Placing
 import io.github.pavelya.dots.ui.motion.RunningOut
 import io.github.pavelya.dots.ui.motion.Timeline
+import io.github.pavelya.dots.ui.motion.UndoEffect
 import io.github.pavelya.dots.ui.motion.capturing
 import io.github.pavelya.dots.ui.motion.phase
+import io.github.pavelya.dots.ui.motion.rememberBoosterTimeline
 import io.github.pavelya.dots.ui.motion.rememberChangeTimeline
 import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
 import io.github.pavelya.dots.ui.theme.Palette
@@ -144,6 +150,12 @@ import kotlinx.coroutines.delay
  * mission note swings once. At the end of a game the [ending] clock, when there is one, plays the
  * pause icon and the tool bar leaving and the captured areas lighting up, and the face keeps its
  * look until the result note comes.
+ *
+ * The [boosting] clock plays the booster just used (motion.md, "Boosters"): its count swells, the
+ * board plays its effect, and a bomb shakes the board. While Undo rubs out a turn the scores, the
+ * dots left and the face stay as they were until that part is gone, and a booster it gives back
+ * flies to its button. After a Double dot the chip grows in, counts down and leaves. A touch on the
+ * board finishes a bomb and an Undo.
  */
 @Composable
 internal fun GameBoard(
@@ -162,6 +174,7 @@ internal fun GameBoard(
     links: Boolean = false,
     moment: Timeline = rememberMomentTimeline(ui.moment),
     ending: Timeline? = null,
+    boosting: Timeline = rememberBoosterTimeline(ui.booster),
 ) {
     val style = Palette.current
     val boardStyle = BoardStyle.current
@@ -175,9 +188,16 @@ internal fun GameBoard(
     val endTimes = remember(ui.captureOrder) { EndOfGame(ui.captureOrder.size) }
     val toolsGone by remember(ui.isOver, ending) { derivedStateOf { ui.isOver && (ending == null || ending.now >= EndOfGame.TOOLS_OUT) } }
     val endFace by remember(ui.isOver, ending, endTimes) { derivedStateOf { ui.isOver && ending != null && ending.now < endTimes.noteStart } }
+    // What Undo holds back until its part of the turn is gone: the answer's, then the player's own.
+    val used = ui.booster
+    val undone = used?.undone
+    val answerGone by remember(used, boosting) { derivedStateOf { undone == null || boosting.now >= UndoEffect.ANSWER + UndoEffect.RUB } }
+    val ownGone by remember(used, boosting) { derivedStateOf { undone == null || boosting.now >= UndoEffect.SETTLED } }
+    val givenBackLanded by remember(used, boosting) { derivedStateOf { undone?.givenBack == null || boosting.now >= UndoEffect.FLIGHT_TO } }
     val shownScore = { player: Player ->
         val held = landed?.takeIf { !pointsIn && it.by == player }?.points ?: 0
-        state.score(player) - held
+        val undoing = undone?.takeIf { !(if (player == used?.by) ownGone else answerGone) }
+        undoing?.before?.score(player) ?: (state.score(player) - held)
     }
     val scoreSwell = { player: Player ->
         val captured = if (capture != null && landed?.by == player) capture.scoreScale(moment.now) else 1f
@@ -191,9 +211,11 @@ internal fun GameBoard(
     val look = when {
         endFace -> ui.opponentInPlay ?: ui.opponent
         !faceIn -> landed?.opponentBefore ?: ui.opponent
+        undone != null && !ownGone -> undone.opponentBefore ?: ui.opponent
         else -> ui.opponent
     }
     val toolsOut = { if (ending != null && ui.isOver) endTimes.toolsOut(ending.now) else if (ui.isOver) 1f else 0f }
+    val shownState = if (undone != null && !ownGone) undone.before else state
     val left = state.dotsLeft(if (ui.vsComputer) human else Player.RED)
     val missionOpen = ui.mission?.isDecided != true
     val nudge = rememberChangeTimeline(left, RunningOut.NUDGE) { old, new -> missionOpen && new == RunningOut.NUDGE_AT && old != null && old > RunningOut.NUDGE_AT }
@@ -203,6 +225,21 @@ internal fun GameBoard(
     // The daily puzzle has no tool bar: no boosters and no undo (decision 0023).
     val toolBar = !guided && (if (campaign != null) campaign.boosters != null else ui.vsComputer || ui.openEnded)
     val turnBanner = turnBanner(ui)
+    val chipLeaving by remember(landed, moment) { derivedStateOf { landed?.doubleDots == 1 && moment.now < DoubleDotEffect.CHIP_OUT } }
+    val toolMotion = remember(spots, used, boosting) {
+        ToolMotion(
+            spots,
+            scale = { booster ->
+                when {
+                    used == null -> 1f
+                    booster == used.booster -> BoosterTimes.countScale(boosting.now)
+                    booster == undone?.givenBack -> UndoEffect.countScale(boosting.now)
+                    else -> 1f
+                }
+            },
+            held = { booster -> booster == undone?.givenBack && !givenBackLanded },
+        )
+    }
     BoxWithConstraints(modifier.fillMaxSize().background(style.paper).onGloballyPositioned { spots.screen = it }) {
         val bottom = PLAYER_LINE + if (toolBar) TOOL_BAR else 0.dp
         val spacing = boardSpacing(maxWidth, maxHeight - TOP_ROW - bottom, state.width, state.height)
@@ -256,8 +293,11 @@ internal fun GameBoard(
                     .align(Alignment.CenterHorizontally)
                     .size(spacing * state.width, boardHeight)
                     .onGloballyPositioned { spots.board = it }
-                    // A big capture shakes the board sideways (motion.md, "Big capture").
-                    .graphicsLayer { translationX = (capture?.shake(moment.now) ?: 0f).dp.toPx() }
+                    // A big capture and a bomb shake the board sideways (motion.md, "Big capture", "Boosters").
+                    .graphicsLayer {
+                        val bomb = if (used?.booster == Booster.BOMB) BombEffect.shake(boosting.now) else 0f
+                        translationX = ((capture?.shake(moment.now) ?: 0f) + bomb).dp.toPx()
+                    }
                     .testTag(BOARD_TAG),
                 lastMove = ui.lastMove,
                 dangers = ui.dangers,
@@ -269,16 +309,35 @@ internal fun GameBoard(
                 time = { moment.now },
                 edgeMarks = ui.edgeMarks,
                 glow = if (ending != null && ui.isOver) AreaGlow(ui.captureOrder, endTimes) { ending.now } else null,
-                onTouch = moment::finish,
+                booster = used,
+                boosterTime = { boosting.now },
+                onTouch = {
+                    moment.finish()
+                    if (used != null && BoosterTimes.tapFinishes(used.booster)) boosting.finish()
+                },
             )
             Row(
                 modifier = Modifier.fillMaxWidth().height(PLAYER_LINE).padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 SideLine(below, names.of(below), shownScore(below), toMove = isToMove(ui, below), style, swell = { scoreSwell(below) }, onTally = { spots.tally[below] = it })
-                ui.doubleDots?.let { DoubleDotChip(it, style, Modifier.padding(start = 10.dp)) }
+                // The chip grows in with the booster, swells as it turns to ×1, and shrinks away after the second dot.
+                val chip = ui.doubleDots ?: 1.takeIf { chipLeaving }
+                chip?.let {
+                    val scale = Modifier.graphicsLayer {
+                        val size = when {
+                            landed?.doubleDots == 2 -> DoubleDotEffect.chipSwell(moment.now)
+                            landed?.doubleDots == 1 -> DoubleDotEffect.chipOut(moment.now)
+                            used?.booster == Booster.DOUBLE_DOT -> DoubleDotEffect.chipIn(boosting.now)
+                            else -> 1f
+                        }
+                        scaleX = size
+                        scaleY = size
+                    }
+                    DoubleDotChip(it, style, Modifier.padding(start = 10.dp).then(scale))
+                }
                 Spacer(Modifier.weight(1f))
-                state.dotsLeft(below)?.let { DotsLeft(it, below, style) }
+                shownState.dotsLeft(below)?.let { DotsLeft(it, below, style) }
             }
             if (toolBar) {
                 // Five boosters in the campaign fit with less room around them (draw.py, `toolbar`).
@@ -295,7 +354,7 @@ internal fun GameBoard(
                     // A booster preview's note covers them (canvas frame `game-undo`).
                     when {
                         toolsGone || ui.aim != null -> Spacer(Modifier.weight(1f))
-                        campaign != null -> campaign.boosters?.invoke(this)
+                        campaign != null -> CompositionLocalProvider(LocalToolMotion provides toolMotion) { campaign.boosters?.invoke(this) }
                         else -> {
                             var slots = 4
                             if (ui.vsComputer) {
@@ -346,6 +405,7 @@ internal fun GameBoard(
         }
         turnBanner?.let { TurnBanner(it, style, Modifier.offset(y = maxHeight * 0.38f)) }
         CaptureOverlay(landed, moment, state.width, state.height, spots, style)
+        GivenBackOverlay(used, boosting, state.width, state.height, spots)
     }
 }
 
