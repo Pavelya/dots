@@ -1,18 +1,29 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -29,19 +40,28 @@ import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.ui.board.BoardInput
+import io.github.pavelya.dots.ui.motion.EndOfGame
+import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import io.github.pavelya.dots.ui.motion.Timeline
+import io.github.pavelya.dots.ui.motion.playOut
+import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
 import io.github.pavelya.dots.ui.theme.Palette
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 
 /**
  * What only a campaign level or the daily puzzle adds to the board: the [title] in the top row,
  * the [mission] note's content ([MissionNoteContent]; null while the opening shows the mission
  * big) and, in a level, the [boosters] in the tool bar (A-05, with Undo among them, decision
  * 0023). The daily puzzle has no tool bar ([boosters] null). Free play and two players leave it out.
+ * While a capture plays, the note shows the mission as it was before it ([missionBefore]) until the
+ * points land.
  */
 class CampaignParts(
     val title: String,
     val mission: (@Composable () -> Unit)?,
     val boosters: (@Composable RowScope.() -> Unit)?,
+    val missionBefore: (@Composable () -> Unit)? = null,
 )
 
 /** How long the level opening shows the mission big over the board (motion.md, Level opening: 1200 ms, then 300 ms to shrink). */
@@ -52,6 +72,33 @@ internal const val OPENING_MILLIS = 1_500L
  * slides up in 300 ms, the star reveal takes 1100 ms), when a level's end goes to `onLevelResult`.
  */
 internal const val RESULT_SETTLED_MILLIS = 1_500L
+
+/**
+ * The clock of a game's end (motion.md, "End of game"): it waits for the last move to play out,
+ * then runs while the tools leave and the [areas] light up, and stops when the result note is to
+ * come up. A game already over when the screen opens, and every game with animations removed,
+ * starts at the end.
+ */
+@Composable
+private fun rememberEndTimeline(ui: GameUiState, moment: Timeline): Timeline {
+    val times = remember(ui.captureOrder) { EndOfGame(ui.captureOrder.size) }
+    val reduce = LocalReduceMotion.current
+    val overAtStart = remember(ui.round) { ui.isOver }
+    val clock = remember(ui.round) { Animatable(if (overAtStart) times.length else 0f) }
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(ui.round, ui.isOver, reduce) {
+        when {
+            !ui.isOver -> clock.snapTo(0f)
+            reduce || overAtStart -> clock.snapTo(times.length)
+            else -> {
+                val playOut = ui.moment?.playOut ?: 0f
+                snapshotFlow { moment.now >= playOut }.first { it }
+                clock.animateTo(times.length, tween(times.length.toInt(), easing = LinearEasing))
+            }
+        }
+    }
+    return remember(clock, times) { Timeline(clock, times.length, scope) }
+}
 
 /**
  * The game board, laid out as the canvas game frames (docs/design/canvas): see [GameBoard]. A
@@ -123,14 +170,20 @@ fun GameScreen(
             title = stringResource(R.string.level_number, level.number),
             mission = if (opening || mission == null) null else missionNote(level, mission),
             boosters = { BoosterBar(boosterTools(ui, viewModel.human), style, viewModel::chooseBooster) },
+            missionBefore = ui.moment?.missionBefore?.takeIf { !opening }?.let { missionNote(level, it) },
         )
         daily != null -> CampaignParts(
             title = stringResource(R.string.daily_number, daily.number),
             mission = if (opening || mission == null) null else missionNote(daily.level, mission),
             boosters = null,
+            missionBefore = ui.moment?.missionBefore?.takeIf { !opening }?.let { missionNote(daily.level, it) },
         )
         else -> null
     }
+    val moment = rememberMomentTimeline(ui.moment)
+    val ending = rememberEndTimeline(ui, moment)
+    // Result comes up once the end has played; a tap meanwhile jumps to it.
+    val ended by remember(ending) { derivedStateOf { !ending.running } }
     BoxWithConstraints {
         GameBoard(
             ui = ui,
@@ -150,7 +203,12 @@ fun GameScreen(
                 onSkipGuides()
             },
             links = links,
+            moment = moment,
+            ending = ending,
         )
+        if (ui.isOver && !ended) {
+            Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { ending.finish() } })
+        }
         if (opening) {
             val place = Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp)
             if (level != null) LevelOpening(level, place) else if (daily != null) DailyOpening(daily, place)
@@ -177,13 +235,14 @@ fun GameScreen(
             )
         }
         val end = ui.levelEnd
-        if (ui.showsResult && level != null && end != null) {
+        val showsResult = ui.showsResult && ended
+        if (showsResult && level != null && end != null) {
             LaunchedEffect(ui.round, end) {
                 delay(RESULT_SETTLED_MILLIS)
                 levelResult(level, end, ui.practice)
             }
         }
-        if (ui.showsResult) {
+        if (showsResult) {
             ResultNote(
                 ui = ui,
                 names = names,

@@ -16,6 +16,7 @@ import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,6 +32,7 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -83,6 +85,10 @@ import io.github.pavelya.dots.ui.screen.SettingsPage
 import io.github.pavelya.dots.ui.screen.SettingsScreen
 import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.screen.StatsScreen
+import io.github.pavelya.dots.ui.screen.Unlock
+import io.github.pavelya.dots.ui.motion.Capturing
+import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import io.github.pavelya.dots.ui.motion.animationsRemoved
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -181,337 +187,362 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
     }
     val top by navController.currentBackStackEntryAsState()
     val starting = top == null || top?.destination?.route == Routes.LOADING
-    DotsTheme(highContrast = appSettings?.highContrast ?: false) {
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            // Paper under the system bars too, as on Android's own start-up screen.
-            containerColor = if (starting) colorResource(R.color.paper) else MaterialTheme.colorScheme.background,
-        ) { insets ->
-            NavHost(
-                navController = navController,
-                startDestination = Routes.LOADING,
-                modifier = Modifier.padding(insets),
-            ) {
-                composable(Routes.LOADING) {
-                    val tips = stringArrayResource(R.array.loading_tips)
-                    val tip = rememberSaveable { tips.indices.random() }
-                    var drawn by remember { mutableStateOf(false) }
-                    LoadingScreen(tips[tip], onDrawn = { drawn = true }, outside = ScaffoldDefaults.contentWindowInsets)
-                    LaunchedEffect(Unit) {
-                        val progress = app.progress.progress.first()
-                        app.games.loaded.first { it }
-                        val opening = openingRoute(progress, app.games.saved(GameMode.CAMPAIGN))
-                        if (opening != Routes.MAP && app.games.saved(GameMode.CAMPAIGN) == null) {
-                            val settings = app.settings.settings.first()
-                            app.games.start(levelGame(Campaign.levels.first(), settings.threatHighlight, now = System.currentTimeMillis()))
-                        }
-                        snapshotFlow { drawn }.first { it }
-                        navController.navigate(opening) { popUpTo(Routes.LOADING) { inclusive = true } }
-                    }
-                }
-                composable(Routes.MAP) {
-                    val map by app.progress.map.collectAsStateWithLifecycle()
-                    val daily by app.daily.saved.collectAsStateWithLifecycle()
-                    MapScreen(
-                        map,
-                        MapActions(
-                            onLevel = { navController.navigate(Routes.level(it.world, it.number)) },
-                            onDaily = { navController.navigate(Routes.DAILY) },
-                            onPlay = { navController.navigate(Routes.PLAY) },
-                            onRules = { navController.navigate(Routes.RULES) },
-                            onStats = { navController.navigate(Routes.STATS) },
-                            onShop = { navController.navigate(Routes.SHOP) },
-                            onSettings = { navController.navigate(Routes.SETTINGS) },
-                            onChest = { navController.navigate(Routes.chest(it.after)) },
-                        ),
-                        streak = daily?.streak(app.clock.today())?.days ?: 0,
-                    )
-                }
-                dialog(
-                    Routes.LEVEL,
-                    arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
-                    dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
-                ) { entry ->
-                    val world = entry.arguments?.getInt("world") ?: 1
-                    val number = entry.arguments?.getInt("number") ?: 1
-                    val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
-                    val saved by app.games.saved.collectAsStateWithLifecycle()
-                    val progress by app.progress.saved.collectAsStateWithLifecycle()
-                    val scope = rememberCoroutineScope()
-                    if (level == null) {
-                        LaunchedEffect(Unit) { back() }
-                    } else {
-                        val campaignGame = saved[GameMode.CAMPAIGN]
-                        LevelCard(
-                            level = level,
-                            saved = campaignGame?.levelCode == level.code,
-                            owned = progress?.owned(level).orEmpty(),
-                            // Start asks first when it would end another level's unfinished game.
-                            replaces = campaignGame?.takeIf { it.levelCode != level.code && it.record.actions.isNotEmpty() }?.levelOrPractice,
-                            // Resume plays the saved game of this level; Start writes a new one to the
-                            // store before the board opens, as Play a game does.
-                            onStart = {
-                                scope.launch {
-                                    app.games.loaded.first { it }
-                                    if (app.games.saved(GameMode.CAMPAIGN)?.levelCode != level.code) {
-                                        val settings = app.settings.settings.first()
-                                        val owned = app.progress.progress.first().owned(level)
-                                        app.games.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis(), owned = owned))
-                                    }
-                                    navController.navigate(Routes.game(GameMode.CAMPAIGN)) { popUpTo(Routes.MAP) }
-                                }
-                            },
-                            onBooster = { navController.navigate(Routes.boosters(level.world, level.number)) },
-                            onClose = back,
-                        )
-                    }
-                }
-                dialog(
-                    Routes.BOOSTERS,
-                    arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
-                    dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
-                ) { entry ->
-                    val world = entry.arguments?.getInt("world") ?: 1
-                    val number = entry.arguments?.getInt("number") ?: 1
-                    val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
-                    val progress by app.progress.saved.collectAsStateWithLifecycle()
-                    val owned = level?.let { progress?.owned(it) }.orEmpty()
-                    val left = level?.boosters.orEmpty().let { own -> (own.keys + owned.keys).associateWith { (own[it] ?: 0) + (owned[it] ?: 0) } }
-                    BoostersNote(left = left, onClose = back)
-                }
-                dialog(
-                    Routes.CHEST,
-                    arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
-                    dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
-                ) { entry ->
-                    val world = entry.arguments?.getInt("world") ?: 1
-                    val number = entry.arguments?.getInt("number") ?: 1
-                    val chest = remember(world, number) { Campaign.chests.firstOrNull { it.after.world == world && it.after.number == number } }
-                    val progress by app.progress.saved.collectAsStateWithLifecycle()
-                    var picked by remember { mutableStateOf(false) }
-                    when {
-                        chest == null -> LaunchedEffect(Unit) { back() }
-                        // Opened already (or not yet ready): nothing to pick.
-                        !picked && progress?.isReady(chest) == false -> LaunchedEffect(Unit) { back() }
-                        else -> ChestNote(
-                            chest,
-                            // Saved in the app's scope; then the next level's card opens over the map
-                            // (flows.md, "Around the board").
-                            onPick = { reward ->
-                                if (!picked) {
-                                    picked = true
-                                    appScope.launch {
-                                        app.progress.open(chest, reward)
-                                        val next = Campaign.map(app.progress.progress.first()).next
-                                        toMap()
-                                        if (next != null) navController.navigate(Routes.level(next.world, next.number))
-                                    }
-                                }
-                            },
-                            onClose = back,
-                        )
-                    }
-                }
-                dialog(Routes.DAILY, dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
-                    val scope = rememberCoroutineScope()
-                    val saved by app.games.saved.collectAsStateWithLifecycle()
-                    val loaded by app.games.loaded.collectAsStateWithLifecycle()
-                    val progress by app.daily.saved.collectAsStateWithLifecycle()
-                    val daily = progress
-                    if (loaded && daily != null) {
-                        val today = app.clock.today()
-                        // An unfinished attempt is shown until it ends, even after midnight; then today's puzzle.
-                        val unfinished = (saved[GameMode.DAILY]?.record as? DailyRecord)?.puzzle
-                        val puzzle = unfinished ?: Daily.puzzle(today)
-                        val action = when {
-                            unfinished != null -> DailyAction.RESUME
-                            puzzle != null && daily.isSolved(puzzle.day) -> DailyAction.VIEW_RESULT
-                            else -> DailyAction.PLAY
-                        }
-                        DailyPuzzleNote(
-                            puzzle = puzzle,
-                            today = today,
-                            action = action,
-                            streak = daily.streak(today),
-                            toNextPuzzle = app.clock::toNextPuzzle,
-                            // Play writes a new attempt to the store before the board opens; Resume and
-                            // View result open the board, which finds the attempt (dailyStart).
-                            onAction = {
-                                scope.launch {
-                                    if (action == DailyAction.PLAY && puzzle != null && app.games.saved(GameMode.DAILY) == null) {
-                                        val settings = app.settings.settings.first()
-                                        app.games.start(dailyGame(puzzle, settings.threatHighlight, now = System.currentTimeMillis()))
-                                    }
-                                    navController.navigate(Routes.game(GameMode.DAILY)) { popUpTo(Routes.MAP) }
-                                }
-                            },
-                            onClose = back,
-                        )
-                    }
-                }
-                dialog(Routes.PLAY, dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
-                    val scope = rememberCoroutineScope()
-                    val saved by app.games.saved.collectAsStateWithLifecycle()
-                    val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
-                    // A card resumes its mode's saved game, or writes a new game to the store before
-                    // the board opens: the board always plays the saved game of its mode, also after
-                    // Android restarts the app. Free play's computer plays at the campaign's strength.
-                    fun play(mode: GameMode, replace: Boolean) {
-                        scope.launch {
+    // The phone's "Remove animations" (motion.md, rule 5), read again each time the app comes back.
+    val reduceMotion = remember { mutableStateOf(animationsRemoved(app)) }
+    LifecycleResumeEffect(Unit) {
+        reduceMotion.value = animationsRemoved(app)
+        onPauseOrDispose {}
+    }
+    // The level just passed, whose unlock the map plays after Next.
+    var unlock by remember { mutableStateOf<Unlock?>(null) }
+    CompositionLocalProvider(LocalReduceMotion provides reduceMotion.value) {
+        DotsTheme(highContrast = appSettings?.highContrast ?: false) {
+            Scaffold(
+                modifier = Modifier.fillMaxSize(),
+                // Paper under the system bars too, as on Android's own start-up screen.
+                containerColor = if (starting) colorResource(R.color.paper) else MaterialTheme.colorScheme.background,
+            ) { insets ->
+                NavHost(
+                    navController = navController,
+                    startDestination = Routes.LOADING,
+                    modifier = Modifier.padding(insets),
+                ) {
+                    composable(Routes.LOADING) {
+                        val tips = stringArrayResource(R.array.loading_tips)
+                        val tip = rememberSaveable { tips.indices.random() }
+                        var drawn by remember { mutableStateOf(false) }
+                        LoadingScreen(tips[tip], onDrawn = { drawn = true }, outside = ScaffoldDefaults.contentWindowInsets)
+                        LaunchedEffect(Unit) {
+                            val progress = app.progress.progress.first()
                             app.games.loaded.first { it }
-                            if (replace || app.games.saved(mode) == null) {
-                                val chosen = app.settings.settings.first()
-                                val strength = if (mode == GameMode.FREE_PLAY) Campaign.strengthReached(app.progress.progress.first()) else null
-                                app.games.start(freeGame(chosen, strength, now = System.currentTimeMillis()))
+                            val opening = openingRoute(progress, app.games.saved(GameMode.CAMPAIGN))
+                            if (opening != Routes.MAP && app.games.saved(GameMode.CAMPAIGN) == null) {
+                                val settings = app.settings.settings.first()
+                                app.games.start(levelGame(Campaign.levels.first(), settings.threatHighlight, now = System.currentTimeMillis()))
                             }
-                            navController.navigate(Routes.game(mode)) { popUpTo(Routes.MAP) }
+                            snapshotFlow { drawn }.first { it }
+                            navController.navigate(opening) { popUpTo(Routes.LOADING) { inclusive = true } }
                         }
                     }
-                    settings?.let { chosen ->
-                        PlayAGameNote(
-                            saved = saved.keys,
-                            settings = chosen,
-                            onSettings = { change -> scope.launch { app.settings.update(change) } },
-                            onPlay = ::play,
-                            onClose = back,
+                    composable(Routes.MAP) {
+                        val map by app.progress.map.collectAsStateWithLifecycle()
+                        val daily by app.daily.saved.collectAsStateWithLifecycle()
+                        MapScreen(
+                            map,
+                            MapActions(
+                                onLevel = { navController.navigate(Routes.level(it.world, it.number)) },
+                                onDaily = { navController.navigate(Routes.DAILY) },
+                                onPlay = { navController.navigate(Routes.PLAY) },
+                                onRules = { navController.navigate(Routes.RULES) },
+                                onStats = { navController.navigate(Routes.STATS) },
+                                onShop = { navController.navigate(Routes.SHOP) },
+                                onSettings = { navController.navigate(Routes.SETTINGS) },
+                                onChest = { navController.navigate(Routes.chest(it.after)) },
+                            ),
+                            streak = daily?.streak(app.clock.today())?.days ?: 0,
+                            unlock = unlock,
+                            onUnlocked = { unlock = null },
                         )
                     }
-                }
-                composable(Routes.GAME, arguments = listOf(navArgument("mode") { type = NavType.StringType })) { entry ->
-                    val mode = GameMode.of(entry.arguments?.getString("mode")) ?: GameMode.CAMPAIGN
-                    val loaded by app.games.loaded.collectAsStateWithLifecycle()
-                    if (loaded) {
-                        val start = remember { app.games.saved(mode) ?: if (mode == GameMode.DAILY) solvedDaily(app) else null }
-                        if (start == null) {
-                            // Nothing to resume (the app was restarted after the game ended).
-                            LaunchedEffect(Unit) { toMap() }
+                    dialog(
+                        Routes.LEVEL,
+                        arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+                    ) { entry ->
+                        val world = entry.arguments?.getInt("world") ?: 1
+                        val number = entry.arguments?.getInt("number") ?: 1
+                        val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
+                        val saved by app.games.saved.collectAsStateWithLifecycle()
+                        val progress by app.progress.saved.collectAsStateWithLifecycle()
+                        val scope = rememberCoroutineScope()
+                        if (level == null) {
+                            LaunchedEffect(Unit) { back() }
                         } else {
-                            val settings = app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
-                            val game = viewModel {
-                                GameViewModel(
-                                    start = start,
-                                    nextGame = {
-                                        val now = System.currentTimeMillis()
-                                        val chosen = settings.value ?: AppSettings()
-                                        val level = (start.record as? LevelRecord)?.level
-                                        val puzzle = (start.record as? DailyRecord)?.puzzle
-                                        when {
-                                            level != null -> levelGame(level, chosen.threatHighlight, now, owned = app.progress.owned(level))
-                                            // Retry plays the same day's puzzle again, also after midnight.
-                                            puzzle != null -> dailyGame(puzzle, chosen.threatHighlight, now)
-                                            else -> freeGameLike(start, chosen.threatHighlight, now)
+                            val campaignGame = saved[GameMode.CAMPAIGN]
+                            LevelCard(
+                                level = level,
+                                saved = campaignGame?.levelCode == level.code,
+                                owned = progress?.owned(level).orEmpty(),
+                                // Start asks first when it would end another level's unfinished game.
+                                replaces = campaignGame?.takeIf { it.levelCode != level.code && it.record.actions.isNotEmpty() }?.levelOrPractice,
+                                // Resume plays the saved game of this level; Start writes a new one to the
+                                // store before the board opens, as Play a game does.
+                                onStart = {
+                                    scope.launch {
+                                        app.games.loaded.first { it }
+                                        if (app.games.saved(GameMode.CAMPAIGN)?.levelCode != level.code) {
+                                            val settings = app.settings.settings.first()
+                                            val owned = app.progress.progress.first().owned(level)
+                                            app.games.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis(), owned = owned))
                                         }
-                                    },
-                                    computerFor = ::computerFor,
-                                    journal = app.journal,
-                                    campaign = app.progress,
-                                    placing = { settings.value?.placing ?: AppSettings().placing },
-                                    ownedFor = app.progress::owned,
-                                    daily = app.daily,
-                                )
-                            }
-                            val scope = rememberCoroutineScope()
-                            val context = LocalContext.current
-                            GameScreen(
-                                game,
-                                onToMap = toMap,
-                                onRules = { navController.navigate(Routes.RULES) },
-                                sound = settings.value?.sound ?: AppSettings().sound,
-                                onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
-                                placing = settings.value?.placing ?: AppSettings().placing,
-                                links = settings.value?.links ?: AppSettings().links,
-                                guidesSkipped = settings.value?.tutorialSkipped ?: false,
-                                onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
-                                onShare = { text -> shareText(context, text) },
-                                toNextPuzzle = app.clock::toNextPuzzle,
-                                // Google Play's review prompt, after a level won with three stars, at most once a month.
-                                onLevelResult = { level, end, practice ->
-                                    activity?.let { over -> appScope.launch { askForReview(app, over, level, end, practice, System.currentTimeMillis()) } }
-                                },
-                                // Next goes back to the map, which opens the chest the level made
-                                // ready, if any, and otherwise the next level's card.
-                                onNext = { end ->
-                                    toMap()
-                                    val next = end?.next
-                                    when {
-                                        end?.chest != null -> navController.navigate(Routes.chest(end.chest.after))
-                                        next != null -> navController.navigate(Routes.level(next.world, next.number))
+                                        navController.navigate(Routes.game(GameMode.CAMPAIGN)) { popUpTo(Routes.MAP) }
                                     }
                                 },
+                                onBooster = { navController.navigate(Routes.boosters(level.world, level.number)) },
+                                onClose = back,
                             )
                         }
                     }
-                }
-                composable(Routes.RULES) {
-                    RulesScreen(onBack = back, onPlayTutorial = playTutorial)
-                }
-                composable(Routes.STATS) {
-                    val map by app.progress.map.collectAsStateWithLifecycle()
-                    val stats by app.stats.stats.collectAsStateWithLifecycle()
-                    val daily by app.daily.saved.collectAsStateWithLifecycle()
-                    val shown = map
-                    val totals = stats
-                    if (shown != null && totals != null) {
-                        StatsScreen(
-                            map = shown,
-                            stats = totals,
-                            longestStreak = daily?.longestStreak ?: 0,
-                            onLeaderboards = { navController.navigate(Routes.LEADERBOARDS) },
-                            onAchievements = { navController.navigate(Routes.LEADERBOARDS) },
+                    dialog(
+                        Routes.BOOSTERS,
+                        arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+                    ) { entry ->
+                        val world = entry.arguments?.getInt("world") ?: 1
+                        val number = entry.arguments?.getInt("number") ?: 1
+                        val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
+                        val progress by app.progress.saved.collectAsStateWithLifecycle()
+                        val owned = level?.let { progress?.owned(it) }.orEmpty()
+                        val left = level?.boosters.orEmpty().let { own -> (own.keys + owned.keys).associateWith { (own[it] ?: 0) + (owned[it] ?: 0) } }
+                        BoostersNote(left = left, onClose = back)
+                    }
+                    dialog(
+                        Routes.CHEST,
+                        arguments = listOf(navArgument("world") { type = NavType.IntType }, navArgument("number") { type = NavType.IntType }),
+                        dialogProperties = DialogProperties(usePlatformDefaultWidth = false),
+                    ) { entry ->
+                        val world = entry.arguments?.getInt("world") ?: 1
+                        val number = entry.arguments?.getInt("number") ?: 1
+                        val chest = remember(world, number) { Campaign.chests.firstOrNull { it.after.world == world && it.after.number == number } }
+                        val progress by app.progress.saved.collectAsStateWithLifecycle()
+                        var picked by remember { mutableStateOf(false) }
+                        when {
+                            chest == null -> LaunchedEffect(Unit) { back() }
+                            // Opened already (or not yet ready): nothing to pick.
+                            !picked && progress?.isReady(chest) == false -> LaunchedEffect(Unit) { back() }
+                            else -> ChestNote(
+                                chest,
+                                // Saved in the app's scope; then the next level's card opens over the map
+                                // (flows.md, "Around the board").
+                                onPick = { reward ->
+                                    if (!picked) {
+                                        picked = true
+                                        appScope.launch {
+                                            app.progress.open(chest, reward)
+                                            val next = Campaign.map(app.progress.progress.first()).next
+                                            toMap()
+                                            if (next != null) navController.navigate(Routes.level(next.world, next.number))
+                                        }
+                                    }
+                                },
+                                onClose = back,
+                            )
+                        }
+                    }
+                    dialog(Routes.DAILY, dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
+                        val scope = rememberCoroutineScope()
+                        val saved by app.games.saved.collectAsStateWithLifecycle()
+                        val loaded by app.games.loaded.collectAsStateWithLifecycle()
+                        val progress by app.daily.saved.collectAsStateWithLifecycle()
+                        val daily = progress
+                        if (loaded && daily != null) {
+                            val today = app.clock.today()
+                            // An unfinished attempt is shown until it ends, even after midnight; then today's puzzle.
+                            val unfinished = (saved[GameMode.DAILY]?.record as? DailyRecord)?.puzzle
+                            val puzzle = unfinished ?: Daily.puzzle(today)
+                            val action = when {
+                                unfinished != null -> DailyAction.RESUME
+                                puzzle != null && daily.isSolved(puzzle.day) -> DailyAction.VIEW_RESULT
+                                else -> DailyAction.PLAY
+                            }
+                            DailyPuzzleNote(
+                                puzzle = puzzle,
+                                today = today,
+                                action = action,
+                                streak = daily.streak(today),
+                                toNextPuzzle = app.clock::toNextPuzzle,
+                                // Play writes a new attempt to the store before the board opens; Resume and
+                                // View result open the board, which finds the attempt (dailyStart).
+                                onAction = {
+                                    scope.launch {
+                                        if (action == DailyAction.PLAY && puzzle != null && app.games.saved(GameMode.DAILY) == null) {
+                                            val settings = app.settings.settings.first()
+                                            app.games.start(dailyGame(puzzle, settings.threatHighlight, now = System.currentTimeMillis()))
+                                        }
+                                        navController.navigate(Routes.game(GameMode.DAILY)) { popUpTo(Routes.MAP) }
+                                    }
+                                },
+                                onClose = back,
+                            )
+                        }
+                    }
+                    dialog(Routes.PLAY, dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
+                        val scope = rememberCoroutineScope()
+                        val saved by app.games.saved.collectAsStateWithLifecycle()
+                        val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+                        // A card resumes its mode's saved game, or writes a new game to the store before
+                        // the board opens: the board always plays the saved game of its mode, also after
+                        // Android restarts the app. Free play's computer plays at the campaign's strength.
+                        fun play(mode: GameMode, replace: Boolean) {
+                            scope.launch {
+                                app.games.loaded.first { it }
+                                if (replace || app.games.saved(mode) == null) {
+                                    val chosen = app.settings.settings.first()
+                                    val strength = if (mode == GameMode.FREE_PLAY) Campaign.strengthReached(app.progress.progress.first()) else null
+                                    app.games.start(freeGame(chosen, strength, now = System.currentTimeMillis()))
+                                }
+                                navController.navigate(Routes.game(mode)) { popUpTo(Routes.MAP) }
+                            }
+                        }
+                        settings?.let { chosen ->
+                            PlayAGameNote(
+                                saved = saved.keys,
+                                settings = chosen,
+                                onSettings = { change -> scope.launch { app.settings.update(change) } },
+                                onPlay = ::play,
+                                onClose = back,
+                            )
+                        }
+                    }
+                    composable(Routes.GAME, arguments = listOf(navArgument("mode") { type = NavType.StringType })) { entry ->
+                        val mode = GameMode.of(entry.arguments?.getString("mode")) ?: GameMode.CAMPAIGN
+                        val loaded by app.games.loaded.collectAsStateWithLifecycle()
+                        if (loaded) {
+                            val start = remember { app.games.saved(mode) ?: if (mode == GameMode.DAILY) solvedDaily(app) else null }
+                            if (start == null) {
+                                // Nothing to resume (the app was restarted after the game ended).
+                                LaunchedEffect(Unit) { toMap() }
+                            } else {
+                                val settings = app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+                                val game = viewModel {
+                                    GameViewModel(
+                                        start = start,
+                                        nextGame = {
+                                            val now = System.currentTimeMillis()
+                                            val chosen = settings.value ?: AppSettings()
+                                            val level = (start.record as? LevelRecord)?.level
+                                            val puzzle = (start.record as? DailyRecord)?.puzzle
+                                            when {
+                                                level != null -> levelGame(level, chosen.threatHighlight, now, owned = app.progress.owned(level))
+                                                // Retry plays the same day's puzzle again, also after midnight.
+                                                puzzle != null -> dailyGame(puzzle, chosen.threatHighlight, now)
+                                                else -> freeGameLike(start, chosen.threatHighlight, now)
+                                            }
+                                        },
+                                        computerFor = ::computerFor,
+                                        journal = app.journal,
+                                        campaign = app.progress,
+                                        placing = { settings.value?.placing ?: AppSettings().placing },
+                                        ownedFor = app.progress::owned,
+                                        daily = app.daily,
+                                        // The computer answers once the player's capture has played (motion.md, rule 2).
+                                        holdFor = { move ->
+                                            val dots = move.captures.sumOf { it.dots.size }
+                                            if (reduceMotion.value || dots == 0) 0L else Capturing.of(dots).length.toLong()
+                                        },
+                                    )
+                                }
+                                val scope = rememberCoroutineScope()
+                                val context = LocalContext.current
+                                GameScreen(
+                                    game,
+                                    onToMap = toMap,
+                                    onRules = { navController.navigate(Routes.RULES) },
+                                    sound = settings.value?.sound ?: AppSettings().sound,
+                                    onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
+                                    placing = settings.value?.placing ?: AppSettings().placing,
+                                    links = settings.value?.links ?: AppSettings().links,
+                                    guidesSkipped = settings.value?.tutorialSkipped ?: false,
+                                    onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
+                                    onShare = { text -> shareText(context, text) },
+                                    toNextPuzzle = app.clock::toNextPuzzle,
+                                    // Google Play's review prompt, after a level won with three stars, at most once a month.
+                                    onLevelResult = { level, end, practice ->
+                                        activity?.let { over -> appScope.launch { askForReview(app, over, level, end, practice, System.currentTimeMillis()) } }
+                                    },
+                                    // Next goes back to the map, which opens the chest the level made
+                                    // ready, if any, and otherwise plays the level's unlock and opens the
+                                    // next level's card.
+                                    onNext = { end ->
+                                        toMap()
+                                        val next = end?.next
+                                        val passed = game.ui.value.level
+                                        val played = if (end != null && passed != null) {
+                                            Unlock(passed, end.starsBefore, end.result.stars, next, end.opened.worlds.isNotEmpty())
+                                        } else {
+                                            null
+                                        }
+                                        when {
+                                            end?.chest != null -> navController.navigate(Routes.chest(end.chest.after))
+                                            played != null && played.plays -> unlock = played
+                                            next != null -> navController.navigate(Routes.level(next.world, next.number))
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
+                    composable(Routes.RULES) {
+                        RulesScreen(onBack = back, onPlayTutorial = playTutorial)
+                    }
+                    composable(Routes.STATS) {
+                        val map by app.progress.map.collectAsStateWithLifecycle()
+                        val stats by app.stats.stats.collectAsStateWithLifecycle()
+                        val daily by app.daily.saved.collectAsStateWithLifecycle()
+                        val shown = map
+                        val totals = stats
+                        if (shown != null && totals != null) {
+                            StatsScreen(
+                                map = shown,
+                                stats = totals,
+                                longestStreak = daily?.longestStreak ?: 0,
+                                onLeaderboards = { navController.navigate(Routes.LEADERBOARDS) },
+                                onAchievements = { navController.navigate(Routes.LEADERBOARDS) },
+                                onBack = back,
+                            )
+                        }
+                    }
+                    composable(Routes.LEADERBOARDS) {
+                        StandInScreen(R.string.screen_leaderboards, "O-02", onBack = back)
+                    }
+                    composable(Routes.SHOP) {
+                        StandInScreen(R.string.screen_shop, "C-02", onBack = back) {
+                            TextButton(onClick = { navController.navigate(Routes.COSMETIC) }) { Text(stringResource(R.string.shop_sample_item)) }
+                        }
+                    }
+                    composable(Routes.COSMETIC) {
+                        StandInScreen(R.string.screen_cosmetic, "C-02", onBack = back)
+                    }
+                    composable(Routes.SETTINGS) {
+                        val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+                        val context = LocalContext.current
+                        settings?.let {
+                            SettingsScreen(
+                                settings = it,
+                                // Saved in the app's scope, so leaving Settings never cuts a change short.
+                                // Each change applies to the stored settings, so quick changes never undo each other.
+                                onChange = { change -> appScope.launch { app.settings.update(change) } },
+                                version = BuildConfig.VERSION_NAME,
+                                onPage = { navController.navigate(Routes.settingsDetails(it)) },
+                                onDeveloperMenu = { navController.navigate(Routes.DEVELOPER) },
+                                onReplayTutorial = playTutorial,
+                                onFeedback = { sendFeedback(context) },
+                                onBack = back,
+                            )
+                        }
+                    }
+                    composable(Routes.SETTINGS_DETAILS, arguments = listOf(navArgument("page") { type = NavType.StringType })) { entry ->
+                        val page = SettingsPage.of(entry.arguments?.getString("page"))
+                        if (page == null) {
+                            LaunchedEffect(Unit) { back() }
+                        } else {
+                            SettingsDetailsScreen(page, onPage = { navController.navigate(Routes.settingsDetails(it)) }, onBack = back)
+                        }
+                    }
+                    composable(Routes.DEVELOPER) {
+                        val context = LocalContext.current
+                        val scope = rememberCoroutineScope()
+                        val loggedGames by app.games.loggedGames.collectAsStateWithLifecycle()
+                        DeveloperScreen(
+                            onProgress = { progress -> scope.launch { app.progress.replace(progress) } },
+                            dailyAhead = appSettings?.dailyAhead ?: false,
+                            onDailyAhead = { on -> appScope.launch { app.settings.update { it.copy(dailyAhead = on) } } },
+                            onClearDaily = { appScope.launch { app.daily.clear() } },
+                            loggedGames = loggedGames,
+                            onShareLog = { scope.launch { shareLog(context, app) } },
                             onBack = back,
                         )
                     }
-                }
-                composable(Routes.LEADERBOARDS) {
-                    StandInScreen(R.string.screen_leaderboards, "O-02", onBack = back)
-                }
-                composable(Routes.SHOP) {
-                    StandInScreen(R.string.screen_shop, "C-02", onBack = back) {
-                        TextButton(onClick = { navController.navigate(Routes.COSMETIC) }) { Text(stringResource(R.string.shop_sample_item)) }
-                    }
-                }
-                composable(Routes.COSMETIC) {
-                    StandInScreen(R.string.screen_cosmetic, "C-02", onBack = back)
-                }
-                composable(Routes.SETTINGS) {
-                    val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
-                    val context = LocalContext.current
-                    settings?.let {
-                        SettingsScreen(
-                            settings = it,
-                            // Saved in the app's scope, so leaving Settings never cuts a change short.
-                            // Each change applies to the stored settings, so quick changes never undo each other.
-                            onChange = { change -> appScope.launch { app.settings.update(change) } },
-                            version = BuildConfig.VERSION_NAME,
-                            onPage = { navController.navigate(Routes.settingsDetails(it)) },
-                            onDeveloperMenu = { navController.navigate(Routes.DEVELOPER) },
-                            onReplayTutorial = playTutorial,
-                            onFeedback = { sendFeedback(context) },
-                            onBack = back,
-                        )
-                    }
-                }
-                composable(Routes.SETTINGS_DETAILS, arguments = listOf(navArgument("page") { type = NavType.StringType })) { entry ->
-                    val page = SettingsPage.of(entry.arguments?.getString("page"))
-                    if (page == null) {
-                        LaunchedEffect(Unit) { back() }
-                    } else {
-                        SettingsDetailsScreen(page, onPage = { navController.navigate(Routes.settingsDetails(it)) }, onBack = back)
-                    }
-                }
-                composable(Routes.DEVELOPER) {
-                    val context = LocalContext.current
-                    val scope = rememberCoroutineScope()
-                    val loggedGames by app.games.loggedGames.collectAsStateWithLifecycle()
-                    DeveloperScreen(
-                        onProgress = { progress -> scope.launch { app.progress.replace(progress) } },
-                        dailyAhead = appSettings?.dailyAhead ?: false,
-                        onDailyAhead = { on -> appScope.launch { app.settings.update { it.copy(dailyAhead = on) } } },
-                        onClearDaily = { appScope.launch { app.daily.clear() } },
-                        loggedGames = loggedGames,
-                        onShareLog = { scope.launch { shareLog(context, app) } },
-                        onBack = back,
-                    )
                 }
             }
         }

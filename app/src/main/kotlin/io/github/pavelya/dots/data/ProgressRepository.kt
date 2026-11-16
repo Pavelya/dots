@@ -109,7 +109,7 @@ class ProgressRepository(private val store: DataStore<Preferences>, scope: Corou
             val following = opened.worlds.firstOrNull()?.levels?.first()
                 ?: Campaign.levels.getOrNull(Campaign.levels.indexOf(level) + 1)
             val chest = Campaign.chestAfter(level)?.takeIf { after.isReady(it) }
-            LevelEnd(result, opened, failed, following?.takeIf { new.stop(it).state != LevelState.LOCKED }, chest)
+            LevelEnd(result, opened, failed, following?.takeIf { new.stop(it).state != LevelState.LOCKED }, chest, starsBefore = before.stars(level))
         }
     }
 

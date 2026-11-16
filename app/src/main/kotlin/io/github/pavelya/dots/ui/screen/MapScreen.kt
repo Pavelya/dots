@@ -5,6 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -28,12 +29,15 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -48,11 +52,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.PathMeasure
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -79,8 +88,13 @@ import dots.campaign.LevelStop
 import dots.campaign.Title
 import dots.campaign.WorldStop
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.motion.Timeline
+import io.github.pavelya.dots.ui.motion.Unlocking
+import io.github.pavelya.dots.ui.motion.rememberTimeline
+import io.github.pavelya.dots.ui.motion.writeIn
 import io.github.pavelya.dots.ui.theme.Palette
 import kotlin.math.sin
+import kotlinx.coroutines.flow.first
 
 /** Where the map's entries lead (docs/design/flows.md, "Navigation in short"). */
 class MapActions(
@@ -98,6 +112,22 @@ class MapActions(
 const val MAP_PATH_TAG = "map-path"
 
 /**
+ * A level just passed, for the map to play after Next (motion.md, "Level unlock"): the stars it
+ * had before ([starsBefore]) and has now ([stars]). On a [firstPass] the stop fills, the path inks
+ * in to the [next] level and the next level is circled; when that opens a world ([worldOpens]),
+ * its page turns first. Otherwise only the new stars fly in.
+ */
+data class Unlock(val level: Level, val starsBefore: Int, val stars: Int, val next: Level?, val worldOpens: Boolean) {
+    val firstPass: Boolean get() = starsBefore == 0
+
+    /** True when there is something to play. */
+    val plays: Boolean get() = firstPass || stars > starsBefore
+
+    /** How long it plays before the next level's card comes up. */
+    val length: Float get() = if (firstPass) Unlocking(worldOpens).card else Unlocking.starsOnly(stars - starsBefore)
+}
+
+/**
  * Home: the world map, laid out as the canvas's map frame (docs/design/canvas, "World map"). One
  * path through every world scrolls from World 1 at the bottom upwards. Over it stay the world in
  * view with its stars (top left), Settings (top right), Today's puzzle as a taped note, Shop, Stats
@@ -111,13 +141,26 @@ const val MAP_PATH_TAG = "map-path"
  *
  * [map] is null while the progress is read. The map lies on the menu screens' squared paper; the
  * inks come from the theme ([MapStyle]). Today's puzzle shows the [streak] when there is one. V-11
- * brings the landscape, V-05 the motion of a level or world opening.
+ * brings the landscape.
+ *
+ * After Next, the map plays the [unlock] of the level just passed (motion.md, "Level unlock"),
+ * then opens the next level's card and calls [onUnlocked]. A tap shows the end at once, with the card up.
  */
 @Composable
-fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0) {
+fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0, unlock: Unlock? = null, onUnlocked: () -> Unit = {}) {
     val style = MapStyle.current
     var lock by remember { mutableStateOf<CampaignMap.Lock?>(null) }
     var lockedChest by remember { mutableStateOf<Chest?>(null) }
+    val shown = unlock?.takeIf { map != null }
+    val clock = rememberTimeline(shown, shown?.length ?: 0f)
+    val done by rememberUpdatedState(onUnlocked)
+    val openLevel by rememberUpdatedState(actions.onLevel)
+    LaunchedEffect(shown) {
+        if (shown == null) return@LaunchedEffect
+        snapshotFlow { clock.running }.first { !it }
+        shown.next?.let(openLevel)
+        done()
+    }
     Box(Modifier.fillMaxSize().squaredPaper(Palette.current)) {
         if (map != null) {
             val rows = remember(map) { rows(map) }
@@ -133,6 +176,7 @@ fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0) {
                 rows = rows,
                 state = state,
                 style = style,
+                motion = shown?.let { UnlockMotion(it, clock) },
                 onLevel = { stop -> map.lock(stop.level)?.let { lock = it } ?: actions.onLevel(stop.level) },
                 onLockedWorld = { lock = CampaignMap.Lock.WorldClosed(it) },
                 onChest = { chest -> if (chest.state == ChestState.READY) actions.onChest(chest.chest) else lockedChest = chest.chest },
@@ -164,6 +208,7 @@ fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0) {
             MarginIcon(Doodles.HELP, stringResource(R.string.map_rules_icon), style, actions.onRules)
         }
         PlayAGame(style, actions.onPlay, Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = 26.dp))
+        if (shown != null) Box(Modifier.fillMaxSize().pointerInput(clock) { detectTapGestures { clock.finish() } })
     }
     lock?.let { LockNote(it, onClose = { lock = null }) }
     lockedChest?.let { ChestLockNote(it, onClose = { lockedChest = null }) }
@@ -277,6 +322,21 @@ private fun worldOf(rows: List<MapRow>, index: Int): Int {
     return 1
 }
 
+/** The unlock playing on the map, on its [clock]. */
+private class UnlockMotion(val unlock: Unlock, val clock: Timeline) {
+    val times = Unlocking(unlock.worldOpens)
+
+    /** The part a stop plays in it, if any. */
+    fun roleOf(level: Level): StopRole? = when {
+        level.code == unlock.level.code -> StopRole.PASSED
+        unlock.firstPass && level.code == unlock.next?.code -> StopRole.OPENED
+        else -> null
+    }
+}
+
+/** The level just passed, and the level it opens. */
+private enum class StopRole { PASSED, OPENED }
+
 @Composable
 private fun MapPath(
     rows: List<MapRow>,
@@ -285,18 +345,23 @@ private fun MapPath(
     onLevel: (LevelStop) -> Unit,
     onLockedWorld: (WorldStop) -> Unit,
     onChest: (ChestStop) -> Unit,
+    motion: UnlockMotion? = null,
 ) {
     LazyColumn(
         state = state,
         reverseLayout = true,
         // Room for the header and the puzzle note above, and Play a game below.
         contentPadding = PaddingValues(top = 184.dp, bottom = 84.dp),
-        modifier = Modifier.fillMaxSize().testTag(MAP_PATH_TAG),
+        modifier = Modifier
+            .fillMaxSize()
+            // When the unlock opens a world, its page turns in from the right.
+            .graphicsLayer { translationX = (motion?.times?.page(motion.clock.now) ?: 0f) * size.width }
+            .testTag(MAP_PATH_TAG),
     ) {
         items(rows.size, key = { rows[it].key }, contentType = { rows[it]::class }) { i ->
             when (val row = rows[i]) {
                 is MapRow.Banner -> Banner(row.world, style, onLocked = { onLockedWorld(row.world) })
-                is MapRow.Stop -> Stop(row, style, onOpen = { onLevel(row.stop) })
+                is MapRow.Stop -> Stop(row, style, onOpen = { onLevel(row.stop) }, motion = motion)
                 is MapRow.ChestRow -> ChestOnPath(row, style, onOpen = { onChest(row.chest) })
                 MapRow.End -> Text(
                     stringResource(R.string.map_more_coming),
@@ -464,14 +529,28 @@ private fun lockLines(world: WorldStop): List<String> = buildList {
 }
 
 @Composable
-private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit) {
+private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit, motion: UnlockMotion? = null) {
     val stop = row.stop
     val description = stopDescription(row)
+    val part = motion?.roleOf(stop.level)
+    val clock = motion?.clock
+    val times = motion?.times
+    // The level just passed still looks next until its stop fills; the level it opens looks locked until it is circled.
+    val first = motion?.unlock?.firstPass == true
+    val before = motion?.unlock?.starsBefore ?: 0
+    val stillNext by remember(part, clock) { derivedStateOf { part == StopRole.PASSED && first && clock != null && clock.now < Unlocking.FILL_FROM } }
+    val filled by remember(part, clock) { derivedStateOf { part != StopRole.PASSED || !first || clock == null || clock.now >= (Unlocking.FILL_FROM + Unlocking.FILL_TO) / 2 } }
+    val circled by remember(part, clock) { derivedStateOf { part != StopRole.OPENED || clock == null || times == null || times.circle(clock.now) > 0f } }
+    val inking = if (part == StopRole.PASSED && first && row.nextX != null) motion else null
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
             .height(row.height)
-            .drawBehind { row.nextX?.let { drawPathTo(row.x, it, row.nextHeight, row.nextOpen, style) } },
+            .drawBehind {
+                val nextX = row.nextX ?: return@drawBehind
+                val inked = if (inking == null) 1f else inking.times.path(inking.clock.now)
+                drawPathTo(row.x, nextX, row.nextHeight, row.nextOpen, style, inked)
+            },
     ) {
         val centerX = maxWidth * row.x
         val centerY = row.height / 2
@@ -489,30 +568,75 @@ private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit) {
                     onClick { onOpen(); true }
                 },
         ) {
-            if (stop.isBoss) Castle(row, style) else Node(row, style)
+            val look = when {
+                stillNext -> row.copy(isNext = true, stop = stop.copy(state = LevelState.OPEN))
+                !filled -> row.copy(stop = stop.copy(state = LevelState.OPEN))
+                !circled -> row.copy(isNext = false, stop = stop.copy(state = LevelState.LOCKED))
+                else -> row
+            }
+            val draws = when {
+                clock == null || times == null -> null
+                part == StopRole.PASSED && first -> StopDraw.Fill { times.fill(clock.now) to times.rings(clock.now) }
+                part == StopRole.OPENED -> StopDraw.Circle { times.circle(clock.now) }
+                else -> null
+            }
+            if (stop.isBoss) Castle(look, style) else Node(look, style, draws)
         }
-        // The stars sit above a passed level, as on the canvas.
+        // The stars sit above a passed level, as on the canvas. New ones fly in from the result note.
         if (stop.state == LevelState.PASSED) {
             val top = if (stop.isBoss) centerY - height / 2 - 14.dp else centerY - STOP_SIZE / 2 - 16.dp
-            Row(Modifier.offset(x = centerX - 20.dp, y = top).clearAndSetSemantics { }) {
+            val window = LocalWindowInfo.current.containerSize
+            var at by remember { mutableStateOf(Offset.Zero) }
+            Row(
+                Modifier
+                    .offset(x = centerX - 20.dp, y = top)
+                    .onGloballyPositioned { at = it.positionInRoot() }
+                    .clearAndSetSemantics { },
+            ) {
                 repeat(3) {
-                    val filled = it < stop.stars
+                    val earned = it < stop.stars
+                    val flight = if (part == StopRole.PASSED && clock != null && times != null && it >= before && earned) Modifier.graphicsLayer {
+                        val p = times.star(clock.now, it - before)
+                        // From where the result note showed it, low in the middle of the screen.
+                        translationX = (window.width / 2f - at.x - 13.dp.toPx() * (it + 0.5f)) * (1f - p)
+                        translationY = (window.height * 0.6f - at.y) * (1f - p)
+                        val size = 1f + 2.5f * (1f - p)
+                        scaleX = size
+                        scaleY = size
+                    } else Modifier
                     Icon(
-                        Doodles.star(if (filled) style.next else style.graphite, filled),
+                        Doodles.star(if (earned) style.next else style.graphite, earned),
                         contentDescription = null,
                         tint = Color.Unspecified,
-                        modifier = Modifier.size(13.dp),
+                        modifier = flight.size(13.dp),
                     )
                 }
             }
         }
-        if (row.isNext) NextLabel(row, style, centerX, centerY)
+        if (stillNext) NextLabel(row, style, centerX, centerY)
+        if (row.isNext && circled) {
+            val write = if (part == StopRole.OPENED && clock != null && times != null) ({ times.next(clock.now) }) else ({ 1f })
+            NextLabel(row, style, centerX, centerY, write)
+        }
     }
 }
 
-/** A level's stop: blue when passed, ringed twice in red when next, dashed while locked. */
+/** How a stop draws its part in an unlock: the passed stop filling, or the opened one being circled. */
+private sealed interface StopDraw {
+    /** The blue disc's share of the stop, and how much of the red rings is left. */
+    class Fill(val at: () -> Pair<Float, Float>) : StopDraw
+
+    /** The red rings drawn round the stop: 0 to 2 loops. */
+    class Circle(val loops: () -> Float) : StopDraw
+}
+
+/**
+ * A level's stop: blue when passed, ringed twice in red when next, dashed while locked. In an
+ * unlock it [draws] its part: the passed stop fills with a blue disc growing from its centre while
+ * its red rings shrink away; the opened one is circled twice in red.
+ */
 @Composable
-private fun Node(row: MapRow.Stop, style: MapStyle) {
+private fun Node(row: MapRow.Stop, style: MapStyle, draws: StopDraw? = null) {
     val stop = row.stop
     val ink = when {
         stop.state == LevelState.PASSED -> style.onDone
@@ -522,7 +646,32 @@ private fun Node(row: MapRow.Stop, style: MapStyle) {
     Box(contentAlignment = Alignment.Center, modifier = Modifier.size(TOUCH_SIZE)) {
         Canvas(Modifier.matchParentSize()) {
             val r = STOP_SIZE.toPx() / 2
+            val big = TOUCH_SIZE.toPx() / 2
             when {
+                draws is StopDraw.Fill -> {
+                    val (fill, rings) = draws.at()
+                    drawCircle(style.card, big * rings.coerceAtLeast(fill * r / big))
+                    if (rings > 0f) {
+                        drawCircle(style.next, (big - 1.5.dp.toPx()) * rings, style = Stroke(3.dp.toPx()))
+                        drawCircle(style.next, (big + 5.25.dp.toPx()) * rings, style = Stroke(2.5.dp.toPx()))
+                    }
+                    drawCircle(style.done, r * fill)
+                }
+                draws is StopDraw.Circle && draws.loops().let { it > 0f && it < 2f } -> {
+                    val loops = draws.loops()
+                    drawCircle(style.card, big)
+                    drawArc(style.next, -90f, 360f * loops.coerceAtMost(1f), useCenter = false,
+                        topLeft = Offset(center.x - big + 1.5.dp.toPx(), center.y - big + 1.5.dp.toPx()),
+                        size = androidx.compose.ui.geometry.Size(2 * (big - 1.5.dp.toPx()), 2 * (big - 1.5.dp.toPx())),
+                        style = Stroke(3.dp.toPx(), cap = StrokeCap.Round))
+                    val outer = big + 5.25.dp.toPx()
+                    if (loops > 1f) {
+                        drawArc(style.next, -90f, 360f * (loops - 1f), useCenter = false,
+                            topLeft = Offset(center.x - outer, center.y - outer),
+                            size = androidx.compose.ui.geometry.Size(2 * outer, 2 * outer),
+                            style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round))
+                    }
+                }
                 stop.state == LevelState.PASSED -> drawCircle(style.done, r)
                 row.isNext -> {
                     val big = TOUCH_SIZE.toPx() / 2
@@ -575,7 +724,7 @@ private fun Castle(row: MapRow.Stop, style: MapStyle) {
 
 /** "next!" in red beside the next level, with an arrow to it, on the side with more room. */
 @Composable
-private fun NextLabel(row: MapRow.Stop, style: MapStyle, centerX: Dp, centerY: Dp) {
+private fun NextLabel(row: MapRow.Stop, style: MapStyle, centerX: Dp, centerY: Dp, written: () -> Float = { 1f }) {
     val onLeft = row.x > 0.5f
     val reach = (if (row.stop.isBoss) CASTLE_WIDTH / 2 else TOUCH_SIZE / 2 + 6.dp) + 4.dp
     val width = 108.dp
@@ -586,6 +735,8 @@ private fun NextLabel(row: MapRow.Stop, style: MapStyle, centerX: Dp, centerY: D
         modifier = Modifier
             .offset(x = if (onLeft) centerX - reach - width else centerX + reach, y = centerY - 16.dp)
             .width(width)
+            // It writes in, left to right, when an unlock circles the level.
+            .writeIn(written)
             .clearAndSetSemantics { },
     ) {
         // The arrow points left as drawn: towards a level on the left of the label. Mirrored, it
@@ -627,7 +778,7 @@ private fun stopDescription(row: MapRow.Stop): String {
  * inked and dashed up to a stop that is [inked] (open, or a chest reached), dotted in graphite
  * beyond it. The stops are drawn over its ends.
  */
-private fun DrawScope.drawPathTo(x: Float, nextX: Float, nextHeight: Dp, inked: Boolean, style: MapStyle) {
+private fun DrawScope.drawPathTo(x: Float, nextX: Float, nextHeight: Dp, inked: Boolean, style: MapStyle, inkedPart: Float = 1f) {
     val from = Offset(size.width * x, size.height / 2)
     // A boss's path ends under its castle's label, not through it.
     val end = if (nextHeight == BOSS_HEIGHT) -nextHeight.toPx() / 2 + CASTLE_HEIGHT.toPx() / 2 else -nextHeight.toPx() / 2
@@ -637,19 +788,20 @@ private fun DrawScope.drawPathTo(x: Float, nextX: Float, nextHeight: Dp, inked: 
         moveTo(from.x, from.y)
         cubicTo(from.x, from.y - bend, to.x, to.y + bend, to.x, to.y)
     }
-    drawPath(
-        path,
-        color = if (inked) style.done else style.graphite,
-        style = Stroke(
-            width = 2.2.dp.toPx(),
-            cap = StrokeCap.Round,
-            pathEffect = if (inked) {
-                PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 6.dp.toPx()))
-            } else {
-                PathEffect.dashPathEffect(floatArrayOf(0.01f, 7.dp.toPx()))
-            },
-        ),
-    )
+    val dotted = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(0.01f, 7.dp.toPx())))
+    val dashed = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 6.dp.toPx())))
+    if (!inked) return drawPath(path, style.graphite, style = dotted)
+    if (inkedPart >= 1f) return drawPath(path, style.done, style = dashed)
+    // An unlock inks the path in from the passed stop: dashed in blue as far as it got, dotted beyond.
+    val measure = PathMeasure()
+    measure.setPath(path, false)
+    val length = measure.length
+    val done = Path()
+    val rest = Path()
+    measure.getSegment(0f, length * inkedPart, done, true)
+    measure.getSegment(length * inkedPart, length, rest, true)
+    drawPath(rest, style.graphite, style = dotted)
+    if (inkedPart > 0f) drawPath(done, style.done, style = dashed)
 }
 
 /**

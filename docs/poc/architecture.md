@@ -24,6 +24,7 @@ Layers, each depending only on the ones below it:
 |---|---|---|---|
 | Screens | `ui.screen` | Compose screens: the map, game, settings, rules, the developer menu | Layout replaced by the designed screens; routes follow [`docs/design/flows.md`](../design/flows.md) |
 | Board view | `ui.board` | Draws the board on a Canvas; turns a touch into a grid cell and a placing gesture (two taps or drag, decision 0024) into game events; reads inks, sizes and piece shapes from a `BoardStyle`, which comes from the theme | Kept |
+| Motion | `ui.motion` | Every time of [`docs/design/motion.md`](../design/motion.md) and where each movement stands at a time; the clocks that play a moment, which jump to their end when the phone's animations are removed. The view model hands each dot that lands to the screen as a `BoardMoment`, and the board draws it as the clock runs | Kept |
 | Theme | `ui.theme` | A `GameTheme` is a look as data: inks in a light and a dark version, board sizes, pieces, text styles, sounds and world backgrounds. `DotsTheme` hands the theme to every screen | Kept; each new look is a new `GameTheme` value, with no new drawing code |
 | Game control | `game` | One `GameViewModel` per game: holds the `GameState`, runs the computer on a background thread with a time limit, exposes one immutable `GameUiState` | Kept |
 | Data | `data` | Settings and campaign progress (DataStore), saved game, game log file | Kept; the log feeds future analytics |

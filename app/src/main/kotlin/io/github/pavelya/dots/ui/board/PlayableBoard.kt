@@ -1,5 +1,7 @@
 package io.github.pavelya.dots.ui.board
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -7,15 +9,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import dots.ai.Danger
 import dots.engine.GameState
 import dots.engine.Pos
 import io.github.pavelya.dots.data.PlacingMethod
+import io.github.pavelya.dots.game.BoardMoment
+import io.github.pavelya.dots.ui.motion.Ease
+import io.github.pavelya.dots.ui.motion.Guides
+import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import kotlinx.coroutines.launch
 
 /**
  * How the board's touches reach the game: the placing [method] and the three events it sends
@@ -47,6 +56,11 @@ class BoardInput(
  * tutorial's [pointer], the boosters' [marks] and the links ([showLinks]) are drawn as [BoardView] draws them. In a booster
  * preview the same touches choose the booster's point (the game decides), and drag's guides follow
  * the finger there too.
+ *
+ * Motion (docs/design/motion.md): the [moment], [edgeMarks] and [glow] play as [BoardView] plays
+ * them. When the finger goes down, drag's guides are drawn out from the ring in 100 ms, then jump
+ * with the finger. Every touch calls [onTouch] first, so a moment still playing can jump to its
+ * end; the touch counts as usual.
  */
 @Composable
 fun PlayableBoard(
@@ -62,11 +76,36 @@ fun PlayableBoard(
     pointer: Pos? = null,
     marks: BoardMarks = BoardMarks.NONE,
     showLinks: Boolean = false,
+    moment: BoardMoment? = null,
+    time: () -> Float = { Float.MAX_VALUE },
+    edgeMarks: Pos? = null,
+    glow: AreaGlow? = null,
+    onTouch: () -> Unit = {},
 ) {
     val method = input.method
     var fingerDown by remember { mutableStateOf(false) }
     // The gestures send to the events as they are now, not as they were when the gesture began.
     val events by rememberUpdatedState(input)
+    val touched by rememberUpdatedState(onTouch)
+    val reduce = LocalReduceMotion.current
+    val guideReach = remember { Animatable(1f) }
+    val scope = rememberCoroutineScope()
+    val drawOut = {
+        if (!reduce) {
+            scope.launch {
+                guideReach.snapTo(0f)
+                guideReach.animateTo(1f, tween(Guides.DRAWN.toInt(), easing = Ease.OUT))
+            }
+        }
+    }
+
+    // Seen before the placing gestures, without taking the touch from them.
+    val touches = Modifier.pointerInput(Unit) {
+        awaitEachGesture {
+            awaitFirstDown(requireUnconsumed = false, pass = PointerEventPass.Initial)
+            touched()
+        }
+    }
 
     val gestures = Modifier.pointerInput(method, state.width, state.height) {
         fun pointAt(at: Offset): Pos? =
@@ -76,6 +115,7 @@ fun PlayableBoard(
             PlacingMethod.DRAG -> awaitEachGesture {
                 val down = awaitFirstDown()
                 var at = down.position
+                drawOut()
                 fingerDown = true
                 events.onAim(pointAt(at))
                 var lifted = false
@@ -102,7 +142,7 @@ fun PlayableBoard(
         state = state,
         style = style,
         description = description,
-        modifier = modifier.then(gestures),
+        modifier = modifier.then(touches).then(gestures),
         lastMove = lastMove,
         preview = preview,
         dangers = dangers,
@@ -111,5 +151,10 @@ fun PlayableBoard(
         pointer = pointer,
         marks = marks,
         showLinks = showLinks,
+        moment = moment,
+        time = time,
+        edgeMarks = edgeMarks,
+        guideReach = { guideReach.value },
+        glow = glow,
     )
 }

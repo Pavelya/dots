@@ -23,6 +23,7 @@ import dots.engine.GameState
 import dots.engine.MoveResult
 import dots.engine.Player
 import dots.engine.Pos
+import dots.engine.areas
 import dots.log.GameLogEntry
 import dots.log.Outcome
 import io.github.pavelya.dots.data.CampaignJournal
@@ -105,6 +106,17 @@ data class GameUiState(
     val hint: Pos? = null,
     /** After a Double dot, the dots the player still places this turn: 2, then 1. Null otherwise. */
     val doubleDots: Int? = null,
+    /** The dot that has just landed, for the screen to play its moment (motion.md); null after an undo, a booster or a new game. */
+    val moment: BoardMoment? = null,
+    /**
+     * The dot whose row and column the edge marks show: the computer's last dot until the player's
+     * next dot lands, or between two people the last dot (motion.md, "The computer's move").
+     */
+    val edgeMarks: Pos? = null,
+    /** Once the game is over, its captured areas in the order they were captured; they light up in turn. */
+    val captureOrder: List<CapturedArea> = emptyList(),
+    /** Once the game is over, the computer's look before the end: it changes as the result note comes up. */
+    val opponentInPlay: OpponentLook? = null,
 ) {
     /** True when Result can open: the game is over and, in a level or the daily puzzle, its end is saved. */
     val showsResult: Boolean get() = isOver && (level == null || levelEnd != null) && (daily == null || dailyEnd != null)
@@ -148,7 +160,10 @@ data class BoosterAim(
  * Against the computer the human is red and moves first. The computer thinks on
  * [computerDispatcher], never on the main thread, and its thinking is cancelled by undo, a new
  * game, or leaving the screen. It answers after at least [replyDelayMillis], so the player sees
- * their own dot land before the reply.
+ * their own dot land before the reply, and not before the player's capture has played out
+ * ([holdFor], motion.md, rule 2).
+ *
+ * Each dot that lands comes with a [BoardMoment] for the screen to animate.
  *
  * @param start the game to play: new, or resumed
  * @param nextGame the game "play again" starts (a fresh seed every time; the same level again, or
@@ -162,6 +177,7 @@ data class BoosterAim(
  * @param ownedFor the player's own boosters a new game of a level takes (decision 0027); a game
  *   reports the ones it uses to [campaign]
  * @param daily where a daily attempt's end is saved
+ * @param holdFor how long the screen plays the player's move, in ms: the computer answers no sooner
  */
 class GameViewModel(
     start: GameLogEntry,
@@ -170,12 +186,13 @@ class GameViewModel(
     private val journal: GameJournal? = null,
     private val campaign: CampaignJournal? = null,
     private val computerDispatcher: CoroutineDispatcher = Dispatchers.Default,
-    private val replyDelayMillis: Long = 400,
+    private val replyDelayMillis: Long = 500,
     private val clock: () -> Long = System::currentTimeMillis,
     private val placing: () -> PlacingMethod = { PlacingMethod.TWO_TAPS },
     private val hintFor: (GameState, Level?) -> Action.Hint? = { state, level -> if (level != null) level.hint(state) else Hints.hint(state) },
     private val ownedFor: (Level) -> Map<Booster, Int> = { emptyMap() },
     private val daily: DailyJournal? = null,
+    private val holdFor: (MoveResult) -> Long = { 0L },
 ) : ViewModel() {
     val human: Player = Player.RED
 
@@ -207,6 +224,16 @@ class GameViewModel(
 
     /** The player's own boosters this game last reported as used ([reportOwned]). */
     private var ownedReported: Map<Booster, Int> = emptyMap()
+
+    /** The last dot's moment, and how many dots have landed on this screen. */
+    private var moment: BoardMoment? = null
+    private var moments = 0
+
+    /** The dot the edge marks show; see [GameUiState.edgeMarks]. */
+    private var edgeMarks: Pos? = null
+
+    /** The captured areas in the order they were captured, worked out once the game is over. */
+    private var captureOrder: List<CapturedArea>? = null
 
     /** How often the human took a move back in this game. */
     val undoCount: Int get() = entry.undos
@@ -286,11 +313,44 @@ class GameViewModel(
     }
 
     private fun put(point: Pos) {
+        val before = _ui.value
+        val mover = game.state.toMove
         val move = game.apply(Action.Place(point))
         entry = entry.copy(placed = entry.placed + 1)
         changed()
-        _ui.value = snapshot(lastMove = point, captured = move)
-        letComputerMove()
+        landed(before, point, mover, move)
+        letComputerMove(after = move)
+    }
+
+    /**
+     * Shows the position after [dot], placed by [by] in [move], with its moment: what the screen
+     * showed [before] it is what the moment starts from.
+     */
+    private fun landed(before: GameUiState, dot: Pos, by: Player, move: MoveResult) {
+        val announced = computer == null || by != human
+        val marksGone = edgeMarks
+        edgeMarks = if (announced) dot else null
+        val shown = snapshot(lastMove = dot, captured = move, aim = null, landing = null)
+        val known = before.dangers.map(ThreatMark::of).toSet()
+        val fresh = shown.dangers.map(ThreatMark::of).filter { it !in known }.toSet()
+        moment = BoardMoment(
+            id = ++moments,
+            dot = dot,
+            by = by,
+            announced = announced,
+            captures = move.captures,
+            pinholeBefore = before.lastMove,
+            marksGone = marksGone?.takeIf { it != edgeMarks },
+            freshThreats = fresh,
+            missionBefore = before.mission,
+            opponentBefore = before.opponent,
+        )
+        _ui.value = shown.copy(moment = moment)
+    }
+
+    /** Nothing to play: after an undo, a booster or a new game the board shows its state at once. */
+    private fun still() {
+        moment = null
     }
 
     /**
@@ -380,7 +440,11 @@ class GameViewModel(
     private fun use(action: Action.UseBooster) {
         chosen = null
         game.apply(action)
-        if (action == Action.Undo) entry = entry.copy(undos = entry.undos + 1)
+        still()
+        if (action == Action.Undo) {
+            entry = entry.copy(undos = entry.undos + 1)
+            edgeMarks = null
+        }
         changed()
         _ui.value = snapshot(lastMove = lastPlaced())
         letComputerMove()
@@ -412,6 +476,8 @@ class GameViewModel(
         thinking?.cancel()
         if (game.undo(human)) {
             entry = entry.copy(undos = entry.undos + 1)
+            still()
+            edgeMarks = null
             changed()
         }
         _ui.value = snapshot(lastMove = lastPlaced())
@@ -459,28 +525,40 @@ class GameViewModel(
         ownedReported = emptyMap()
         shownGuide = null
         chosen = null
+        still()
+        edgeMarks = null
+        captureOrder = null
         round++
         lastActive = clock()
         journal?.start(entry)
         _ui.value = snapshot(lastMove = null)
     }
 
-    private fun letComputerMove() {
+    /** The computer answers, if it is to move; [after] is the player's move, which it lets play out first. */
+    private fun letComputerMove(after: MoveResult? = null) {
         val ai = computer ?: return
         val position = game.state
         if (game.isOver || position.toMove == human) return
         _ui.value = _ui.value.copy(thinking = true)
+        val wait = maxOf(replyDelayMillis, after?.let(holdFor) ?: 0L)
         thinking = viewModelScope.launch {
-            delay(replyDelayMillis)
+            delay(wait)
             val action = withContext(computerDispatcher) {
                 val context = coroutineContext
                 ai.choose(position) { !context.isActive }
             }
             ensureActive()
             if (game.state !== position) return@launch // the position changed meanwhile (undo)
+            val before = _ui.value
+            val mover = position.toMove
             val result = game.apply(action)
             changed()
-            _ui.value = snapshot(lastMove = (action as? Action.Place)?.pos ?: lastPlaced(), captured = result)
+            val dot = (action as? Action.Place)?.pos
+            if (dot != null) {
+                landed(before, dot, mover, result)
+            } else {
+                _ui.value = snapshot(lastMove = lastPlaced(), captured = result)
+            }
             letComputerMove() // the engine skips the human's turn if they have no dots left
         }
     }
@@ -595,8 +673,38 @@ class GameViewModel(
         return 2 - placed.size
     }
 
-    /** What the screen draws now; [captured] is the move just played, if any, for the computer's face. */
-    private fun snapshot(lastMove: Pos?, captured: MoveResult? = null, aim: BoosterAim? = null): GameUiState {
+    /**
+     * The captured areas of the finished game in the order they were captured: the game is played
+     * again from its start, and each area takes the move after which its first point was enclosed.
+     */
+    private fun captureOrder(): List<CapturedArea> = captureOrder ?: run {
+        val areas = game.state.areas()
+        val order = if (areas.isEmpty()) emptyList() else runCatching {
+            val actions = game.record.actions
+            val replay = Game.from(game.record.withActions(emptyList()))
+            val captured = HashMap<Pos, Int>()
+            fun look(move: Int) {
+                for (area in areas) {
+                    val first = area.region.first()
+                    if (first !in captured && replay.state.enclosedBy(first) != null) captured[first] = move
+                }
+            }
+            look(0)
+            actions.forEachIndexed { i, action ->
+                replay.apply(action)
+                look(i + 1)
+            }
+            areas.sortedBy { captured[it.region.first()] ?: Int.MAX_VALUE }
+        }.getOrDefault(areas).map { CapturedArea(it.region.first(), it.by) }
+        captureOrder = order
+        order
+    }
+
+    /**
+     * What the screen draws now; [captured] is the move just played, if any, for the computer's
+     * face. The last dot's moment goes with it, unless a new one is [landing].
+     */
+    private fun snapshot(lastMove: Pos?, captured: MoveResult? = null, aim: BoosterAim? = null, landing: BoardMoment? = moment): GameUiState {
         val state = game.state
         val level = level
         val puzzle = puzzle
@@ -623,6 +731,12 @@ class GameViewModel(
                 else -> Ending.LOST
             }
             if (aim?.booster == Booster.UNDO) OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK) else OpponentLook.of(state, human, lastCapture, inDanger, ending)
+        }
+        val inPlay = if (computer != null && over) {
+            val lastCapture = captured?.captures?.takeIf { it.isNotEmpty() }?.let { captures -> LastCapture(captures.first().by, captures.sumOf { c -> c.points }) }
+            OpponentLook.of(state, human, lastCapture, humanInDanger = false, ending = null)
+        } else {
+            null
         }
         val humanTurn = !over && (computer == null || state.toMove == human)
         val usable = if (level == null || !humanTurn || aim != null) emptySet() else Booster.entries.filter { game.canUse(it) }.toSet()
@@ -651,6 +765,10 @@ class GameViewModel(
             aim = aim,
             hint = (game.record.actions.lastOrNull() as? Action.Hint)?.pos?.takeIf { humanTurn },
             doubleDots = doubleDotsLeft(state),
+            moment = landing,
+            edgeMarks = edgeMarks,
+            captureOrder = if (over) captureOrder() else emptyList(),
+            opponentInPlay = inPlay,
         )
     }
 }
