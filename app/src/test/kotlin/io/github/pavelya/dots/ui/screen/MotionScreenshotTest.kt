@@ -273,7 +273,7 @@ class MotionScreenshotTest {
      * The screen just after Red uses [action] in the [boosted] position, as the view model makes it,
      * with the booster's effect to play.
      */
-    private fun used(action: Action.UseBooster): GameUiState {
+    private fun used(action: Action.UseBooster, givenBack: Pair<Booster, Pos>? = null): GameUiState {
         val before = CanvasGame.boosted.state
         val result = before.apply(action)
         val state = result.state
@@ -283,6 +283,8 @@ class MotionScreenshotTest {
                 before = before,
                 answer = gone.filter { before.ownerAt(it) == Player.BLUE },
                 own = gone.filter { before.ownerAt(it) == Player.RED },
+                givenBack = givenBack?.first,
+                givenBackAt = givenBack?.second,
                 opponentBefore = OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK),
             )
         } else {
@@ -334,7 +336,7 @@ class MotionScreenshotTest {
         val move = hinted.state.play(Pos(9, 9))
         val landed = landing(hinted, move, Pos(9, 9), Player.RED, edgeMarks = null)
         show { BoostedBoard(landed.copy(moment = landed.moment?.copy(hintBefore = Pos(9, 9)))) }
-        frames("hint_dot", 75)
+        frames("hint_dot", 0, 50)
     }
 
     /** Bomb (third row): it drops on (8, 7), and at 150 ms the four blue dots round it swell, shrink away, and the specks fly. */
@@ -381,6 +383,16 @@ class MotionScreenshotTest {
     fun undo() {
         show { BoostedBoard(used(Action.Undo)) }
         frames("undo", 0, 125, 300, 450, 600)
+    }
+
+    /**
+     * Undo of a turn in which Red had put up a wall at (9, 9): the wall stays until 200 ms, flies
+     * back to its button by 400 ms, and the button's count goes up and swells.
+     */
+    @Test
+    fun undoGivesBackAWall() {
+        show { BoostedBoard(used(Action.Undo, givenBack = Booster.WALL to Pos(9, 9))) }
+        frames("undo_wall", 100, 300, 500)
     }
 }
 
