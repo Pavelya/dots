@@ -278,6 +278,8 @@ class MotionTimesTest {
         assertEquals(0f, UndoEffect.strokes(600f, UndoEffect.ANSWER))
         near(200f, starts { UndoEffect.flight(it) })
         near(400f, ends { UndoEffect.flight(it) })
+        assertEquals(0f, UndoEffect.growBack(200f))
+        near(450f, ends { UndoEffect.growBack(it) })
         assertEquals(1.35f, UndoEffect.countScale(500f), 0.001f)
         assertEquals(1f, UndoEffect.countScale(600f))
         near(450f, UndoEffect.SETTLED)

@@ -178,6 +178,10 @@ private class Frame(
 
     fun undoFrom(side: Player): Float = if (side == booster?.by) UndoEffect.OWN else UndoEffect.ANSWER
 
+    /** A dot a bomb took in the turn Undo takes back grows back in: its size from 0 to 1; 1 for any other dot. */
+    fun grownBack(x: Int, y: Int): Float =
+        if (undoing == null || undone.back.isEmpty() || Pos(x, y) !in undone.back) 1f else UndoEffect.growBack(bt)
+
     /** How much of the cut across [pos] is left while an Undo takes back the capture that made it; 0 for any other dot. */
     fun cutLeft(pos: Pos): Float {
         if (undoing == null) return 0f
@@ -229,9 +233,10 @@ private class Frame(
 
 /**
  * What an Undo takes back that the position after it no longer shows: the captured [areas] of the
- * turn, and the dots they had captured, which are free again, with their captor ([uncut]).
+ * turn, and the dots they had captured, which are free again, with their captor ([uncut]). The
+ * dots a bomb took in that turn are on the board again ([back]): they grow back in.
  */
-private class UndoneParts(val areas: List<Area>, val uncut: Map<Pos, Player>) {
+private class UndoneParts(val areas: List<Area>, val uncut: Map<Pos, Player>, val back: Set<Pos> = emptySet()) {
     companion object {
         private val NONE = UndoneParts(emptyList(), emptyMap())
 
@@ -239,11 +244,13 @@ private class UndoneParts(val areas: List<Area>, val uncut: Map<Pos, Player>) {
             val before = booster?.undone?.before ?: return NONE
             val areas = before.areas().filter { area -> regions.none { area.region.first() in it } }
             val uncut = HashMap<Pos, Player>()
+            val back = HashSet<Pos>()
             for (y in 0 until state.height) for (x in 0 until state.width) {
                 val owner = state.ownerAt(x, y) ?: continue
                 if (before.isCaptured(x, y) && !state.isCaptured(x, y) && before.ownerAt(x, y) == owner) uncut[Pos(x, y)] = owner.opponent
+                if (before.ownerAt(x, y) == null) back += Pos(x, y)
             }
-            return UndoneParts(areas, uncut)
+            return UndoneParts(areas, uncut, back)
         }
     }
 }
@@ -720,7 +727,7 @@ private fun DrawScope.drawHalos(state: GameState, geometry: BoardGeometry, style
     onSurface(areas, strokes, style) { surface ->
         for (y in 0 until state.height) for (x in 0 until state.width) {
             val owner = state.ownerAt(x, y) ?: continue
-            val scale = if (newDot != null && newDot.x == x && newDot.y == y) Placing.dotScale(frame.t) else 1f
+            val scale = if (newDot != null && newDot.x == x && newDot.y == y) Placing.dotScale(frame.t) else frame.grownBack(x, y)
             if (scale <= 0f) continue
             drawPiece(style.piece(owner).grown(halo, dot).let { it.copy(across = it.across * scale) }, geometry.center(x, y), dot, surface)
         }
@@ -774,6 +781,15 @@ private fun DrawScope.drawLinks(state: GameState, geometry: BoardGeometry, style
                 if (growth <= 0f) continue
                 if (newDot == Pos(x, y)) from = to.also { to = from }
                 to = Offset(from.x + (to.x - from.x) * growth, from.y + (to.y - from.y) * growth)
+            }
+            // The links of a dot growing back after a bomb grow back with it, from the neighbour.
+            val here = frame.grownBack(x, y)
+            val there = frame.grownBack(nx, ny)
+            if (here < 1f || there < 1f) {
+                val grown = min(here, there)
+                if (grown <= 0f) continue
+                if (here < there) from = to.also { to = from }
+                to = Offset(from.x + (to.x - from.x) * grown, from.y + (to.y - from.y) * grown)
             }
             drawLine(style.palette.pale(owner), from, to, width)
         }
@@ -852,8 +868,8 @@ private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style:
         val owner = state.ownerAt(x, y) ?: continue
         val color = style.color(owner)
         val center = geometry.center(x, y)
-        // A dot just placed grows to 115% and settles (motion.md, "Placing a dot").
-        val scale = if (newDot != null && newDot.x == x && newDot.y == y) Placing.dotScale(frame.t) else 1f
+        // A dot just placed grows to 115% and settles (motion.md, "Placing a dot"); one Undo gives back after a bomb grows back in.
+        val scale = if (newDot != null && newDot.x == x && newDot.y == y) Placing.dotScale(frame.t) else frame.grownBack(x, y)
         if (scale <= 0f) continue
         val piece = style.piece(owner).let { if (scale == 1f) it else it.copy(across = it.across * scale) }
         // A dot being captured keeps its ink until its cut is drawn across it; Undo takes the cut back.

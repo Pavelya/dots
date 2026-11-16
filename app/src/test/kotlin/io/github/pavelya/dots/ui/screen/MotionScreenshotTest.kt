@@ -386,6 +386,28 @@ class MotionScreenshotTest {
     }
 
     /**
+     * Undo of a turn in which Red had dropped a bomb on (8, 7), then placed (9, 9), and Blue
+     * answered (13, 13): the four blue dots the bomb took grow back in from 200 to 450 ms, with
+     * Red's dot rubbed out, and the bomb flies back to its button.
+     */
+    @Test
+    fun undoGivesBackABomb() {
+        val after = CanvasGame.boosted.state
+        val before = after.apply(Action.Bomb(Pos(8, 7))).state.play(Pos(9, 9)).state.play(Pos(13, 13)).state
+        val undone = UndoneTurn(
+            before = before,
+            answer = listOf(Pos(13, 13)),
+            own = listOf(Pos(9, 9)),
+            givenBack = Booster.BOMB,
+            givenBackAt = Pos(8, 7),
+            opponentBefore = OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK),
+        )
+        val shown = ui(CanvasGame.boosted, lastMove = Pos(7, 7)).copy(booster = BoosterMoment(1, Booster.UNDO, Player.RED, undone = undone))
+        show { BoostedBoard(shown) }
+        frames("undo_bomb", 200, 300, 450)
+    }
+
+    /**
      * Undo of a turn in which Red had put up a wall at (9, 9): the wall stays until 200 ms, flies
      * back to its button by 400 ms, and the button's count goes up and swells.
      */
