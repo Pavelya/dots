@@ -81,6 +81,7 @@ dependencies {
     implementation(libs.lifecycle.runtime.compose)
     implementation(libs.navigation.compose)
     implementation(libs.datastore.preferences)
+    implementation(libs.play.review) // Google Play's in-app review prompt
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 

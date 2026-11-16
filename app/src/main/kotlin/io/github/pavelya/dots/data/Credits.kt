@@ -7,10 +7,19 @@ package io.github.pavelya.dots.data
  * Every asset also has a row in docs/assets.md, the asset register.
  */
 object Credits {
-    /** A licence, with its full text in the app's assets at [file], shown on the Licences page. */
+    /**
+     * A licence, with its full text in the app's assets at [file], shown on the Licences page. Its
+     * [title] fits one line of a heading (CreditsTest).
+     */
     enum class Licence(val title: String, val file: String) {
         APACHE_2("Apache License 2.0", "licences/apache-2.0.txt"),
         OFL_1_1("SIL Open Font License 1.1", "licences/ofl-1.1.txt"),
+
+        /**
+         * Google's Play Core Software Development Kit Terms of Service, for its Play libraries such
+         * as the in-app review prompt; not an open-source licence. The text starts with the full name.
+         */
+        PLAY_CORE_TERMS("Play Core SDK Terms", "licences/play-core-terms.txt"),
     }
 
     /**
@@ -59,6 +68,7 @@ object Credits {
         Library("AndroidX Lifecycle", Licence.APACHE_2, listOf("androidx.lifecycle")),
         Library("AndroidX Navigation", Licence.APACHE_2, listOf("androidx.navigation")),
         Library("AndroidX DataStore", Licence.APACHE_2, listOf("androidx.datastore")),
+        Library("Google Play In-App Review", Licence.PLAY_CORE_TERMS, listOf("com.google.android.play")),
     )
 
     /** Every licence something in the app relies on, each once. */

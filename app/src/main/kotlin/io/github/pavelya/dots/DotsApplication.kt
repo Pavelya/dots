@@ -34,6 +34,9 @@ class DotsApplication : Application() {
     /** Campaign progress: stars, the player's own boosters, chests and cosmetics. Backed up by Android. */
     val progress: ProgressRepository by lazy { ProgressRepository(progressStore, progressScope) }
 
+    /** Google Play's review prompt, asked for after a level won with three stars; tests replace it. */
+    var reviews: ReviewPrompt = PlayReviewPrompt()
+
     /** The daily puzzle's clock; tests replace it with one they set. */
     var clock: PuzzleClock = PuzzleClock()
 

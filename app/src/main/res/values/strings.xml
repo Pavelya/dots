@@ -285,6 +285,12 @@
     <string name="settings_high_contrast">High-contrast pieces</string>
     <string name="settings_links">Links between dots</string>
     <string name="settings_feedback">Send feedback</string>
+    <!-- The feedback email (A-12): the game's support address (docs/plan.md, Accounts), its subject, and the
+         lines under the player's message that say which build and phone it came from. -->
+    <string name="feedback_address" translatable="false">pinfoldsupport@gmail.com</string>
+    <string name="feedback_subject">Pinfold feedback</string>
+    <string name="feedback_details">\n\n\nPinfold %1$s, Android %2$s, %3$s</string>
+    <string name="feedback_no_email">No email app found. Write to us at %1$s</string>
     <string name="settings_privacy">Privacy</string>
     <string name="settings_backup">Play Games backup</string>
     <string name="back_to_settings">Back to settings</string>

@@ -30,12 +30,14 @@ import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.data.CampaignJournal
 import io.github.pavelya.dots.data.LevelEnd
+import io.github.pavelya.dots.data.ReviewRule
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -146,6 +148,44 @@ class LevelScreensTest {
         compose.onNodeWithContentDescription("Retry").performClick()
         yourTurn(3)
         compose.onNodeWithText("You won!").assertDoesNotExist()
+    }
+
+    @Test
+    fun `each level end is reported once Result has settled, and only the three-star pass earns the review prompt`() {
+        val vm = levelViewModel()
+        val reported = mutableListOf<LevelEnd>()
+        compose.setContent {
+            DotsTheme {
+                GameScreen(vm, onToMap = {}, onRules = {}, onLevelResult = { played, end, practice ->
+                    assertEquals(level, played)
+                    assertFalse(practice)
+                    reported += end
+                })
+            }
+        }
+        // The ring closes at once: two moves to spare, three stars.
+        yourTurn(3)
+        place(3, 4)
+        waitFor("You won!")
+        compose.onNodeWithContentDescription("3 of 3 stars").assertIsDisplayed()
+        compose.waitUntil(timeoutMillis = 5_000) { reported.isNotEmpty() }
+        assertEquals(Stars.MAX, reported.single().result.stars)
+        assertTrue(ReviewRule.earns(level, reported.single().result, practice = false))
+
+        // A loss is reported too, and earns nothing.
+        compose.onNodeWithContentDescription("Retry").performClick()
+        yourTurn(3)
+        place(0, 6)
+        yourTurn(2)
+        place(1, 6)
+        yourTurn(1)
+        place(2, 6)
+        waitFor("So close!")
+        compose.waitUntil(timeoutMillis = 5_000) { reported.size == 2 }
+        assertFalse(reported.last().result.isPassed)
+        assertFalse(ReviewRule.earns(level, reported.last().result, practice = false))
+        compose.waitForIdle()
+        assertEquals(2, reported.size)
     }
 
     @Test

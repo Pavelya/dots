@@ -116,6 +116,25 @@ class SettingsRepositoryTest {
     }
 
     @Test
+    fun `the review prompt is asked at most once a month, also across restarts`() = runBlocking {
+        val day = 24L * 60 * 60 * 1000
+        val asked = 1_800_000_000_000L
+        val first = Session(file())
+        assertEquals(true, first.repository.askReview(asked))
+        assertEquals(false, first.repository.askReview(asked))
+        assertEquals(false, first.repository.askReview(asked + 29 * day))
+        first.close()
+
+        val second = Session(file())
+        assertEquals(false, second.repository.askReview(asked + 29 * day))
+        assertEquals(true, second.repository.askReview(asked + 30 * day))
+        assertEquals(false, second.repository.askReview(asked + 31 * day))
+        // Asking changes no setting.
+        assertEquals(AppSettings(), second.repository.settings.first())
+        second.close()
+    }
+
+    @Test
     fun `dots scale with the board, and games start from four crosses`() {
         val expected = mapOf(
             (BoardSize.SMALL to GameLength.SHORT) to 21, (BoardSize.SMALL to GameLength.LONG) to 43,

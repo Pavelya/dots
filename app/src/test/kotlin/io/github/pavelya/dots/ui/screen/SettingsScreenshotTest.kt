@@ -46,7 +46,7 @@ class SettingsScreenshotTest {
     private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
 
     private fun showSettings(dark: Boolean = false) = show(dark) {
-        SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onPage = {}, onDeveloperMenu = {}, onReplayTutorial = {}, onBack = {})
+        SettingsScreen(AppSettings(), onChange = {}, version = "1.0", onPage = {}, onDeveloperMenu = {}, onReplayTutorial = {}, onFeedback = {}, onBack = {})
     }
 
     @Test
@@ -86,6 +86,15 @@ class SettingsScreenshotTest {
         show { SettingsDetailsScreen(SettingsPage.LICENCES, onPage = {}, onBack = {}) }
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText("Apache License Version 2.0", substring = true)).fetchSemanticsNodes().isNotEmpty() }
         capture("settings_licences")
+    }
+
+    @Test
+    fun `licences scrolled to the end`() {
+        show { SettingsDetailsScreen(SettingsPage.LICENCES, onPage = {}, onBack = {}) }
+        val playTerms = hasText("Redistributable Code", substring = true)
+        compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(playTerms).fetchSemanticsNodes().isNotEmpty() }
+        compose.onNode(playTerms).performScrollTo()
+        capture("settings_licences_end")
     }
 
     @Test

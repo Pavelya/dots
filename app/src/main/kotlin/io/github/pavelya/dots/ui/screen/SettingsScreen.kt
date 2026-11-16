@@ -42,8 +42,6 @@ const val DEVELOPER_TAPS = 7
 
 /** The pages Settings opens (the wireframes' Settings details, and the stand-ins of later tasks), by [key] in the route. */
 enum class SettingsPage(val key: String) {
-    /** A-12 makes Send feedback open an email. */
-    FEEDBACK("feedback"),
     PRIVACY("privacy"),
 
     /** O-02 builds the Play Games backup. */
@@ -64,8 +62,10 @@ enum class SettingsPage(val key: String) {
  * paper. Sound and feel (music and sound volumes, vibration), the board (high-contrast pieces,
  * threat highlights, links between dots, and placing a dot by drag, the default, or two taps,
  * decisions 0024 and 0026), and help (Replay the tutorial, Send feedback, Privacy, Play Games
- * backup, Credits and licences). Every change goes to [onChange] at once. Language joins Help once a second language ships (A-10). Tapping the
- * version line [DEVELOPER_TAPS] times opens the developer menu.
+ * backup, Credits and licences). Send feedback goes to [onFeedback], which opens an email; the
+ * other help rows open their pages through [onPage]. Every change goes to [onChange] at once.
+ * Language joins Help once a second language ships (A-10). Tapping the version line
+ * [DEVELOPER_TAPS] times opens the developer menu.
  */
 @Composable
 fun SettingsScreen(
@@ -75,6 +75,7 @@ fun SettingsScreen(
     onPage: (SettingsPage) -> Unit,
     onDeveloperMenu: () -> Unit,
     onReplayTutorial: () -> Unit,
+    onFeedback: () -> Unit,
     onBack: () -> Unit,
 ) {
     val style = Palette.current
@@ -111,7 +112,7 @@ fun SettingsScreen(
 
         SectionHead(stringResource(R.string.settings_help))
         LinkRow(stringResource(R.string.settings_replay_tutorial), onClick = onReplayTutorial)
-        LinkRow(stringResource(R.string.settings_feedback)) { onPage(SettingsPage.FEEDBACK) }
+        LinkRow(stringResource(R.string.settings_feedback), onClick = onFeedback)
         LinkRow(stringResource(R.string.settings_privacy)) { onPage(SettingsPage.PRIVACY) }
         LinkRow(stringResource(R.string.settings_backup)) { onPage(SettingsPage.BACKUP) }
         LinkRow(stringResource(R.string.settings_credits)) { onPage(SettingsPage.CREDITS) }

@@ -46,7 +46,9 @@ import dots.engine.GameSettings
 import dots.engine.Pos
 import dots.log.GameLogEntry
 import dots.log.Outcome
+import io.github.pavelya.dots.BuildConfig
 import io.github.pavelya.dots.DotsApplication
+import io.github.pavelya.dots.ReviewPrompt
 import java.util.TimeZone
 import java.util.concurrent.atomic.AtomicReference
 import io.github.pavelya.dots.data.AppSettings
@@ -69,6 +71,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.After
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -86,6 +89,12 @@ class NavigationTest {
     private val app get() = RuntimeEnvironment.getApplication() as DotsApplication
     private lateinit var nav: NavHostController
     private val visited = mutableSetOf<String>()
+
+    /** Google Play's review prompt does nothing in a test. */
+    @Before
+    fun `no review prompt`() {
+        app.reviews = ReviewPrompt { }
+    }
 
     /** How many times the app has been opened; a new number opens it again, with a new back stack. */
     private var opened by mutableIntStateOf(0)
@@ -432,7 +441,7 @@ class NavigationTest {
         tap("Settings")
         at(Routes.SETTINGS)
         waitFor("Send feedback")
-        for ((row, page) in listOf("Send feedback" to "feedback", "Privacy" to "privacy", "Play Games backup" to "backup", "Credits and licences" to "credits")) {
+        for ((row, page) in listOf("Privacy" to "privacy", "Play Games backup" to "backup", "Credits and licences" to "credits")) {
             compose.onNodeWithText(row).performScrollTo().performClick()
             at(Routes.SETTINGS_DETAILS)
             assertEquals(page, nav.currentBackStackEntry?.arguments?.getString("page"))
@@ -751,6 +760,24 @@ class NavigationTest {
     private companion object {
         /** Level 1 passed with one star: the app opens on the map, and a replay can earn more. */
         val LEVEL_1_PASSED = Progress(mapOf("1-1" to 1))
+    }
+
+    @Test
+    fun `Send feedback opens an email to the game's support address, and Settings stays`() {
+        launch()
+        tap("Settings")
+        at(Routes.SETTINGS)
+        waitFor("Send feedback")
+        compose.onNodeWithText("Send feedback").performScrollTo().performClick()
+
+        compose.waitUntil(timeoutMillis = 5_000) { shadowOf(app).peekNextStartedActivity() != null }
+        val email = shadowOf(app).nextStartedActivity
+        assertEquals(Intent.ACTION_SENDTO, email.action)
+        assertEquals("mailto:", email.data.toString())
+        assertEquals(listOf("pinfoldsupport@gmail.com"), email.getStringArrayExtra(Intent.EXTRA_EMAIL)?.toList())
+        assertEquals("Pinfold feedback", email.getStringExtra(Intent.EXTRA_SUBJECT))
+        assertTrue(email.getStringExtra(Intent.EXTRA_TEXT)!!.contains("Pinfold ${BuildConfig.VERSION_NAME}, Android "))
+        at(Routes.SETTINGS)
     }
 
     @Test

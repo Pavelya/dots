@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -47,6 +48,12 @@ class CampaignParts(
 internal const val OPENING_MILLIS = 1_500L
 
 /**
+ * How long after Result opens its note has settled and stamped the stars (motion.md: the note
+ * slides up in 300 ms, the star reveal takes 1100 ms), when a level's end goes to `onLevelResult`.
+ */
+internal const val RESULT_SETTLED_MILLIS = 1_500L
+
+/**
  * The game board, laid out as the canvas game frames (docs/design/canvas): see [GameBoard]. A
  * campaign level opens with its mission big over the board for a moment, then the mission sits in
  * the corner note. The pause icon, or Back, opens Pause over the board; when the game ends, Result
@@ -56,7 +63,8 @@ internal const val OPENING_MILLIS = 1_500L
  *
  * Result's buttons: Retry and Play again start the next game here; Map goes to [onToMap]; Next, in
  * the campaign, goes to [onNext] with the level's end: the chest it made ready, which opens first,
- * and the level whose card the map should open.
+ * and the level whose card the map should open. Once a level's Result has settled, its end goes to
+ * [onLevelResult] with the level and whether it was practice; it does not if the player left first.
  *
  * In the campaign the tool bar holds the five boosters (A-05). A tap on one opens its preview, a
  * note over the player's line and the tool bar; on the board the player chooses the booster's
@@ -84,8 +92,10 @@ fun GameScreen(
     onSkipGuides: () -> Unit = {},
     onShare: (String) -> Unit = {},
     toNextPuzzle: () -> Long = { 0L },
+    onLevelResult: (level: Level, end: LevelEnd, practice: Boolean) -> Unit = { _, _, _ -> },
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
+    val levelResult by rememberUpdatedState(onLevelResult)
     val names = Names(ui.vsComputer, viewModel.human)
     // Saved, so Pause is still open after Rules, opened from it, closes.
     var paused by rememberSaveable { mutableStateOf(false) }
@@ -165,6 +175,13 @@ fun GameScreen(
                 onToMap = onToMap,
                 onRules = onRules,
             )
+        }
+        val end = ui.levelEnd
+        if (ui.showsResult && level != null && end != null) {
+            LaunchedEffect(ui.round, end) {
+                delay(RESULT_SETTLED_MILLIS)
+                levelResult(level, end, ui.practice)
+            }
         }
         if (ui.showsResult) {
             ResultNote(
