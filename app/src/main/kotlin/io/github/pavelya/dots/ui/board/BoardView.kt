@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.semantics.SemanticsPropertyKey
 import androidx.compose.ui.semantics.SemanticsPropertyReceiver
 import androidx.compose.ui.semantics.contentDescription
@@ -28,17 +29,28 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dots.ai.Danger
 import dots.engine.Area
+import dots.engine.Booster
 import dots.engine.Capture
 import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
 import dots.engine.areas
 import io.github.pavelya.dots.game.BoardMoment
+import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.game.CapturedArea
 import io.github.pavelya.dots.game.ThreatMark
+import io.github.pavelya.dots.game.UndoneTurn
 import io.github.pavelya.dots.ui.motion.Announce
+import io.github.pavelya.dots.ui.motion.BombEffect
 import io.github.pavelya.dots.ui.motion.Capturing
+import io.github.pavelya.dots.ui.motion.DoubleDotEffect
+import io.github.pavelya.dots.ui.motion.Ease
 import io.github.pavelya.dots.ui.motion.EndOfGame
+import io.github.pavelya.dots.ui.motion.HintEffect
+import io.github.pavelya.dots.ui.motion.UndoEffect
+import io.github.pavelya.dots.ui.motion.WallEffect
+import io.github.pavelya.dots.ui.motion.length
+import io.github.pavelya.dots.ui.screen.Doodles
 import io.github.pavelya.dots.ui.motion.Placing
 import io.github.pavelya.dots.ui.motion.Threat
 import io.github.pavelya.dots.ui.theme.BoardLook
@@ -48,6 +60,7 @@ import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.hypot
 import kotlin.math.max
+import kotlin.math.min
 import kotlin.math.sin
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -74,6 +87,11 @@ import kotlin.random.Random
  * threats draw in and pulse. [edgeMarks] marks a dot's row and column on the board's top and left
  * edges. Drag's guides reach out as far as [guideReach] says. At the end of a game the captured
  * areas light up in turn ([glow]). Time is read while drawing, so only drawing follows it.
+ *
+ * A [booster] just used plays its effect as [boosterTime] runs from 0 ms (motion.md, "Boosters"):
+ * the wall is drawn and hatched, the hint circled twice, the bomb drops and its hits swell and
+ * shrink away, and Undo rubs out the turn it took back. A dot placed after a Double dot sparks; one
+ * placed after a Hint makes its circles shrink away.
  */
 @Composable
 fun BoardView(
@@ -94,9 +112,12 @@ fun BoardView(
     edgeMarks: Pos? = null,
     guideReach: () -> Float = { 1f },
     glow: AreaGlow? = null,
+    booster: BoosterMoment? = null,
+    boosterTime: () -> Float = { Float.MAX_VALUE },
 ) {
     val areas = remember(state) { state.areas() }
     val regions = remember(areas) { areas.map { it.region.toHashSet() } }
+    val undone = remember(booster, state) { UndoneParts.of(booster, state, regions) }
     Canvas(
         modifier = modifier
             .aspectRatio(state.width.toFloat() / state.height)
@@ -107,7 +128,8 @@ fun BoardView(
     ) {
         val geometry = BoardGeometry(state.width, state.height, size.width, size.height)
         val guided = if (guides) preview ?: marks.point else null
-        val frame = Frame.of(moment, if (moment == null) Float.MAX_VALUE else time(), areas, regions, edgeMarks, glow)
+        val bt = if (booster == null) Float.MAX_VALUE else boosterTime()
+        val frame = Frame.of(moment, if (moment == null) Float.MAX_VALUE else time(), areas, regions, edgeMarks, glow, booster, bt, undone)
         drawPosition(state, areas, geometry, style, lastMove, preview, showLinks, dangers, marked, marks, guided, frame, if (guided != null) guideReach() else 1f)
         pointer?.let { drawPointer(geometry.center(it), geometry, style) }
     }
@@ -137,11 +159,44 @@ private class Frame(
     val edgeMarks: Pos?,
     /** How much each area is lit at the end of the game, by area index. */
     val glow: Map<Int, Float>,
+    /** The booster just used and the time since, in ms. */
+    val booster: BoosterMoment?,
+    val bt: Float,
+    /** What an Undo takes back that the position no longer shows. */
+    val undone: UndoneParts,
 ) {
     val newDot: Pos? get() = moment?.dot?.takeIf { t < Placing.SETTLED }
 
+    /** The booster whose effect is playing in this frame, or null. */
+    val boosting: BoosterMoment? get() = booster?.takeIf { bt < it.length }
+
+    /** The turn an Undo is rubbing out in this frame, or null. */
+    val undoing: UndoneTurn? get() = boosting?.undone
+
+    /** How far Undo has rubbed out what [side] played in the turn: the player's own part comes second. */
+    fun rubbedOut(side: Player): Float = UndoEffect.rubOut(bt, undoFrom(side))
+
+    fun undoFrom(side: Player): Float = if (side == booster?.by) UndoEffect.OWN else UndoEffect.ANSWER
+
+    /** How much of the cut across [pos] is left while an Undo takes back the capture that made it; 0 for any other dot. */
+    fun cutLeft(pos: Pos): Float {
+        if (undoing == null) return 0f
+        val captor = undone.uncut[pos] ?: return 0f
+        return 1f - rubbedOut(captor)
+    }
+
     companion object {
-        fun of(moment: BoardMoment?, t: Float, areas: List<Area>, regions: List<Set<Pos>>, edgeMarks: Pos?, glow: AreaGlow?): Frame {
+        fun of(
+            moment: BoardMoment?,
+            t: Float,
+            areas: List<Area>,
+            regions: List<Set<Pos>>,
+            edgeMarks: Pos?,
+            glow: AreaGlow?,
+            booster: BoosterMoment?,
+            bt: Float,
+            undone: UndoneParts,
+        ): Frame {
             val captures = moment?.captures.orEmpty()
             val timing = if (captures.isEmpty() || moment == null) null else Capturing.of(moment.captured)
             val capturing = HashMap<Int, AreaCapture>()
@@ -163,12 +218,33 @@ private class Frame(
                     if (index >= 0) lit[index] = glow.ending.glow(now, i)
                 }
             }
-            return Frame(moment, t, capturing, timing, cuts, edgeMarks, lit)
+            return Frame(moment, t, capturing, timing, cuts, edgeMarks, lit, booster, bt, undone)
         }
 
         /** Where [ring] reaches the closing dot, or the ring's dot nearest to it. */
         private fun ringIndex(ring: List<Pos>, closing: Pos): Int =
             ring.indexOf(closing).takeIf { it >= 0 } ?: ring.indices.minBy { max(abs(ring[it].x - closing.x), abs(ring[it].y - closing.y)) }
+    }
+}
+
+/**
+ * What an Undo takes back that the position after it no longer shows: the captured [areas] of the
+ * turn, and the dots they had captured, which are free again, with their captor ([uncut]).
+ */
+private class UndoneParts(val areas: List<Area>, val uncut: Map<Pos, Player>) {
+    companion object {
+        private val NONE = UndoneParts(emptyList(), emptyMap())
+
+        fun of(booster: BoosterMoment?, state: GameState, regions: List<Set<Pos>>): UndoneParts {
+            val before = booster?.undone?.before ?: return NONE
+            val areas = before.areas().filter { area -> regions.none { area.region.first() in it } }
+            val uncut = HashMap<Pos, Player>()
+            for (y in 0 until state.height) for (x in 0 until state.width) {
+                val owner = state.ownerAt(x, y) ?: continue
+                if (before.isCaptured(x, y) && !state.isCaptured(x, y) && before.ownerAt(x, y) == owner) uncut[Pos(x, y)] = owner.opponent
+            }
+            return UndoneParts(areas, uncut)
+        }
     }
 }
 
@@ -257,6 +333,14 @@ private fun DrawScope.drawPosition(
 ) {
     drawRect(style.paper)
     val strokes = areas.map { ringStroke(it, geometry, style.look) }
+    // Undo: the areas of the turn it takes back blend back to paper while their rings undraw.
+    val undoing = frame.undoing
+    val undoneAreas = if (undoing == null) emptyList() else frame.undone.areas
+    val undoneStrokes = undoneAreas.map { ringStroke(it, geometry, style.look) }
+    undoneAreas.forEachIndexed { i, area ->
+        val p = frame.rubbedOut(area.by)
+        if (p < 1f) drawArea(area.by, undoneStrokes[i], style, fade(style.palette.wash(area.by), style.paper, p), fade(style.palette.pale(area.by), style.paper, p))
+    }
     areas.forEachIndexed { i, area ->
         val capturing = frame.capturing[i]
         val lit = frame.glow[i] ?: 0f
@@ -268,10 +352,19 @@ private fun DrawScope.drawPosition(
         }
     }
     drawGrid(state, geometry, style)
-    drawWalls(state, geometry, style)
+    val boosting = frame.boosting
+    val wallGoingUp = boosting?.point?.takeIf { boosting.booster == Booster.WALL }
+    drawWalls(state, geometry, style, skip = wallGoingUp)
+    wallGoingUp?.let { drawWallGoingUp(geometry.center(it), geometry, style, WallEffect.square(frame.bt), WallEffect.hatch(frame.bt)) }
+    // Undo gives back a wall used in the turn: it stays until it flies back to its button.
+    val givenBack = undoing?.givenBack?.takeIf { frame.bt < UndoEffect.FLIGHT_FROM }
+    if (givenBack == Booster.WALL) undoing?.givenBackAt?.let { drawWall(geometry.center(it), geometry, style, preview = false) }
     drawTargets(state, marks.targets, geometry, style)
     marks.wall?.let { drawWall(geometry.center(it), geometry, style, preview = true) }
-    if (showLinks) drawLinks(state, geometry, style, frame)
+    if (showLinks) {
+        drawLinks(state, geometry, style, frame)
+        drawGoingLinks(state, geometry, style, frame)
+    }
     guided?.let { drawGuides(state, it, geometry, style, areas, strokes, guideReach) }
     drawHalos(state, geometry, style, areas, strokes, frame)
     areas.forEachIndexed { i, area ->
@@ -280,23 +373,39 @@ private fun DrawScope.drawPosition(
         val drawn = if (capturing == null) 1f else frame.timing!!.ring(frame.t)
         drawAreaRing(area.by, strokes[i], style, from = capturing?.start ?: 0, drawn = drawn, width = width)
     }
+    undoneAreas.forEachIndexed { i, area -> drawAreaRing(area.by, undoneStrokes[i], style, drawn = 1f - frame.rubbedOut(area.by)) }
     drawThreatRings(dangers, geometry, style, frame)
     drawRipples(geometry, style, frame)
     drawDots(state, geometry, style, frame)
+    drawBombHits(geometry, style, frame)
+    drawRubbingOut(geometry, style, frame)
     drawGone(state, marks.gone, geometry, style)
     drawPlus(state, marks.plus, geometry, style)
     val look = style.look
     val spacing = geometry.spacing
     val moment = frame.moment
-    val pinhole = if (moment != null && frame.t < Placing.PINHOLE) moment.pinholeBefore?.takeIf { state.ownerAt(it) != null } else lastMove
-    pinhole?.let { drawLastMove(geometry.center(it), geometry, style) }
+    val pinhole = when {
+        moment != null && frame.t < Placing.PINHOLE -> moment.pinholeBefore
+        // Undo moves the pinhole once the turn is gone.
+        undoing != null && frame.bt < UndoEffect.SETTLED -> null
+        else -> lastMove
+    }
+    // A bomb may take the last dot away: the pinhole goes with it.
+    pinhole?.takeIf { state.ownerAt(it) != null }?.let { drawLastMove(geometry.center(it), geometry, style) }
     drawClosingPoints(state, dangers, geometry, style, frame)
     drawBurst(geometry, style, frame)
-    for (circled in listOfNotNull(marked, marks.hint)) {
-        val ink = style.color(Player.RED)
-        drawRing(geometry.center(circled), geometry.spacing * 0.42f, ink, geometry.spacing * 0.07f)
-        drawRing(geometry.center(circled), geometry.spacing * 0.58f, ink, geometry.spacing * 0.05f)
+    drawBomb(geometry, style, frame)
+    drawSparks(geometry, style, frame)
+    val ink = style.color(Player.RED)
+    marked?.let { drawCircled(geometry.center(it), geometry, ink) }
+    marks.hint?.let { hint ->
+        // A Hint circles its point twice as it is shown.
+        val loops = if (boosting?.booster == Booster.HINT && boosting.point == hint) HintEffect.loops(frame.bt) else 2f
+        drawCircled(geometry.center(hint), geometry, ink, loops = loops)
     }
+    // When the player's dot lands, the Hint's circles shrink away; Undo leaves them until the Hint flies back.
+    moment?.hintBefore?.takeIf { frame.t < HintEffect.SHRINK }?.let { drawCircled(geometry.center(it), geometry, ink, size = HintEffect.shrink(frame.t)) }
+    if (givenBack == Booster.HINT) undoing?.givenBackAt?.let { drawCircled(geometry.center(it), geometry, ink) }
     preview?.let {
         val center = geometry.center(it)
         val piece = style.piece(state.toMove)
@@ -436,11 +545,10 @@ private fun DrawScope.ringStroke(area: Area, geometry: BoardGeometry, look: Boar
  * "Captured areas"). Red's lines rise to the right, Blue's fall, one every [BoardLook.hatchGap] dp
  * at every spacing.
  */
-private fun DrawScope.drawArea(by: Player, stroke: RingStroke, style: BoardStyle, wash: Color = style.palette.wash(by)) {
+private fun DrawScope.drawArea(by: Player, stroke: RingStroke, style: BoardStyle, wash: Color = style.palette.wash(by), ink: Color = style.palette.pale(by)) {
     drawPath(stroke.outline, wash)
     val width = style.look.hatch.px(0f, density)
     if (width <= 0f) return
-    val ink = style.palette.pale(by)
     // Lines x + y = c rise to the right; lines x - y = c fall. A gap of g between lines is g times
     // the square root of 2 along an axis.
     val step = style.look.hatchGap.dp.toPx() * sqrt(2f)
@@ -493,10 +601,12 @@ private fun DrawScope.drawAreaRing(by: Player, stroke: RingStroke, style: BoardS
     }
 }
 
-/** Every blocked point, a wall booster's or the level's own, with the wall's mark. */
-private fun DrawScope.drawWalls(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
+/** Every blocked point, a wall booster's or the level's own, with the wall's mark; the wall going up at [skip] draws itself. */
+private fun DrawScope.drawWalls(state: GameState, geometry: BoardGeometry, style: BoardStyle, skip: Pos? = null) {
     for (y in 0 until state.height) for (x in 0 until state.width) {
-        if (state.isBlocked(x, y) && !state.isHole(x, y)) drawWall(geometry.center(x, y), geometry, style, preview = false)
+        if (state.isBlocked(x, y) && !state.isHole(x, y) && (skip == null || skip.x != x || skip.y != y)) {
+            drawWall(geometry.center(x, y), geometry, style, preview = false)
+        }
     }
 }
 
@@ -746,8 +856,8 @@ private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style:
         val scale = if (newDot != null && newDot.x == x && newDot.y == y) Placing.dotScale(frame.t) else 1f
         if (scale <= 0f) continue
         val piece = style.piece(owner).let { if (scale == 1f) it else it.copy(across = it.across * scale) }
-        // A dot being captured keeps its ink until its cut is drawn across it.
-        val cut = if (state.isCaptured(x, y)) frame.cuts[Pos(x, y)] ?: 1f else 0f
+        // A dot being captured keeps its ink until its cut is drawn across it; Undo takes the cut back.
+        val cut = if (state.isCaptured(x, y)) frame.cuts[Pos(x, y)] ?: 1f else frame.cutLeft(Pos(x, y))
         drawPiece(piece, center, dot, if (cut > 0f) color.copy(alpha = look.capturedAlpha) else color)
         if (cut > 0f && look.cut > 0f) {
             val captor = owner.opponent
@@ -763,4 +873,205 @@ private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style:
 
 private fun DrawScope.drawRing(center: Offset, radius: Float, color: Color, width: Float) {
     drawCircle(color, radius, center, style = Stroke(width))
+}
+
+/** [color] blended towards [to] by [p]; exactly [color] at 0, so still frames do not move. */
+private fun fade(color: Color, to: Color, p: Float): Color = if (p <= 0f) color else lerp(color, to, min(p, 1f))
+
+/** Booster marks are sized for the canvas's 24 dp spacing: one of its dp, in pixels, at this board's spacing. */
+private fun BoardGeometry.unit(): Float = spacing / 24f
+
+/**
+ * A point circled twice in the player's ink: the mission's dot and the Hint (the next level's mark
+ * on the map). While a Hint is shown its two [loops] are drawn one after the other, each from its
+ * own start; when the dot lands they shrink to nothing with [size].
+ */
+private fun DrawScope.drawCircled(at: Offset, geometry: BoardGeometry, ink: Color, loops: Float = 2f, size: Float = 1f) {
+    val rings = listOf(Triple(0.42f, 0.07f, -120f), Triple(0.58f, 0.05f, -80f))
+    rings.forEachIndexed { k, (radius, width, start) ->
+        val part = (loops - k).coerceIn(0f, 1f)
+        if (part <= 0f || size <= 0f) return@forEachIndexed
+        val r = geometry.spacing * radius * size
+        val line = geometry.spacing * width
+        if (part >= 1f) {
+            drawRing(at, r, ink, line)
+        } else {
+            drawArc(ink, start, 360f * part, useCenter = false, topLeft = Offset(at.x - r, at.y - r), size = Size(2 * r, 2 * r), style = Stroke(line, cap = StrokeCap.Round))
+        }
+    }
+}
+
+/**
+ * A wall going up (motion.md, Boosters: Wall): the square is drawn round the point in one Pencil
+ * stroke as far as [square] says, then the five hatch lines one after another as [hatch] goes to 1.
+ */
+private fun DrawScope.drawWallGoingUp(at: Offset, geometry: BoardGeometry, style: BoardStyle, square: Float, hatch: Float) {
+    if (square >= 1f && hatch >= 1f) return drawWall(at, geometry, style, preview = false)
+    val half = geometry.spacing * 0.35f
+    val width = max(geometry.spacing * 0.075f, 1.5.dp.toPx())
+    val left = at.x - half
+    val top = at.y - half
+    for (i in 1..5) {
+        val part = (hatch * 5 - (i - 1)).coerceIn(0f, 1f)
+        if (part <= 0f) continue
+        // The rising line x + y = d inside the square, from its lower-left end.
+        val d = 4 * half * i / 6f
+        val start = Offset(left + max(0f, d - 2 * half), top + min(d, 2 * half))
+        val end = Offset(left + min(d, 2 * half), top + max(0f, d - 2 * half))
+        drawLine(style.graphite, start, Offset(start.x + (end.x - start.x) * part, start.y + (end.y - start.y) * part), width * 0.6f)
+    }
+    if (square <= 0f) return
+    val outline = Path().apply {
+        moveTo(left, top)
+        lineTo(left + 2 * half, top)
+        lineTo(left + 2 * half, top + 2 * half)
+        lineTo(left, top + 2 * half)
+        close()
+    }
+    val shown = if (square >= 1f) {
+        outline
+    } else {
+        val measure = PathMeasure()
+        measure.setPath(outline, false)
+        Path().also { measure.getSegment(0f, measure.length * square, it, true) }
+    }
+    drawPath(shown, style.pencil, style = Stroke(width, cap = StrokeCap.Round, join = StrokeJoin.Round))
+}
+
+/**
+ * The links that go with a booster: a bomb's hit dots lose theirs at the blast, and the dots Undo
+ * rubs out pull theirs back from the neighbours.
+ */
+private fun DrawScope.drawGoingLinks(state: GameState, geometry: BoardGeometry, style: BoardStyle, frame: Frame) {
+    val boosting = frame.boosting ?: return
+    val width = style.look.link.px(geometry.spacing, density)
+    if (boosting.booster == Booster.BOMB && frame.bt < BombEffect.BLAST) {
+        val owner = boosting.by.opponent
+        for (dot in boosting.removed) for (n in neighbours(dot)) {
+            val other = n in boosting.removed
+            if (!other && (!state.inBounds(n.x, n.y) || state.ownerAt(n) != owner || state.isCaptured(n.x, n.y))) continue
+            drawLine(style.palette.pale(owner), geometry.center(dot), geometry.center(n), width)
+        }
+    }
+    val undone = boosting.undone ?: return
+    val before = undone.before
+    for (dot in undone.answer + undone.own) {
+        val owner = before.ownerAt(dot) ?: continue
+        val left = 1f - frame.rubbedOut(owner)
+        if (left <= 0f) continue
+        for (n in neighbours(dot)) {
+            if (!before.inBounds(n.x, n.y) || before.ownerAt(n) != owner || before.isCaptured(n.x, n.y)) continue
+            val from = geometry.center(n)
+            val to = geometry.center(dot)
+            drawLine(style.palette.pale(owner), from, Offset(from.x + (to.x - from.x) * left, from.y + (to.y - from.y) * left), width)
+        }
+    }
+}
+
+/** The eight points around [dot]. */
+private fun neighbours(dot: Pos): List<Pos> =
+    (-1..1).flatMap { dy -> (-1..1).map { dx -> Pos(dot.x + dx, dot.y + dy) } }.filter { it != dot }
+
+/**
+ * The bomb's hits (motion.md, Boosters: Bomb): the opponent's dots in its plus, no longer in the
+ * position, stay until the blast, swell to 130% and shrink to nothing.
+ */
+private fun DrawScope.drawBombHits(geometry: BoardGeometry, style: BoardStyle, frame: Frame) {
+    val boosting = frame.boosting?.takeIf { it.booster == Booster.BOMB } ?: return
+    val size = BombEffect.hit(frame.bt)
+    if (size <= 0f) return
+    val owner = boosting.by.opponent
+    val piece = style.piece(owner).let { it.copy(across = it.across * size) }
+    val dot = style.look.dot.px(geometry.spacing, density)
+    for (hit in boosting.removed) drawPiece(piece, geometry.center(hit), dot, style.color(owner))
+}
+
+/**
+ * The bomb dropping on its centre point, 22 dp, growing from 60% to its size, and from the blast
+ * the twelve specks in the opponent's ink flying out, growing and shrinking away.
+ */
+private fun DrawScope.drawBomb(geometry: BoardGeometry, style: BoardStyle, frame: Frame) {
+    val boosting = frame.boosting?.takeIf { it.booster == Booster.BOMB } ?: return
+    val center = geometry.center(boosting.point ?: return)
+    val u = geometry.unit()
+    val drop = BombEffect.drop(frame.bt)
+    if (drop > 0f) {
+        // The icon's 24-unit box, its body's middle at (11, 14), drawn 22 dp across.
+        val k = drop * 22f / 24f * u
+        translate(center.x - 11f * k, center.y - 13f * k) {
+            scale(k, k, pivot = Offset.Zero) {
+                drawPath(BOMB, style.palette.card)
+                drawPath(BOMB, style.pencil, style = Stroke(2f, cap = StrokeCap.Round, join = StrokeJoin.Round))
+            }
+        }
+    }
+    val q = BombEffect.specks(frame.bt) ?: return
+    val ink = style.color(boosting.by.opponent)
+    val from = (14f + 30f * Ease.OUT.transform(q)) * u
+    val length = 9f * sin(PI * q).toFloat() * u
+    if (length <= 0.2f * u) return
+    for (k in 0 until BombEffect.SPECKS) {
+        val angle = k * PI / 6 + 0.26
+        val dx = cos(angle).toFloat()
+        val dy = sin(angle).toFloat()
+        drawLine(ink, Offset(center.x + dx * from, center.y + dy * from), Offset(center.x + dx * (from + length), center.y + dy * (from + length)), 2.5f * u, cap = StrokeCap.Round)
+    }
+}
+
+/** The bomb's icon (draw.py `ICONS["bomb"]`), in its 24-unit box. */
+private val BOMB: Path by lazy { PathParser().parsePathString(Doodles.BOMB).toPath() }
+
+/** After a Double dot, four short strokes spark out from each dot as it lands, in its side's ink. */
+private fun DrawScope.drawSparks(geometry: BoardGeometry, style: BoardStyle, frame: Frame) {
+    val moment = frame.moment?.takeIf { it.doubleDots != null } ?: return
+    val q = DoubleDotEffect.spark(frame.t) ?: return
+    val u = geometry.unit()
+    val from = (9f + 8f * q) * u
+    val length = 6f * sin(PI * q).toFloat() * u
+    if (length <= 0.2f * u) return
+    val center = geometry.center(moment.dot)
+    for (k in 0 until 4) {
+        val angle = PI / 4 + k * PI / 2
+        val dx = cos(angle).toFloat()
+        val dy = sin(angle).toFloat()
+        drawLine(style.color(moment.by), Offset(center.x + dx * from, center.y + dy * from), Offset(center.x + dx * (from + length), center.y + dy * (from + length)), 2f * u, cap = StrokeCap.Round)
+    }
+}
+
+/**
+ * Undo rubbing out the turn (motion.md, Boosters: Undo): each piece it takes back, pale in its
+ * dashed Graphite ring as the preview showed it, shrinks to nothing while three short Graphite
+ * strokes scrub back and forth across it; the opponent's answer first, then the player's dots.
+ * The strokes shrink away at the end.
+ */
+private fun DrawScope.drawRubbingOut(geometry: BoardGeometry, style: BoardStyle, frame: Frame) {
+    val undone = frame.undoing ?: return
+    val before = undone.before
+    val dot = style.look.dot.px(geometry.spacing, density)
+    val u = geometry.unit()
+    for (point in undone.answer + undone.own) {
+        val owner = before.ownerAt(point) ?: continue
+        val c = geometry.center(point)
+        val size = 1f - frame.rubbedOut(owner)
+        if (size > 0f) {
+            val piece = style.piece(owner).let { it.copy(across = it.across * size) }
+            drawPiece(piece.copy(across = piece.across * 1.1f), c, dot, style.paper)
+            drawPiece(piece, c, dot, style.palette.pale(owner))
+            drawDashedRing(c, geometry.spacing * 0.45f * size, style.graphite, 1.5.dp.toPx())
+        }
+        val from = frame.undoFrom(owner)
+        val k = UndoEffect.strokes(frame.bt, from)
+        if (k <= 0.01f) continue
+        val shift = UndoEffect.scrub(frame.bt, from)
+        val angle = -PI / 6
+        val ux = cos(angle).toFloat()
+        val uy = sin(angle).toFloat()
+        val half = 8f * k * u
+        listOf(-4.5f, 0f, 4.5f).forEachIndexed { j, across ->
+            val along = (shift + if (j == 1) 1.5f else -1f) * u
+            val sx = c.x - uy * across * u + ux * along
+            val sy = c.y + ux * across * u + uy * along
+            drawLine(style.graphite, Offset(sx - ux * half, sy - uy * half), Offset(sx + ux * half, sy + uy * half), 2f * u, cap = StrokeCap.Round)
+        }
+    }
 }

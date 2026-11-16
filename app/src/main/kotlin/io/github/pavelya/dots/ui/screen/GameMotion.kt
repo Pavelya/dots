@@ -5,6 +5,7 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
@@ -14,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -31,16 +33,20 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dots.engine.Booster
 import dots.engine.Player
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.BoardMoment
+import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.motion.Capturing
 import io.github.pavelya.dots.ui.motion.LocalReduceMotion
 import io.github.pavelya.dots.ui.motion.RunningOut
 import io.github.pavelya.dots.ui.motion.Timeline
+import io.github.pavelya.dots.ui.motion.UndoEffect
 import io.github.pavelya.dots.ui.motion.capturing
 import io.github.pavelya.dots.ui.motion.rememberChangeTimeline
 import io.github.pavelya.dots.ui.motion.writeIn
@@ -54,6 +60,55 @@ internal class Spots {
     var screen: LayoutCoordinates? = null
     var board: LayoutCoordinates? = null
     val tally = HashMap<Player, LayoutCoordinates>()
+    val tools = HashMap<Booster, LayoutCoordinates>()
+}
+
+/**
+ * What the tool bar's boosters play (motion.md, "Boosters"): each reports where it sits ([spots]),
+ * its count swells by [scale] as it is used or given back, and a booster Undo gives back shows its
+ * old count until it lands ([held]).
+ */
+internal class ToolMotion(val spots: Spots, val scale: (Booster) -> Float, val held: (Booster) -> Boolean)
+
+/** The tool bar's motion, given by the game board to the boosters in its tool bar; null elsewhere. */
+internal val LocalToolMotion = staticCompositionLocalOf<ToolMotion?> { null }
+
+/**
+ * Over the whole game screen, the booster an Undo gives back (motion.md, Boosters: Undo): its icon
+ * flies from where it was used on the board (or the player's dot) to its button in the tool bar.
+ */
+@Composable
+internal fun GivenBackOverlay(used: BoosterMoment?, clock: Timeline, columns: Int, rows: Int, spots: Spots) {
+    val undone = used?.undone ?: return
+    val booster = undone.givenBack ?: return
+    val from = undone.givenBackAt ?: undone.own.firstOrNull() ?: return
+    val style = Palette.current
+    val size = if (booster == Booster.DOUBLE_DOT) DpSize(30.dp, 16.dp) else DpSize(28.dp, 28.dp)
+    Box(
+        Modifier.size(size).graphicsLayer {
+            val t = clock.now
+            val screen = spots.screen
+            val board = spots.board
+            val tool = spots.tools[booster]
+            if (t < UndoEffect.FLIGHT_FROM || t >= UndoEffect.FLIGHT_TO || screen == null || board == null || tool == null ||
+                !screen.isAttached || !board.isAttached || !tool.isAttached
+            ) {
+                scaleX = 0f
+                scaleY = 0f
+                return@graphicsLayer
+            }
+            val geometry = BoardGeometry(columns, rows, board.size.width.toFloat(), board.size.height.toFloat())
+            val start = screen.localPositionOf(board, geometry.center(from))
+            val end = screen.localPositionOf(tool, Offset(tool.size.width / 2f, tool.size.height / 2f))
+            val p = UndoEffect.flight(t)
+            scaleX = 1f
+            scaleY = 1f
+            translationX = start.x + (end.x - start.x) * p - this.size.width / 2
+            translationY = start.y + (end.y - start.y) * p - this.size.height / 2
+        },
+    ) {
+        BoosterIcon(booster, style.blue, Modifier.fillMaxSize())
+    }
 }
 
 /**

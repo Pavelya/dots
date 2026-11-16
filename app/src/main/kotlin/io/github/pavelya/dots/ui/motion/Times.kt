@@ -1,5 +1,6 @@
 package io.github.pavelya.dots.ui.motion
 
+import dots.engine.Booster
 import kotlin.math.PI
 import kotlin.math.max
 import kotlin.math.min
@@ -219,6 +220,136 @@ object RunningOut {
     fun nudge(t: Float): Float = if (t <= 0f || t >= NUDGE) 0f else 3f * sin(2 * PI * t / NUDGE).toFloat()
 
     fun lastDot(t: Float): Float = phase(t, 0f, LAST_DOT, Ease.LINEAR)
+}
+
+/**
+ * The booster effects (motion.md, "Boosters"): 0 ms is the moment the player taps Confirm. In every
+ * case the booster's count drops at once and swells to 135% and back in [COUNT_SWELL] ms.
+ */
+object BoosterTimes {
+    const val COUNT_SWELL = 200f
+
+    /** The used booster's count, as a share of its size. */
+    fun countScale(t: Float): Float = 1f + 0.35f * swell(t, 0f, COUNT_SWELL)
+
+    /** How long [booster]'s effect plays. Double dot's dots spark when they land, as part of their own moments. */
+    fun length(booster: Booster): Float = when (booster) {
+        Booster.WALL -> WallEffect.LENGTH
+        Booster.HINT -> HintEffect.LENGTH
+        Booster.BOMB -> BombEffect.LENGTH
+        Booster.DOUBLE_DOT -> DoubleDotEffect.CHIP_IN
+        Booster.UNDO -> UndoEffect.LENGTH
+    }
+
+    /** A tap finishes the Bomb's and Undo's effects; during the others it only counts (motion.md, timing table). */
+    fun tapFinishes(booster: Booster): Boolean = booster == Booster.BOMB || booster == Booster.UNDO
+}
+
+/** Wall: a square drawn round the point in one Pencil stroke, then five hatch lines, one after another. */
+object WallEffect {
+    const val SQUARE = 200f
+    const val LENGTH = 400f
+
+    /** How much of the square's outline is drawn. */
+    fun square(t: Float): Float = phase(t, 0f, SQUARE, Ease.IN_OUT)
+
+    /** How far the hatching has got: line k of 5 is drawn while this goes from k/5 to (k+1)/5. */
+    fun hatch(t: Float): Float = phase(t, SQUARE, LENGTH, Ease.LINEAR)
+}
+
+/** Hint: the point circled twice in the player's ink, 250 ms per loop; the circles shrink away when the dot lands. */
+object HintEffect {
+    const val LOOP = 250f
+    const val LENGTH = 2 * LOOP
+    const val SHRINK = 150f
+
+    /** Loops drawn, from 0 to 2. */
+    fun loops(t: Float): Float = 2f * phase(t, 0f, LENGTH, Ease.LINEAR)
+
+    /** The circles' size after the player's dot lands, from 1 to 0. */
+    fun shrink(t: Float): Float = 1f - phase(t, 0f, SHRINK, Ease.IN)
+}
+
+/** Bomb: it drops on the centre point, and at [BLAST] the opponent's dots in its plus swell and shrink away. */
+object BombEffect {
+    const val BLAST = 150f
+    const val SHAKE_TO = 300f
+    const val SWELLED = 220f
+    const val GONE = 350f
+    const val LENGTH = 450f
+
+    /** Twelve specks fly out from the centre. */
+    const val SPECKS = 12
+
+    /** The bomb's size before the blast: from 60% to 100%; 0 once it has gone off. */
+    fun drop(t: Float): Float = if (t >= BLAST) 0f else 0.6f + 0.4f * phase(t, 0f, BLAST, Ease.OUT)
+
+    /** A hit dot's size: whole until the blast, 130% at [SWELLED], nothing at [GONE]. */
+    fun hit(t: Float): Float = when {
+        t < BLAST -> 1f
+        t < SWELLED -> 1f + 0.3f * phase(t, BLAST, SWELLED, Ease.OUT)
+        else -> 1.3f * (1f - phase(t, SWELLED, GONE, Ease.IN))
+    }
+
+    /** The board's sideways shake, in dp: two swings of 2 dp, each smaller. */
+    fun shake(t: Float): Float {
+        if (t <= BLAST || t >= SHAKE_TO) return 0f
+        val p = (t - BLAST) / (SHAKE_TO - BLAST)
+        return 2f * sin(2 * 2 * PI * p).toFloat() * (1 - p)
+    }
+
+    /** How far the specks have flown, from 0 to 1; null outside them. */
+    fun specks(t: Float): Float? = if (t < BLAST || t >= LENGTH) null else (t - BLAST) / (LENGTH - BLAST)
+}
+
+/** Double dot: the "×2" chip grows in; each dot then sparks as it lands, and the chip counts down or leaves. */
+object DoubleDotEffect {
+    const val CHIP_IN = 300f
+    const val SPARK = 250f
+    const val CHIP_SWELL = 200f
+    const val CHIP_OUT = 150f
+
+    fun chipIn(t: Float): Float = phase(t, 0f, CHIP_IN, Ease.OUT)
+
+    /** After the first dot: the chip, now "×1", swells to 125% and back. */
+    fun chipSwell(t: Float): Float = 1f + 0.25f * swell(t, 0f, CHIP_SWELL)
+
+    /** After the second dot: the chip shrinks away. */
+    fun chipOut(t: Float): Float = 1f - phase(t, 0f, CHIP_OUT, Ease.IN)
+
+    /** How far the four sparks round a landing dot have flown, from 0 to 1; null outside them. */
+    fun spark(t: Float): Float? = if (t < 0f || t >= SPARK) null else t / SPARK
+}
+
+/**
+ * Undo: the turn is rubbed out newest first, the opponent's answer from [ANSWER], the player's dots
+ * from [OWN], each in [RUB] ms, while three Graphite strokes scrub across them. A booster used in
+ * that turn flies back to its button from [FLIGHT_FROM] to [FLIGHT_TO], and its count swells. At
+ * [SETTLED] the dots left, the pinhole and the face are as after the undo; the strokes shrink away.
+ */
+object UndoEffect {
+    const val ANSWER = 0f
+    const val OWN = 200f
+    const val RUB = 250f
+    const val SETTLED = OWN + RUB
+    const val LENGTH = 600f
+    const val FLIGHT_FROM = 200f
+    const val FLIGHT_TO = 400f
+
+    /** How far the pieces of the part starting at [from] are rubbed out: their size and their capture go as this reaches 1. */
+    fun rubOut(t: Float, from: Float): Float = phase(t, from, from + RUB, Ease.IN)
+
+    /** The scrub strokes over that part's pieces, as a share of their length. */
+    fun strokes(t: Float, from: Float): Float = if (t < from) 0f else phase(t, from, from + 50f) * (1f - phase(t, SETTLED, LENGTH, Ease.OUT))
+
+    /** How far the strokes have slid along their slant, in dp: three times back and forth. */
+    fun scrub(t: Float, from: Float): Float = 3f * sin(2 * PI * 3 * phase(t, from, from + RUB)).toFloat()
+
+    /** The booster given back, on its way to its button. */
+    fun flight(t: Float): Float = phase(t, FLIGHT_FROM, FLIGHT_TO, Ease.IN_OUT)
+
+    /** The given-back booster's count, once it has landed: 135% at the top. */
+    fun countScale(t: Float): Float = 1f + 0.35f * swell(t, FLIGHT_TO, FLIGHT_TO + BoosterTimes.COUNT_SWELL)
 }
 
 /**

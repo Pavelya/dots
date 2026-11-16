@@ -274,6 +274,78 @@ class BoosterViewModelTest {
     }
 
     @Test
+    fun `each booster comes with its effect to play, until the next dot lands`() = runTest(dispatcher) {
+        val vm = game()
+        vm.chooseBooster(Booster.BOMB)
+        vm.onTap(Pos(3, 4))
+        vm.confirmBooster()
+        val bomb = vm.ui.value.booster!!
+        assertEquals(Booster.BOMB, bomb.booster)
+        assertEquals(Player.RED, bomb.by)
+        assertEquals(Pos(3, 4), bomb.point)
+        assertEquals(listOf(Pos(3, 3)), bomb.removed)
+        assertNull("a booster is no dot", vm.ui.value.moment)
+
+        vm.place(Pos(4, 4))
+        assertNull(vm.ui.value.booster)
+        advanceUntilIdle()
+
+        vm.chooseBooster(Booster.WALL)
+        vm.onTap(Pos(2, 2))
+        vm.confirmBooster()
+        val wall = vm.ui.value.booster!!
+        assertEquals(Booster.WALL, wall.booster)
+        assertEquals(Pos(2, 2), wall.point)
+        assertTrue("each moment plays once", wall.id > bomb.id)
+    }
+
+    @Test
+    fun `dots after a Double dot count down for their sparks, and a dot after a Hint takes its circles away`() = runTest(dispatcher) {
+        val vm = game()
+        vm.chooseBooster(Booster.DOUBLE_DOT)
+        vm.confirmBooster()
+        assertEquals(Booster.DOUBLE_DOT, vm.ui.value.booster?.booster)
+        vm.place(Pos(2, 2))
+        assertEquals(2, vm.ui.value.moment?.doubleDots)
+        vm.place(Pos(2, 4))
+        assertEquals(1, vm.ui.value.moment?.doubleDots)
+        advanceUntilIdle()
+        assertNull("the computer's dot does not spark", vm.ui.value.moment?.doubleDots)
+
+        vm.chooseBooster(Booster.HINT)
+        vm.confirmBooster()
+        advanceUntilIdle()
+        assertEquals(Booster.HINT, vm.ui.value.booster?.booster)
+        assertEquals(hintPoint, vm.ui.value.booster?.point)
+        vm.place(Pos(1, 5))
+        assertEquals(hintPoint, vm.ui.value.moment?.hintBefore)
+    }
+
+    @Test
+    fun `Undo's effect knows the turn it takes back and the booster it gives back`() = runTest(dispatcher) {
+        val vm = game()
+        vm.chooseBooster(Booster.WALL)
+        vm.onTap(Pos(2, 2))
+        vm.confirmBooster()
+        vm.place(Pos(4, 4))
+        advanceUntilIdle()
+        val reply = vm.state.lastPlaced(Player.BLUE)!!
+
+        vm.chooseBooster(Booster.UNDO)
+        vm.confirmBooster()
+        val undo = vm.ui.value.booster!!
+        assertEquals(Booster.UNDO, undo.booster)
+        val undone = undo.undone!!
+        assertEquals(listOf(reply), undone.answer)
+        assertEquals(listOf(Pos(4, 4)), undone.own)
+        assertEquals(Booster.WALL, undone.givenBack)
+        assertEquals(Pos(2, 2), undone.givenBackAt)
+        assertEquals(OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK), undone.opponentBefore)
+        assertEquals(Player.RED, undone.before.ownerAt(Pos(4, 4)))
+        assertEquals(1, vm.left(Booster.WALL))
+    }
+
+    @Test
     fun `a level played with all five boosters replays from its log line, as cli log-check replays it`() = runTest(dispatcher) {
         // A record names its level by world and number, so the game is a real one: Rocky Shore
         // allows one of each booster.

@@ -450,4 +450,18 @@ internal object CanvasGame {
 
     /** Red closes the big ring at (5, 7): six blue dots at once. */
     val bigCapture: MoveResult get() = threat.state.play(Pos(5, 7))
+
+    /**
+     * The [threat] position reached with one booster of each kind for Red, Red's last turn as on
+     * the booster strip (docs/design/motion/strip-boosters.png): Red played (9, 8) and Blue
+     * answered (7, 7). Red to move, 13 dots left.
+     */
+    val boosted: MoveResult
+        get() {
+            val dots = (red - Pos(4, 9) - Pos(9, 8)).associateWith { Player.RED } +
+                (blue - Pos(11, 2) - Pos(12, 12) - Pos(7, 7)).associateWith { Player.BLUE }
+            val boosters = mapOf(Player.RED to Booster.entries.associateWith { 1 })
+            val start = GameState.start(15, 15, dotsPerPlayer = 15, first = Player.BLUE, dots = dots, boosters = boosters)
+            return start.play(Pos(11, 2)).state.play(Pos(4, 9)).state.play(Pos(12, 12)).state.play(Pos(9, 8)).state.play(Pos(7, 7))
+        }
 }

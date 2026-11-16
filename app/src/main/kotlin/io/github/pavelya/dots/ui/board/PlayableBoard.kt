@@ -21,6 +21,7 @@ import dots.engine.GameState
 import dots.engine.Pos
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.BoardMoment
+import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.ui.motion.Ease
 import io.github.pavelya.dots.ui.motion.Guides
 import io.github.pavelya.dots.ui.motion.LocalReduceMotion
@@ -57,7 +58,7 @@ class BoardInput(
  * preview the same touches choose the booster's point (the game decides), and drag's guides follow
  * the finger there too.
  *
- * Motion (docs/design/motion.md): the [moment], [edgeMarks] and [glow] play as [BoardView] plays
+ * Motion (docs/design/motion.md): the [moment], [edgeMarks], [glow] and [booster] play as [BoardView] plays
  * them. When the finger goes down, drag's guides are drawn out from the ring in 100 ms, then jump
  * with the finger. Every touch calls [onTouch] first, so a moment still playing can jump to its
  * end; the touch counts as usual.
@@ -80,6 +81,8 @@ fun PlayableBoard(
     time: () -> Float = { Float.MAX_VALUE },
     edgeMarks: Pos? = null,
     glow: AreaGlow? = null,
+    booster: BoosterMoment? = null,
+    boosterTime: () -> Float = { Float.MAX_VALUE },
     onTouch: () -> Unit = {},
 ) {
     val method = input.method
@@ -156,5 +159,7 @@ fun PlayableBoard(
         edgeMarks = edgeMarks,
         guideReach = { guideReach.value },
         glow = glow,
+        booster = booster,
+        boosterTime = boosterTime,
     )
 }

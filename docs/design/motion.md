@@ -300,7 +300,7 @@ frame "Game: Undo's preview". The turn is rubbed out newest first, like a pencil
 | Time | What moves | Easing |
 | --- | --- | --- |
 | 0 to 250 | The computer's answer is rubbed out: three short Graphite strokes scrub back and forth across it while the piece shrinks to nothing and its links pull back. A capture it made goes with it: the ring undraws, the wash blends back to paper, the cuts go, and its score counts back. | ease in |
-| 200 to 450 | The player's dot is rubbed out the same way, both dots together after a double dot, and any capture it made. A booster used in that turn flies back to its button, whose count swells to 135% and back in 200 ms. | ease in |
+| 200 to 450 | The player's dot is rubbed out the same way, both dots together after a double dot, and any capture it made. A booster used in that turn flies back to its button from where it was used (or from the player's dot), from 200 to 400 ms; its count goes up as it lands and swells to 135% and back in 200 ms. | ease in; the flight ease in-out |
 | 450 to 600 | The scrub strokes shrink away. The dots-left count goes up, the pen stroke sits under "You", and the opponent's face goes back to how it looked before its answer. | ease out |
 
 Undo's button waits until there is a turn to take back: before the player's first move it shows
