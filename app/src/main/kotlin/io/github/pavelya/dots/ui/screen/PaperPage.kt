@@ -60,13 +60,15 @@ import kotlin.math.roundToInt
  * The menu screens' paper (theme-notebook.md, Menu screens; the wireframes' Settings and Settings
  * details): squared paper with a line every 24 dp, the notebook margin line, Back and a
  * handwritten [title] at the top, and the [content] in a column right of the margin that scrolls
- * under the header, so Back never needs scrolling.
+ * under the header, so Back never needs scrolling. A [footer], such as the main buttons, stays at
+ * the bottom of the screen, under the scrolling content.
  */
 @Composable
 internal fun PaperPage(
     title: String,
     onBack: () -> Unit,
     backLabel: String = stringResource(R.string.back),
+    footer: (@Composable () -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val style = Palette.current
@@ -100,9 +102,12 @@ internal fun PaperPage(
                 .weight(1f)
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(start = 64.dp, end = 16.dp, bottom = 16.dp),
+                .padding(start = 64.dp, end = 16.dp, bottom = if (footer == null) 16.dp else 12.dp),
             content = content,
         )
+        if (footer != null) {
+            Box(Modifier.fillMaxWidth().padding(start = 64.dp, end = 16.dp, bottom = 16.dp)) { footer() }
+        }
     }
 }
 

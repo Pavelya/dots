@@ -26,7 +26,6 @@ import dots.campaign.Campaign
 import dots.campaign.Progress
 import dots.campaign.Reward
 import dots.engine.Booster
-import io.github.pavelya.dots.R
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.GameTheme
 import org.junit.Assert.assertEquals
@@ -40,7 +39,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * What A-04 adds to the screens: the Chest over the map (the wireframes' Chest), the player's title
- * on Stats (the wireframes' Stats), and the Level card with the player's own boosters and its
+ * (on Stats, StatsScreenTest), and the Level card with the player's own boosters and its
  * question before a saved game ends. Reference images in app/src/test/screenshots; they are
  * recorded in CI (CLAUDE.md, "Recording screenshots").
  */
@@ -114,15 +113,6 @@ class ProgressScreensTest {
         chestOverMap()
         compose.onNodeWithContentDescription("Bomb, 2 boosters. Keep it.").assertIsDisplayed()
         capture("chest_small_phone")
-    }
-
-    @Test
-    fun `Stats shows the title and the stars to the next one`() {
-        show { StandInScreen(R.string.screen_stats, "A-11", onBack = {}) { TitleCard(21) } }
-
-        // The card is read as one sentence.
-        compose.onNodeWithContentDescription("Your title: Apprentice. Stars: 21. Strategist at 45.").assertIsDisplayed()
-        capture("stats_title")
     }
 
     @Test

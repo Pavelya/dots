@@ -190,6 +190,14 @@ class NavigationTest {
         back()
         at(Routes.MAP)
 
+        // Leaderboards and achievements open from Stats; Back returns there.
+        tap("Stats")
+        at(Routes.STATS)
+        waitFor("Leaderboards")
+        visit("Leaderboards", Routes.LEADERBOARDS, returnTo = Routes.STATS)
+        back()
+        at(Routes.MAP)
+
         tap("Shop")
         at(Routes.SHOP)
         visit("A sample item", Routes.COSMETIC, returnTo = Routes.SHOP)

@@ -6,11 +6,14 @@ import android.content.pm.ApplicationInfo
 import android.os.StrictMode
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
+import io.github.pavelya.dots.data.CountingJournal
 import io.github.pavelya.dots.data.DailyRepository
+import io.github.pavelya.dots.data.GameJournal
 import io.github.pavelya.dots.data.GameStore
 import io.github.pavelya.dots.data.ProgressRepository
 import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.data.SettingsRepository
+import io.github.pavelya.dots.data.StatsRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -25,7 +28,7 @@ class DotsApplication : Application() {
 
     private val progressScope by lazy { CoroutineScope(SupervisorJob() + Dispatchers.Default) }
 
-    /** The progress store, one for the campaign and the daily puzzle (a file has one DataStore). Backed up by Android. */
+    /** The progress store, one for the campaign, the daily puzzle and the stats (a file has one DataStore). Backed up by Android. */
     private val progressStore by lazy { ProgressRepository.store(progressScope) { preferencesDataStoreFile(ProgressRepository.NAME) } }
 
     /** Campaign progress: stars, the player's own boosters, chests and cosmetics. Backed up by Android. */
@@ -42,6 +45,12 @@ class DotsApplication : Application() {
         val disk = Executors.newSingleThreadExecutor { task -> Thread(task, "game-store").apply { isDaemon = true } }
         GameStore({ File(filesDir, "games") }, BuildConfig.VERSION_NAME, disk)
     }
+
+    /** The player's totals on Stats: games played and won, captures. Backed up with the progress. */
+    val stats: StatsRepository by lazy { StatsRepository(progressStore, progressScope) }
+
+    /** Where a game reports itself: the saved games and the log ([games]), and the totals on Stats once it ends. */
+    val journal: GameJournal by lazy { CountingJournal(games, stats) }
 
     override fun onCreate() {
         super.onCreate()

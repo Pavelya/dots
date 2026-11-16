@@ -23,20 +23,49 @@ class Streak private constructor(val days: Int, val freezeLeft: Boolean, val fro
     companion object {
         /** The streak on [today], given every day whose puzzle was [solved]. */
         fun of(solved: Collection<Day>, today: Day): Streak {
-            val days = solved.toSortedSet()
-            if (days.isEmpty()) return Streak(0, freezeLeft = true, frozen = emptyList())
-            var run = 0
-            val frozen = ArrayList<Day>()
-            val weeksUsed = HashSet<Long>()
+            val walk = Walk(solved, today)
+            return Streak(walk.run, freezeLeft = week(today) !in walk.weeksUsed, frozen = walk.frozen.toList())
+        }
+
+        /**
+         * The longest streak ever, in days solved, given every day whose puzzle was [solved]: the
+         * most the streak has been on any day, by the same rules as [of]. 0 if none is solved.
+         */
+        fun longest(solved: Collection<Day>): Int {
+            if (solved.isEmpty()) return 0
+            return Walk(solved, solved.max()).longest
+        }
+
+        /** The week of [day], counted in weeks from Monday 29 December 1969; weeks run Monday to Sunday. */
+        fun week(day: Day): Long = Math.floorDiv(day.epochDay + 3, 7L)
+    }
+}
+
+/** Goes through the days from the first solved one to [today], as [Streak.of] describes. */
+private class Walk(solved: Collection<Day>, today: Day) {
+    /** The streak's days solved at the end of the walk. */
+    var run = 0
+
+    /** The most [run] has been. */
+    var longest = 0
+    val frozen = ArrayList<Day>()
+    val weeksUsed = HashSet<Long>()
+
+    init {
+        val days = solved.toSortedSet()
+        if (days.isNotEmpty()) {
             val last = maxOf(days.last(), today)
             var day = days.first()
             while (day <= last) {
                 when {
-                    day in days -> run++
+                    day in days -> {
+                        run++
+                        longest = maxOf(longest, run)
+                    }
                     // Today, or a day after it, may still be solved.
                     day >= today -> Unit
-                    week(day) !in weeksUsed -> {
-                        weeksUsed += week(day)
+                    Streak.week(day) !in weeksUsed -> {
+                        weeksUsed += Streak.week(day)
                         frozen += day
                     }
                     else -> {
@@ -46,16 +75,11 @@ class Streak private constructor(val days: Int, val freezeLeft: Boolean, val fro
                 }
                 // Before the next solve, a broken streak has nothing to freeze.
                 if (run == 0) {
-                    val next = days.tailSet(day + 1).firstOrNull() ?: break
-                    day = next
+                    day = days.tailSet(day + 1).firstOrNull() ?: break
                     continue
                 }
                 day += 1
             }
-            return Streak(run, freezeLeft = week(today) !in weeksUsed, frozen = frozen.toList())
         }
-
-        /** The week of [day], counted in weeks from Monday 29 December 1969; weeks run Monday to Sunday. */
-        fun week(day: Day): Long = Math.floorDiv(day.epochDay + 3, 7L)
     }
 }

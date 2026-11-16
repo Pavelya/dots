@@ -29,7 +29,7 @@ import io.github.pavelya.dots.ui.theme.Palette
 
 /**
  * The player's title on Stats (the wireframes' Stats, its first card): "Your title", the title in
- * red, and a bar of the [stars] earned towards the next title. A-11 builds the rest of Stats.
+ * red, and a bar of the [stars] earned towards the next title ([StatsScreen]).
  */
 @Composable
 fun TitleCard(stars: Int, modifier: Modifier = Modifier) {

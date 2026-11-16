@@ -53,6 +53,9 @@ class DailyProgress(solved: Set<Day> = emptySet(), attempts: List<DailyAttempt> 
     /** The streak as it stands on [today]. */
     fun streak(today: Day): Streak = Streak.of(solved, today)
 
+    /** The longest streak ever, in days solved ([Streak.longest]). */
+    val longestStreak: Int get() = Streak.longest(solved)
+
     fun isSolved(day: Day): Boolean = day in solved
 
     /** The finished attempts at [day]'s puzzle, in the order they were played. */
