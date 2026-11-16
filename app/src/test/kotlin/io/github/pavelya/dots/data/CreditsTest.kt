@@ -69,6 +69,13 @@ class CreditsTest {
     }
 
     @Test
+    fun `every licence title fits one line of a heading`() {
+        // "SIL Open Font License 1.1" just fits one line of a heading; the Licences page cuts a longer
+        // title ("Play Core Software Development Kit Terms of Service" lost its last four words).
+        for (licence in Credits.Licence.entries) assertTrue(licence.title, licence.title.length <= 25)
+    }
+
+    @Test
     fun `a licence's lines join into paragraphs`() {
         val text = "   Apache License\n   Version 2.0\n\n   1. Definitions.\n\n      \"License\" shall mean\n      the terms.\n"
         assertEquals("Apache License Version 2.0\n\n1. Definitions.\n\n\"License\" shall mean the terms.", reflow(text))

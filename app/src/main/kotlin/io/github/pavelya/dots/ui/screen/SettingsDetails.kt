@@ -44,9 +44,7 @@ fun SettingsDetailsScreen(page: SettingsPage, onPage: (SettingsPage) -> Unit, on
         }
         SettingsPage.LICENCES -> PaperPage(stringResource(R.string.licences_title), onBack) {
             IntroCard(stringResource(R.string.licences_intro))
-            for (library in Credits.libraries) {
-                InfoRow(library.name, library.licence.title, detailBelow = library.licence.title.length > LICENCE_BESIDE_MAX)
-            }
+            for (library in Credits.libraries) InfoRow(library.name, library.licence.title)
             for (licence in Credits.licences) {
                 SectionHead(licence.title)
                 LicenceText(licence)
@@ -54,9 +52,6 @@ fun SettingsDetailsScreen(page: SettingsPage, onPage: (SettingsPage) -> Unit, on
         }
     }
 }
-
-/** The longest licence title shown beside a library's name, as "Apache License 2.0" is; a longer one goes under it. */
-private const val LICENCE_BESIDE_MAX = 20
 
 /** A heading ([title]) and one row per font, sound or music track; nothing when the app ships none. */
 @Composable
