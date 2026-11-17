@@ -88,6 +88,9 @@ import dots.campaign.LevelStop
 import dots.campaign.Title
 import dots.campaign.WorldStop
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.motion.Cues
+import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import io.github.pavelya.dots.ui.motion.PlayCues
 import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.Unlocking
 import io.github.pavelya.dots.ui.motion.rememberTimeline
@@ -153,6 +156,8 @@ fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0, unlock: U
     var lockedChest by remember { mutableStateOf<Chest?>(null) }
     val shown = unlock?.takeIf { map != null }
     val clock = rememberTimeline(shown, shown?.length ?: 0f)
+    val still = LocalReduceMotion.current
+    PlayCues(shown, clock) { Cues.unlock(shown?.let { it.firstPass && it.worldOpens } == true, still) }
     val done by rememberUpdatedState(onUnlocked)
     val openLevel by rememberUpdatedState(actions.onLevel)
     LaunchedEffect(shown) {

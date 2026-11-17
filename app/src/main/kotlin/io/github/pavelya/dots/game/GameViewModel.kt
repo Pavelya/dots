@@ -240,6 +240,12 @@ class GameViewModel(
     /** The captured areas in the order they were captured, worked out once the game is over. */
     private var captureOrder: List<CapturedArea>? = null
 
+    /**
+     * The last moment ([BoardMoment.id] or [BoosterMoment.id]) whose sounds the screen has played.
+     * It lives as long as the game, so the screen, drawn again after Rules, plays none twice.
+     */
+    var heard: Int = 0
+
     /** How often the human took a move back in this game. */
     val undoCount: Int get() = entry.undos
 

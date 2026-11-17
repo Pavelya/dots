@@ -27,6 +27,7 @@ Layers, each depending only on the ones below it:
 | Motion | `ui.motion` | Every time of [`docs/design/motion.md`](../design/motion.md) and where each movement stands at a time; the clocks that play a moment, which jump to their end when the phone's animations are removed. The view model hands each dot that lands to the screen as a `BoardMoment`, and the board draws it as the clock runs | Kept |
 | Theme | `ui.theme` | A `GameTheme` is a look as data: inks in a light and a dark version, board sizes, pieces, text styles, sounds and world backgrounds. `DotsTheme` hands the theme to every screen | Kept; each new look is a new `GameTheme` value, with no new drawing code |
 | Game control | `game` | One `GameViewModel` per game: holds the `GameState`, runs the computer on a background thread with a time limit, exposes one immutable `GameUiState` | Kept |
+| Sound | `audio` | The effects and music of [`docs/design/sound.md`](../design/sound.md). `AudioState` holds the rules for when the game may make a sound: sound on, the ringer, calls, the game on the screen, the audio focus, the headphones. `AndroidAudio` plays them on a thread of its own: effects from a `SoundPool`, music from looping `MediaPlayer`s that fade into each other. Screens start each effect on its motion beat (`ui.motion.Cues`); the app names the music of the screen shown | Kept |
 | Data | `data` | Settings and campaign progress (DataStore), saved game, game log file | Kept; the log feeds future analytics |
 
 Rules the code follows (common practice for mobile games built with Compose):

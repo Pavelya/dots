@@ -32,10 +32,7 @@ data class AppSettings(
     val boardSize: BoardSize = BoardSize.STANDARD,
     val length: GameLength = GameLength.SHORT,
     val threatHighlight: Boolean = false,
-    /**
-     * Sound on or off, from the icon in Pause. Off silences music and sound effects whatever their
-     * volumes; the sounds themselves come later (V-08, V-09).
-     */
+    /** Sound on or off, from the icon in Pause. Off silences music and sound effects whatever their volumes. */
     val sound: Boolean = true,
     /** The music's volume in Settings, from 0 (silent) to [MAX_VOLUME]. */
     val musicVolume: Int = DEFAULT_VOLUME,

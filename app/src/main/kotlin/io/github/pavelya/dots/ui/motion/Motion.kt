@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
@@ -81,9 +82,17 @@ class Timeline internal constructor(
     /** True while the moment plays. */
     val running: Boolean get() = clock.value < length
 
+    private val finished = mutableIntStateOf(0)
+
+    /** How often a [finish] cut the moment short: its sounds fade out then ([PlayCues]). */
+    val finishes: Int get() = finished.intValue
+
     /** Jumps to the end state. */
     fun finish() {
-        if (running) scope.launch { clock.snapTo(length) }
+        if (running) {
+            finished.intValue++
+            scope.launch { clock.snapTo(length) }
+        }
     }
 
     companion object {

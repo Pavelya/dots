@@ -165,6 +165,39 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 
 If G-06 adds special points with their own animation, they need a row here too.
 
+## In the app
+
+The app plays each effect on its step of the motion storyboard, from the times the animations use
+(`Cues` in `app/.../ui/motion/Cues.kt`). These rules decide when it may play at all:
+
+- **Silence.** Nothing plays when the phone is in silent or vibrate mode, during a call, or once
+  the game has left the screen (Home, another app, the screen turning off). The sound icon in
+  Pause turns off the music and the effects together, whatever the volumes in Settings.
+- **Volumes.** Music and effects each follow their slider in Settings; 50 sounds about half as
+  loud as 100. The phone's volume keys set the game's volume.
+- **Other apps.** If the player's own music or a podcast is playing when the game comes to the
+  screen, it keeps playing and the game's music stays off until the game next comes to the
+  screen; the effects still play. The same happens when another app takes the sound for good. A
+  navigation voice lowers the music for a moment.
+- **Headphones.** When the headphones come out, the music stops at once, so it never carries on
+  out loud; it comes back the next time the game comes to the screen. The effects go on.
+- **Fades.** A new screen's track fades in over 1 s while the one before fades out over 0.8 s. The
+  track before stays paused, so going back to it carries on where it was. Leaving the screen, coming
+  back, a change of volume, and the drop under the result's sounds each take 0.3 s.
+- **Rules** keeps the music of where it was opened from: the map's, or the board's from Pause.
+- **Removed animations.** With the phone's animations removed, the areas lighting up and the stars
+  being stamped make no sound, since nothing moves; a new world's sound plays at once. Every other
+  sound plays as usual.
+
+Where the tables above leave a choice open, the app does this:
+
+- A big capture plays `sfx_capture_big`, whoever captures.
+- `sfx_boss_turn` plays 200 ms after the player's dot that brings the boss's turn of two dots.
+- The daily streak's `sfx_reward` plays 1.5 s after `sfx_win`, once the win has played.
+- The chest's `sfx_reward` plays as the player picks a reward.
+- Each area of the end of the game plays one note higher than the one before, up to the D an
+  octave above the first: the phone plays a sound at most twice as fast.
+
 ## The three source sounds
 
 Three effects start from a real-sounding source: a pen tap, a pen drawing a circle and a soft
@@ -368,8 +401,8 @@ Pinfold-audio/
 
 This folder is the master copy. Only the finished, compressed files enter the repository: the
 full-length WAVs are large, and git would keep every version for ever. All 17 effects together
-come to about 0.13 MB in the app; the six music loops to 9.7 MB, so V-10 looks at the music if
-the app's size matters.
+come to about 0.13 MB in the app; the six music loops to 9.7 MB, which the app ships as they
+are.
 
 To bring them in, the owner starts a session with, for example, "Work on V-09, files in
 ~/Pinfold-audio". In that session Claude cuts and converts the files, puts them in the app, adds
