@@ -90,6 +90,58 @@ class MapScreenTest {
         capture("map_world_1_page_dark")
     }
 
+    /**
+     * Every world before [world] passed with 3 stars, then its levels up to [next] - 1; as the
+     * canvas's `map-world-2` to `-4` frames when [next] is 12 (10 with 2 stars, 11 with 1).
+     */
+    private fun upTo(world: Int, next: Int) = Progress(
+        Campaign.levels.filter { it.world < world || it.world == world && it.number < next }.associate {
+            it.code to if (it.world == world && it.number == next - 1) 1 else if (it.world == world && it.number == next - 2) 2 else 3
+        },
+    )
+
+    private fun page(world: Int, next: Int, name: String, dark: Boolean = false) {
+        show(upTo(world, next), dark = dark)
+        compose.onNodeWithContentDescription("Level $world-$next, next", substring = true).assertIsDisplayed()
+        capture(name)
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 2's map page, as the canvas map-world-2 frame`() = page(2, 12, "map_world_2_page")
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 2's map page, dark`() = page(2, 12, "map_world_2_page_dark", dark = true)
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 2's boss stop, the shed`() = page(2, 19, "map_world_2_boss")
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 3's map page, as the canvas map-world-3 frame`() = page(3, 12, "map_world_3_page")
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 3's map page, dark`() = page(3, 12, "map_world_3_page_dark", dark = true)
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 3's boss stop, the observatory`() = page(3, 19, "map_world_3_boss")
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 4's map page, as the canvas map-world-4 frame`() = page(4, 12, "map_world_4_page")
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 4's map page, dark`() = page(4, 12, "map_world_4_page_dark", dark = true)
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 4's boss stop, the tower`() = page(4, 19, "map_world_4_boss")
+
     @Test
     fun `mid-world, the map opens at the next level with the stars earned below it`() {
         show(SampleProgress.midWorld)

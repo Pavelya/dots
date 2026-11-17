@@ -11,9 +11,8 @@ import io.github.pavelya.dots.game.Mood
 
 /**
  * The icons and doodles of the map, the game screen, the Level card and Result, with the same
- * outlines as the canvas (docs/design/canvas/draw.py: `ICONS`, `STAR`, the boss castle and the
- * computer's `face`) and the
- * wireframes (sound and undo), drawn in code. The faces are stand-ins until V-12 brings the
+ * outlines as the canvas (docs/design/canvas/draw.py: `ICONS`, `STAR` and the computer's `face`)
+ * and the wireframes (sound and undo), drawn in code. The faces are stand-ins until V-12 brings the
  * drawn ones.
  */
 object Doodles {
@@ -89,14 +88,6 @@ object Doodles {
     /** The arrow from "next!" to the next level, 34 x 20, pointing left. */
     fun arrow(ink: Color): ImageVector = vector(34f, 20f) {
         stroke("M32 12 q-14 6 -28 -2 M4 10 l7 -6 M4 10 l8 3", ink, 2f)
-    }
-
-    /** The boss castle, 68 x 76, in [ink] on [paper], with a [flag]. */
-    fun castle(ink: Color, paper: Color, flag: Color): ImageVector = vector(68f, 76f) {
-        fill("M8 70 V34 h9 v-7 h7 v7 h7 v-7 h7 v7 h7 v-7 h7 v7 h9 V70 z", paper, stroke = 2f, strokeInk = ink)
-        stroke("M27 70 v-13 a7 7 0 0 1 14 0 v13 M34 27 V8", ink, 2f)
-        fill("M34 8 l13 5 -13 5 z", flag)
-        stroke("M2 70 h64", ink, 2f)
     }
 
     /**
