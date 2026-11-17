@@ -46,8 +46,8 @@ class FacesScreenshotTest {
             DotsTheme(GameTheme.NOTEBOOK, dark) {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        rows(faces.chunked(3), 108.dp)
-                        rows(faces.chunked(5), 48.dp)
+                        Rows(faces.chunked(3), 108.dp)
+                        Rows(faces.chunked(5), 48.dp)
                     }
                 }
             }
@@ -56,7 +56,7 @@ class FacesScreenshotTest {
     }
 
     @Composable
-    private fun rows(rows: List<List<Picture>>, size: Dp) {
+    private fun Rows(rows: List<List<Picture>>, size: Dp) {
         for (row in rows) {
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                 for (face in row) Face(face, size)
