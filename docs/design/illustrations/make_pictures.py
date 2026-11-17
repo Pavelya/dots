@@ -97,7 +97,9 @@ SHEETS: Dict[str, Sheet] = {
                                 pictures={"pines": [1], "tree": [2], "pond": [3], "hill": [4], "mountains": [5],
                                           "cloud": [6], "rock": [7], "grass_short": [8], "grass_tall": [9],
                                           "grass_small": [10], "fence": [11]}),
-    "map-world-1-places": Sheet(f"Prompt 5 {ON_PAGE}", "World 1 map page: castle, chest, cottage and flag on the path", 68,
+    # The places are cut for the open chest on the Chest note, 96 dp tall; the sheet's largest
+    # picture, the beaten castle, is then 108 dp. On the map the places are drawn smaller.
+    "map-world-1-places": Sheet(f"Prompt 5 {ON_PAGE}", "World 1 map page: castle, chest, cottage and flag on the path; the open chest also on the Chest note", 108,
                                 pictures={"castle": [1], "castle_beaten": [2], "chest": [3], "chest_open": [4, 5, 6, 7],
                                           "cottage": [8], "flag": [9]}),
     "map-world-2-nature": Sheet(f"Prompt 6 {ON_PAGE}", "World 2 map page: garden doodles beside the path", 140),

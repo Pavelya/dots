@@ -8,16 +8,19 @@ import io.github.pavelya.dots.R
 /**
  * A picture cut from one of the owner's sheets by docs/design/illustrations/make_pictures.py, in
  * its [light] and [dark] version (drawable-nodpi). Pictures of the places on the path are drawn at
- * [PLACE_PX_PER_DP] pixels per dp, the size the script cut them for, so their lines stay equally
- * thick.
+ * [PLACE_PX_PER_DP] pixels per dp, all at one scale, so their lines stay equally thick.
  */
 @Immutable
 data class Picture(val light: Int, val dark: Int) {
     fun of(dark: Boolean): Int = if (dark) this.dark else light
 }
 
-/** The places sheets' pixels per dp: the script scales each sheet to 4 pixels per dp of its size on screen. */
-const val PLACE_PX_PER_DP = 4f
+/**
+ * The places' pixels per dp on the map. The script cuts the places sheet at 4 pixels per dp for
+ * 108 dp, its largest picture's size at the scale of the Chest note's chest; on the map that
+ * picture, the beaten castle, is 68 dp wide.
+ */
+const val PLACE_PX_PER_DP = 4f * 108f / 68f
 
 /**
  * A doodle beside the path: a [picture] [width] wide, its centre at [x] of the screen's width,
