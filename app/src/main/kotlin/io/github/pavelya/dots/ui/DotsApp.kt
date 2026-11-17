@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,6 +34,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.LifecycleResumeEffect
+import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -57,6 +59,9 @@ import dots.log.GameLogEntry
 import io.github.pavelya.dots.BuildConfig
 import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.audio.Effect
+import io.github.pavelya.dots.audio.LocalAudio
+import io.github.pavelya.dots.audio.Track
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.GameMode
 import io.github.pavelya.dots.data.LevelEnd
@@ -193,9 +198,27 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
         reduceMotion.value = animationsRemoved(app)
         onPauseOrDispose {}
     }
+    // The game's sound (docs/design/sound.md): the player's settings, whether the game is on the
+    // screen, and the music of the screen shown; the game screen names its own ([gameTrack]).
+    val audio = remember { app.audio }
+    LaunchedEffect(appSettings) {
+        appSettings?.let { audio.settings(it.sound, it.musicVolume, it.effectsVolume) }
+    }
+    LifecycleStartEffect(audio) {
+        audio.onScreen(true)
+        // Turning the phone draws the app again; the music carries on.
+        onStopOrDispose { if (activity?.isChangingConfigurations != true) audio.onScreen(false) }
+    }
+    var gameTrack by remember { mutableStateOf<Track?>(null) }
+    val playing = remember { mutableStateOf<Track?>(null) }
+    val track = musicFor(top?.destination?.route, gameTrack, playing.value)
+    LaunchedEffect(track) {
+        playing.value = track
+        audio.music(track)
+    }
     // The level just passed, whose unlock the map plays after Next.
     var unlock by remember { mutableStateOf<Unlock?>(null) }
-    CompositionLocalProvider(LocalReduceMotion provides reduceMotion.value) {
+    CompositionLocalProvider(LocalReduceMotion provides reduceMotion.value, LocalAudio provides audio) {
         DotsTheme(highContrast = appSettings?.highContrast ?: false) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
@@ -317,6 +340,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 onPick = { reward ->
                                     if (!picked) {
                                         picked = true
+                                        audio.play(Effect.REWARD) // the chest opens
                                         appScope.launch {
                                             app.progress.open(chest, reward)
                                             val next = Campaign.map(app.progress.progress.first()).next
@@ -432,6 +456,12 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         },
                                     )
                                 }
+                                // The board's music: its level's, or for free play and the daily puzzle the world reached.
+                                val shown by game.ui.collectAsStateWithLifecycle()
+                                val map by app.progress.map.collectAsStateWithLifecycle()
+                                val music = gameMusic(shown.level, shown.vsComputer, map)
+                                LaunchedEffect(music) { gameTrack = music }
+                                DisposableEffect(Unit) { onDispose { gameTrack = null } }
                                 val scope = rememberCoroutineScope()
                                 val context = LocalContext.current
                                 GameScreen(

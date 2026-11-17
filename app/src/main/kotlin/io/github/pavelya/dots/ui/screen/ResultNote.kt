@@ -57,6 +57,9 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.DailyEnd
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.game.GameUiState
+import io.github.pavelya.dots.ui.motion.Cues
+import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import io.github.pavelya.dots.ui.motion.PlayCues
 import io.github.pavelya.dots.ui.motion.ResultReveal
 import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.rememberTimeline
@@ -79,6 +82,10 @@ import io.github.pavelya.dots.ui.theme.Palette
  *
  * Retry and Play again call [onAgain]. Back goes to the map ([onMap]).
  *
+ * With [sounds] (the game ended on this screen), the outcome's sound plays as the headline writes
+ * in, and a stamp as each earned star lands; a solved daily puzzle's streak goes up with a sparkle
+ * (docs/design/sound.md).
+ *
  * Motion (docs/design/motion.md, "End of game" and "Star reveal"): the note slides up from below,
  * tips and settles at its slant; then the headline writes in and each star is stamped, or drawn in
  * outline when not earned. The buttons work at once; a tap elsewhere on the note finishes the reveal.
@@ -93,6 +100,7 @@ internal fun ResultNote(
     onMap: () -> Unit,
     onShare: (String) -> Unit = {},
     toNextPuzzle: () -> Long = { 0L },
+    sounds: Boolean = false,
 ) {
     val style = Palette.current
     BackHandler(onBack = onMap)
@@ -101,6 +109,11 @@ internal fun ResultNote(
     val daily = ui.daily
     val dailyEnd = ui.dailyEnd
     val reveal = rememberTimeline(ui.round, ResultReveal.LENGTH)
+    val still = LocalReduceMotion.current
+    PlayCues(ui.round.takeIf { sounds }, reveal) {
+        val stars = end?.result?.takeIf { it.isPassed }?.stars ?: 0
+        Cues.result(Cues.headline(ui, names.human), stars, streak = dailyEnd?.passed == true, still = still)
+    }
     Box(
         contentAlignment = Alignment.BottomCenter,
         modifier = Modifier

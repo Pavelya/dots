@@ -35,15 +35,19 @@ import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Player
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.audio.Effect
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.ui.board.BoardInput
+import io.github.pavelya.dots.ui.motion.Cues
 import io.github.pavelya.dots.ui.motion.EndOfGame
 import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import io.github.pavelya.dots.ui.motion.PlayCues
 import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.playOut
+import io.github.pavelya.dots.ui.motion.rememberBoosterTimeline
 import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
 import io.github.pavelya.dots.ui.theme.Palette
 import kotlinx.coroutines.delay
@@ -181,9 +185,13 @@ fun GameScreen(
         else -> null
     }
     val moment = rememberMomentTimeline(ui.moment)
+    val boosting = rememberBoosterTimeline(ui.booster)
     val ending = rememberEndTimeline(ui, moment)
     // Result comes up once the end has played; a tap meanwhile jumps to it.
     val ended by remember(ending) { derivedStateOf { !ending.running } }
+    // The end and Result play their sounds only for a game that ended on this screen, not one opened over.
+    val endedHere = remember(ui.round) { !ui.isOver }
+    GameSounds(ui, viewModel, moment, boosting, ending, endedHere)
     BoxWithConstraints {
         GameBoard(
             ui = ui,
@@ -205,6 +213,7 @@ fun GameScreen(
             links = links,
             moment = moment,
             ending = ending,
+            boosting = boosting,
         )
         if (ui.isOver && !ended) {
             Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { ending.finish() } })
@@ -259,9 +268,35 @@ fun GameScreen(
                 onMap = onToMap,
                 onShare = onShare,
                 toNextPuzzle = toNextPuzzle,
+                sounds = endedHere,
             )
         }
     }
+}
+
+/**
+ * The game's sounds (docs/design/sound.md): each dot's [moment] and each booster's effect
+ * ([boosting]) as it plays, and at the end of a game that [endedHere] the captured areas lighting
+ * up ([ending]), unless animations are removed. Each moment is heard once, also when the screen is
+ * drawn again after Rules ([GameViewModel.heard]).
+ */
+@Composable
+private fun GameSounds(ui: GameUiState, viewModel: GameViewModel, moment: Timeline, boosting: Timeline, ending: Timeline, endedHere: Boolean) {
+    val human = viewModel.human.takeIf { ui.vsComputer }
+    val firstTime = { id: Int -> (id > viewModel.heard).also { if (it) viewModel.heard = id } }
+    // The dots run low once a game (sound.md, sfx_dots_low).
+    val warned = remember(ui.round) { BooleanArray(1) }
+    val landed = ui.moment
+    PlayCues(landed?.id, moment, play = { landed != null && firstTime(landed.id) }) {
+        val cues = landed?.let { Cues.moment(it, ui.state, human, warned[0]) }.orEmpty()
+        if (cues.any { it.effect == Effect.DOTS_LOW }) warned[0] = true
+        cues
+    }
+    val used = ui.booster
+    PlayCues(used?.id, boosting, play = { used != null && firstTime(used.id) }) { used?.let(Cues::booster).orEmpty() }
+    val reduce = LocalReduceMotion.current
+    val endStarted by remember(ending) { derivedStateOf { ending.now > 0f } }
+    PlayCues(ui.round.takeIf { ui.isOver && endedHere && !reduce && endStarted }, ending) { Cues.ending(EndOfGame(ui.captureOrder.size)) }
 }
 
 /** The mission note's content for [level] where its mission stands at [status]. */

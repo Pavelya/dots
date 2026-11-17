@@ -6,6 +6,8 @@ import android.content.pm.ApplicationInfo
 import android.os.StrictMode
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
+import io.github.pavelya.dots.audio.AndroidAudio
+import io.github.pavelya.dots.audio.Audio
 import io.github.pavelya.dots.data.CountingJournal
 import io.github.pavelya.dots.data.DailyRepository
 import io.github.pavelya.dots.data.GameJournal
@@ -33,6 +35,18 @@ class DotsApplication : Application() {
 
     /** Campaign progress: stars, the player's own boosters, chests and cosmetics. Backed up by Android. */
     val progress: ProgressRepository by lazy { ProgressRepository(progressStore, progressScope) }
+
+    private var sound: Audio? = null
+
+    /**
+     * The game's sound effects and music (docs/design/sound.md), made the first time the app's
+     * screen asks for them. Tests may replace it.
+     */
+    var audio: Audio
+        get() = sound ?: AndroidAudio(this).also { sound = it }
+        set(value) {
+            sound = value
+        }
 
     /** Google Play's review prompt, asked for after a level won with three stars; tests replace it. */
     var reviews: ReviewPrompt = PlayReviewPrompt()

@@ -31,8 +31,9 @@ data class GameTheme(
     /** The board with the player's "High-contrast pieces" setting on (pieces.md, "High contrast"). */
     val highContrastBoard: BoardLook = board,
     /**
-     * Each sound effect, by its name in docs/design/sound.md (`sfx_place_1`, `sfx_ring_draw` and
-     * so on), as a raw resource. Empty until the sounds come into the game (V-08, V-10).
+     * Sound effects this look plays in place of the game's own, by their names in
+     * docs/design/sound.md (`sfx_place_1`, `sfx_ring_draw` and so on), as raw resources. Empty in
+     * every look, and not read yet: every look plays the game's own effects (`audio.Effect`).
      */
     val sounds: Map<String, Int> = emptyMap(),
     /** Each world's background picture, by world number, as a drawable resource. Empty until V-11 draws them. */
