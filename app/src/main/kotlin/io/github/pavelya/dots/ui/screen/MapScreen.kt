@@ -256,7 +256,8 @@ private sealed interface MapRow {
     /**
      * A level and its place across the screen, [x], as a share of the width. The path goes on to
      * [nextX], [nextHeight] and [nextOpen] (the next level's place, row height and whether it is
-     * open); [nextX] is null after a world's last level.
+     * open), and stops [nextGap] short of it when that is a picture the path would show through;
+     * [nextX] is null after a world's last level.
      */
     data class Stop(
         val stop: LevelStop,
@@ -265,6 +266,7 @@ private sealed interface MapRow {
         val nextX: Float?,
         val nextHeight: Dp,
         val nextOpen: Boolean,
+        val nextGap: Dp = 0.dp,
     ) : MapRow {
         override val key get() = stop.level.code
         val height: Dp get() = if (stop.isBoss) BOSS_HEIGHT else STOP_HEIGHT
@@ -301,6 +303,12 @@ private val CASTLE_HEIGHT = 96.dp
 /** How far below the middle of the start row the start picture stands. */
 private val START_BASE = 22.dp
 
+/** How far the path keeps from the start picture's middle: the pictures are see-through between their lines. */
+private val START_GAP = 16.dp
+
+/** How far the path keeps from a chest's middle: half the picture's height (closed 36 dp, open 60 dp tall), and 2 dp. */
+private fun chestGap(opened: Boolean): Dp = if (opened) 32.dp else 20.dp
+
 /**
  * Where a level sits across the screen, as a share of its width: the path wanders between the
  * margin icons on the left and the right edge, as on the canvas (x from about 112 to 300 of 360 dp).
@@ -330,7 +338,10 @@ private fun rows(map: CampaignMap): List<MapRow> {
             } else {
                 // The chest sits on the path halfway to the next level.
                 val chestX = if (afterX == null) x else (x + afterX) / 2
-                rows += MapRow.Stop(stop, x, stop.level == next, chestX, CHEST_HEIGHT, chest.state != ChestState.LOCKED)
+                rows += MapRow.Stop(
+                    stop, x, stop.level == next, chestX, CHEST_HEIGHT, chest.state != ChestState.LOCKED,
+                    nextGap = chestGap(chest.state == ChestState.OPENED),
+                )
                 rows += MapRow.ChestRow(chest, chestX, afterX, afterHeight, afterOpen)
             }
         }
@@ -602,7 +613,7 @@ private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit, motion: 
                 drawDoodles(doodles)
                 val nextX = row.nextX ?: return@drawBehind
                 val inked = if (inking == null) 1f else inking.times.path(inking.clock.now)
-                drawPathTo(row.x, nextX, row.nextHeight, row.nextOpen, style, inked)
+                drawPathTo(row.x, nextX, row.nextHeight, row.nextOpen, style, inked, endGap = row.nextGap)
             },
     ) {
         val centerX = maxWidth * row.x
@@ -840,17 +851,33 @@ private fun stopDescription(row: MapRow.Stop): String {
 /**
  * The stretch of path from a stop at [x] up to the next one at [nextX], in a row [nextHeight] tall:
  * inked and dashed up to a stop that is [inked] (open, or a chest reached), dotted in graphite
- * beyond it. The stops are drawn over its ends.
+ * beyond it. The stops are drawn over its ends; it keeps [startGap] and [endGap] away from the
+ * middle of a picture at either end, which it would show through.
  */
-private fun DrawScope.drawPathTo(x: Float, nextX: Float, nextHeight: Dp, inked: Boolean, style: MapStyle, inkedPart: Float = 1f) {
+private fun DrawScope.drawPathTo(
+    x: Float,
+    nextX: Float,
+    nextHeight: Dp,
+    inked: Boolean,
+    style: MapStyle,
+    inkedPart: Float = 1f,
+    startGap: Dp = 0.dp,
+    endGap: Dp = 0.dp,
+) {
     val from = Offset(size.width * x, size.height / 2)
     // A boss's path ends under its castle's label, not through it.
     val end = if (nextHeight == BOSS_HEIGHT) -nextHeight.toPx() / 2 + CASTLE_HEIGHT.toPx() / 2 else -nextHeight.toPx() / 2
     val to = Offset(size.width * nextX, end)
     val bend = (from.y - to.y) / 2
-    val path = Path().apply {
+    val whole = Path().apply {
         moveTo(from.x, from.y)
         cubicTo(from.x, from.y - bend, to.x, to.y + bend, to.x, to.y)
+    }
+    val path = if (startGap == 0.dp && endGap == 0.dp) whole else {
+        val measure = PathMeasure()
+        measure.setPath(whole, false)
+        val start = startGap.toPx().coerceAtMost(measure.length)
+        Path().also { measure.getSegment(start, (measure.length - endGap.toPx()).coerceAtLeast(start), it, true) }
     }
     val dotted = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(0.01f, 7.dp.toPx())))
     val dashed = Stroke(width = 2.2.dp.toPx(), cap = StrokeCap.Round, pathEffect = PathEffect.dashPathEffect(floatArrayOf(7.dp.toPx(), 6.dp.toPx())))
@@ -889,7 +916,10 @@ private fun ChestOnPath(row: MapRow.ChestRow, style: MapStyle, onOpen: () -> Uni
         Modifier
             .fillMaxWidth()
             .height(CHEST_HEIGHT)
-            .drawBehind { row.nextX?.let { drawPathTo(row.x, it, row.nextHeight, row.nextOpen, style) } },
+            .drawBehind {
+                val gap = chestGap(opened)
+                row.nextX?.let { drawPathTo(row.x, it, row.nextHeight, row.nextOpen, style, startGap = gap) }
+            },
     ) {
         val centerX = maxWidth * row.x
         Box(
@@ -925,7 +955,7 @@ private fun Start(row: MapRow.Start, style: MapStyle) {
             .height(START_HEIGHT)
             .drawBehind {
                 drawDoodles(doodles)
-                drawPathTo(row.x, row.nextX, row.nextHeight, row.nextOpen, style)
+                drawPathTo(row.x, row.nextX, row.nextHeight, row.nextOpen, style, startGap = START_GAP)
             }
             .clearAndSetSemantics { },
     ) {
