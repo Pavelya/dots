@@ -274,7 +274,10 @@ internal fun GameBoard(
                 verticalArrangement = Arrangement.Bottom,
             ) {
                 if (room >= OPPONENT_WITH_PHOTO) {
-                    Photo(above, look, style)
+                    // The world's board touches sit in the paper beside the photo, so they go when it does.
+                    Box(Modifier.fillMaxWidth().boardTouches(campaign?.world, style), contentAlignment = Alignment.TopCenter) {
+                        Photo(above, look, style)
+                    }
                     Spacer(Modifier.height(8.dp))
                 }
                 if (room >= OPPONENT_LINE) {

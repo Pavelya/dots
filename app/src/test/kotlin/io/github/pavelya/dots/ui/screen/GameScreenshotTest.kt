@@ -139,6 +139,52 @@ class GameScreenshotTest {
         capture("game_big_capture_dark")
     }
 
+    /**
+     * A board in [world], with its board touches beside the opponent (canvas frames `game-world-2`
+     * to `-4`): the threat, as the frames show it, or the big capture, the most crowded board.
+     */
+    private fun inWorld(world: Int, big: Boolean, dark: Boolean) {
+        val move = if (big) CanvasGame.bigCapture else CanvasGame.threat
+        show(dark = dark) { Board(ui(move), campaign = CanvasGame.parts(move.state, world = world)) }
+        capture("game_world_${world}_${if (big) "big_capture" else "threat"}${if (dark) "_dark" else ""}")
+    }
+
+    @Test
+    fun threatInWorld2() = inWorld(2, big = false, dark = false)
+
+    @Test
+    fun threatInWorld2Dark() = inWorld(2, big = false, dark = true)
+
+    @Test
+    fun bigCaptureInWorld2() = inWorld(2, big = true, dark = false)
+
+    @Test
+    fun bigCaptureInWorld2Dark() = inWorld(2, big = true, dark = true)
+
+    @Test
+    fun threatInWorld3() = inWorld(3, big = false, dark = false)
+
+    @Test
+    fun threatInWorld3Dark() = inWorld(3, big = false, dark = true)
+
+    @Test
+    fun bigCaptureInWorld3() = inWorld(3, big = true, dark = false)
+
+    @Test
+    fun bigCaptureInWorld3Dark() = inWorld(3, big = true, dark = true)
+
+    @Test
+    fun threatInWorld4() = inWorld(4, big = false, dark = false)
+
+    @Test
+    fun threatInWorld4Dark() = inWorld(4, big = false, dark = true)
+
+    @Test
+    fun bigCaptureInWorld4() = inWorld(4, big = true, dark = false)
+
+    @Test
+    fun bigCaptureInWorld4Dark() = inWorld(4, big = true, dark = true)
+
     /** The big capture with high-contrast pieces turned on in Settings (pieces.md, "High contrast"). */
     @Test
     fun bigCaptureHighContrast() {
@@ -402,7 +448,7 @@ internal object CanvasGame {
      * [note]), and the canvas's boosters: Wall 2, Hint 1, Bomb 0, Double dot 1, Undo 1, which
      * waits until the player has placed a dot.
      */
-    fun parts(state: GameState, note: Boolean = true): CampaignParts {
+    fun parts(state: GameState, note: Boolean = true, world: Int = level.world): CampaignParts {
         val status = level.status(state)
         val waiting = state.dotsPlaced(Player.RED) == 0
         val tools = listOf(
@@ -416,6 +462,7 @@ internal object CanvasGame {
             title = "Level 7",
             mission = if (note) missionNote(level, status) else null,
             boosters = { BoosterBar(tools, Palette.current) {} },
+            world = world,
         )
     }
 
