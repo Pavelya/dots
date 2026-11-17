@@ -9,6 +9,7 @@ import dots.campaign.CampaignMap
 import dots.campaign.Level
 import dots.campaign.LevelRecord
 import dots.campaign.MissionStatus
+import dots.campaign.Strength
 import dots.campaign.Tutorial
 import dots.daily.DailyAttempt
 import dots.daily.DailyProgress
@@ -57,6 +58,8 @@ data class GameUiState(
     val dangers: List<Danger> = emptyList(),
     /** The computer's face and speech bubble; null between two people. */
     val opponent: OpponentLook? = null,
+    /** How strong the computer plays, for its face; null between two people. */
+    val strength: Strength? = null,
     /** True once the game is over: no move is left or, in a campaign level, its mission is decided. */
     val isOver: Boolean = state.isOver,
     /** The campaign level being played; null in free play, between two people and in the daily puzzle. */
@@ -798,6 +801,7 @@ class GameViewModel(
             vsComputer = computer != null,
             dangers = dangers,
             opponent = opponent,
+            strength = computer?.let { Strength.entries.firstOrNull { it.text == entry.opponent } },
             isOver = over,
             level = level,
             daily = puzzle,

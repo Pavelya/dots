@@ -3,7 +3,9 @@ package io.github.pavelya.dots.game
 import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
+import dots.engine.TurnRule
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Test
 
 class OpponentLookTest {
@@ -38,6 +40,32 @@ class OpponentLookTest {
     @Test
     fun `otherwise it plays on, determined`() {
         assertEquals(OpponentLook(Mood.DETERMINED), look(afterAMove))
+    }
+
+    @Test
+    fun `a boss attacks while it places the two dots of its special turn`() {
+        // Blue doubles every 2nd turn of its own. Red moves first: R, B, R, B B, R, B, R, B B.
+        var state = GameState.start(7, 7, dotsPerPlayer = 9, turnRules = mapOf(Player.BLUE to TurnRule.DoubleMove(2)))
+        val attacking = (0 until 10).filter { ply ->
+            val mood = look(state).mood
+            if (mood == Mood.ATTACKING) {
+                // A capture by the player still upsets it first.
+                assertEquals(Mood.UPSET, look(state, LastCapture(human, 1)).mood)
+            }
+            // Dots along the top rows, all touching the border: nothing is captured.
+            state = state.play(Pos(ply % 7, ply / 7)).state
+            mood == Mood.ATTACKING
+        }
+        assertEquals(listOf(3, 4, 8, 9), attacking)
+    }
+
+    @Test
+    fun `a computer without a boss's rule never attacks`() {
+        var state = empty
+        repeat(6) { ply ->
+            assertNotEquals(Mood.ATTACKING, look(state).mood)
+            state = state.play(Pos(ply % 5, ply / 5)).state
+        }
     }
 
     @Test

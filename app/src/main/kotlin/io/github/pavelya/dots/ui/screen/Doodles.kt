@@ -7,13 +7,11 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.unit.dp
-import io.github.pavelya.dots.game.Mood
 
 /**
  * The icons and doodles of the map, the game screen, the Level card and Result, with the same
- * outlines as the canvas (docs/design/canvas/draw.py: `ICONS`, `STAR` and the computer's `face`)
- * and the wireframes (sound and undo), drawn in code. The faces are stand-ins until V-12 brings the
- * drawn ones.
+ * outlines as the canvas (docs/design/canvas/draw.py: `ICONS` and `STAR`) and the wireframes (sound
+ * and undo), drawn in code. The opponent's faces are pictures ([Faces]).
  */
 object Doodles {
     const val PAUSE = "M12 2.5 q9.5 .3 9.5 9.5 q-.3 9.5 -9.5 9.5 q-9.5 -.3 -9.5 -9.5 q.3 -9.3 9.5 -9.5 M9.5 8 q-.3 4 0 8 M14.5 8 q.3 4 0 8"
@@ -89,53 +87,6 @@ object Doodles {
     fun arrow(ink: Color): ImageVector = vector(34f, 20f) {
         stroke("M32 12 q-14 6 -28 -2 M4 10 l7 -6 M4 10 l8 3", ink, 2f)
     }
-
-    /**
-     * The computer as the canvas draws it: a round blot of [ink] with a [shadow] under it, and a
-     * face in the [mood] drawn in [line] (the paper's colour). The eyes keep their own colours in
-     * both themes. 100 x 100.
-     */
-    fun face(mood: Mood, ink: Color, shadow: Color, line: Color): ImageVector = vector(100f, 100f) {
-        fill(ellipse(50f, 93f, 30f, 4f), shadow)
-        fill(BLOB, ink)
-        fill(ellipse(88f, 26f, 3.5f), ink)
-        fill(ellipse(14f, 82f, 2.5f), ink)
-        fill(ellipse(93f, 38f, 2f), ink)
-        val (dx, dy, height) = when (mood) {
-            Mood.HAPPY -> Triple(0f, 0f, 9f)
-            Mood.SMUG -> Triple(3f, 1f, 9f)
-            Mood.UPSET -> Triple(0f, 2f, 7f)
-            Mood.DETERMINED -> Triple(-2f, 0f, 8f)
-            Mood.SULKY -> Triple(-4f, 2f, 8f)
-        }
-        for (x in listOf(37f, 63f)) {
-            fill(ellipse(x, 46f, 8f, height), EYE_WHITE)
-            fill(ellipse(x + dx, 47f + dy, 3.6f), PUPIL)
-            fill(ellipse(x + dx + 1.3f, 45.5f + dy, 1.1f), EYE_WHITE)
-        }
-        when (mood) {
-            Mood.SMUG -> { // heavy lids
-                fill("M28 44 Q37 36 46 44 Z M54 44 Q63 36 72 44 Z", ink)
-                stroke("M28 44 H46 M54 44 H72", line, 2f)
-            }
-            Mood.SULKY -> fill("M28 42 Q37 38 46 42 L46 40 Q37 33 28 40Z M54 42 Q63 38 72 42 L72 40 Q63 33 54 40Z", ink)
-            else -> Unit
-        }
-        val (brows, mouth) = when (mood) {
-            Mood.HAPPY -> "M30 32 Q37 27 44 31 M56 31 Q63 27 70 32" to "M36 64 Q50 78 64 64"
-            Mood.SMUG -> "M29 35 L44 35 M56 31 Q63 25 71 30" to "M39 67 Q52 72 63 61"
-            Mood.UPSET -> "M30 33 L43 37 M70 33 L57 37" to "M38 73 Q50 63 62 73"
-            Mood.DETERMINED -> "M30 32 L44 37 M70 32 L56 37" to "M40 68 H60"
-            Mood.SULKY -> "M30 34 Q37 31 44 34 M56 34 Q63 31 70 34" to "M41 69 Q45 66 50 69 T59 69"
-        }
-        stroke("$brows $mouth", line, 2.6f)
-        if (mood == Mood.UPSET) fill("M74 52 q4 7 0 9 q-4 -2 0 -9z", EYE_WHITE) // a tear
-    }
-
-    private const val BLOB = "M50 18 C68 16 84 30 85 50 C87 60 84 70 78 77 C80 84 78 90 74 90 C70 90 70 84 68 82 " +
-        "C60 87 48 88 38 85 C26 82 16 72 15 57 C13 36 30 19 50 18 Z"
-    private val EYE_WHITE = Color(0xFFFBF8F1)
-    private val PUPIL = Color(0xFF2E2E2E)
 
     /** An ellipse around ([x], [y]) as path data; a circle when [ry] is left out. */
     private fun ellipse(x: Float, y: Float, rx: Float, ry: Float = rx): String =

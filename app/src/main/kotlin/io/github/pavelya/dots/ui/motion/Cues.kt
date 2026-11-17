@@ -8,13 +8,13 @@ import androidx.compose.runtime.snapshotFlow
 import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Player
-import dots.engine.TurnRule
 import io.github.pavelya.dots.audio.Effect
 import io.github.pavelya.dots.audio.LocalAudio
 import io.github.pavelya.dots.audio.Sounding
 import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.game.GameUiState
+import io.github.pavelya.dots.game.OpponentLook
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -81,12 +81,8 @@ object Cues {
         if (moment.freshThreats.any { state.ownerAt(it.group.first()) == own }) add(Cue(Effect.THREAT, Threat.DELAY))
         val counted = human ?: Player.RED
         if (!dotsLowHeard && moment.by == counted && state.dotsLeft(counted) == RunningOut.LOW) add(Cue(Effect.DOTS_LOW, 0f))
-        if (human != null && moment.by == human && bossTurnComes(state, human.opponent)) add(Cue(Effect.BOSS_TURN, Placing.SETTLED))
+        if (human != null && moment.by == human && OpponentLook.bossTurn(state, human.opponent)) add(Cue(Effect.BOSS_TURN, Placing.SETTLED))
     }
-
-    /** True when the boss ([boss]) is to place the two dots of its special turn now (G-05). */
-    private fun bossTurnComes(state: GameState, boss: Player): Boolean =
-        state.toMove == boss && state.turnRule(boss) is TurnRule.DoubleMove && state.doubleMoveIn(boss) == 0
 
     /** The sounds of a booster the player has just used, from the tap on Confirm. */
     fun booster(used: BoosterMoment): List<Cue> = when (used.booster) {

@@ -1,7 +1,6 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -71,6 +70,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dots.campaign.Mission
+import dots.campaign.Strength
 import dots.campaign.Tutorial
 import dots.engine.Booster
 import dots.engine.Player
@@ -140,8 +140,8 @@ import kotlinx.coroutines.delay
  * photo, only the opponent's line stays, and on a small phone that line moves into the top row in
  * place of the game's name, as the wireframes' small frames show.
  *
- * Every ink, size and text style comes from the theme ([Palette], [BoardStyle], [NoteText]); V-12
- * brings the faces.
+ * Every ink, size and text style comes from the theme ([Palette], [BoardStyle], [NoteText]); the
+ * opponent's face is a picture ([Faces]).
  *
  * Motion (docs/design/motion.md): the [moment] clock plays the last dot's moment on the board. In a
  * capture the captor's tally and score, and the mission note, take the points when the "+N" lands,
@@ -276,7 +276,7 @@ internal fun GameBoard(
                 if (room >= OPPONENT_WITH_PHOTO) {
                     // The world's board touches sit in the paper beside the photo, so they go when it does.
                     Box(Modifier.fillMaxWidth().boardTouches(campaign?.world, style), contentAlignment = Alignment.TopCenter) {
-                        Photo(above, look, style)
+                        Photo(above, look, ui.strength, Faces.boss(ui.level), style)
                     }
                     Spacer(Modifier.height(8.dp))
                 }
@@ -535,10 +535,11 @@ private fun TopRow(showPause: Boolean, style: Palette, onPause: () -> Unit, leav
 
 /**
  * The opponent taped in like a photo, 124 dp with a 108 dp face (illustrations.md, "Where each
- * picture goes"), and its speech bubble beside it. Between two people, the photo holds Blue's piece.
+ * picture goes"), and its speech bubble beside it: the computer's face for its [look] and
+ * [strength], or the [boss]'s own. Between two people, the photo holds Blue's piece.
  */
 @Composable
-private fun Photo(player: Player, look: OpponentLook?, style: Palette) {
+private fun Photo(player: Player, look: OpponentLook?, strength: Strength?, boss: BossFaces?, style: Palette) {
     // The canvas places the photo 64 dp from the left of a 360 dp screen and the bubble at 198 dp.
     Box(Modifier.width(296.dp).height(PHOTO_HEIGHT)) {
         Box(Modifier.offset(x = 32.dp, y = 8.dp).rotate(-3f)) {
@@ -551,11 +552,7 @@ private fun Photo(player: Player, look: OpponentLook?, style: Palette) {
                     .padding(8.dp),
             ) {
                 if (look != null) {
-                    Image(
-                        remember(look.mood, style) { Doodles.face(look.mood, style.blue, style.bluePale, style.paper) },
-                        contentDescription = null,
-                        modifier = Modifier.size(108.dp),
-                    )
+                    Face(Faces.of(look.mood, strength, boss), Faces.FULL_SIZE)
                 } else {
                     Piece(player, style, Modifier.size(56.dp))
                 }
