@@ -19,8 +19,8 @@ gives the prompts for World 1's illustrations, made with ChatGPT image generatio
 
 **The dark version.** The Notebook theme's dark version uses lighter inks on a dark page. Because
 each picture keeps to the four colours, a script swaps them for the dark version's inks (`#FF9384`,
-`#6B90E8`, `#5E3834`, `#2F3F66`), so no second set of prompts is needed. Claude makes the dark
-versions when the pictures come in.
+`#6B90E8`, `#5E3834`, `#2F3F66`) and keeps white, so no second set of prompts is needed. Claude
+makes the dark versions when the pictures come in.
 
 ## Making the pictures
 
@@ -35,6 +35,19 @@ versions when the pictures come in.
 4. Give Claude the folder. Claude cuts each sheet into single pictures, makes the dark versions,
    puts them on the canvas in place of the doodles, adds them to the asset register
    ([`docs/assets.md`](../assets.md)) and opens the pull request.
+
+**The script.** [`illustrations/make_pictures.py`](illustrations/make_pictures.py) does the cutting.
+Its first lines say how to run it. It numbers the drawings on a sheet, and Claude names each
+picture in the script's list of sheets. Then it sets every pixel to one of the four inks (or white,
+on sheets with eyes), turns the paper transparent, makes the dark version, scales each sheet's
+pictures to 4 pixels per dp of their size on screen and writes them to
+`app/src/main/res/drawable-nodpi/` as `<sheet>_<name>.png` and `<sheet>_<name>_dark.png`. It also
+adds the sheet's row to the asset register. `make_pictures.py check` checks the pictures in the
+app, and `make_pictures.py self-test` runs every step on two sheets drawn in code.
+
+A sheet cuts cleanly when its drawings stand apart, with clear paper between them, as the prompts
+ask. Pale paper shut inside a drawing becomes transparent, so a pond or a window shows the page
+behind it. Only a patch big enough to be an eyeball becomes white, on the sheets with faces.
 
 ## The computer
 
