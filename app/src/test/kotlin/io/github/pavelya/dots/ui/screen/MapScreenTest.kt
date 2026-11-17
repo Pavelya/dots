@@ -69,6 +69,27 @@ class MapScreenTest {
         capture("map_new_player")
     }
 
+    /** As the canvas's `map` frame: levels 1-5 and 1-6 passed with 2 stars and 1, 1-7 next. */
+    private val canvasProgress = Progress(
+        Campaign.levels.take(6).associate { it.code to if (it.number == 6) 1 else if (it.number == 5) 2 else 3 },
+    )
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 1's map page has its doodles beside the path, as the canvas map frame`() {
+        show(canvasProgress)
+
+        compose.onNodeWithContentDescription("Level 1-7, next").assertIsDisplayed()
+        capture("map_world_1_page")
+    }
+
+    @Test
+    @Config(qualifiers = "w360dp-h800dp-xhdpi")
+    fun `world 1's map page, dark`() {
+        show(canvasProgress, dark = true)
+        capture("map_world_1_page_dark")
+    }
+
     @Test
     fun `mid-world, the map opens at the next level with the stars earned below it`() {
         show(SampleProgress.midWorld)

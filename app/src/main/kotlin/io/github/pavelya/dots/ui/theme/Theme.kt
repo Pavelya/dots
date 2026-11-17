@@ -14,9 +14,10 @@ import androidx.compose.ui.text.TextStyle
 import dots.engine.Player
 
 /**
- * A look for the whole game, as data: every ink, board size, piece, text style, sound and world
- * background the screens draw with, in a [light] and a [dark] version. A new look is a new value
- * of this class, not new drawing code.
+ * A look for the whole game, as data: every ink, board size, piece, text style and sound the
+ * screens draw with, in a [light] and a [dark] version. A new look is a new value of this class,
+ * not new drawing code. The worlds' map pages are not part of it: they belong to the worlds
+ * ([io.github.pavelya.dots.ui.screen.MapPages], decision 0028).
  *
  * [NOTEBOOK] is the game's look, with the values of docs/design/theme-notebook.md and pieces.md.
  * [PLAIN] is the POC's look, kept to show that a look is data.
@@ -36,8 +37,6 @@ data class GameTheme(
      * every look, and not read yet: every look plays the game's own effects (`audio.Effect`).
      */
     val sounds: Map<String, Int> = emptyMap(),
-    /** Each world's background picture, by world number, as a drawable resource. Empty until V-11 draws them. */
-    val worldBackgrounds: Map<Int, Int> = emptyMap(),
 ) {
     fun palette(dark: Boolean): Palette = if (dark) this.dark else light
 
@@ -57,6 +56,11 @@ data class GameTheme(
         val highContrast: Boolean
             @Composable @ReadOnlyComposable
             get() = LocalHighContrast.current
+
+        /** Whether the screen is drawn in the theme's dark version; [DotsTheme] passes it on. */
+        val isDark: Boolean
+            @Composable @ReadOnlyComposable
+            get() = LocalDark.current
     }
 }
 
@@ -166,6 +170,7 @@ data class TypeScale(
 private val LocalGameTheme = staticCompositionLocalOf { NotebookTheme }
 private val LocalPalette = staticCompositionLocalOf { NotebookTheme.light }
 private val LocalHighContrast = staticCompositionLocalOf { false }
+private val LocalDark = staticCompositionLocalOf { false }
 
 /**
  * Draws [content] in [theme], in its dark version when [dark] (by default, when the phone's dark
@@ -180,7 +185,12 @@ fun DotsTheme(
     content: @Composable () -> Unit,
 ) {
     val palette = theme.palette(dark)
-    CompositionLocalProvider(LocalGameTheme provides theme, LocalPalette provides palette, LocalHighContrast provides highContrast) {
+    CompositionLocalProvider(
+        LocalGameTheme provides theme,
+        LocalPalette provides palette,
+        LocalHighContrast provides highContrast,
+        LocalDark provides dark,
+    ) {
         MaterialTheme(colorScheme = palette.material, typography = theme.type.material, content = content)
     }
 }
