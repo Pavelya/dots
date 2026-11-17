@@ -1,7 +1,6 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -56,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import dots.campaign.Level
 import dots.campaign.Mission
 import dots.campaign.Stars
-import dots.campaign.Strength
 import dots.engine.Booster
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.Mood
@@ -231,12 +229,8 @@ internal fun BoardPicture(level: Level, modifier: Modifier) {
 private fun Opponent(level: Level, style: Palette) {
     val boss = level.rule != null
     val name = if (boss) level.name else stringResource(R.string.player_computer)
-    val mood = when {
-        boss -> Mood.SMUG
-        level.strength <= Strength.EASY -> Mood.HAPPY
-        level.strength <= Strength.NORMAL -> Mood.DETERMINED
-        else -> Mood.SMUG
-    }
+    // A boss is sure of itself on its card; the computer shows how strong it plays.
+    val face = Faces.of(if (boss) Mood.SMUG else Mood.DETERMINED, level.strength, Faces.boss(level))
     val strength = strengthText(level.strength)
     val headStart = headStartText(level)
     Row(
@@ -244,11 +238,7 @@ private fun Opponent(level: Level, style: Palette) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.clearAndSetSemantics { contentDescription = "$name, $strength, $headStart" },
     ) {
-        Image(
-            remember(mood, style) { Doodles.face(mood, style.blue, style.bluePale, style.paper) },
-            contentDescription = null,
-            modifier = Modifier.size(48.dp),
-        )
+        Face(face, 48.dp)
         Column {
             Text(name, style = NoteText.label, color = if (boss) style.red else style.blue)
             Text(strength, style = NoteText.small, color = style.graphite)

@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import dots.ai.Hints
+import dots.campaign.Campaign
 import dots.campaign.Level
 import dots.campaign.LevelMap
 import dots.campaign.Mission
@@ -184,6 +185,40 @@ class GameScreenshotTest {
 
     @Test
     fun bigCaptureInWorld4Dark() = inWorld(4, big = true, dark = true)
+
+    /**
+     * World 1's boss, the Ink Bottle (1-15), as it is about to place the two dots of its special
+     * turn: its attacking face above the board (docs/design/illustrations.md, "The World 1 boss").
+     * Both sides have placed their dots along the top row, so nothing is captured.
+     */
+    private fun bossTurn(dark: Boolean) {
+        val level = Campaign.level(1, 15)
+        var state = level.newGame()
+        while (!OpponentLook.bossTurn(state, human.opponent)) state = state.play(state.legalMoves().first()).state
+        val ui = GameUiState(
+            state = state,
+            lastMove = state.lastPlaced(human),
+            vsComputer = true,
+            opponent = OpponentLook.of(state, human, null, humanInDanger = false),
+            strength = level.strength,
+            level = level,
+        )
+        assertEquals(OpponentLook(Mood.ATTACKING), ui.opponent)
+        val parts = CampaignParts(
+            title = "Level 15",
+            mission = missionNote(level, level.status(state)),
+            boosters = { BoosterBar(listOf(BoosterTool(Booster.UNDO, 1, usable = true)), Palette.current) {} },
+            world = level.world,
+        )
+        show(dark = dark) { Board(ui, campaign = parts) }
+        capture("game_boss_turn${if (dark) "_dark" else ""}")
+    }
+
+    @Test
+    fun bossTurn() = bossTurn(dark = false)
+
+    @Test
+    fun bossTurnDark() = bossTurn(dark = true)
 
     /** The big capture with high-contrast pieces turned on in Settings (pieces.md, "High contrast"). */
     @Test
@@ -417,6 +452,7 @@ class GameScreenshotTest {
             vsComputer = true,
             dangers = dangers,
             opponent = OpponentLook.of(state, human, capture, inDanger),
+            strength = CanvasGame.level.strength,
         )
     }
 }

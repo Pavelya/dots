@@ -2,9 +2,14 @@ package io.github.pavelya.dots.game
 
 import dots.engine.GameState
 import dots.engine.Player
+import dots.engine.TurnRule
 
-/** The computer's faces on the canvas game frames (docs/design/canvas/draw.py, `face`). */
-enum class Mood { HAPPY, SMUG, UPSET, DETERMINED, SULKY }
+/**
+ * The computer's moods on the canvas game frames (docs/design/canvas/draw.py, `face`), and a
+ * boss's [ATTACKING] while it places the two dots of its special turn (G-05). [DETERMINED] is the
+ * computer's plain look, which shows how strong it plays (docs/design/illustrations.md).
+ */
+enum class Mood { HAPPY, SMUG, UPSET, DETERMINED, SULKY, ATTACKING }
 
 /** What the computer says in its speech bubble (the canvas and the wireframes, D-06 and D-07). */
 enum class Bubble { GOOD_LUCK, YOUR_MOVE, HEY, OUCH, WELL_PLAYED, AGAIN, TAKE_IT_BACK }
@@ -45,11 +50,19 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
             }
             lastCapture?.by == human && lastCapture.points >= BIG_CAPTURE -> OpponentLook(Mood.UPSET, Bubble.OUCH)
             lastCapture?.by == human -> OpponentLook(Mood.UPSET, Bubble.HEY)
+            bossTurn(state, human.opponent) -> OpponentLook(Mood.ATTACKING)
             humanInDanger && state.toMove == human -> OpponentLook(Mood.SMUG, Bubble.YOUR_MOVE)
             state.dotsPlaced(human) == 0 -> OpponentLook(Mood.HAPPY, Bubble.GOOD_LUCK)
             lastCapture != null -> OpponentLook(Mood.SMUG)
             else -> OpponentLook(Mood.DETERMINED)
         }
+
+        /**
+         * True while [boss] is to place the two dots of its special turn: from the player's dot
+         * before it, when the boss-turn sound plays (`Cues`), until its second dot.
+         */
+        fun bossTurn(state: GameState, boss: Player): Boolean =
+            state.toMove == boss && state.turnRule(boss) is TurnRule.DoubleMove && state.doubleMoveIn(boss) == 0
 
         /** How a finished game ended for [human] by the score; null while it goes on. */
         fun endingOf(state: GameState, human: Player): Ending? = when {

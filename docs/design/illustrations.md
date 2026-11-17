@@ -55,6 +55,14 @@ behind it. Only a patch big enough to be an eyeball becomes white, on the sheets
 The opponent in every campaign level that has no boss. It is drawn the same in every world; its
 face shows how strong it plays and how the game is going.
 
+- **Its moods** come with the moments of the game: happy as the level opens, smug when the
+  player's dots are in danger or it captures, upset when the player captures, sulky when the
+  player wins, and smug again when the player loses. Worried and surprised are on the sheet but no
+  moment shows them yet.
+- **Its strength** is its plain look, between those moments, and its face on the level card:
+  sleepy for the beginner and easy steps, calm for steady and normal, sharp for hard and expert.
+- **A boss without its own faces** (Worlds 2 to 4 for now) keeps the computer's.
+
 **Prompt 1: `opponent-moods`, six moods**
 
 > A character sheet of one small cartoon creature, drawn six times in a grid of three columns
@@ -89,7 +97,9 @@ face shows how strong it plays and how the game is going.
 ## The World 1 boss
 
 The boss of World 1 waits at the castle at the end of the path. It plays blue, like the
-computer, and its face sits above the board on its level.
+computer, and its face sits above the board on its level. It is smug on its level card and
+through the game, attacks while it places the two dots of its special turn, and is beaten when
+the player captures or wins.
 
 **Prompt 3: `boss-world-1`, the ink bottle**
 
@@ -265,7 +275,7 @@ crisp at any size. The canvas frames `game-world-2` to `game-world-4` show them;
 | Picture | Where | Size on screen |
 | --- | --- | --- |
 | The computer's moods | Above the board in every game; the face changes with the moment | 108 dp |
-| The computer's strengths | On the level card, next to the opponent's name | 48 dp |
+| The computer's strengths | On the level card, next to the opponent's name; above the board between moods | 48 dp; 108 dp |
 | The World 1 boss | Above the board on the boss level; on the boss's level card | 108 dp; 48 dp |
 | Landscape doodles | Beside the path on the World 1 map page; `MapPages` in the app lists where each one sits | 17 to 84 dp wide |
 | Castle, chest, flag | On the path: the boss level (the castle beaten once it is passed), the chest after level 10 (open once it is opened), the start at the foot of World 1's path | 48 to 68 dp |

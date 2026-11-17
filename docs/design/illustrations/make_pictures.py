@@ -90,9 +90,15 @@ ON_PAGE = "on docs/design/illustrations.md"
 
 # Every sheet, by its prompt's name. `pictures` is filled in when the owner's sheet arrives.
 SHEETS: Dict[str, Sheet] = {
-    "opponent-moods": Sheet(f"Prompt 1 {ON_PAGE}", "The computer's six moods, above the board", 108, eyes=True),
-    "opponent-strengths": Sheet(f"Prompt 2 {ON_PAGE}", "The computer's three strengths, on the level card", 48, eyes=True),
-    "boss-world-1": Sheet(f"Prompt 3 {ON_PAGE}", "The World 1 boss, the ink bottle, above the board and on its level card", 108, eyes=True),
+    # Worried and surprised wait for a moment of the game that shows them.
+    "opponent-moods": Sheet(f"Prompt 1 {ON_PAGE}", "The computer's moods, above the board", 108, eyes=True,
+                            pictures={"happy": [1], "smug": [2], "_worried": [3], "upset": [4], "_surprised": [5],
+                                      "sulky": [6]}),
+    # The strengths are also the computer's face above the board between moods, so they are cut for 108 dp.
+    "opponent-strengths": Sheet(f"Prompt 2 {ON_PAGE}", "The computer's three strengths, on the level card and above the board", 108, eyes=True,
+                                pictures={"sleepy": [1], "calm": [2], "sharp": [3]}),
+    "boss-world-1": Sheet(f"Prompt 3 {ON_PAGE}", "The World 1 boss, the ink bottle, above the board and on its level card", 108, eyes=True,
+                          pictures={"smug": [1], "attacking": [2], "beaten": [3]}),
     "map-world-1-nature": Sheet(f"Prompt 4 {ON_PAGE}", "World 1 map page: landscape doodles beside the path", 84,
                                 pictures={"pines": [1], "tree": [2], "pond": [3], "hill": [4], "mountains": [5],
                                           "cloud": [6], "rock": [7], "grass_short": [8], "grass_tall": [9],
@@ -326,7 +332,7 @@ def clean(w, h, px, sheet):
     for region in regions(w, h, pale, seeds=border):
         for i in region:
             outside[i] = 1
-    eye_radius = max(2, round(min(w, h) / 250))
+    eye_radius = max(2, round(min(w, h) / 100))
     for region in regions(w, h, [pale[i] and not outside[i] for i in range(w * h)]):
         if sheet.eyes and survives(region, w, eye_radius):
             for i in region:
