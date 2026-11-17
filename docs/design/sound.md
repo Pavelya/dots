@@ -30,8 +30,9 @@ step starts, and its "When it plays" names that step.
    turn at slightly different speeds (95% to 105%), at half volume.
 8. **A tap stops the sound with the animation.** A tap that finishes an animation (motion rule 1)
    also fades its sounds out in 50 ms.
-9. **Same loudness in every file.** Every effect is normalised to the same loudness (the V-08
-   check: within 2 dB). The app sets each sound's volume from the "Volume" column.
+9. **Same loudness in every file.** Every effect is normalised to the same loudness: -22 LUFS
+   over its loudest 400 ms (the V-08 check: within 2 dB). The app sets each sound's volume from
+   the "Volume" column.
 10. **Two players on one phone.** Red dots play the dot at normal speed, blue dots at 85%. Every
     capture plays `sfx_ring_close`; `sfx_captured` is not used.
 
@@ -41,11 +42,22 @@ step starts, and its "When it plays" names that step.
 | --- | --- | --- | --- |
 | Suno Sounds, during the Suno Pro month (decision 0020) | The owner | `fx_*.wav` ([the three source sounds](#the-three-source-sounds)) | The dot, the ring, the bomb |
 | A phone recording, if Suno's version is not clean | The owner | `fx_*.m4a` or `.wav` | The same three, one by one as needed |
-| Made in code | Claude, in V-08, with a script kept in the repository | none; the script makes `sfx_*` | The other 14 |
+| Made in code | Claude, in V-08, with [`sound/make_effects.py`](sound/make_effects.py) | none; the script makes `sfx_*` | The other 14 |
 | Suno songs, during the Suno Pro month | The owner | `music_*.wav` ([music](#music)) | The six music tracks |
 | CC0 (Kenney, Freesound) | Claude or the owner | the sound's page link, saved with it | Only if both Suno and the phone fail |
 
-Claude trims, cleans and normalises every effect and saves it in the app as `sfx_<name>.ogg`.
+Claude trims, cleans and normalises every effect and saves it in the app as `sfx_<name>.ogg`, in
+`app/src/main/assets/audio/`. The same script does this for the three source sounds, so it also
+records which take of each was kept and how it was cut. It makes the files and checks them:
+
+```sh
+python3 docs/design/sound/make_effects.py --sources <folder with fx_*.wav>   # all 17 effects
+python3 docs/design/sound/make_effects.py                                    # only the 14 made in code
+python3 docs/design/sound/make_effects.py --check    # the set, the loudness and the peaks
+```
+
+It needs Python 3 and vorbis-tools (`brew install vorbis-tools`).
+
 Music is saved in the app as `music_<name>.ogg`. File names use only lowercase letters, digits and
 underscores, as Android needs.
 
@@ -181,8 +193,8 @@ after three tries, record that one sound with a phone instead.
 
 ## Sounds made in code
 
-Claude makes these in V-08 with a script kept in the repository; the script is their prompt. The
-sounds are:
+Claude makes these in V-08 with [`sound/make_effects.py`](sound/make_effects.py); the script is
+their prompt. The sounds are:
 
 - **mallet:** a soft felt mallet on a small metal bar: a pure tone with faint upper overtones,
   a 5 ms start and a smooth fade;
@@ -344,7 +356,7 @@ Pinfold-audio/
 
 This folder is the master copy. Only the finished, compressed files enter the repository: the
 full-length WAVs are large, and git would keep every version for ever. All 17 effects together
-come to about 0.1 MB in the app; the six music loops to about 7 to 11 MB, so V-10 looks at the
+come to about 0.13 MB in the app; the six music loops to about 7 to 11 MB, so V-10 looks at the
 music if the app's size matters.
 
 To bring them in, the owner starts a session with, for example, "Work on V-09, files in
