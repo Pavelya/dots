@@ -2,6 +2,7 @@ package io.github.pavelya.dots.ui.screen
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -50,6 +52,8 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.PathMeasure
@@ -63,6 +67,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -75,6 +80,9 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -95,7 +103,9 @@ import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.Unlocking
 import io.github.pavelya.dots.ui.motion.rememberTimeline
 import io.github.pavelya.dots.ui.motion.writeIn
+import io.github.pavelya.dots.ui.theme.GameTheme
 import io.github.pavelya.dots.ui.theme.Palette
+import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlinx.coroutines.flow.first
 
@@ -143,8 +153,9 @@ data class Unlock(val level: Level, val starsBefore: Int, val stars: Int, val ne
  * opens it. The header shows the player's title beside the stars.
  *
  * [map] is null while the progress is read. The map lies on the menu screens' squared paper; the
- * inks come from the theme ([MapStyle]). Today's puzzle shows the [streak] when there is one. V-11
- * brings the landscape.
+ * inks come from the theme ([MapStyle]). Today's puzzle shows the [streak] when there is one. A
+ * world with a map page ([MapPages]) has its pictures: the start at the foot of its path, the
+ * doodles beside it and its boss stop.
  *
  * After Next, the map plays the [unlock] of the level just passed (motion.md, "Level unlock"),
  * then opens the next level's card and calls [onUnlocked]. A tap shows the end at once, with the card up.
@@ -171,11 +182,11 @@ fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0, unlock: U
             val rows = remember(map) { rows(map) }
             // The list is drawn from the bottom up. One level below the start keeps it off the
             // screen's edge; under a world's first level, that is the boss just passed, below the
-            // world's banner. The place the player scrolled to is kept until the start changes, for
+            // world's start and banner. The place the player scrolled to is kept until the start changes, for
             // example when a level is passed and the next one is further up. (A key, not an input of
             // rememberSaveable: a saved place is restored whatever the inputs say.)
             val start = startRow(rows)
-            val first = (if (rows.getOrNull(start - 1) is MapRow.Banner) start - 2 else start - 1).coerceAtLeast(0)
+            val first = belowStart(rows, start)
             val state = key(first) { rememberLazyListState(initialFirstVisibleItemIndex = first) }
             MapPath(
                 rows = rows,
@@ -228,6 +239,21 @@ private sealed interface MapRow {
     }
 
     /**
+     * The foot of a world's path, on a world with a map [page]: its start picture at [x], and the
+     * path on to the first level, as for a [Stop].
+     */
+    data class Start(
+        val world: Int,
+        val page: MapPage,
+        val x: Float,
+        val nextX: Float,
+        val nextHeight: Dp,
+        val nextOpen: Boolean,
+    ) : MapRow {
+        override val key get() = "start-$world"
+    }
+
+    /**
      * A level and its place across the screen, [x], as a share of the width. The path goes on to
      * [nextX], [nextHeight] and [nextOpen] (the next level's place, row height and whether it is
      * open); [nextX] is null after a world's last level.
@@ -263,13 +289,17 @@ private sealed interface MapRow {
     }
 }
 
-private val STOP_HEIGHT = 72.dp
+internal val STOP_HEIGHT = 72.dp
 private val CHEST_HEIGHT = 64.dp
-private val BOSS_HEIGHT = 128.dp
+internal val BOSS_HEIGHT = 128.dp
+internal val START_HEIGHT = 64.dp
 private val STOP_SIZE = 44.dp
 private val TOUCH_SIZE = 56.dp
 private val CASTLE_WIDTH = 68.dp
 private val CASTLE_HEIGHT = 96.dp
+
+/** How far below the middle of the start row the start picture stands. */
+private val START_BASE = 22.dp
 
 /**
  * Where a level sits across the screen, as a share of its width: the path wanders between the
@@ -282,6 +312,12 @@ private fun rows(map: CampaignMap): List<MapRow> {
     val rows = ArrayList<MapRow>()
     for (world in map.worlds) {
         rows += MapRow.Banner(world)
+        val page = MapPages.of(world.world.number)
+        val first = world.levels.firstOrNull()
+        if (page != null && first != null) {
+            val height = if (first.isBoss) BOSS_HEIGHT else STOP_HEIGHT
+            rows += MapRow.Start(world.world.number, page, pathX(-1), pathX(0), height, first.state != LevelState.LOCKED)
+        }
         world.levels.forEachIndexed { i, stop ->
             val after = world.levels.getOrNull(i + 1)
             val x = pathX(i)
@@ -314,11 +350,20 @@ private fun startRow(rows: List<MapRow>): Int {
     return if (locked >= 0) locked else rows.lastIndex
 }
 
+/** The row to show at the foot of the screen: the one below [start], past its world's start and banner. */
+private fun belowStart(rows: List<MapRow>, start: Int): Int {
+    var first = start - 1
+    if (rows.getOrNull(first) is MapRow.Start) first--
+    if (rows.getOrNull(first) is MapRow.Banner) first--
+    return first.coerceAtLeast(0)
+}
+
 /** The number of the world a row belongs to. */
 private fun worldOf(rows: List<MapRow>, index: Int): Int {
     for (i in index.coerceIn(0, rows.lastIndex) downTo 0) {
         when (val row = rows[i]) {
             is MapRow.Banner -> return row.world.world.number
+            is MapRow.Start -> return row.world
             is MapRow.Stop -> return row.stop.level.world
             is MapRow.ChestRow -> return row.chest.chest.after.world
             MapRow.End -> Unit
@@ -366,6 +411,7 @@ private fun MapPath(
         items(rows.size, key = { rows[it].key }, contentType = { rows[it]::class }) { i ->
             when (val row = rows[i]) {
                 is MapRow.Banner -> Banner(row.world, style, onLocked = { onLockedWorld(row.world) })
+                is MapRow.Start -> Start(row, style)
                 is MapRow.Stop -> Stop(row, style, onOpen = { onLevel(row.stop) }, motion = motion)
                 is MapRow.ChestRow -> ChestOnPath(row, style, onOpen = { onChest(row.chest) })
                 MapRow.End -> Text(
@@ -547,11 +593,13 @@ private fun Stop(row: MapRow.Stop, style: MapStyle, onOpen: () -> Unit, motion: 
     val filled by remember(part, clock) { derivedStateOf { part != StopRole.PASSED || !first || clock == null || clock.now >= (Unlocking.FILL_FROM + Unlocking.FILL_TO) / 2 } }
     val circled by remember(part, clock) { derivedStateOf { part != StopRole.OPENED || clock == null || times == null || times.circle(clock.now) > 0f } }
     val inking = if (part == StopRole.PASSED && first && row.nextX != null) motion else null
+    val doodles = doodleImages(MapPages.of(stop.level.world)?.doodlesAt(stop.level.number).orEmpty())
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
             .height(row.height)
             .drawBehind {
+                drawDoodles(doodles)
                 val nextX = row.nextX ?: return@drawBehind
                 val inked = if (inking == null) 1f else inking.times.path(inking.clock.now)
                 drawPathTo(row.x, nextX, row.nextHeight, row.nextOpen, style, inked)
@@ -708,21 +756,32 @@ private fun Node(row: MapRow.Stop, style: MapStyle, draws: StopDraw? = null) {
     }
 }
 
-/** A boss level: the castle, in the ink of its state, and "Boss 15" under it. */
+/**
+ * A boss level and "Boss 15" under it: the world's boss stop from its map page, beaten once the
+ * level is passed; on a world without one yet, the castle in the ink of the level's state.
+ */
 @Composable
 private fun Castle(row: MapRow.Stop, style: MapStyle) {
-    val ink = when {
-        row.stop.state == LevelState.PASSED -> style.done
-        row.isNext -> style.next
-        else -> style.pencil
-    }
+    val page = MapPages.of(row.stop.level.world)
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Icon(
-            remember(ink, style) { Doodles.castle(ink, style.paper, style.next) },
-            contentDescription = null,
-            tint = Color.Unspecified,
-            modifier = Modifier.size(width = 68.dp, height = 76.dp),
-        )
+        if (page != null) {
+            val picture = if (row.stop.state == LevelState.PASSED) page.bossBeaten else page.boss
+            Box(contentAlignment = Alignment.BottomCenter, modifier = Modifier.size(width = CASTLE_WIDTH, height = 76.dp)) {
+                PlacePicture(picture)
+            }
+        } else {
+            val ink = when {
+                row.stop.state == LevelState.PASSED -> style.done
+                row.isNext -> style.next
+                else -> style.pencil
+            }
+            Icon(
+                remember(ink, style) { Doodles.castle(ink, style.paper, style.next) },
+                contentDescription = null,
+                tint = Color.Unspecified,
+                modifier = Modifier.size(width = CASTLE_WIDTH, height = 76.dp),
+            )
+        }
         Text(stringResource(R.string.map_boss, row.stop.level.number), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = style.pencil)
     }
 }
@@ -810,9 +869,9 @@ private fun DrawScope.drawPathTo(x: Float, nextX: Float, nextHeight: Dp, inked: 
 }
 
 /**
- * A chest on the path (canvas `map`, between levels 10 and 11), in the highlighter's ink: closed
- * with rays until it is opened, then open and empty in graphite. A tap on a ready or locked chest
- * calls [onOpen]; an opened one does nothing.
+ * A chest on the path (canvas `map`, between levels 10 and 11): closed until it is opened, then
+ * open. The same picture in every world. A tap on a ready or locked chest calls [onOpen]; an
+ * opened one does nothing.
  */
 @Composable
 private fun ChestOnPath(row: MapRow.ChestRow, style: MapStyle, onOpen: () -> Unit) {
@@ -826,7 +885,6 @@ private fun ChestOnPath(row: MapRow.ChestRow, style: MapStyle, onOpen: () -> Uni
             ChestState.LOCKED -> stringResource(R.string.map_locked)
         },
     ).joinToString(", ")
-    val ink = if (opened) style.graphite else style.chest
     BoxWithConstraints(
         Modifier
             .fillMaxWidth()
@@ -848,13 +906,64 @@ private fun ChestOnPath(row: MapRow.ChestRow, style: MapStyle, onOpen: () -> Uni
                     }
                 },
         ) {
-            Icon(
-                remember(ink, style, opened) { Doodles.chest(ink, style.card, opened) },
-                contentDescription = null,
-                tint = Color.Unspecified,
-                modifier = Modifier.size(48.dp),
-            )
+            PlacePicture(if (opened) MapPages.CHEST_OPEN else MapPages.CHEST)
         }
+    }
+}
+
+/**
+ * The foot of a world's path: its start picture standing on the path, the doodles of the start
+ * (level 0 of its [MapPage]) and the path on to the first level. Only a picture; nothing to tap.
+ */
+@Composable
+private fun Start(row: MapRow.Start, style: MapStyle) {
+    val doodles = doodleImages(row.page.doodlesAt(0))
+    val start = ImageBitmap.imageResource(row.page.start.of(GameTheme.isDark))
+    BoxWithConstraints(
+        Modifier
+            .fillMaxWidth()
+            .height(START_HEIGHT)
+            .drawBehind {
+                drawDoodles(doodles)
+                drawPathTo(row.x, row.nextX, row.nextHeight, row.nextOpen, style)
+            }
+            .clearAndSetSemantics { },
+    ) {
+        val size = placeSize(start)
+        PlacePicture(start, Modifier.offset(x = maxWidth * row.x - size.width / 2, y = START_HEIGHT / 2 + START_BASE - size.height))
+    }
+}
+
+/** A place on the path at its own size ([PLACE_PX_PER_DP]), in the light or dark version. */
+@Composable
+private fun PlacePicture(picture: Picture, modifier: Modifier = Modifier) =
+    PlacePicture(ImageBitmap.imageResource(picture.of(GameTheme.isDark)), modifier)
+
+@Composable
+private fun PlacePicture(image: ImageBitmap, modifier: Modifier = Modifier) {
+    Image(image, contentDescription = null, filterQuality = FilterQuality.High, modifier = modifier.requiredSize(placeSize(image)))
+}
+
+private fun placeSize(image: ImageBitmap) = DpSize((image.width / PLACE_PX_PER_DP).dp, (image.height / PLACE_PX_PER_DP).dp)
+
+/** The pictures of [doodles], in the light or dark version. */
+@Composable
+private fun doodleImages(doodles: List<Doodle>): List<Pair<Doodle, ImageBitmap>> {
+    val dark = GameTheme.isDark
+    return doodles.map { it to ImageBitmap.imageResource(it.picture.of(dark)) }
+}
+
+/** Draws [doodles] in a row, each [Doodle.width] wide, centred at its share of the width and hanging from its top. */
+private fun DrawScope.drawDoodles(doodles: List<Pair<Doodle, ImageBitmap>>) {
+    for ((doodle, image) in doodles) {
+        val width = doodle.width.toPx()
+        val height = width * image.height / image.width
+        drawImage(
+            image,
+            dstOffset = IntOffset((size.width * doodle.x - width / 2).roundToInt(), doodle.top.toPx().roundToInt()),
+            dstSize = IntSize(width.roundToInt(), height.roundToInt()),
+            filterQuality = FilterQuality.High,
+        )
     }
 }
 
