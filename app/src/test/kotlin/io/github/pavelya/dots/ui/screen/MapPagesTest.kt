@@ -11,8 +11,8 @@ class MapPagesTest {
     private val worlds = Campaign.levels.map { it.world }.distinct()
 
     @Test
-    fun `world 1 has its map page`() {
-        assertNotNull(MapPages.of(1))
+    fun `every world has its map page`() {
+        for (world in worlds) assertNotNull("World $world has no map page", MapPages.of(world))
     }
 
     @Test

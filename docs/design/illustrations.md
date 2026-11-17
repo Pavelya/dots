@@ -267,8 +267,8 @@ crisp at any size. The canvas frames `game-world-2` to `game-world-4` show them;
 | Castle, chest, flag | On the path: the boss level (the castle beaten once it is passed), the chest after level 10 (open once it is opened), the start at the foot of World 1's path | 48 to 68 dp |
 | Cottage | Beside the start of World 1's path | 54 dp |
 | The open chest | On the Chest note, after every 10th level (the same picture as on the map) | 96 dp tall; 64 dp on a small phone |
-| Garden, night-sky and seaside doodles | Beside the path on the World 2, 3 and 4 map pages | 30 to 140 dp wide |
-| Shed, observatory, tower; gate, tent, pier | On the path: the boss level of Worlds 2, 3 and 4; each world's start | 48 to 68 dp |
+| Garden, night-sky and seaside doodles | Beside the path on the World 2, 3 and 4 map pages; `MapPages` in the app lists where each one sits | 12 to 84 dp wide |
+| Shed, observatory, tower; gate, tent, pier | On the path: the boss level of Worlds 2, 3 and 4 (beaten once it is passed); the start at the foot of each world's path | 50 to 68 dp |
 | Board touches (drawn in code) | Beside the opponent in every game of the world | 20 to 30 dp |
 
 At 48 dp a face is small: check that the eyes and the mouth still read at that size before

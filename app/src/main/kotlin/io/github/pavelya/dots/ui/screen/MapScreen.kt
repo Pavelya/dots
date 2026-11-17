@@ -769,29 +769,14 @@ private fun Node(row: MapRow.Stop, style: MapStyle, draws: StopDraw? = null) {
 
 /**
  * A boss level and "Boss 15" under it: the world's boss stop from its map page, beaten once the
- * level is passed; on a world without one yet, the castle in the ink of the level's state.
+ * level is passed.
  */
 @Composable
 private fun Castle(row: MapRow.Stop, style: MapStyle) {
     val page = MapPages.of(row.stop.level.world)
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        if (page != null) {
-            val picture = if (row.stop.state == LevelState.PASSED) page.bossBeaten else page.boss
-            Box(contentAlignment = Alignment.BottomCenter, modifier = Modifier.size(width = CASTLE_WIDTH, height = 76.dp)) {
-                PlacePicture(picture)
-            }
-        } else {
-            val ink = when {
-                row.stop.state == LevelState.PASSED -> style.done
-                row.isNext -> style.next
-                else -> style.pencil
-            }
-            Icon(
-                remember(ink, style) { Doodles.castle(ink, style.paper, style.next) },
-                contentDescription = null,
-                tint = Color.Unspecified,
-                modifier = Modifier.size(width = CASTLE_WIDTH, height = 76.dp),
-            )
+        Box(contentAlignment = Alignment.BottomCenter, modifier = Modifier.size(width = CASTLE_WIDTH, height = 76.dp)) {
+            if (page != null) PlacePicture(if (row.stop.state == LevelState.PASSED) page.bossBeaten else page.boss)
         }
         Text(stringResource(R.string.map_boss, row.stop.level.number), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = style.pencil)
     }
