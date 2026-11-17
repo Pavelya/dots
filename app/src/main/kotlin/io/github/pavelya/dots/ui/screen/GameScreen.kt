@@ -59,13 +59,15 @@ import kotlinx.coroutines.flow.first
  * big) and, in a level, the [boosters] in the tool bar (A-05, with Undo among them, decision
  * 0023). The daily puzzle has no tool bar ([boosters] null). Free play and two players leave it out.
  * While a capture plays, the note shows the mission as it was before it ([missionBefore]) until the
- * points land.
+ * points land. A level's [world] adds its board touches beside the opponent ([BoardTouches]); the
+ * daily puzzle belongs to no world.
  */
 class CampaignParts(
     val title: String,
     val mission: (@Composable () -> Unit)?,
     val boosters: (@Composable RowScope.() -> Unit)?,
     val missionBefore: (@Composable () -> Unit)? = null,
+    val world: Int? = null,
 )
 
 /** How long the level opening shows the mission big over the board (motion.md, Level opening: 1200 ms, then 300 ms to shrink). */
@@ -175,6 +177,7 @@ fun GameScreen(
             mission = if (opening || mission == null) null else missionNote(level, mission),
             boosters = { BoosterBar(boosterTools(ui, viewModel.human), style, viewModel::chooseBooster) },
             missionBefore = ui.moment?.missionBefore?.takeIf { !opening }?.let { missionNote(level, it) },
+            world = level.world,
         )
         daily != null -> CampaignParts(
             title = stringResource(R.string.daily_number, daily.number),

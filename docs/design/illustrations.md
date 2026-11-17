@@ -253,6 +253,10 @@ crisp at any size. The canvas frames `game-world-2` to `game-world-4` show them;
 - **Which:** World 1 a wave, a star, a spiral and a paper plane; World 2 a flower, a leaf, a
   butterfly and a tulip; World 3 a crescent moon, a star, a comet and a twinkle; World 4 a fish, a
   shell, a boat and a wave.
+- **When:** in every campaign level of the world, light and dark, while the opponent's photo shows.
+  On a small phone the photo makes way for the board, and the touches go with it. Free play, two
+  players and the daily puzzle belong to no world and have none. The app's `BoardTouches` holds the
+  canvas's paths.
 - **No paper tint.** The board's paper is the theme's in every world. A tint would change the
   contrast that the theme's colours were checked for, so every world would need those checks again.
 

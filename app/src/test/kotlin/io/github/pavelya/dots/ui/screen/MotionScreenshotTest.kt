@@ -135,7 +135,7 @@ class MotionScreenshotTest {
     private fun parts(ui: GameUiState): CampaignParts {
         val parts = CanvasGame.parts(ui.state)
         val before = ui.moment?.missionBefore?.let { missionNote(CanvasGame.level, it) }
-        return CampaignParts(parts.title, parts.mission, parts.boosters, missionBefore = before)
+        return CampaignParts(parts.title, parts.mission, parts.boosters, missionBefore = before, world = parts.world)
     }
 
     @Composable
@@ -307,6 +307,7 @@ class MotionScreenshotTest {
             title = "Level 7",
             mission = missionNote(CanvasGame.level, CanvasGame.level.status(ui.state)),
             boosters = { BoosterBar(tools, Palette.current) {} },
+            world = CanvasGame.level.world,
         )
     }
 
