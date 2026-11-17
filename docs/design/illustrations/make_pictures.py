@@ -95,6 +95,12 @@ SHEETS: Dict[str, Sheet] = {
     "boss-world-1": Sheet(f"Prompt 3 {ON_PAGE}", "The World 1 boss, the ink bottle, above the board and on its level card", 108, eyes=True),
     "map-world-1-nature": Sheet(f"Prompt 4 {ON_PAGE}", "World 1 map page: landscape doodles beside the path", 140),
     "map-world-1-places": Sheet(f"Prompt 5 {ON_PAGE}", "World 1 map page: castle, chest, cottage and flag on the path", 68),
+    "map-world-2-nature": Sheet(f"Prompt 6 {ON_PAGE}", "World 2 map page: garden doodles beside the path", 140),
+    "map-world-2-places": Sheet(f"Prompt 7 {ON_PAGE}", "World 2 map page: the shed and the gate on the path", 68),
+    "map-world-3-nature": Sheet(f"Prompt 8 {ON_PAGE}", "World 3 map page: night-sky doodles beside the path", 140),
+    "map-world-3-places": Sheet(f"Prompt 9 {ON_PAGE}", "World 3 map page: the observatory and the tent on the path", 68),
+    "map-world-4-nature": Sheet(f"Prompt 10 {ON_PAGE}", "World 4 map page: seaside doodles beside the path", 140),
+    "map-world-4-places": Sheet(f"Prompt 11 {ON_PAGE}", "World 4 map page: the tower and the pier on the path", 68),
 }
 
 
