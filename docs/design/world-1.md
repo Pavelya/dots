@@ -1,11 +1,11 @@
-# World 1: Notebook
+# World 1: Countryside
 
 World 1 has 15 levels that teach Pinfold to someone who has never played it. Each level teaches
 one thing, and each builds on the one before. The level files are in
 [`engine/src/main/resources/levels/`](../../engine/src/main/resources/levels/); the format is in
 the [README](../../README.md#level-files).
 
-All 15 boards, drawn in the Notebook look with the puzzle answers marked, are on the
+All 15 boards, drawn in the Notebook theme with the puzzle answers marked, are on the
 [World 1 level sheet](https://claude.ai/artifact/MNrs71yoNgFasLXGyriTFH). It opens only for
 people the owner has shared it with.
 

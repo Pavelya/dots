@@ -11,7 +11,8 @@ Pinfold is the classic paper game *Dots* on a 15x15 board that starts with four 
 is a campaign of worlds. Each world teaches one new idea (a mission type, a board shape, a booster)
 and ends with an announced boss. Difficulty comes from the levels, not from a picker. Two people
 can play on one phone, and later online. At launch it looks like ink on squared paper; other
-themes are cosmetics. It earns money from cosmetics and optional rewarded ads, and nothing can be
+themes are cosmetics. Worlds, themes, map pages and board touches mean what
+[decision 0028](decisions/0028-worlds-and-themes.md) says. It earns money from cosmetics and optional rewarded ads, and nothing can be
 bought that helps you win.
 
 ## Phases
@@ -26,7 +27,7 @@ Each phase is a milestone. Its issues hold the task cards: goal, dependencies, s
 | [2 Design](https://github.com/Pavelya/dots/milestone/4) | References, mood boards, the Notebook theme, screens and flows, wireframes, a canvas of the game in its final look, a motion storyboard, a sound list and a clickable prototype. Everything lands in `docs/design/`. |
 | [3 Game design](https://github.com/Pavelya/dots/milestone/5) | The campaign in the engine: levels as data, mission types, boosters, boss rules, special board points, 75 launch levels and a daily puzzle, all with tests. |
 | [4 App](https://github.com/Pavelya/dots/milestone/6) | The screens around the board: world map, level card and result, progress, boosters, tutorial, daily puzzle, settings, languages, stats. They use the plain POC look until phase 5 restyles them. |
-| [5 Visuals](https://github.com/Pavelya/dots/milestone/7) | The look and feel the canvas promised: theme system, Notebook theme, pieces, animations, haptics, sound effects, music, world backgrounds. The asset register (V-01) starts at once, because it guards every asset. |
+| [5 Visuals](https://github.com/Pavelya/dots/milestone/7) | The look and feel the canvas promised: theme system, Notebook theme, pieces, animations, haptics, sound effects, music, world map pages. The asset register (V-01) starts at once, because it guards every asset. |
 | [6 Money](https://github.com/Pavelya/dots/milestone/8) | Cosmetics for sale and optional rewarded ads (decision 0004). No advantages for money, no loot boxes, no forced ads. |
 | [7 Online](https://github.com/Pavelya/dots/milestone/9) | Leaderboards first (they can ship with the launch), then games with friends, turn by turn, after the launch. Ranked games only once enough people play (decision 0014). Online games use the pure rules, without boosters. |
 | [8 Quality](https://github.com/Pavelya/dots/milestone/10) | Test coverage, speed on a cheap phone, accessibility, play-tests, crash reports, analytics, offline play. It runs beside phases 3 to 7 and must pass before the closed test. |

@@ -75,8 +75,8 @@ The board limits everything: on a 15x15 board a phone gives each point about 4 t
 | Theme | Pieces | Feel | Art cost |
 | --- | --- | --- | --- |
 | Notebook (recommended launch theme) | Ink dots on squared paper; rings drawn like a pen stroke | Honours the paper game; nostalgic for players who know it; unusual in the store | Low |
-| Night sky | Stars against comets; rings become constellations | Calm, elegant | Low to medium |
-| Garden | Ladybugs against bees, as round tokens | Friendly, casual | Medium |
+| Star chart | Stars against comets; rings become constellations | Calm, elegant | Low to medium |
+| Ladybugs | Ladybugs against bees, as round tokens | Friendly, casual | Medium |
 | Neon arcade | Glowing discs; captures burst in light | Energetic | Low (mostly drawn in code) |
 | Goblins against orcs | Faction shields on the board, characters in portraits | Story-driven campaign | High: characters need many poses and animations |
 
@@ -95,17 +95,17 @@ The board limits everything: on a 15x15 board a phone gives each point about 4 t
 
 **Feel ("juice"):** a light vibration on placing, a stronger one on capture, and an option to turn vibration off. These cost little and add a lot.
 
-Most board animations can be drawn in code, which needs no art files and raises no ownership questions. Art is needed for backgrounds, piece styles per theme, portraits, the level map, icons and the logo.
+Most board animations can be drawn in code, which needs no art files and raises no ownership questions. Art is needed for map pages, piece styles per theme, portraits, the level map, icons and the logo.
 
 ## 4. Levels and progression
 
-Change the background per **world** of about 15 to 20 levels, not per level. Each world also brings one new idea (a mission type, a board shape, a booster), so the player always has something new to learn. Every level changing its look costs a lot of art and makes the game feel restless.
+Change the map page and the music per **world** of about 15 to 20 levels, not per level. Each world also brings one new idea (a mission type, a board shape, a booster), so the player always has something new to learn. Every level changing its look costs a lot of art and makes the game feel restless.
 
 **A suggested campaign shape** (sizes to be tuned by play tests):
 
-| World | Look | New idea it teaches | Levels |
+| World | Map page | New idea it teaches | Levels |
 | --- | --- | --- | --- |
-| 1 Notebook | Squared paper | The rules, step by step; first capture missions | 15 |
+| 1 Countryside | Hills, trees, a pond | The rules, step by step; first capture missions | 15 |
 | 2 Garden | Grass, flowers | Survive and rescue missions; the wall booster | 20 |
 | 3 Night sky | Stars | Odd board shapes; bomb and double dot | 20 |
 | 4 Sea | Islands | Blocked and bonus points; the first boss | 20 |
@@ -254,7 +254,7 @@ These are easy to forget and several are required by Google Play. None needs pai
 
 | # | Decision | Recommendation | Alternatives |
 | --- | --- | --- | --- |
-| 1 | Launch theme | Notebook: ink on squared paper | Night sky; Neon; goblins against orcs (costly) |
+| 1 | Launch theme | Notebook: ink on squared paper | Star chart; Neon; goblins against orcs (costly) |
 | 2 | First boosters | Wall, Hint, Bomb, Double dot | Add Shield and Recolour later as level rules |
 | 3 | Name | Our own invented name; I prepare and check about 20 candidates | Keep "Dots" (not advised, section 7) |
 | 4 | Music | Suno Pro for one month, plus our own recorded sound effects | A composer for the world themes |

@@ -1,4 +1,4 @@
-# Mood board: Night sky
+# Mood board: Star chart
 
 A calm star chart. One side places gold stars, the other ice-blue comets. Rings are drawn as
 constellation lines, and captured areas glow faintly like a nebula.
@@ -8,7 +8,7 @@ ChatGPT exactly as written. Picture 8 is drawn in code.
 
 ## 1. The board in play
 
-<img src="night-sky-1.jpg" alt="Night sky: the board in play" width="360">
+<img src="star-chart-1.jpg" alt="Star chart: the board in play" width="360">
 
 Prompt:
 
@@ -18,7 +18,7 @@ Tall portrait image, shaped like a phone screen. A mobile game screen, seen stra
 
 ## 2. A capture
 
-<img src="night-sky-2.jpg" alt="Night sky: a capture" width="360">
+<img src="star-chart-2.jpg" alt="Star chart: a capture" width="360">
 
 Prompt:
 
@@ -28,7 +28,7 @@ Tall portrait image, shaped like a phone screen. A close-up of part of a mobile 
 
 ## 3. A crowded late game
 
-<img src="night-sky-3.jpg" alt="Night sky: a crowded late game" width="360">
+<img src="star-chart-3.jpg" alt="Star chart: a crowded late game" width="360">
 
 Prompt:
 
@@ -38,7 +38,7 @@ Tall portrait image, shaped like a phone screen. A mobile game screen, seen stra
 
 ## 4. The world map
 
-<img src="night-sky-4.jpg" alt="Night sky: the world map" width="360">
+<img src="star-chart-4.jpg" alt="Star chart: the world map" width="360">
 
 Prompt:
 
@@ -46,9 +46,9 @@ Prompt:
 Tall portrait image, shaped like a phone screen. A mobile game world map, seen from above, as a calm deep-navy night sky. A winding path of about twelve small round level stops is drawn like a constellation through a starry landscape: a crescent moon, soft nebula clouds, a few small planets. Finished stops glow gold and carry one to three tiny stars; the next stop has a bright ring of light; later stops are dim outlines. A bigger stop near the top is a dark planet with a ring around it for the boss level, and a small glowing chest floats beside the path. Elegant, quiet and dreamy. No text, letters, numbers, logos or signatures anywhere in the image.
 ```
 
-## 5. A world background
+## 5. A menu background
 
-<img src="night-sky-5.jpg" alt="Night sky: a world background" width="360">
+<img src="star-chart-5.jpg" alt="Star chart: a menu background" width="360">
 
 Prompt:
 
@@ -58,7 +58,7 @@ Tall portrait image, shaped like a phone screen. A background for a mobile game 
 
 ## 6. A won level
 
-<img src="night-sky-6.jpg" alt="Night sky: a won level" width="360">
+<img src="star-chart-6.jpg" alt="Star chart: a won level" width="360">
 
 Prompt:
 
@@ -68,7 +68,7 @@ Tall portrait image, shaped like a phone screen. A mobile game screen after a wo
 
 ## 7. The home screen
 
-<img src="night-sky-7.jpg" alt="Night sky: the home screen" width="360">
+<img src="star-chart-7.jpg" alt="Star chart: the home screen" width="360">
 
 Prompt:
 
@@ -78,7 +78,7 @@ Tall portrait image, shaped like a phone screen. A mobile game home screen, seen
 
 ## 8. Colours and type
 
-![Night sky palette](night-sky-8.svg)
+![Star chart palette](star-chart-8.svg)
 
 | Role | Colour |
 | --- | --- |

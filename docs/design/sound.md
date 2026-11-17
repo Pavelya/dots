@@ -5,6 +5,10 @@ For each one it gives when it plays, how long it is, its mood, and how it is mad
 file name to save and the exact prompt or recipe. The effects are made in V-08, the music in V-09,
 and V-10 makes the app play them.
 
+Sounds made on the board belong to the theme: the effects here are the Notebook theme's, and a
+later theme may bring its own. Music belongs to the world, whatever theme the player picks
+([decision 0028](../decisions/0028-worlds-and-themes.md)).
+
 The times come from the [motion storyboard](motion.md): a sound starts at the moment its animation
 step starts, and its "When it plays" names that step.
 

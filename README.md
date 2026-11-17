@@ -155,7 +155,7 @@ computer's tier, its head start (dots already on the board), the board size and 
 
   | World | Levels | New ideas | Boss | Design doc |
   |-------|-------:|-----------|------|------------|
-  | 1 Notebook | 15 | The rules from zero: placing, chains, the first capture; capture and target puzzles; whole games | Ink Bottle: a double move every 5th turn | [`world-1.md`](docs/design/world-1.md) |
+  | 1 Countryside | 15 | The rules from zero: placing, chains, the first capture; capture and target puzzles; whole games | Ink Bottle: a double move every 5th turn | [`world-1.md`](docs/design/world-1.md) |
   | 2 Garden | 20 | Survive and rescue missions; the wall booster | Mole: a double move every 4th turn, and 2 dots more | [`world-2.md`](docs/design/world-2.md) |
   | 3 Night sky | 20 | Holes: lakes whose shore is border, open holes, round boards; the bomb and double dot boosters | Comet: a double move every 3rd turn, and 3 dots more | [`world-3.md`](docs/design/world-3.md) |
   | 4 Sea | 20 | Rocks (blocked points) and pearls (bonus points) | Kraken: two dots every turn, one in each half, and the normal computer | [`world-4.md`](docs/design/world-4.md) |

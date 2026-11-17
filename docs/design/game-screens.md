@@ -36,7 +36,7 @@ The layout rules from D-06 still hold: touch targets at least 48 dp, the largest
 
 ## Fidelity
 
-The wireframes are sketches in the Notebook look: squared paper, red and blue ink, hand-drawn
+The wireframes are sketches in the Notebook theme: squared paper, red and blue ink, hand-drawn
 icons, Caveat for headings. Faces, the map's landscape and world pictures are simple doodles that
 mark where art goes; the art itself comes later (D-07 and phase 5).
 
