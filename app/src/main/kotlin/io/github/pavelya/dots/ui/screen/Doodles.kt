@@ -99,14 +99,6 @@ object Doodles {
         stroke("M2 70 h64", ink, 2f)
     }
 
-    /** The chest on the Chest note, 96 x 96 (the wireframes' Chest): [ink] on [paper], with [rays] over it. */
-    fun bigChest(ink: Color, paper: Color, rays: Color): ImageVector = vector(96f, 96f) {
-        fill("M16 50 h64 v30 h-64 z", paper, stroke = 2.5f, strokeInk = ink)
-        fill("M16 50 l8 -24 h48 l8 24", paper, stroke = 2.5f, strokeInk = ink)
-        stroke("M42 50 h12 v12 h-12 z", ink, 2.5f)
-        stroke("M48 18 v-10 M30 22 l-6 -8 M66 22 l6 -8 M20 34 l-10 -4 M76 34 l10 -4", rays, 2.5f)
-    }
-
     /**
      * The computer as the canvas draws it: a round blot of [ink] with a [shadow] under it, and a
      * face in the [mood] drawn in [line] (the paper's colour). The eyes keep their own colours in

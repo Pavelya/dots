@@ -1,5 +1,6 @@
 package io.github.pavelya.dots.ui.screen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -18,18 +19,18 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.imageResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -41,11 +42,13 @@ import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dots.campaign.Chest
 import dots.campaign.Reward
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.theme.GameTheme
 import io.github.pavelya.dots.ui.theme.Palette
 
 /**
@@ -80,12 +83,7 @@ fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit) {
                     .verticalScroll(rememberScrollState())
                     .padding(start = 16.dp, end = 16.dp, top = 20.dp, bottom = 18.dp),
             ) {
-                Icon(
-                    remember(style) { Doodles.bigChest(style.highlighter, style.paper, style.red) },
-                    contentDescription = null,
-                    tint = Color.Unspecified,
-                    modifier = Modifier.size(if (tall) 96.dp else 64.dp),
-                )
+                OpenChest(if (tall) 96.dp else 64.dp)
                 Text(
                     stringResource(R.string.chest_title),
                     style = NoteText.display.copy(fontSize = 38.sp, lineHeight = 38.sp),
@@ -103,6 +101,21 @@ fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit) {
             Tape(style, Modifier.align(Alignment.TopCenter).offset(y = (-8).dp).rotate(-3f).size(width = 60.dp, height = 16.dp))
         }
     }
+}
+
+/**
+ * The open chest, [height] tall, from the same sheet as the chest on the map's path
+ * ([MapPages.CHEST_OPEN]), so the chest the player tapped is the one that opens.
+ */
+@Composable
+private fun OpenChest(height: Dp) {
+    val image = ImageBitmap.imageResource(MapPages.CHEST_OPEN.of(GameTheme.isDark))
+    Image(
+        image,
+        contentDescription = null,
+        filterQuality = FilterQuality.High,
+        modifier = Modifier.size(width = height * image.width / image.height, height = height),
+    )
 }
 
 /** One reward: its booster's picture, "Bomb ×2" and "a booster", in a hand-cut frame. */
