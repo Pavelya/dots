@@ -58,8 +58,17 @@ python3 docs/design/sound/make_effects.py --check    # the set, the loudness and
 
 It needs Python 3 and vorbis-tools (`brew install vorbis-tools`).
 
-Music is saved in the app as `music_<name>.ogg`. File names use only lowercase letters, digits and
-underscores, as Android needs.
+Music is saved in the app as `music_<name>.ogg`, in the same folder: stereo, 48 kHz, Ogg Vorbis,
+each a loop that runs on into its own start. [`sound/make_music.py`](sound/make_music.py) cuts
+the loops from the owner's full-length tracks, sets them all to the same loudness (-23 LUFS) and
+records where each loop was cut and why:
+
+```sh
+python3 docs/design/sound/make_music.py --sources <folder with music_*.wav>   # all 6 loops
+python3 docs/design/sound/make_music.py --check     # the set, the lengths, the loudness and the peaks
+```
+
+File names use only lowercase letters, digits and underscores, as Android needs.
 
 ## Sound effects
 
@@ -229,12 +238,15 @@ the map into a level without a jolt.
 
 | File to save | Plays on | Loop length | Key, speed | Mood |
 | --- | --- | --- | --- | --- |
-| `music_map.wav` | The map and everything over it: Level card, chest, Today's puzzle, Play a game, Rules, Stats, Shop, Settings | 1.5 to 2 min | C major, 90 BPM | warm, playful, inviting |
-| `music_notebook.wav` | Boards of World 1, the tutorial included | 2 to 3 min | F major, 80 BPM | calm focus, a little playful |
-| `music_garden.wav` | Boards of World 2 | 2 to 3 min | G major, 84 BPM | gentle, sunny |
-| `music_night_sky.wav` | Boards of World 3 | 2 to 3 min | D major, 70 BPM | dreamy, peaceful, awake |
-| `music_sea.wav` | Boards of World 4 | 2 to 3 min | A dorian, 76 BPM, 6/8 | breezy, flowing |
-| `music_boss.wav` | Boss levels, in any world | 1 to 1.5 min | D minor, 100 BPM | mischievous tension, never scary |
+| `music_map.wav` | The map and everything over it: Level card, chest, Today's puzzle, Play a game, Rules, Stats, Shop, Settings | 68 s | C major, 90 BPM | warm, playful, inviting |
+| `music_notebook.wav` | Boards of World 1, the tutorial included | 141 s | F major, 80 BPM | calm focus, a little playful |
+| `music_garden.wav` | Boards of World 2 | 114 s | G major, 84 BPM | gentle, sunny |
+| `music_night_sky.wav` | Boards of World 3 | 146 s | D major, 70 BPM | dreamy, peaceful, awake |
+| `music_sea.wav` | Boards of World 4 | 161 s | A dorian, 76 BPM, 6/8 | breezy, flowing |
+| `music_boss.wav` | Boss levels, in any world | 41 s | D minor, 100 BPM | mischievous tension, never scary |
+
+Each loop is the longest stretch of its track that runs on smoothly into its own start, so the
+lengths differ: Suno gives little control over how long a track is.
 
 The daily puzzle and free play use the track of the world the player is in. Two-player games use
 `music_notebook.wav`. Under `sfx_win`, `sfx_lose`, `sfx_draw` and `sfx_world_open` the music drops
@@ -356,8 +368,8 @@ Pinfold-audio/
 
 This folder is the master copy. Only the finished, compressed files enter the repository: the
 full-length WAVs are large, and git would keep every version for ever. All 17 effects together
-come to about 0.13 MB in the app; the six music loops to about 7 to 11 MB, so V-10 looks at the
-music if the app's size matters.
+come to about 0.13 MB in the app; the six music loops to 9.7 MB, so V-10 looks at the music if
+the app's size matters.
 
 To bring them in, the owner starts a session with, for example, "Work on V-09, files in
 ~/Pinfold-audio". In that session Claude cuts and converts the files, puts them in the app, adds

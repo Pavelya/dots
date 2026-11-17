@@ -183,7 +183,7 @@ class SettingsAndRulesTest {
         compose.onNodeWithText("Made by").assertIsDisplayed()
         compose.onNodeWithText("School 25").assertIsDisplayed()
 
-        compose.onNodeWithText("Open-source licences").performClick()
+        compose.onNodeWithText("Open-source licences").performScrollTo().performClick()
         assertEquals(listOf(SettingsPage.LICENCES), pages)
     }
 
