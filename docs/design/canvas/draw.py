@@ -498,18 +498,54 @@ def drag_thumb(board_top, sp):
     return thumb(sp / 2 + p[0] * sp, board_top + sp / 2 + p[1] * sp, opacity=0.8)
 
 
-def margin_doodles(t):
-    """World 1 is the notebook itself: a few pencil doodles in the empty paper around the opponent."""
-    ink = t["blue_pale"]
-    d = ("M12 132 q8 -10 16 0 q8 10 16 0 M26 186 l4 9 9 1 -7 6 2 9 -8 -5 -8 5 2 -9 -7 -6 9 -1z "
-         "M326 236 a10 10 0 1 1 -3 -7 M296 196 l26 -8 -8 26 -5 -11z M296 196 l13 7")
-    return svg(W, 300, el("path", d=d, fill="none", stroke=ink, stroke_width=1.6, stroke_linecap="round",
-                          stroke_linejoin="round"), style="position: absolute; left: 0; top: 0")
+def petals(cx, cy, n=5, r=6, size=3):
+    """Small round petals in a ring, as one path."""
+    out = []
+    for i in range(n):
+        a = 2 * math.pi * i / n - math.pi / 2
+        x, y = cx + r * math.cos(a), cy + r * math.sin(a)
+        out.append(f"M{f(x + size)} {f(y)} a{size} {size} 0 1 0 {-2 * size} 0 a{size} {size} 0 1 0 {2 * size} 0")
+    return " ".join(out)
 
 
-def game_frame(t, key, uid, links=False):
+def star_path(cx, cy, r):
+    pts = []
+    for i in range(10):
+        a = math.pi * i / 5 - math.pi / 2
+        k = r if i % 2 == 0 else r * 0.45
+        pts.append(f"{f(cx + k * math.cos(a))} {f(cy + k * math.sin(a))}")
+    return "M" + " L".join(pts) + " Z"
+
+
+# A world's board touches (decision 0028): a few pale pencil doodles in the empty paper beside the
+# opponent, never near the board. Drawn in code, in the chosen theme's pale inks.
+TOUCHES = {
+    1: [("blue_pale", "M12 132 q8 -10 16 0 q8 10 16 0 M26 186 l4 9 9 1 -7 6 2 9 -8 -5 -8 5 2 -9 -7 -6 9 -1z "
+                      "M326 236 a10 10 0 1 1 -3 -7 M296 196 l26 -8 -8 26 -5 -11z M296 196 l13 7")],
+    2: [("red_pale", petals(28, 134) + " M26 134 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0"),
+        ("blue_pale", "M28 142 v16 M28 152 q6 -8 12 -6 q-4 8 -12 6 M20 214 q2 -18 20 -20 q0 18 -20 20 M20 214 l12 -12 "
+                      "M318 252 v-14 M312 238 q-1 -9 2 -10 l3 4 l1 -5 l1 5 l3 -4 q3 1 2 10 z"),
+        ("red_pale", "M312 204 v8 M312 207 c-5 -9 -14 -6 -11 1 c2 4 7 2 11 -1 M312 207 c5 -9 14 -6 11 1 c-2 4 -7 2 -11 -1 "
+                     "M312 209 c-4 2 -7 7 -3 7 c2 0 3 -4 3 -7 M312 209 c4 2 7 7 3 7 c-2 0 -3 -4 -3 -7")],
+    3: [("blue_pale", "M34 122 a16 16 0 1 0 0 32 a22 22 0 0 1 0 -32 z " + star_path(30, 200, 9) +
+                      " M318 228 v18 M309 237 h18"),
+        ("red_pale", "M318 190 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0 M318 193 l-20 12 M320 196 l-14 14 M317 190 l-22 4")],
+    4: [("blue_pale", "M14 138 q13 -11 26 0 q-13 11 -26 0 z M40 138 l7 -5 v10 z "
+                      "M296 212 h28 l-5 7 h-18 z M310 212 V190 M310 193 l11 15 h-11 M300 240 q4 -5 8 0 q4 5 8 0 q4 -5 8 0"),
+        ("red_pale", "M18 212 q12 -26 24 0 z M30 212 v-13 M24 212 l3 -12 M36 212 l-3 -12")],
+}
+
+
+def margin_doodles(t, world=1):
+    """A world's board touches: a few pencil doodles in the empty paper around the opponent."""
+    body = "".join(el("path", d=d, fill="none", stroke=t[ink], stroke_width=1.6, stroke_linecap="round",
+                      stroke_linejoin="round") for ink, d in TOUCHES[world])
+    return svg(W, 300, body, style="position: absolute; left: 0; top: 0")
+
+
+def game_frame(t, key, uid, links=False, world=1):
     m = MOMENTS[key]
-    parts = [margin_doodles(t)]
+    parts = [margin_doodles(t, world)]
     if key != "win":
         parts.append(f'<div style="position: absolute; left: 4px; top: 28px">{icon_button(t, "pause", "Pause", isize=30)}</div>')
     parts.append(f'<div style="position: absolute; left: 0; right: 0; top: 40px; text-align: center; {LABEL}; '
@@ -636,6 +672,16 @@ STOPS = [  # (level, x, y, state, stars)
     (14, 135, 248, "locked", 0), (15, 150, 170, "boss", 0),
 ]
 
+# A later world's stretch of the path, at the same places: levels 10 to 20, a chest after 15.
+STOPS_LATE = [(lv if isinstance(lv, str) else lv + 5, x, y, st, n) for lv, x, y, st, n in STOPS]
+
+WORLDS = {  # number: (name, the player's title, the world's stars)
+    1: ("Notebook", "Apprentice", "14 of 45"),
+    2: ("Garden", "Apprentice", "21 of 60"),
+    3: ("Night sky", "Strategist", "18 of 60"),
+    4: ("Sea", "Master", "9 of 60"),
+}
+
 
 def spline(pts):
     d = f"M{pts[0][0]} {pts[0][1]}"
@@ -654,10 +700,13 @@ def hatch(uid, ink, angle=-45, gap=4):
                                                          stroke_width=1) + "</pattern>")
 
 
-def map_art(t, uid):
-    """Ballpoint doodles of World 1. Stand-ins for the illustrations in docs/design/illustrations.md."""
+def map_art(t, uid, world=1):
+    """Ballpoint doodles of a world's map page. Stand-ins for the illustrations in
+    docs/design/illustrations.md, at the places and sizes the pictures take."""
     s = dict(fill="none", stroke_width=1.5, stroke_linecap="round", stroke_linejoin="round")
     defs = hatch(f"hr{uid}", t["red_pale"]) + hatch(f"hb{uid}", t["blue_pale"], 45)
+    if world != 1:
+        return f"<defs>{defs}</defs>" + {2: garden_art, 3: night_art, 4: sea_art}[world](t, uid, s)
     a = []
     # hills along the bottom
     hill = "M58 800 V770 Q120 742 190 768 Q250 736 320 760 Q345 752 360 756 V800 Z"
@@ -691,17 +740,181 @@ def map_art(t, uid):
     return f"<defs>{defs}</defs>" + "".join(a)
 
 
-def map_stops(t, done=3):
+TUFTS = ((170, 470), (160, 590), (330, 560), (70, 470), (180, 200), (340, 400), (250, 520))
+
+
+def garden_art(t, uid, s):
+    """World 2: flower beds, a hedge, seed rows, a fence and garden things."""
+    hr, hb, a = f"url(#hr{uid})", f"url(#hb{uid})", []
+    # the hedge (2-12, Hedge) and a picket fence along the bottom
+    top = "M58 772" + " q11 -16 22 0" * 14
+    a.append(el("path", d=top + " V800 H58 Z", fill=hb))
+    a.append(el("path", d=top, stroke=t["blue"], **s))
+    pickets = " ".join(f"M{x} 800 V780 l3 -5 l3 5 V800" for x in range(66, 356, 18))
+    a.append(el("path", d=pickets + " M62 786 H358 M62 795 H358", stroke=t["red"], **s))
+    # sunflowers beside the boss (2-6, Flower Beds)
+    for x, y in ((236, 200), (268, 194), (302, 206)):
+        a.append(el("circle", cx=x, cy=y, r=8, fill=hr))
+        rays = " ".join(f"M{f(x + 10 * math.cos(k * math.pi / 4))} {f(y + 10 * math.sin(k * math.pi / 4))} "
+                        f"L{f(x + 14 * math.cos(k * math.pi / 4))} {f(y + 14 * math.sin(k * math.pi / 4))}" for k in range(8))
+        a.append(el("path", d=f"M{x + 8} {y} a8 8 0 1 0 -16 0 a8 8 0 1 0 16 0 {rays} M{x} {y + 14} V238 "
+                              f"M{x} 228 q8 -9 13 -3 q-6 7 -13 3", stroke=t["red"], **s))
+    # tulips
+    for x, y in ((74, 350), (92, 340), (108, 354)):
+        cup = f"M{x - 7} {y} q-2 -12 1 -15 l3 6 l3 -7 l3 7 l3 -6 q3 3 1 15 z"
+        a.append(el("path", d=cup, fill=hr))
+        a.append(el("path", d=cup, stroke=t["red"], **s))
+        a.append(el("path", d=f"M{x} {y} V376 M{x} 368 q-8 -3 -9 -12 q8 2 9 12", stroke=t["blue"], **s))
+    # a watering can
+    a.append(el("path", d="M290 504 V474 h30 V504 z", fill=hb))
+    a.append(el("path", d="M290 504 V474 h30 V504 z M320 486 L340 466 M335 462 l9 9 M294 474 q11 -20 22 0",
+                stroke=t["blue"], **s))
+    a.append(el("path", d="M346 478 v5 M351 471 v5", stroke=t["blue_pale"], **s))
+    # seed rows (2-18, Few Seeds)
+    for y in (588, 600, 612):
+        a.append(el("path", d=f"M64 {y} q32 -9 64 0 z", fill=hb))
+        a.append(el("path", d=f"M64 {y} q32 -9 64 0", stroke=t["blue"], **s))
+    a.append(el("path", d=" ".join(f"M{x} {y - 4} v-6 q-4 -3 -6 0 M{x} {y - 8} q4 -3 6 0"
+                                   for y in (588, 600) for x in (78, 96, 114)), stroke=t["blue"], **s))
+    # a wheelbarrow
+    tray = "M282 672 h42 l-8 16 h-26 z"
+    a.append(el("path", d=tray, fill=hr))
+    a.append(el("path", d=tray + " M282 672 l-8 -4 M292 688 v10 M316 688 l4 4", stroke=t["red"], **s))
+    a.append(el("circle", cx=322, cy=696, r=6, stroke=t["blue"], **s))
+    # a butterfly and small flowers
+    a.append(el("path", d="M250 334 v12 M250 338 c-6 -10 -16 -6 -12 2 c2 4 8 2 12 -2 M250 338 c6 -10 16 -6 12 2 "
+                          "c-2 4 -8 2 -12 -2 M250 341 c-4 2 -8 8 -4 8 c2 0 4 -4 4 -8 M250 341 c4 2 8 8 4 8 c-2 0 -4 -4 -4 -8",
+                stroke=t["red"], **s))
+    for x, y in TUFTS:
+        a.append(el("path", d=petals(x, y - 6, 5, 3.5, 2) + f" M{x} {y - 2} v6", stroke=t["blue_pale"], **s))
+    return "".join(a)
+
+
+def night_art(t, uid, s):
+    """World 3: the moon, stars, a comet, a lake and a crater, on the same paper."""
+    hr, hb, a = f"url(#hr{uid})", f"url(#hb{uid})", []
+    # hills along the bottom, at night
+    hill = "M58 800 V770 Q120 742 190 768 Q250 736 320 760 Q345 752 360 756 V800 Z"
+    a.append(el("path", d=hill, fill=hb))
+    a.append(el("path", d="M58 770 Q120 742 190 768 Q250 736 320 760 Q345 752 360 756", stroke=t["blue"], **s))
+    # the moon and twin stars beside the boss (3-6, Full Moon; 3-18, Twin Stars)
+    moon = "M310 184 a26 26 0 1 0 0 52 a34 34 0 0 1 0 -52 z"
+    a.append(el("path", d=moon, fill=hb))
+    a.append(el("path", d=moon, stroke=t["blue"], **s))
+    for cx, cy in ((234, 204), (256, 222)):
+        a.append(el("path", d=star_path(cx, cy, 9), fill=hr))
+        a.append(el("path", d=star_path(cx, cy, 9), stroke=t["red"], **s))
+    # a telescope
+    tube = "M70 346 L104 326 L109 334 L75 354 Z"
+    a.append(el("path", d=tube, fill=hb))
+    a.append(el("path", d=tube + " M70 346 l-5 3 l4 7 l5 -3 M90 344 L78 376 M90 344 V376 M90 344 L102 376",
+                stroke=t["blue"], **s))
+    # a ringed planet
+    a.append(el("circle", cx=308, cy=478, r=15, fill=hr))
+    a.append(el("circle", cx=308, cy=478, r=15, stroke=t["red"], **s))
+    a.append(el("ellipse", cx=308, cy=478, rx=29, ry=7, transform="rotate(-15 308 478)", stroke=t["red"], **s))
+    # a lake with the moon in it (3-1, the lake)
+    a.append(el("ellipse", cx=96, cy=604, rx=34, ry=11, fill=hb))
+    a.append(el("path", d="M62 604 a34 11 0 1 0 68 0 a34 11 0 1 0 -68 0 M94 598 a5 5 0 1 0 0 10 a7 7 0 0 1 0 -10 "
+                          "M72 606 h10 M110 602 h10", stroke=t["blue"], **s))
+    # a crater (3-12, Crater)
+    rim = "M280 696 q24 -26 48 0 z"
+    a.append(el("path", d=rim, fill=hr))
+    a.append(el("path", d=rim + " M290 696 q14 -12 28 0", stroke=t["red"], **s))
+    # a small comet and twinkles
+    a.append(el("path", d="M262 332 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0 M262 335 l-24 12 M264 338 l-18 16 "
+                          "M261 331 l-26 4", stroke=t["red"], **s))
+    for x, y in TUFTS:
+        a.append(el("path", d=f"M{x} {y - 10} v10 M{x - 5} {y - 5} h10", stroke=t["blue_pale"], **s))
+    return "".join(a)
+
+
+def sea_art(t, uid, s):
+    """World 4: waves, an island, a boat, rocks, an oyster with its pearl and a fish."""
+    hr, hb, a = f"url(#hr{uid})", f"url(#hb{uid})", []
+    # the sea along the bottom
+    wave = "M58 766" + " q11 -8 22 0 q11 8 22 0" * 7
+    a.append(el("path", d=wave + " V800 H58 Z", fill=hb))
+    a.append(el("path", d=wave + " M62 784" + " q10 -6 20 0 q10 6 20 0" * 7, stroke=t["blue"], **s))
+    # an island with a palm beside the boss
+    isle = "M226 238 q52 -32 104 0 z"
+    a.append(el("path", d=isle, fill=hr))
+    a.append(el("path", d=isle + " M282 222 q2 -14 8 -30 M290 192 q-14 -4 -22 6 M290 192 q-8 -12 -20 -10 "
+                                 "M290 192 q12 -8 22 -2 M290 192 q10 2 14 14", stroke=t["red"], **s))
+    a.append(el("path", d="M214 244 q6 -4 12 0 q6 4 12 0 M318 244 q6 -4 12 0 q6 4 12 0", stroke=t["blue"], **s))
+    # a sailing boat
+    hull = "M66 360 h44 l-8 12 h-28 z"
+    a.append(el("path", d=hull, fill=hb))
+    a.append(el("path", d=hull + " M88 360 V320", stroke=t["blue"], **s))
+    sail = "M91 324 L91 356 L112 356 z"
+    a.append(el("path", d=sail, fill=hr))
+    a.append(el("path", d=sail + " M88 320 l9 3 l-9 3", stroke=t["red"], **s))
+    a.append(el("path", d="M60 378" + " q6 -4 12 0" * 5, stroke=t["blue_pale"], **s))
+    # rocks (4-6, Rocky Shore)
+    rocks = "M282 504 q2 -22 19 -24 q15 0 17 24 z M314 504 q4 -13 14 -13 q11 2 11 13 z"
+    a.append(el("path", d=rocks, fill=hb))
+    a.append(el("path", d=rocks, stroke=t["blue"], **s))
+    a.append(el("path", d="M276 508" + " q6 -4 12 0" * 6, stroke=t["blue_pale"], **s))
+    # a scallop shell and its pearl (4-12, Pearls)
+    shell = "M84 612 l-18 -22 q18 -20 36 0 z"
+    ribs = " ".join(f"M84 612 L{x} {y}" for x, y in ((72, 584), (80, 578), (88, 578), (96, 584)))
+    a.append(el("path", d=shell, fill=hr))
+    a.append(el("path", d=shell + " " + ribs + " M78 612 h12 l-2 5 h-8 z", stroke=t["red"], **s))
+    a.append(el("circle", cx=116, cy=608, r=7, fill=hb))
+    a.append(el("circle", cx=116, cy=608, r=7, stroke=t["blue"], **s))
+    # a jumping fish
+    fish = "M284 684 q15 -15 30 0 q-15 11 -30 0 z"
+    a.append(el("path", d=fish, fill=hb))
+    a.append(el("path", d=fish + " M314 684 l9 -7 v14 z", stroke=t["blue"], **s))
+    a.append(el("circle", cx=292, cy=682, r=1, fill=t["blue"]))
+    a.append(el("path", d="M280 702 q4 -5 8 0 M316 702 q4 -5 8 0 M298 704 q4 -5 8 0", stroke=t["blue_pale"], **s))
+    # a gull and small waves
+    a.append(el("path", d="M240 338 q5 -7 10 0 q5 -7 10 0", stroke=t["blue"], **s))
+    for x, y in TUFTS:
+        a.append(el("path", d=f"M{x - 8} {y - 3} q4 -4 8 0 q4 4 8 0", stroke=t["blue_pale"], **s))
+    return "".join(a)
+
+
+def boss_stop(t, world):
+    """A world's boss stop in a 68 x 76 box, in the ink of its state; the flag is red."""
+    ink = dict(stroke=t["pencil"], stroke_width=2, stroke_linejoin="round", stroke_linecap="round")
+    flag = lambda x, y: el("path", d=f"M{x} {y} l13 5 -13 5 z", fill=t["red"])
+    ground = el("path", d="M2 70 h64", stroke=t["pencil"], stroke_width=2, stroke_linecap="round")
+    if world == 1:
+        return (el("path", d="M8 70 V34 h9 v-7 h7 v7 h7 v-7 h7 v7 h7 v-7 h7 v7 h9 V70 z", fill=t["paper"],
+                   stroke=t["pencil"], stroke_width=2, stroke_linejoin="round") +
+                el("path", d="M27 70 v-13 a7 7 0 0 1 14 0 v13 M34 27 V8", fill="none", stroke=t["pencil"],
+                   stroke_width=2, stroke_linecap="round") +
+                el("path", d="M34 8 l13 5 -13 5 z", fill=t["red"]) + ground)
+    if world == 2:  # the Mole: a garden shed with a molehill at its door
+        return (el("path", d="M12 70 V38 L36 20 L60 38 V70 z", fill=t["paper"], **ink) +
+                el("path", d="M30 70 V54 h12 V70 M18 44 h8 v8 h-8 z M36 20 V6", fill="none", **ink) + flag(36, 6) +
+                el("path", d="M0 70 q11 -18 24 0 z", fill=t["paper"], **ink) +
+                el("path", d="M7 63 l2 -2 M14 61 l2 1 M10 67 l2 -1", fill="none", **ink) + ground)
+    if world == 3:  # the Comet: an observatory with its telescope out
+        return (el("path", d="M14 70 V44 h40 V70 z", fill=t["paper"], **ink) +
+                el("path", d="M12 44 a22 22 0 0 1 44 0 z", fill=t["paper"], **ink) +
+                el("path", d="M30 70 v-12 a4 4 0 0 1 8 0 v12 M37 34 l13 -14 M20 30 V10", fill="none", **ink) +
+                flag(20, 10) + ground)
+    # the Kraken: a tower on a rock, with tentacles round it
+    return (el("path", d="M20 70 V34 h-2 v-8 h6 v5 h5 v-5 h6 v5 h5 v-5 h6 v8 h-2 V70 z", fill=t["paper"], **ink) +
+            el("path", d="M30 70 v-10 a4 4 0 0 1 8 0 v10 M33 26 V8 M18 70 q-11 -4 -11 -17 q0 -8 6 -8 q4 0 3 4 "
+                          "M50 70 q11 -6 10 -21 q-1 -6 -6 -5 q-3 1 -1 4", fill="none", **ink) + flag(33, 8) +
+            el("path", d="M0 72" + " q4.25 -3 8.5 0" * 8, fill="none", **ink))
+
+
+def map_stops(t, done=3, world=1):
     """The path and the stops. The path is inked up to the stop at index done - 1."""
+    stops = STOPS if world == 1 else STOPS_LATE
     out = []
-    done_pts = [(130, 820)] + [(x, y) for (_, x, y, st, _) in STOPS[:done]]
-    rest = [(x, y) for (_, x, y, st, _) in STOPS[done - 1:]]
+    done_pts = [(130, 820)] + [(x, y) for (_, x, y, st, _) in stops[:done]]
+    rest = [(x, y) for (_, x, y, st, _) in stops[done - 1:]]
     paths = (el("path", d=spline(done_pts), fill="none", stroke=t["blue"], stroke_width=2.2, stroke_dasharray="7 6",
                 stroke_linecap="round") +
              el("path", d=spline(rest), fill="none", stroke=t["graphite"], stroke_width=2.2, stroke_dasharray="1 7",
                 stroke_linecap="round"))
     out.append(svg(W, H, paths, style="position: absolute; left: 0; top: 0"))
-    for level, x, y, st, stars in STOPS:
+    for i, (level, x, y, st, stars) in enumerate(stops):
         if st == "done":
             d = 44
             out.append(f'<button type="button" aria-label="Level {level}, {stars} stars" style="position: absolute; '
@@ -735,30 +948,26 @@ def map_stops(t, done=3):
                        stroke_linejoin="round") +
                     el("path", d="M8 26 h32 M21 24 h6 v7 h-6 z M12 12 l-3 -4 M24 7 v-5 M36 12 l3 -4", fill="none",
                        stroke=t["hi"], stroke_width=2, stroke_linecap="round", stroke_linejoin="round"))
-            out.append(f'<button type="button" aria-label="Chest after level 10" style="position: absolute; '
+            out.append(f'<button type="button" aria-label="Chest after level {stops[i - 1][0]}" style="position: absolute; '
                        f'left: {x - 24}px; top: {y - 26}px; width: 48px; height: 48px; border: none; background: transparent; '
                        f'padding: 0">{svg(48, 48, body, view="0 0 48 48")}</button>')
         elif st == "boss":
-            body = (el("path", d="M8 70 V34 h9 v-7 h7 v7 h7 v-7 h7 v7 h7 v-7 h7 v7 h9 V70 z", fill=t["paper"],
-                       stroke=t["pencil"], stroke_width=2, stroke_linejoin="round") +
-                    el("path", d="M27 70 v-13 a7 7 0 0 1 14 0 v13 M34 27 V8", fill="none", stroke=t["pencil"],
-                       stroke_width=2, stroke_linecap="round") +
-                    el("path", d="M34 8 l13 5 -13 5 z", fill=t["red"]) +
-                    el("path", d="M2 70 h64", stroke=t["pencil"], stroke_width=2, stroke_linecap="round"))
-            out.append(f'<button type="button" aria-label="Level 15, boss" style="position: absolute; left: {x - 34}px; '
+            body = boss_stop(t, world)
+            out.append(f'<button type="button" aria-label="Level {level}, boss" style="position: absolute; left: {x - 34}px; '
                        f'top: {y - 40}px; width: 68px; height: 96px; border: none; background: transparent; padding: 0">'
                        f'{svg(68, 76, body, view="0 0 68 76")}'
-                       f'<span style="display: block; text-align: center; {LABEL}; color: {t["pencil"]}">Boss 15</span></button>')
+                       f'<span style="display: block; text-align: center; {LABEL}; color: {t["pencil"]}">Boss {level}</span></button>')
     return "".join(out)
 
 
-def map_frame(t, uid, extra="", done=3):
-    parts = [svg(W, H, map_art(t, uid), style="position: absolute; left: 0; top: 0"), map_stops(t, done)]
+def map_frame(t, uid, extra="", done=3, world=1):
+    name, title, stars = WORLDS[world]
+    parts = [svg(W, H, map_art(t, uid, world), style="position: absolute; left: 0; top: 0"), map_stops(t, done, world)]
     parts.append(f'<div style="position: absolute; left: 70px; top: 26px">'
-                 f'<div style="{LABEL}; color: {t["graphite"]}">World 1</div>'
-                 f'<div style="{DISPLAY}; color: {t["blue"]}">Notebook</div>'
-                 f'<div style="display: flex; align-items: center; gap: 6px; {LABEL}">Apprentice'
-                 f'<span style="color: {t["graphite"]}">·</span>{star(t, 16, True)}14 of 45</div></div>')
+                 f'<div style="{LABEL}; color: {t["graphite"]}">World {world}</div>'
+                 f'<div style="{DISPLAY}; color: {t["blue"]}">{name}</div>'
+                 f'<div style="display: flex; align-items: center; gap: 6px; {LABEL}">{title}'
+                 f'<span style="color: {t["graphite"]}">·</span>{star(t, 16, True)}{stars}</div></div>')
     parts.append(f'<div style="position: absolute; right: 6px; top: 26px">{icon_button(t, "settings", "Settings", t["pencil"])}</div>')
     parts.append(f'<button type="button" style="position: absolute; right: 12px; top: 120px; width: 158px; height: 56px; '
                  f'border: none; padding: 6px 8px; display: flex; align-items: center; gap: 6px; text-align: left; '
@@ -841,6 +1050,12 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
      SMALL_PHONE),
     ("game-threat-links", "GameThreatLinks", "Game: a threat, links on",
      lambda t, u: game_frame(t, "threat", u, links=True), (W, H)),
+] + [
+    (f"map-world-{n}", f"MapWorld{n}", f"Map page: World {n}, {WORLDS[n][0]}",
+     lambda t, u, n=n: map_frame(t, u, world=n), (W, H)) for n in (2, 3, 4)
+] + [
+    (f"game-world-{n}", f"GameWorld{n}", f"Game: a threat in World {n}, with its board touches",
+     lambda t, u, n=n: game_frame(t, "threat", u, world=n), (W, H)) for n in (2, 3, 4)
 ]
 
 

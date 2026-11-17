@@ -2,7 +2,8 @@
 
 Pinfold's characters live around the board, never on it (investigation, section 3): the
 opponent's face above the board, the boss faces, and the pictures on the world map. This page
-gives the prompts for World 1's illustrations, made with ChatGPT image generation. The
+gives the prompts for the computer, the World 1 boss and the map pages of all four worlds, made
+with ChatGPT image generation, and describes each world's board touches. The
 [canvas](canvas/README.md) shows where each one goes; its ink doodles mark the places and sizes.
 
 ## The look of every picture
@@ -139,6 +140,122 @@ world's map page is drawn this way, whatever theme the player picks
 > ink #C0392B with pale red #ECBEB7 hatching. Use only these four colours. Flat colours, no
 > gradients. Transparent background. No paper texture, no letters, no numbers, no signature.
 
+## The World 2 map page
+
+World 2 is Garden. Its doodles come from its levels: flower beds (2-6), a hedge (2-12) and a few
+seeds (2-18). Its boss, the Mole, waits at a garden shed with a molehill at the door. The chest is
+the same in every world (prompt 5).
+
+**Prompt 6: `map-world-2-nature`, the garden**
+
+> A sheet of separate small garden doodles, laid out in a loose grid with plenty of empty space
+> between them, nothing touching or overlapping: a row of three sunflowers of different heights; a
+> group of three tulips; a watering can; three short rows of planted seeds with small sprouts; a
+> wheelbarrow; a butterfly; a short wooden picket fence; a low rounded hedge; three small daisies.
+> Drawn as clean ballpoint pen lines of even weight with round ends, shaded with straight parallel
+> hatching, like doodles in the margin of a school notebook. The watering can, the seed rows, the
+> hedge, the tulip stems and the daisies in blue ink #1F4E9C with pale blue #BCCBEA hatching. The
+> sunflowers, the tulip flowers, the wheelbarrow, the butterfly and the fence in red ink #C0392B
+> with pale red #ECBEB7 hatching. Use only these four colours. Flat colours, no gradients.
+> Transparent background. No paper texture, no letters, no numbers, no signature.
+
+**Prompt 7: `map-world-2-places`, the places on the path**
+
+> A sheet of separate small doodles of places, laid out in a loose grid with plenty of empty space
+> between them, nothing touching or overlapping: a small garden shed with a pitched roof, a door
+> and one window, a red pennant flag on the roof, and a fresh molehill of earth in front of the
+> door; the same shed with its door open, the flag fallen and the molehill flattened; a small
+> garden gate in a short stretch of fence, closed. Drawn as clean ballpoint pen lines of even weight
+> with round ends, shaded with straight parallel hatching, like doodles in the margin of a school
+> notebook. The shed walls, the molehills and the gate in blue ink #1F4E9C with pale blue #BCCBEA
+> hatching. The flags, the shed roofs and the fence in red ink #C0392B with pale red #ECBEB7
+> hatching. Use only these four colours. Flat colours, no gradients. Transparent background. No
+> paper texture, no letters, no numbers, no signature.
+
+## The World 3 map page
+
+World 3 is Night sky, still drawn on the notebook's paper: the moon, stars and a comet as doodles,
+never a dark sky. Its doodles come from its levels: the lake (3-1), Full Moon (3-6), Crater (3-12)
+and Twin Stars (3-18). Its boss, the Comet, waits at an observatory.
+
+**Prompt 8: `map-world-3-nature`, the night sky**
+
+> A sheet of separate small night-sky doodles, laid out in a loose grid with plenty of empty space
+> between them, nothing touching or overlapping: a crescent moon; a round full moon with a few
+> craters; two five-pointed stars side by side; a small comet with a short straight tail; a ringed
+> planet; a telescope on a three-legged stand; a small lake with the reflection of a crescent moon
+> and a few ripples; a shallow crater in the ground; a range of low rounded hills; four small
+> twinkling stars drawn as short crosses. Each doodle stands alone on the empty background, with no
+> dark sky behind it. Drawn as clean ballpoint pen lines of even weight with round ends, shaded with
+> straight parallel hatching, like doodles in the margin of a school notebook. The moons, the
+> telescope, the lake, the hills and the twinkling stars in blue ink #1F4E9C with pale blue #BCCBEA
+> hatching. The two stars, the comet, the planet and the crater in red ink #C0392B with pale red
+> #ECBEB7 hatching. Use only these four colours. Flat colours, no gradients. Transparent
+> background. No paper texture, no letters, no numbers, no signature.
+
+**Prompt 9: `map-world-3-places`, the places on the path**
+
+> A sheet of separate small doodles of places, laid out in a loose grid with plenty of empty space
+> between them, nothing touching or overlapping: a small round observatory with a domed roof, a
+> door, and a telescope poking out of a slit in the dome, a red pennant flag on the dome; the same
+> observatory with the telescope pointing down, the slit shut and the flag fallen; a small tent
+> beside a little campfire. Each doodle stands alone on the empty background, with no dark sky
+> behind it. Drawn as clean ballpoint pen lines of even weight with round ends, shaded with straight
+> parallel hatching, like doodles in the margin of a school notebook. The observatories, the
+> telescopes and the tent in blue ink #1F4E9C with pale blue #BCCBEA hatching. The flags, the
+> campfire's flames and the tent's door flap in red ink #C0392B with pale red #ECBEB7 hatching.
+> Use only these four colours. Flat colours, no gradients. Transparent background. No paper
+> texture, no letters, no numbers, no signature.
+
+## The World 4 map page
+
+World 4 is Sea. Its doodles come from its levels: Rocky Shore (4-6), Pearls (4-12) and Reef
+(4-18). Its boss, the Kraken, waits at a stone tower on a rock, with its tentacles round it.
+
+**Prompt 10: `map-world-4-nature`, the sea**
+
+> A sheet of separate small seaside doodles, laid out in a loose grid with plenty of empty space
+> between them, nothing touching or overlapping: a small sandy island with one palm tree; a small
+> sailing boat with a triangular sail; two rounded rocks in the water; a scallop shell; a round
+> pearl; a jumping fish with a small splash; a seagull in flight drawn as one curved line; a band of
+> rolling waves; four small single waves. Drawn as clean ballpoint pen lines of even weight with
+> round ends, shaded with straight parallel hatching, like doodles in the margin of a school
+> notebook. The boat's hull, the rocks, the pearl, the fish, the gull and all the waves in blue ink
+> #1F4E9C with pale blue #BCCBEA hatching. The island, the palm tree, the sail and the scallop shell
+> in red ink #C0392B with pale red #ECBEB7 hatching. Use only these four colours. Flat colours, no
+> gradients. Transparent background. No paper texture, no letters, no numbers, no signature.
+
+**Prompt 11: `map-world-4-places`, the places on the path**
+
+> A sheet of separate small doodles of places, laid out in a loose grid with plenty of empty space
+> between them, nothing touching or overlapping: a small round stone tower with battlements on a
+> rock in the sea, a red pennant flag on top, and two curling tentacles rising from the water on
+> either side of it; the same tower with the tentacles gone, a few ripples in their place and the
+> flag fallen; a small wooden pier with a rowing boat tied to it. Drawn as clean ballpoint pen
+> lines of even weight with round ends, shaded with straight parallel hatching, like doodles in the
+> margin of a school notebook. The towers, the rocks, the tentacles, the water, the pier and the
+> boat in blue ink #1F4E9C with pale blue #BCCBEA hatching. The flags and the boat's oars in red
+> ink #C0392B with pale red #ECBEB7 hatching. Use only these four colours. Flat colours, no
+> gradients. Transparent background. No paper texture, no letters, no numbers, no signature.
+
+## Board touches
+
+Each world adds a few small doodles to the game screen, beside the opponent (decision 0028). They
+are drawn in code, not made with ChatGPT, so they follow the chosen theme's pale inks and stay
+crisp at any size. The canvas frames `game-world-2` to `game-world-4` show them; their paths are
+`TOUCHES` in [`canvas/draw.py`](canvas/draw.py).
+
+- **Where:** in the empty paper beside the opponent's photo: left of it, and right of it under the
+  speech bubble, above the computer's name. Never on or next to the board, the tool bar, the
+  mission note or the bubble.
+- **How:** three or four line doodles, 20 to 30 dp each, in Red pale and Blue pale, with
+  1.6 dp lines and no fill, like light pencil marks.
+- **Which:** World 1 a wave, a star, a spiral and a paper plane; World 2 a flower, a leaf, a
+  butterfly and a tulip; World 3 a crescent moon, a star, a comet and a twinkle; World 4 a fish, a
+  shell, a boat and a wave.
+- **No paper tint.** The board's paper is the theme's in every world. A tint would change the
+  contrast that the theme's colours were checked for, so every world would need those checks again.
+
 ## Where each picture goes
 
 | Picture | Where | Size on screen |
@@ -148,6 +265,9 @@ world's map page is drawn this way, whatever theme the player picks
 | The World 1 boss | Above the board on the boss level; on the boss's level card | 108 dp; 48 dp |
 | Landscape doodles | Beside the path on the World 1 map page | 30 to 140 dp wide |
 | Castle, chest, cottage, flag | On the path: the boss level, the chest after level 10, the start | 48 to 68 dp |
+| Garden, night-sky and seaside doodles | Beside the path on the World 2, 3 and 4 map pages | 30 to 140 dp wide |
+| Shed, observatory, tower; gate, tent, pier | On the path: the boss level of Worlds 2, 3 and 4; each world's start | 48 to 68 dp |
+| Board touches (drawn in code) | Beside the opponent in every game of the world | 20 to 30 dp |
 
 At 48 dp a face is small: check that the eyes and the mouth still read at that size before
 keeping a picture.
