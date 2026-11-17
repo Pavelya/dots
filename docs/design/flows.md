@@ -296,7 +296,7 @@ The first tap a new player makes is a move on the board.
   item. Owned items can be put to use offline.
 - A purchase returns to the same preview and shows whether it is owned, pending, cancelled or
   failed. A failure offers Retry. Restore purchases sits in Shop. If a purchase is refunded, the
-  default look comes back.
+  item goes back to the default.
 - A rewarded ad names its reward before the player chooses to watch. Declining, or an ad that
   fails, never blocks play. The reward is given once, after the ad completes. C-01 sets where ads
   appear. Every ad reward can also be earned by playing (decision 0004), and boosters go to the
@@ -331,7 +331,7 @@ These tasks change what some screens show:
 
 ## Wireframes
 
-The wireframes (D-06) sketch every screen above, and every moment of a level, in the Notebook look:
+The wireframes (D-06) sketch every screen above, and every moment of a level, in the Notebook theme:
 [Pinfold wireframes](https://claude.ai/artifact/NpxuGodPYwFGjgB6kpipR4), a Claude design canvas.
 They are drawn from the [game-screen brief](game-screens.md). Each frame carries the name of its
 screen in the tables above; the game board has one frame per moment. The canvas opens only for

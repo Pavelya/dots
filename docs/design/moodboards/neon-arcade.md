@@ -46,9 +46,9 @@ Prompt:
 Tall portrait image, shaped like a phone screen. A mobile game world map, seen from above, in neon light on a near-black background. A winding glowing path of about twelve round level stops runs through a landscape of simple glowing outlines: blocks, towers, a bridge over dark water. Finished stops glow magenta and carry one to three tiny yellow stars; the next stop pulses cyan; later stops are dim outlines. A bigger stop near the top is a tall glowing tower for the boss level, and a small glowing chest sits beside the path. Energetic, bold and playful. No text, letters, numbers, logos or signatures anywhere in the image.
 ```
 
-## 5. A world background
+## 5. A menu background
 
-<img src="neon-arcade-5.jpg" alt="Neon arcade: a world background" width="360">
+<img src="neon-arcade-5.jpg" alt="Neon arcade: a menu background" width="360">
 
 Prompt:
 

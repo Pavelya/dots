@@ -46,9 +46,9 @@ Prompt:
 Tall portrait image, shaped like a phone screen. A mobile game world map, seen from above, drawn in pen on squared notebook paper with a faint pale-blue grid, in warm red and deep blue ballpoint lines. A winding dotted path of about twelve small round level stops crosses the page through little doodled landscapes: hills, a pond, a few trees, a house. Finished stops are filled in with ink and carry one to three small doodled stars; the next stop is circled twice; later stops are empty circles. A bigger stop near the top is drawn as a small fortress for the boss level, and a treasure chest doodle sits beside the path. Calm, warm and nostalgic. No text, letters, numbers, logos or signatures anywhere in the image.
 ```
 
-## 5. A world background
+## 5. A menu background
 
-<img src="notebook-5.jpg" alt="Notebook: a world background" width="360">
+<img src="notebook-5.jpg" alt="Notebook: a menu background" width="360">
 
 Prompt:
 

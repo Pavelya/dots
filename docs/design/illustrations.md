@@ -17,8 +17,8 @@ gives the prompts for World 1's illustrations, made with ChatGPT image generatio
 - **The computer is blue.** It plays the blue diamonds, so its faces are blue ink. Red is for
   accents: a flag, a roof, a tree.
 
-**The dark version.** The game's dark theme uses lighter inks on a dark page. Because each
-picture keeps to the four colours, a script swaps them for the dark-theme inks (`#FF9384`,
+**The dark version.** The Notebook theme's dark version uses lighter inks on a dark page. Because
+each picture keeps to the four colours, a script swaps them for the dark version's inks (`#FF9384`,
 `#6B90E8`, `#5E3834`, `#2F3F66`), so no second set of prompts is needed. Claude makes the dark
 versions when the pictures come in.
 
@@ -92,10 +92,12 @@ computer, and its face sits above the board on its level.
 > Transparent background. No paper texture, no letters, no numbers, no label on the bottle, no
 > signature.
 
-## The World 1 map
+## The World 1 map page
 
-The map's path and level circles are drawn by the game. The pictures sit beside the path, each one
-placed on its own, so they come as sheets of separate stickers.
+World 1 is Countryside. The map's path and level circles are drawn by the game. The pictures sit
+beside the path, each one placed on its own, so they come as sheets of separate stickers. Every
+world's map page is drawn this way, whatever theme the player picks
+([decision 0028](../decisions/0028-worlds-and-themes.md)).
 
 **Prompt 4: `map-world-1-nature`, the landscape**
 
@@ -131,7 +133,7 @@ placed on its own, so they come as sheets of separate stickers.
 | The computer's moods | Above the board in every game; the face changes with the moment | 108 dp |
 | The computer's strengths | On the level card, next to the opponent's name | 48 dp |
 | The World 1 boss | Above the board on the boss level; on the boss's level card | 108 dp; 48 dp |
-| Landscape doodles | Beside the path on the World 1 map | 30 to 140 dp wide |
+| Landscape doodles | Beside the path on the World 1 map page | 30 to 140 dp wide |
 | Castle, chest, cottage, flag | On the path: the boss level, the chest after level 10, the start | 48 to 68 dp |
 
 At 48 dp a face is small: check that the eyes and the mouth still read at that size before

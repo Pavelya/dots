@@ -1,6 +1,6 @@
 # Notebook theme
 
-Notebook is the launch look (decision 0012,
+Notebook is the launch theme (decision 0012,
 [`docs/decisions/0012-launch-theme-and-first-boosters.md`](../decisions/0012-launch-theme-and-first-boosters.md)):
 red and blue ink on squared school paper, with rings drawn like a pen stroke. This page gives
 every value the app needs to draw it, in a light and a dark version. The
@@ -13,7 +13,7 @@ around two blue pieces, a blue capture around one red piece, a blue piece one mo
 (solid ring) and one two moves away (faint ring), the point that would close the ring (small red
 circle), and the dot the player is about to place (bottom right).
 
-## Rules of the look
+## Rules of the theme
 
 - **The board stays calm.** The grid is much paler than the ink, and washes are light, so every
   dot stands out, even on a crowded 15x15 board.
@@ -24,8 +24,9 @@ circle), and the dot the player is about to place (bottom right).
   round and blue pieces are diamonds ([Piece shapes](pieces.md)).
 - **Light or dark follows the phone.** The game uses the dark version when the phone's dark theme
   is on.
-- **No texture on the board.** Paper grain, doodles and pictures belong to the world backgrounds
-  around the board, never under the points.
+- **No texture on the board.** Paper grain, doodles and pictures belong to the map pages and to
+  a world's board touches around the board, never under the points
+  ([decision 0028](../decisions/0028-worlds-and-themes.md)).
 
 ## Colours
 

@@ -1,4 +1,4 @@
-# Canvas: the game in the Notebook look
+# Canvas: the game in the Notebook theme
 
 Still pictures of how Pinfold will really look. They follow the game-screen brief
 ([`game-screens.md`](../game-screens.md)), the screens and flows ([`flows.md`](../flows.md)) and the

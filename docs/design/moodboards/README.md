@@ -1,14 +1,14 @@
 # Mood boards
 
-Three looks for Pinfold, each shown as one board of pictures. The owner compares them and picks the
-launch look. Decision 0012
+Three themes for Pinfold, each shown as one board of pictures. The owner compares them and picks
+the launch theme. Decision 0012
 ([`docs/decisions/0012-launch-theme-and-first-boosters.md`](../../decisions/0012-launch-theme-and-first-boosters.md))
 already chose Notebook. The boards confirm that choice with pictures, or show it should change.
 
 | Board | Pieces | Feel |
 | --- | --- | --- |
 | [Notebook](notebook.md) | Red and blue ink dots on squared paper; rings drawn like a pen stroke | Warm, nostalgic, close to the paper game |
-| [Night sky](night-sky.md) | Gold stars against ice-blue comets; rings drawn as constellation lines | Calm, elegant |
+| [Star chart](star-chart.md) | Gold stars against ice-blue comets; rings drawn as constellation lines | Calm, elegant |
 | [Neon arcade](neon-arcade.md) | Glowing magenta and cyan discs; rings as bright tubes | Energetic, bold |
 
 Each board has the same eight pictures, so the three can be compared side by side:
@@ -19,7 +19,7 @@ Each board has the same eight pictures, so the three can be compared side by sid
 | 2 | A capture | Does the outline stand out more than the fill? Do the captured dots stay visible? (B07, M01) |
 | 3 | A crowded late game | Is a full board still readable at phone size? (B03, F02, F03) |
 | 4 | The world map | Is the next level obvious? Does the world have its own landscape? (P01, P06) |
-| 5 | A world background | Does it frame the screen without fighting the board? |
+| 5 | A menu background | Does it frame the screen without fighting the board? |
 | 6 | A won level | Can you still see the final board under the celebration? (M04, M05) |
 | 7 | The home screen | Are three ways in clear without words? (U05) |
 | 8 | Colours and type | A palette swatch drawn by us, and two Google Fonts to look at |
@@ -32,16 +32,16 @@ and fonts are first proposals. D-03 sets the final colours, with contrast checks
 
 ## Side by side
 
-| # | Notebook | Night sky | Neon arcade |
+| # | Notebook | Star chart | Neon arcade |
 | --- | --- | --- | --- |
-| 1. The board in play | <img src="notebook-1.jpg" alt="Notebook: the board in play" width="200"> | <img src="night-sky-1.jpg" alt="Night sky: the board in play" width="200"> | <img src="neon-arcade-1.jpg" alt="Neon arcade: the board in play" width="200"> |
-| 2. A capture | <img src="notebook-2.jpg" alt="Notebook: a capture" width="200"> | <img src="night-sky-2.jpg" alt="Night sky: a capture" width="200"> | <img src="neon-arcade-2.jpg" alt="Neon arcade: a capture" width="200"> |
-| 3. A crowded late game | <img src="notebook-3.jpg" alt="Notebook: a crowded late game" width="200"> | <img src="night-sky-3.jpg" alt="Night sky: a crowded late game" width="200"> | <img src="neon-arcade-3.jpg" alt="Neon arcade: a crowded late game" width="200"> |
-| 4. The world map | <img src="notebook-4.jpg" alt="Notebook: the world map" width="200"> | <img src="night-sky-4.jpg" alt="Night sky: the world map" width="200"> | <img src="neon-arcade-4.jpg" alt="Neon arcade: the world map" width="200"> |
-| 5. A world background | <img src="notebook-5.jpg" alt="Notebook: a world background" width="200"> | <img src="night-sky-5.jpg" alt="Night sky: a world background" width="200"> | <img src="neon-arcade-5.jpg" alt="Neon arcade: a world background" width="200"> |
-| 6. A won level | <img src="notebook-6.jpg" alt="Notebook: a won level" width="200"> | <img src="night-sky-6.jpg" alt="Night sky: a won level" width="200"> | <img src="neon-arcade-6.jpg" alt="Neon arcade: a won level" width="200"> |
-| 7. The home screen | <img src="notebook-7.jpg" alt="Notebook: the home screen" width="200"> | <img src="night-sky-7.jpg" alt="Night sky: the home screen" width="200"> | <img src="neon-arcade-7.jpg" alt="Neon arcade: the home screen" width="200"> |
-| 8. Colours and type | <img src="notebook-8.svg" alt="Notebook: palette" width="200"> | <img src="night-sky-8.svg" alt="Night sky: palette" width="200"> | <img src="neon-arcade-8.svg" alt="Neon arcade: palette" width="200"> |
+| 1. The board in play | <img src="notebook-1.jpg" alt="Notebook: the board in play" width="200"> | <img src="star-chart-1.jpg" alt="Star chart: the board in play" width="200"> | <img src="neon-arcade-1.jpg" alt="Neon arcade: the board in play" width="200"> |
+| 2. A capture | <img src="notebook-2.jpg" alt="Notebook: a capture" width="200"> | <img src="star-chart-2.jpg" alt="Star chart: a capture" width="200"> | <img src="neon-arcade-2.jpg" alt="Neon arcade: a capture" width="200"> |
+| 3. A crowded late game | <img src="notebook-3.jpg" alt="Notebook: a crowded late game" width="200"> | <img src="star-chart-3.jpg" alt="Star chart: a crowded late game" width="200"> | <img src="neon-arcade-3.jpg" alt="Neon arcade: a crowded late game" width="200"> |
+| 4. The world map | <img src="notebook-4.jpg" alt="Notebook: the world map" width="200"> | <img src="star-chart-4.jpg" alt="Star chart: the world map" width="200"> | <img src="neon-arcade-4.jpg" alt="Neon arcade: the world map" width="200"> |
+| 5. A menu background | <img src="notebook-5.jpg" alt="Notebook: a menu background" width="200"> | <img src="star-chart-5.jpg" alt="Star chart: a menu background" width="200"> | <img src="neon-arcade-5.jpg" alt="Neon arcade: a menu background" width="200"> |
+| 6. A won level | <img src="notebook-6.jpg" alt="Notebook: a won level" width="200"> | <img src="star-chart-6.jpg" alt="Star chart: a won level" width="200"> | <img src="neon-arcade-6.jpg" alt="Neon arcade: a won level" width="200"> |
+| 7. The home screen | <img src="notebook-7.jpg" alt="Notebook: the home screen" width="200"> | <img src="star-chart-7.jpg" alt="Star chart: the home screen" width="200"> | <img src="neon-arcade-7.jpg" alt="Neon arcade: the home screen" width="200"> |
+| 8. Colours and type | <img src="notebook-8.svg" alt="Notebook: palette" width="200"> | <img src="star-chart-8.svg" alt="Star chart: palette" width="200"> | <img src="neon-arcade-8.svg" alt="Neon arcade: palette" width="200"> |
 
 ## Making the pictures
 
@@ -62,8 +62,8 @@ These pictures are references only. None of them ships in the app.
 
 ## The pick
 
-**Notebook** is the launch look, as decision 0012 says. It keeps the feeling of the paper game.
-Night sky came second: the pictures are rough, but the direction works. Neon arcade came last: it
+**Notebook** is the launch theme, as decision 0012 says. It keeps the feeling of the paper game.
+Star chart came second: the pictures are rough, but the direction works. Neon arcade came last: it
 lacks a personality of its own.
 
 What the boards teach the next steps:
@@ -71,5 +71,5 @@ What the boards teach the next steps:
 - **D-03, Notebook theme:** on the board, the grid must be much paler than the blue ink. In
   picture 1 the grid came out as dark as the blue dots. Washes stay light and hatched, so
   captured dots show through, as in pictures 2 and 3.
-- **D-04, piece shapes:** in Night sky, the two sides differ by shape as well as colour (stars
+- **D-04, piece shapes:** in Star chart, the two sides differ by shape as well as colour (stars
   and comets). That helps colour-blind players and works in any theme.
