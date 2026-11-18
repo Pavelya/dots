@@ -1,13 +1,15 @@
-# Canvas: the game in the Notebook theme
+# Canvas: the game in its themes
 
 Still pictures of how Pinfold will really look. They follow the game-screen brief
 ([`game-screens.md`](../game-screens.md)), the screens and flows ([`flows.md`](../flows.md)) and the
 wireframes, and use every colour and size from the [Notebook theme](../theme-notebook.md) and
-[Piece shapes](../pieces.md).
+[Piece shapes](../pieces.md). The game frames are drawn again in the two board themes,
+[Star chart](#star-chart) and [Neon arcade](#neon-arcade).
 
 The frames live on [Pinfold canvas](https://claude.ai/artifact/GpJSNGSjeJGhZQCCojXNNj), a Claude
 design canvas: light on the top row, dark below. The canvas opens only for people the owner has
-shared it with. The PNGs on this page are exported from the same drawing.
+shared it with. The PNGs on this page are exported from the same drawing. Below the two Notebook
+rows, Star chart and then Neon arcade each have a light row and a dark row.
 
 ## The frames
 
@@ -38,6 +40,44 @@ one frame shows them turned on in Settings.
 | **Game: World 2's board touches.** The threat, with Garden's pencil doodles beside the opponent: a flower, a leaf, a butterfly and a tulip. The board itself is the same in every world. | <img src="game-world-2-light.png" width="180" alt="Light: a game in World 2"> | <img src="game-world-2-dark.png" width="180" alt="Dark: a game in World 2"> |
 | **Game: World 3's board touches.** The threat, with Night sky's pencil doodles beside the opponent: a crescent moon, a star, a comet and a twinkle. The board itself is the same in every world. | <img src="game-world-3-light.png" width="180" alt="Light: a game in World 3"> | <img src="game-world-3-dark.png" width="180" alt="Dark: a game in World 3"> |
 | **Game: World 4's board touches.** The threat, with Sea's pencil doodles beside the opponent: a fish, a shell, a boat and a wave. The board itself is the same in every world. | <img src="game-world-4-light.png" width="180" alt="Light: a game in World 4"> | <img src="game-world-4-dark.png" width="180" alt="Dark: a game in World 4"> |
+
+## Star chart
+
+Gold stars for you, ice-blue comets for the computer, on a chart with a small point at every
+crossing. Rings are straight constellation lines, captured areas a faint hatched haze, and threats
+are marked in Nova, a rose. Nothing glows. Every value comes from the [Star chart
+theme](../theme-star-chart.md). The frames are the same game of Level 7 as Notebook's. Only the
+board, the screen's colours, the pieces beside the names and the computer's inks change: the notes,
+the tool bar, the fonts and their shapes stay Notebook's, as the theme page says.
+
+| Frame | Light | Dark |
+| --- | --- | --- |
+| **Game: the level opens.** | <img src="game-start-star-chart-light.png" width="180" alt="Star chart, light: the level opens"> | <img src="game-start-star-chart-dark.png" width="180" alt="Star chart, dark: the level opens"> |
+| **Game: a threat.** | <img src="game-threat-star-chart-light.png" width="180" alt="Star chart, light: a threat"> | <img src="game-threat-star-chart-dark.png" width="180" alt="Star chart, dark: a threat"> |
+| **Game: right after a big capture.** | <img src="game-big-capture-star-chart-light.png" width="180" alt="Star chart, light: right after a big capture"> | <img src="game-big-capture-star-chart-dark.png" width="180" alt="Star chart, dark: right after a big capture"> |
+| **Game: placing by drag.** | <img src="game-drag-star-chart-light.png" width="180" alt="Star chart, light: placing by drag"> | <img src="game-drag-star-chart-dark.png" width="180" alt="Star chart, dark: placing by drag"> |
+| **Result.** | <img src="result-win-star-chart-light.png" width="180" alt="Star chart, light: result with two stars"> | <img src="result-win-star-chart-dark.png" width="180" alt="Star chart, dark: result with two stars"> |
+| **Small phone: a threat.** | <img src="small-game-threat-star-chart-light.png" width="160" alt="Star chart, light: a threat on a small phone"> | <img src="small-game-threat-star-chart-dark.png" width="160" alt="Star chart, dark: a threat on a small phone"> |
+| **Game: a threat, high-contrast pieces.** The same moment with High-contrast pieces on in Settings: bigger pieces, each in a band of the surface under it. | <img src="game-threat-contrast-star-chart-light.png" width="180" alt="Star chart, light: a threat with high-contrast pieces"> | <img src="game-threat-contrast-star-chart-dark.png" width="180" alt="Star chart, dark: a threat with high-contrast pieces"> |
+
+## Neon arcade
+
+Magenta discs for you, cyan triangles for the computer. Rings are neon tubes with a bright core, and
+every live piece and tube sits in a solid band of glow; a captured piece goes dark. Threats are
+marked in Volt, yellow in the dark version and amber in the light. Every value comes from the [Neon
+arcade theme](../theme-neon-arcade.md). The frames are the same game of Level 7 as Notebook's. Only
+the board, the screen's colours, the pieces beside the names and the computer's inks change: the
+notes, the tool bar, the fonts and their shapes stay Notebook's, as the theme page says.
+
+| Frame | Light | Dark |
+| --- | --- | --- |
+| **Game: the level opens.** | <img src="game-start-neon-arcade-light.png" width="180" alt="Neon arcade, light: the level opens"> | <img src="game-start-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: the level opens"> |
+| **Game: a threat.** | <img src="game-threat-neon-arcade-light.png" width="180" alt="Neon arcade, light: a threat"> | <img src="game-threat-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: a threat"> |
+| **Game: right after a big capture.** | <img src="game-big-capture-neon-arcade-light.png" width="180" alt="Neon arcade, light: right after a big capture"> | <img src="game-big-capture-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: right after a big capture"> |
+| **Game: placing by drag.** | <img src="game-drag-neon-arcade-light.png" width="180" alt="Neon arcade, light: placing by drag"> | <img src="game-drag-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: placing by drag"> |
+| **Result.** | <img src="result-win-neon-arcade-light.png" width="180" alt="Neon arcade, light: result with two stars"> | <img src="result-win-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: result with two stars"> |
+| **Small phone: a threat.** | <img src="small-game-threat-neon-arcade-light.png" width="160" alt="Neon arcade, light: a threat on a small phone"> | <img src="small-game-threat-neon-arcade-dark.png" width="160" alt="Neon arcade, dark: a threat on a small phone"> |
+| **Game: a threat, high-contrast pieces.** The same moment with High-contrast pieces on in Settings: bigger pieces, each in a band of the surface under it. | <img src="game-threat-contrast-neon-arcade-light.png" width="180" alt="Neon arcade, light: a threat with high-contrast pieces"> | <img src="game-threat-contrast-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: a threat with high-contrast pieces"> |
 
 ## Real size
 
@@ -98,6 +138,7 @@ the PNGs with Google Chrome:
 ```sh
 python3 docs/design/canvas/draw.py                  # the PNGs on this page
 python3 docs/design/canvas/draw.py --canvas DIR     # also the canvas files, in DIR/project/
+python3 docs/design/canvas/draw.py --only neon-arcade   # one theme: notebook, star-chart or neon-arcade
 ```
 
 It needs Python 3, Google Chrome and a network connection (the fonts come from Google Fonts). A

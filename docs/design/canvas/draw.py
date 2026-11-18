@@ -5,11 +5,14 @@ two Google Fonts):
 
     python3 docs/design/canvas/draw.py                  # the PNGs in docs/design/canvas/
     python3 docs/design/canvas/draw.py --canvas DIR     # also the design canvas files, in DIR/project/
+    python3 docs/design/canvas/draw.py --only star-chart  # one theme: notebook, star-chart or neon-arcade
 
 Every frame is 360 x 800 dp, the size of a common Android phone, or 320 x 568 dp for a small phone,
 drawn in the light and the dark
 version. The PNGs are 3 px per dp (1080 x 2400). Every colour and size comes from
-docs/design/theme-notebook.md and docs/design/pieces.md. Set CHROME to use another Chrome binary.
+docs/design/theme-notebook.md and docs/design/pieces.md. The game frames are drawn again in each
+board theme, from docs/design/theme-star-chart.md and docs/design/theme-neon-arcade.md. Set CHROME to
+use another Chrome binary.
 """
 
 import math
@@ -36,6 +39,39 @@ THEMES = {
                  red_wash="#3A2421", blue_wash="#1F2940", red_pale="#5E3834", blue_pale="#2F3F66",
                  hi="#F0B04A", hi_faint="#6E5428", pencil="#EDE8DF", graphite="#A8A399",
                  margin="#5A3531", shadow="rgba(0,0,0,0.6)", scrim="rgba(0,0,0,0.55)"),
+}
+
+# The board themes (decision 0028): Star chart (theme-star-chart.md) and Neon arcade
+# (theme-neon-arcade.md). Each fills Notebook's roles with its own colours: red is gold or magenta,
+# blue is ice or cyan, hi is Nova or Volt. Shadow and scrim stay Notebook's, the tape is the red
+# side's pale colour, and style picks the board's shapes. Only the game screen takes a board theme:
+# the map, its notes and the menus stay Notebook's in every theme.
+BOARD_THEMES = {
+    "star-chart": {
+        "light": dict(THEMES["light"], style="star", paper="#F3F5FA", card="#FFFFFF", grid="#D2DAEA",
+                      point="#8F9CBF", red="#9A5B00", blue="#0E5C85", red_wash="#F1E7D9", blue_wash="#DCE7F0",
+                      red_pale="#E2CDAD", blue_pale="#B5CDE0", hi="#B8326E", hi_faint="#E6B3C9",
+                      pencil="#1A2240", graphite="#525C78", margin="#D2DAEA", tape="#E2CDAD"),
+        "dark": dict(THEMES["dark"], style="star", paper="#0F1733", card="#1A2448", grid="#26315C",
+                     point="#4A5A8E", red="#F6CB6E", blue="#6DBAE6", red_wash="#2C2A3F", blue_wash="#152A4C",
+                     red_pale="#6B5B45", blue_pale="#2D5678", hi="#FF8DB5", hi_faint="#6A3559",
+                     pencil="#E6EAF7", graphite="#9CA8CA", margin="#26315C", tape="#6B5B45"),
+    },
+    "neon-arcade": {
+        "light": dict(THEMES["light"], style="neon", paper="#F6F4FB", card="#FFFFFF", grid="#DCD6EB",
+                      red="#C8106E", blue="#00778E", red_wash="#FADDEB", blue_wash="#D8F1F5",
+                      red_pale="#F5B9D7", blue_pale="#A3DDE7", red_core="#F77DB7", blue_core="#5FC9DB",
+                      hi="#9C5E00", hi_faint="#EBCB8E", pencil="#1B1730", graphite="#5A5574",
+                      margin="#DCD6EB", tape="#F5B9D7"),
+        # The computer's face in the dark: the body takes the light version's deeper cyan, so the white
+        # eyes stand out, and its lines and shadow take the bright cyan (theme page, The faces).
+        "dark": dict(THEMES["dark"], style="neon", paper="#0A0A12", card="#1A1730", grid="#2A2546",
+                     red="#FF3D8B", blue="#26E5FF", red_wash="#3A1630", blue_wash="#0D3440",
+                     red_pale="#6A1D4A", blue_pale="#0A4450", red_core="#FFC2DA", blue_core="#C4F8FF",
+                     hi="#F5F23A", hi_faint="#5C5A1E", pencil="#F3F3FF", graphite="#A8A4CA",
+                     margin="#2A2546", tape="#6A1D4A", face_body="#00778E", face_shadow="#26E5FF",
+                     face_line="#26E5FF"),
+    },
 }
 
 # Type styles from the theme page. Caveat only at 24 sp and above, never for numbers or buttons.
@@ -234,19 +270,186 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False, links=False):
         p, side = pos["drag"]
         pieces.append(preview(t, side, *c(p), sp, dot))
     if pos.get("burst") and not mini:
-        cx, cy = c((4.5, 5))
-        for k in range(14):
-            a = k * 2 * math.pi / 14 + 0.2
-            r1, r2 = (64, 78) if k % 2 else (66, 74)
-            ends = [(cx + math.cos(a) * r * 1.0, cy + math.sin(a) * r * 1.1) for r in (r1, (r1 + r2) / 2, r2)]
-            if any(math.hypot(ex - c(p)[0], ey - c(p)[1]) < 12 for ex, ey in ends for p in pos["red"] + pos["blue"]):
-                continue  # a stroke never crosses a piece
-            pieces.append(el("line", x1=f(cx + math.cos(a) * r1), y1=f(cy + math.sin(a) * r1 * 1.1),
-                             x2=f(cx + math.cos(a) * r2), y2=f(cy + math.sin(a) * r2 * 1.1),
-                             stroke=t["red"], stroke_width=2.5, stroke_linecap="round"))
+        pieces.extend(burst(t, pos, c))
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=size, height=size, fill=t["paper"]) +
             "".join(washes) + "".join(grid) + "".join(link_lines) + "".join(drag) + "".join(rings) + "".join(marks) + "".join(pieces))
     return svg(size, size, body, label=None if mini else "The board, 15 by 15 points")
+
+
+def burst(t, pos, c):
+    """The big capture's burst: short strokes in the captor's ink round the six, never across a piece."""
+    out = []
+    cx, cy = c((4.5, 5))
+    for k in range(14):
+        a = k * 2 * math.pi / 14 + 0.2
+        r1, r2 = (64, 78) if k % 2 else (66, 74)
+        ends = [(cx + math.cos(a) * r * 1.0, cy + math.sin(a) * r * 1.1) for r in (r1, (r1 + r2) / 2, r2)]
+        if any(math.hypot(ex - c(p)[0], ey - c(p)[1]) < 12 for ex, ey in ends for p in pos["red"] + pos["blue"]):
+            continue  # a stroke never crosses a piece
+        out.append(el("line", x1=f(cx + math.cos(a) * r1), y1=f(cy + math.sin(a) * r1 * 1.1),
+                      x2=f(cx + math.cos(a) * r2), y2=f(cy + math.sin(a) * r2 * 1.1),
+                      stroke=t["red"], stroke_width=2.5, stroke_linecap="round"))
+    return out
+
+
+# ------------------------------------------------------- the board themes ----
+# Star chart and Neon arcade draw the same position with their own pieces, rings and areas. Every
+# size and the drawing order come from their theme pages; "contrast" is high-contrast pieces.
+
+STAR_ACROSS, STAR_INNER = 1.4, 0.55              # star: points' circle in dot sizes; inner corners' share
+HEAD_ACROSS, TAIL_LEAVES = 0.75, 70              # comet: head in dot sizes; where the tail leaves it, degrees
+MIDDLE_STREAK, SIDE_STREAK, STREAK_SPREAD = 1.4, 1.05, 0.3
+NOTCH, NOTCH_SPREAD = 0.65, 0.11
+TRIANGLE_REACH = 0.66                            # triangle: corners from its centre, in dot sizes
+GLOW, CORE, BAND, HATCH = 1.5, 1 / 3, 1.5, 6     # dp, share of the ring, dp, dp
+
+
+def theme_dot(sp, contrast=False):
+    return min(24.0, max(9.0, sp * 0.6)) if contrast else min(20.0, max(9.0, sp / 2))
+
+
+def theme_ring(sp):
+    return min(3.0, max(1.5, sp / 12))
+
+
+def poly(pts):
+    return "M" + " L".join(f"{f(x)} {f(y)}" for x, y in pts) + " Z"
+
+
+def piece_d(t, side, x, y, d):
+    """The outline of a piece in a board theme, as an SVG path."""
+    if t["style"] == "star" and side == "red":  # a five-pointed star, one point up
+        r = d * STAR_ACROSS / 2
+        return poly([(x + (r if k % 2 == 0 else r * STAR_INNER) * math.cos(math.radians(-90 + 36 * k)),
+                      y + (r if k % 2 == 0 else r * STAR_INNER) * math.sin(math.radians(-90 + 36 * k)))
+                     for k in range(10)])
+    if t["style"] == "star":  # a comet: a round head and three streaks up and to the left
+        h = d * HEAD_ACROSS / 2
+        ux = uy = -1 / math.sqrt(2)
+        nx, ny = -uy, ux
+        at = lambda a, c: (x + (ux * a + nx * c) * d, y + (uy * a + ny * c) * d)  # noqa: E731
+        co, si = math.cos(math.radians(TAIL_LEAVES)), math.sin(math.radians(TAIL_LEAVES))
+        a = (x + (ux * co + nx * si) * h, y + (uy * co + ny * si) * h)
+        b = (x + (ux * co - nx * si) * h, y + (uy * co - ny * si) * h)
+        pts = [a, at(SIDE_STREAK, STREAK_SPREAD), at(NOTCH, NOTCH_SPREAD), at(MIDDLE_STREAK, 0),
+               at(NOTCH, -NOTCH_SPREAD), at(SIDE_STREAK, -STREAK_SPREAD), b]
+        return poly(pts)[:-2] + f" A{f(h)} {f(h)} 0 1 0 {f(a[0])} {f(a[1])} Z"
+    if side == "red":  # a disc
+        r = d / 2
+        return f"M{f(x - r)} {f(y)} A{f(r)} {f(r)} 0 1 0 {f(x + r)} {f(y)} A{f(r)} {f(r)} 0 1 0 {f(x - r)} {f(y)} Z"
+    r = d * TRIANGLE_REACH  # a triangle, corner up, its centre on the point
+    return poly([(x + r * math.cos(math.radians(a)), y + r * math.sin(math.radians(a))) for a in (-90, 30, 150)])
+
+
+def band(t, side, x, y, d, colour, width, clip=None):
+    """A band of width dp round a piece's outline, with round corners: a glow, or a high-contrast band."""
+    return el("path", d=piece_d(t, side, x, y, d), fill=colour, stroke=colour, stroke_width=f(2 * width),
+              stroke_linejoin="round", clip_path=clip)
+
+
+def theme_piece(t, side, size):
+    """A side's piece beside its name in the score row, at a 12 dp dot, without glow."""
+    x, y = (size - 5.5, size - 5.5) if t["style"] == "star" and side == "blue" else (size / 2, size / 2)
+    return svg(size, size, el("path", d=piece_d(t, side, x, y, 12), fill=t[side]))
+
+
+def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False):
+    """The board of moment key in a board theme, in its page's drawing order."""
+    pos = POSITIONS[key]
+    c = lambda p: (sp / 2 + p[0] * sp, sp / 2 + p[1] * sp)  # noqa: E731
+    d, w, star = theme_dot(sp, contrast), theme_ring(sp), t["style"] == "star"
+    captured = {p: a["captor"] for a in pos["areas"] for p in a["inside"]}
+    defs, fills, glows, tubes, cores = [], [], [], [], []
+    for i, a in enumerate(pos["areas"]):
+        outline, k = poly([c(p) for p in a["ring"]]), a["captor"]
+        angle = -45 if k == "red" else 45  # red's areas rise to the right (/), blue's fall (\)
+        defs.append(f'<clipPath id="c{uid}{i}">{el("path", d=outline)}</clipPath>'
+                    f'<pattern id="h{uid}{i}" width="{HATCH}" height="{HATCH}" patternUnits="userSpaceOnUse" '
+                    f'patternTransform="rotate({angle})">' + el("rect", width=HATCH, height=HATCH, fill=t[k + "_wash"]) +
+                    el("line", x1=0, y1=HATCH / 2, x2=HATCH, y2=HATCH / 2, stroke=t[k + "_pale"], stroke_width=1) +
+                    "</pattern>")
+        fills.append(el("path", d=outline, fill=f"url(#h{uid}{i})"))
+        line = lambda colour, width: el("path", d=outline, fill="none", stroke=colour, stroke_width=f(width),  # noqa: E731
+                                        stroke_linejoin="round", stroke_linecap="round")
+        if not star:  # a neon tube: glow, tube and core, each drawn for every ring in turn
+            glows.append(line(t[k + "_pale"], w + 2 * GLOW))
+            cores.append(line(t[k + "_core"], w * CORE))
+        tubes.append(line(t[k], w))
+    grid = []
+    for i in range(15):
+        x = sp / 2 + i * sp
+        sw = 1.5 if i in (0, 14) else 1
+        grid.append(el("line", x1=f(x), y1=f(sp / 2), x2=f(x), y2=f(size - sp / 2), stroke=t["grid"], stroke_width=sw))
+        grid.append(el("line", x1=f(sp / 2), y1=f(x), x2=f(size - sp / 2), y2=f(x), stroke=t["grid"], stroke_width=sw))
+    if star:  # a chart point at every crossing; a piece covers its own
+        grid += [el("circle", cx=f(sp / 2 + i * sp), cy=f(sp / 2 + j * sp), r=1, fill=t["point"])
+                 for i in range(15) for j in range(15)]
+    link_lines = []
+    if links:
+        for side in ("red", "blue"):
+            live = sorted(p for p in pos[side] if p not in captured)
+            for i, p in enumerate(live):
+                for q in live[i + 1:]:
+                    if max(abs(p[0] - q[0]), abs(p[1] - q[1])) == 1:
+                        (x1, y1), (x2, y2) = c(p), c(q)
+                        link_lines.append(el("line", x1=f(x1), y1=f(y1), x2=f(x2), y2=f(y2),
+                                             stroke=t[side + "_pale"], stroke_width=1.5, stroke_linecap="round"))
+    drag = [guides(t, pos["drag"][1], *c(pos["drag"][0]), sp, size)] if pos.get("drag") else []
+    # Bands: a neon piece's glow (live pieces only), or with high-contrast pieces the surface under
+    # each piece: Paper, the wash of the area it lies in, or both halves for a piece on a ring.
+    bands, pieces = [], []
+    rings_of = {p: i for i, a in enumerate(pos["areas"]) for p in a["ring"]}
+    for side in ("red", "blue"):
+        for p in pos[side]:
+            x, y = c(p)
+            if contrast:
+                surface = t[captured[p] + "_wash"] if p in captured else t["paper"]
+                bands.append(band(t, side, x, y, d, surface, BAND))
+                if p in rings_of:
+                    i = rings_of[p]
+                    bands.append(band(t, side, x, y, d, t[pos["areas"][i]["captor"] + "_wash"], BAND,
+                                      clip=f"url(#c{uid}{i})"))
+            elif not star and p not in captured:
+                bands.append(band(t, side, x, y, d, t[side + "_pale"], GLOW))
+            pieces.append(el("path", d=piece_d(t, side, x, y, d), fill=t[side]))
+            if p in captured:
+                L = d * 0.75 / math.sqrt(2)
+                if side == "red":  # in blue's area: the cut falls, along blue's hatching
+                    cut, col = f"M{f(x - L)} {f(y - L)}L{f(x + L)} {f(y + L)}", t["blue_wash"]
+                else:
+                    cut, col = f"M{f(x - L)} {f(y + L)}L{f(x + L)} {f(y - L)}", t["red_wash"]
+                pieces.append(el("path", d=cut, stroke=col, stroke_width=f(d / 6), fill="none"))
+            if p == pos["last"]:
+                pieces.append(el("circle", cx=f(x), cy=f(y), r=f(d * 0.15), fill=t["paper"]))
+    marks = [el("circle", cx=f(c(p)[0]), cy=f(c(p)[1]), r=f(0.42 * sp), fill="none", stroke=t["hi"], stroke_width=2)
+             for p in pos.get("near", [])]
+    for p, side in pos.get("ghosts", []):
+        x, y = c(p)
+        pieces.append(el("path", d=piece_d(t, side, x, y, d), fill=t[side + "_pale"]))
+        pieces.append(el("circle", cx=f(x), cy=f(y), r=f(0.45 * sp), fill="none", stroke=t["graphite"],
+                         stroke_width=1.5, stroke_dasharray="3 3"))
+    for p, side in pos.get("closing", []):
+        x, y = c(p)
+        pieces.append(el("circle", cx=f(x), cy=f(y), r=f(sp / 6), fill="none", stroke=t[side], stroke_width=1.5))
+    if pos.get("drag"):
+        p, side = pos["drag"]
+        x, y = c(p)
+        pieces.append(el("path", d=piece_d(t, side, x, y, d), fill=t[side + "_pale"],
+                         stroke=t[side] if contrast else None, stroke_width=1.5 if contrast else None,
+                         stroke_linejoin="round" if contrast else None))
+        pieces.append(el("circle", cx=f(x), cy=f(y), r=f(0.45 * sp), fill="none", stroke=t[side], stroke_width=f(w)))
+    if pos.get("burst"):
+        pieces.extend(burst(t, pos, c))
+    body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=size, height=size, fill=t["paper"]) +
+            "".join(fills + grid + link_lines + drag + bands + glows + tubes + cores + marks + pieces))
+    return svg(size, size, body, label="The board, 15 by 15 points")
+
+
+def any_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False):
+    """Notebook's board, or a board theme's."""
+    if t.get("style"):
+        return theme_board_svg(t, key, uid, size, sp, links, contrast)
+    return board_svg(t, key, uid, size, sp, links=links)
 
 
 # ------------------------------------------------------------- drawn parts ----
@@ -316,24 +519,25 @@ def face(t, mood, size):
     """The computer: a round blot of blue ink. Eyes keep their own colours in both themes."""
     blob = ("M50 18 C68 16 84 30 85 50 C87 60 84 70 78 77 C80 84 78 90 74 90 C70 90 70 84 68 82 "
             "C60 87 48 88 38 85 C26 82 16 72 15 57 C13 36 30 19 50 18 Z")
+    ink = t.get("face_body", t["blue"])
     parts = [
-        el("ellipse", cx=50, cy=93, rx=30, ry=4, fill=t["blue_pale"]),
-        el("path", d=blob, fill=t["blue"]),
-        el("circle", cx=88, cy=26, r=3.5, fill=t["blue"]),
-        el("circle", cx=14, cy=82, r=2.5, fill=t["blue"]),
-        el("circle", cx=93, cy=38, r=2, fill=t["blue"]),
+        el("ellipse", cx=50, cy=93, rx=30, ry=4, fill=t.get("face_shadow", t["blue_pale"])),
+        el("path", d=blob, fill=ink),
+        el("circle", cx=88, cy=26, r=3.5, fill=ink),
+        el("circle", cx=14, cy=82, r=2.5, fill=ink),
+        el("circle", cx=93, cy=38, r=2, fill=ink),
     ]
-    white, pupil, line = "#FBF8F1", "#2E2E2E", t["paper"]
+    white, pupil, line = "#FBF8F1", "#2E2E2E", t.get("face_line", t["paper"])
     eyes = {"happy": (0, 0, 9), "smug": (3, 1, 9), "upset": (0, 2, 7), "determined": (-2, 0, 8), "sulky": (-4, 2, 8)}[mood]
     for ex in (37, 63):
         parts.append(el("ellipse", cx=ex, cy=46, rx=8, ry=eyes[2], fill=white))
         parts.append(el("circle", cx=ex + eyes[0], cy=47 + eyes[1], r=3.6, fill=pupil))
         parts.append(el("circle", cx=ex + eyes[0] + 1.3, cy=45.5 + eyes[1], r=1.1, fill=white))
     if mood == "smug":  # heavy lids
-        parts.append(el("path", d="M28 44 Q37 36 46 44 Z M54 44 Q63 36 72 44 Z", fill=t["blue"]))
+        parts.append(el("path", d="M28 44 Q37 36 46 44 Z M54 44 Q63 36 72 44 Z", fill=ink))
         parts.append(el("path", d="M28 44 H46 M54 44 H72", stroke=line, stroke_width=2, stroke_linecap="round"))
     if mood == "sulky":
-        parts.append(el("path", d="M28 42 Q37 38 46 42 L46 40 Q37 33 28 40Z M54 42 Q63 38 72 42 L72 40 Q63 33 54 40Z", fill=t["blue"]))
+        parts.append(el("path", d="M28 42 Q37 38 46 42 L46 40 Q37 33 28 40Z M54 42 Q63 38 72 42 L72 40 Q63 33 54 40Z", fill=ink))
     brows = {"happy": "M30 32 Q37 27 44 31 M56 31 Q63 27 70 32", "smug": "M29 35 L44 35 M56 31 Q63 25 71 30",
              "upset": "M30 33 L43 37 M70 33 L57 37", "determined": "M30 32 L44 37 M70 32 L56 37",
              "sulky": "M30 34 Q37 31 44 34 M56 34 Q63 31 70 34"}[mood]
@@ -347,7 +551,7 @@ def face(t, mood, size):
 
 def tape(t, left, top, w=52, angle=-3):
     return (f'<span aria-hidden="true" style="position: absolute; left: {left}px; top: {top}px; width: {w}px; '
-            f'height: 16px; background: {t["hi_faint"]}; transform: rotate({angle}deg)"></span>')
+            f'height: 16px; background: {t.get("tape", t["hi_faint"])}; transform: rotate({angle}deg)"></span>')
 
 
 def note_style(t, angle):
@@ -419,12 +623,15 @@ def bubble(t, text, left, top):
 
 def side_row(t, side, name, score, turn, align):
     ink = t[side]
-    shape = (el("circle", cx=7, cy=7, r=6, fill=ink) if side == "red" else
-             el("path", d="M7 0 L14 7 L7 14 L0 7 Z", fill=ink))
+    if t.get("style"):
+        shape = theme_piece(t, side, 18)
+    else:
+        shape = svg(14, 14, el("circle", cx=7, cy=7, r=6, fill=ink) if side == "red" else
+                    el("path", d="M7 0 L14 7 L7 14 L0 7 Z", fill=ink))
     ul = (f'<span style="position: absolute; left: -4px; bottom: -7px">{underline(ink, len(name) * 11 + 10)}</span>'
           if turn else "")
     return (f'<div style="display: flex; align-items: center; gap: 8px; justify-content: {align}">'
-            f'{svg(14, 14, shape)}<span style="position: relative; {TITLE}; color: {ink}">{name}{ul}</span>'
+            f'{shape}<span style="position: relative; {TITLE}; color: {ink}">{name}{ul}</span>'
             f'{tally(score, ink)}<span style="{SCORE}; color: {ink}">{score}</span></div>')
 
 
@@ -543,7 +750,7 @@ def margin_doodles(t, world=1):
     return svg(W, 300, body, style="position: absolute; left: 0; top: 0")
 
 
-def game_frame(t, key, uid, links=False, world=1):
+def game_frame(t, key, uid, links=False, world=1, contrast=False):
     m = MOMENTS[key]
     parts = [margin_doodles(t, world)]
     if key != "win":
@@ -559,7 +766,7 @@ def game_frame(t, key, uid, links=False, world=1):
     parts.append(bubble(t, m["bubble"], 198, 132))
     parts.append(f'<div style="position: absolute; left: 0; right: 0; top: 242px">'
                  f'{side_row(t, "blue", "Computer", m["opp"], False, "center")}</div>')
-    parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">{board_svg(t, key, uid, links=links)}</div>')
+    parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">{any_board_svg(t, key, uid, links=links, contrast=contrast)}</div>')
     # The player, below the board.
     you_turn = key in ("opening", "threat", "undo", "drag")
     row_top = 682 if key != "win" else -200
@@ -622,7 +829,7 @@ def small_game_frame(t, key, uid):
              f'<div style="position: absolute; left: 18px; top: 74px; width: 62px; height: 62px; box-sizing: border-box; '
              f'padding: 3px; {note_style(t, -3)}">{tape(t, 15, -7, 32, 4)}{face(t, m["mood"], 56)}</div>',
              f'<div style="position: absolute; left: 96px; top: 104px">{side_row(t, "blue", "Computer", m["opp"], False, "flex-start")}</div>',
-             f'<div style="position: absolute; left: 0; top: {top}px">{board_svg(t, key, uid, size=315, sp=21)}</div>',
+             f'<div style="position: absolute; left: 0; top: {top}px">{any_board_svg(t, key, uid, size=315, sp=21)}</div>',
              f'<div style="position: absolute; left: 12px; right: 12px; top: 462px; display: flex; align-items: center; '
              f'justify-content: space-between">{side_row(t, "red", "You", m["you"], True, "flex-start")}'
              f'<div style="display: flex; align-items: baseline; gap: 6px"><span style="{SCORE}">{m["left"]}</span>'
@@ -1059,6 +1266,34 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
 ]
 
 
+# The board themes draw the game frames only, plus the threat with high-contrast pieces.
+THEME_STEMS = ("game-start", "game-threat", "game-big-capture", "game-drag", "result-win", "small-game-threat")
+THEME_FRAMES = [fr for stem in THEME_STEMS for fr in FRAMES if fr[0] == stem] + [
+    ("game-threat-contrast", "GameThreatContrast", "Game: a threat, high-contrast pieces",
+     lambda t, u: game_frame(t, "threat", u, contrast=True), (W, H)),
+]
+THEME_NAMES = {"star-chart": ("StarChart", "Star chart"), "neon-arcade": ("NeonArcade", "Neon arcade")}
+
+
+def jobs(only=None):
+    """Every frame to draw: (file stem, canvas file name, title, drawer, size, theme colours, uid)."""
+    out = []
+    if only in (None, "notebook"):
+        for stem, name, title, draw, size in FRAMES:
+            for version, t in THEMES.items():
+                out.append((f"{stem}-{version}", name + ("" if version == "light" else "Dark"),
+                            f"{title}, {version}", draw, size, t, f"{name}{version[0]}"))
+    for theme, versions in BOARD_THEMES.items():
+        if only not in (None, theme):
+            continue
+        camel, label = THEME_NAMES[theme]
+        for stem, name, title, draw, size in THEME_FRAMES:
+            for version, t in versions.items():
+                out.append((f"{stem}-{theme}-{version}", name + camel + ("" if version == "light" else "Dark"),
+                            f"{title}, {label}, {version}", draw, size, t, f"{name}{camel[0]}{version[0]}"))
+    return out
+
+
 def page(body, title):
     return (f'<!doctype html><html lang="en"><head><meta charset="utf-8"><title>{title}</title>'
             f'<link rel="stylesheet" href="{FONTS.replace("&", "&amp;")}">'
@@ -1079,25 +1314,22 @@ def main():
     if "--canvas" in sys.argv:
         canvas = os.path.join(sys.argv[sys.argv.index("--canvas") + 1], "project")
         os.makedirs(canvas, exist_ok=True)
+    only = sys.argv[sys.argv.index("--only") + 1] if "--only" in sys.argv else None
     with tempfile.TemporaryDirectory() as tmp:
-        for stem, name, title, draw, size in FRAMES:
-            for theme, t in THEMES.items():
-                uid = f"{name}{theme[0]}"
-                body = draw(t, uid)
-                full = f"{title}, {theme}"
-                if canvas:
-                    dc_name = name + ("" if theme == "light" else "Dark") + ".dc.html"
-                    with open(os.path.join(canvas, dc_name), "w") as fh:
-                        fh.write(dc_page(body, full, size))
-                src = os.path.join(tmp, f"{stem}-{theme}.html")
-                with open(src, "w") as fh:
-                    fh.write(page(body, full))
-                out = os.path.join(HERE, f"{stem}-{theme}.png")
-                subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars",
-                                f"--force-device-scale-factor={SCALE}", f"--window-size={size[0]},{size[1]}",
-                                "--virtual-time-budget=15000", f"--screenshot={out}", "file://" + src],
-                               check=True, capture_output=True)
-                print(out)
+        for stem, dc_name, full, draw, size, t, uid in jobs(only):
+            body = draw(t, uid)
+            if canvas:
+                with open(os.path.join(canvas, dc_name + ".dc.html"), "w") as fh:
+                    fh.write(dc_page(body, full, size))
+            src = os.path.join(tmp, f"{stem}.html")
+            with open(src, "w") as fh:
+                fh.write(page(body, full))
+            out = os.path.join(HERE, f"{stem}.png")
+            subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars",
+                            f"--force-device-scale-factor={SCALE}", f"--window-size={size[0]},{size[1]}",
+                            "--virtual-time-budget=15000", f"--screenshot={out}", "file://" + src],
+                           check=True, capture_output=True)
+            print(out)
 
 
 if __name__ == "__main__":
