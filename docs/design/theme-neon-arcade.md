@@ -183,8 +183,8 @@ hatched falling (`\`), so its cut falls. A captured triangle lies in a magenta a
   the light is out. With the cut, a captured piece differs from a live one in two ways that don't
   rely on colour.
 - **A pinhole for the last move, not a ring of light.** The mood board marks the last move with a
-  pulsing ring, but a ring means a threat on this board, as in Notebook. How the last move moves is
-  for the motion page (D-23).
+  pulsing ring, but a ring means a threat on this board, as in Notebook. The last move moves as
+  Notebook's ([Motion, Neon arcade](motion.md#placing-a-dot-in-neon-arcade)).
 
 ### High contrast
 
@@ -307,8 +307,9 @@ theme sets.
 
 ### Left to other tasks
 
-The capture's burst of sparks and how the pieces and tubes light up are motion, on the motion
-page (D-23). The board sounds are D-24. The canvas frames are D-22.
+The capture's burst of sparks and how the pieces and tubes light up are on the motion page
+([Motion, Neon arcade](motion.md#neon-arcade)). The board sounds are D-24. The canvas frames are
+D-22.
 
 ## Type
 

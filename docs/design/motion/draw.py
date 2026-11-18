@@ -4,11 +4,14 @@ per moment.
 Run from the repository root (needs Python 3, Google Chrome, ffmpeg, and a network connection for
 the two Google Fonts):
 
-    python3 docs/design/motion/draw.py            # every GIF and strip
-    python3 docs/design/motion/draw.py capture    # only the scenes and strips named
+    python3 docs/design/motion/draw.py               # every GIF and strip
+    python3 docs/design/motion/draw.py capture       # only the scenes and strips named
+    python3 docs/design/motion/draw.py star-chart    # only one board theme's (or neon-arcade)
 
 Each scene is drawn at 25 frames a second from the timings on docs/design/motion.md, reusing the
 canvas drawing (docs/design/canvas/draw.py), so every colour and size follows the Notebook theme.
+The moments that Star chart and Neon arcade change are drawn again in those themes, with their
+values from docs/design/theme-star-chart.md and docs/design/theme-neon-arcade.md.
 Chrome renders the frames in tiled sheets and ffmpeg cuts them into a GIF. A caption above each
 GIF names the step and the time since it started.
 """
@@ -29,6 +32,9 @@ cd = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(cd)
 
 el, svg, f, THEMES = cd.el, cd.svg, cd.f, cd.THEMES
+# Every look a scene can be drawn in: Notebook's "light" and "dark", and each board theme's versions,
+# named like "star-chart-light". A board theme's colours carry style: "star" or "neon".
+LOOKS = dict(THEMES, **{f"{name}-{v}": t for name, versions in cd.BOARD_THEMES.items() for v, t in versions.items()})
 W, H = cd.W, cd.H
 FPS = 25
 STEP = 1000 // FPS  # 40 ms
@@ -37,6 +43,7 @@ BOARD_TOP = cd.BOARD_TOP
 CAP = 30  # caption band above each GIF frame, dp
 GIF_SCALE = 1.5  # px per dp in the GIFs
 SHEET_SCALE = 2  # px per dp in Chrome
+SHEET_PX = 4000  # the largest sheet side, px: on bigger sheets Chrome sometimes leaves the bottom blank
 FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
 
 
@@ -135,14 +142,19 @@ def position(red, blue, areas, last=None):
     return dict(red=list(red), blue=list(blue), areas=[dict(a) for a in areas], last=last)
 
 
-def area_state(a, ring=1.0, fill=1.0, origin=None, cuts=None, glow=0.0):
-    return dict(area=a, ring=ring, fill=fill, origin=origin or a["ring"][0], cuts=cuts or {}, glow=glow)
+def area_state(a, ring=1.0, fill=1.0, origin=None, cuts=None, glow=0.0, twinkles=None, lit=True):
+    """twinkles (Star chart): each ring star's size as the line reaches it; lit (Neon arcade): whether
+    the tube has its glow and core."""
+    return dict(area=a, ring=ring, fill=fill, origin=origin or a["ring"][0], cuts=cuts or {}, glow=glow,
+                twinkles=twinkles or {}, lit=lit)
 
 
 # ------------------------------------------------------------------- board ----
 
 def board(t, st, uid):
     """The board at one moment. st holds the pieces and every moving part; see the scenes below."""
+    if t.get("style"):
+        return theme_board(t, st, uid)
     scale = st.get("scale", {})
     captured = {}
     for a in st["areas"]:
@@ -296,22 +308,7 @@ def board(t, st, uid):
                                 x2=f(x + math.cos(a) * (r0 + ln)), y2=f(y + math.sin(a) * (r0 + ln)),
                                 stroke=t[side], stroke_width=2.5, stroke_linecap="round"))
     if st.get("burst"):
-        q = st["burst"]
-        cx, cy = c((4.5, 5))
-        allp = st["red"] + st["blue"]
-        for k in range(14):
-            a = k * 2 * math.pi / 14 + 0.2
-            r1, r2 = (64, 78) if k % 2 else (66, 74)
-            ends = [(cx + math.cos(a) * r, cy + math.sin(a) * r * 1.1) for r in (r1, (r1 + r2) / 2, r2)]
-            if any(math.hypot(ex - c(p)[0], ey - c(p)[1]) < 12 for ex, ey in ends for p in allp):
-                continue
-            grow_k = 0.7 + 0.3 * EASE_OUT(q)
-            ln = (r2 - r1) * math.sin(math.pi * q)
-            ra = r1 * grow_k
-            if ln > 0.3:
-                extra.append(el("line", x1=f(cx + math.cos(a) * ra), y1=f(cy + math.sin(a) * ra * 1.1),
-                                x2=f(cx + math.cos(a) * (ra + ln)), y2=f(cy + math.sin(a) * (ra + ln) * 1.1),
-                                stroke=t["red"], stroke_width=2.5, stroke_linecap="round"))
+        extra.append(burst(t, st))
     for p, side in st.get("preview", []):
         x, y = c(p)
         pale = t[side + "_pale"]
@@ -322,6 +319,207 @@ def board(t, st, uid):
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=360, height=360, fill=t["paper"]) +
             f'<g transform="translate({f(dx)} 0)">' + "".join(washes) + "".join(grid) + "".join(links) +
             "".join(drag) + "".join(rings) + "".join(marks) + "".join(pieces) + "".join(extra) + "</g>")
+    return svg(360, 360, body, label="The board, 15 by 15 points")
+
+
+def burst(t, st):
+    """The big capture's burst: 14 short strokes in the captor's ink round the six, moving out, growing
+    and shrinking away. None crosses a piece."""
+    q = st["burst"]
+    cx, cy = c((4.5, 5))
+    allp = st["red"] + st["blue"]
+    out = []
+    for k in range(14):
+        a = k * 2 * math.pi / 14 + 0.2
+        r1, r2 = (64, 78) if k % 2 else (66, 74)
+        ends = [(cx + math.cos(a) * r, cy + math.sin(a) * r * 1.1) for r in (r1, (r1 + r2) / 2, r2)]
+        if any(math.hypot(ex - c(p)[0], ey - c(p)[1]) < 12 for ex, ey in ends for p in allp):
+            continue
+        grow_k = 0.7 + 0.3 * EASE_OUT(q)
+        ln = (r2 - r1) * math.sin(math.pi * q)
+        ra = r1 * grow_k
+        if ln > 0.3:
+            out.append(el("line", x1=f(cx + math.cos(a) * ra), y1=f(cy + math.sin(a) * ra * 1.1),
+                          x2=f(cx + math.cos(a) * (ra + ln)), y2=f(cy + math.sin(a) * (ra + ln) * 1.1),
+                          stroke=t["red"], stroke_width=2.5, stroke_linecap="round"))
+    return "".join(out)
+
+
+# Neon arcade's sparks: where a tube closes, short lit streaks fly out from the closing piece.
+SPARKS, SPARK_FROM, SPARK_TO, SPARK_LONG = 10, 9.0, 27.0, 6.0  # count; dp from the centre; longest, dp
+
+
+def spark_ways(p, away, taken):
+    """The directions a spark from p can fly: out of the area (within 80 degrees of away, the direction from
+    the area's middle to p), without crossing another piece (within 8 dp of its centre)."""
+    x, y = c(p)
+    ways = []
+    for k in range(SPARKS):
+        a = away + (k - (SPARKS - 1) / 2) * math.radians(160) / (SPARKS - 1)
+        path = [(x + math.cos(a) * r, y + math.sin(a) * r) for r in range(int(SPARK_FROM), int(SPARK_TO) + 1, 2)]
+        if not any(math.hypot(px - c(o)[0], py - c(o)[1]) < 8 for px, py in path for o in taken if o != p):
+            ways.append(a)
+    return ways
+
+
+def sparks(t, p, side, q, away, taken):
+    """Sparks at q (0 to 1) of their flight: each moves out, grows and shrinks away. Each is a tiny tube:
+    the side's ink with its core along the middle."""
+    x, y = c(p)
+    r0, ln = SPARK_FROM + (SPARK_TO - SPARK_FROM - SPARK_LONG) * EASE_OUT(q), SPARK_LONG * math.sin(math.pi * q)
+    out = []
+    if ln < 0.3:
+        return ""
+    for a in spark_ways(p, away, taken):
+        x1, y1 = x + math.cos(a) * r0, y + math.sin(a) * r0
+        x2, y2 = x + math.cos(a) * (r0 + ln), y + math.sin(a) * (r0 + ln)
+        for colour, width in ((t[side], 2.2), (t[side + "_core"], 0.8)):
+            out.append(el("line", x1=f(x1), y1=f(y1), x2=f(x2), y2=f(y2), stroke=colour, stroke_width=width,
+                          stroke_linecap="round"))
+    return "".join(out)
+
+
+def ring_part(pts, k0, part):
+    """The ring from its k0-th point round and back to it, cut at part (0 to 1) of its length, as a path."""
+    seq = pts[k0:] + pts[:k0] + [pts[k0]]
+    legs = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(seq, seq[1:])]
+    left = part * sum(legs)
+    d = f"M{f(seq[0][0])} {f(seq[0][1])}"
+    for (a, b), L in zip(zip(seq, seq[1:]), legs):
+        if left <= 0:
+            break
+        k = min(1.0, left / L)
+        d += f" L{f(a[0] + (b[0] - a[0]) * k)} {f(a[1] + (b[1] - a[1]) * k)}"
+        left -= L
+    return d
+
+
+def ring_reached(ring, k0):
+    """Star chart's trace: the share of the ring's length at which the line reaches each of its stars,
+    starting from the k0-th; the star it starts from is reached again at 1."""
+    seq = ring[k0:] + ring[:k0] + [ring[k0]]
+    legs = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, b in zip(seq, seq[1:])]
+    total, run, out = sum(legs), 0.0, {}
+    for p, L in zip(seq[1:], legs):
+        run += L
+        out[p] = run / total
+    return out
+
+
+def theme_board(t, st, uid):
+    """The board at one moment in a board theme, in its page's drawing order: paper, washes or hazes,
+    hatching, grid, chart points, guides, glows round live pieces, the tubes' glows, rings or tubes,
+    cores, threat rings and ripples, pieces, pinhole and cuts, closing points, and the moving extras.
+    Links are left out: the theme frames show the default board, with links off."""
+    star = t["style"] == "star"
+    d, w = cd.theme_dot(SP), cd.theme_ring(SP)
+    scale, glowin = st.get("scale", {}), st.get("glowin", {})
+    captured = {p: a for a in st["areas"] for p in a["area"]["inside"]}
+    twinkle = {}
+    defs, fills, glows, tubes, cores = [], [], [], [], []
+    for i, a in enumerate(st["areas"]):
+        ar = a["area"]
+        k = ar["captor"]
+        pts = [c(p) for p in ar["ring"]]
+        outline = cd.poly(pts)
+        g = a["glow"]
+        wash, pale = mix(t[k + "_wash"], t[k + "_pale"], 0.85 * g), mix(t[k + "_pale"], t[k], 0.35 * g)
+        if star:  # the haze and its hatching blend in from Paper, over the whole area at once
+            wash, pale = mix(t["paper"], wash, a["fill"]), mix(t["paper"], pale, a["fill"])
+        pid, hs = f"h{uid}{i}", cd.HATCH
+        defs.append(f'<pattern id="{pid}" width="{hs}" height="{hs}" patternUnits="userSpaceOnUse" '
+                    f'patternTransform="rotate({-45 if k == "red" else 45})">' +
+                    el("rect", width=hs, height=hs, fill=wash) +
+                    el("line", x1=0, y1=hs / 2, x2=hs, y2=hs / 2, stroke=pale, stroke_width=1) + "</pattern>")
+        if a["fill"] > 0:
+            if star:
+                fills.append(el("path", d=outline, fill=f"url(#{pid})"))
+            else:  # Neon arcade: the wash spreads from the closing piece, as Notebook's
+                ox, oy = c(a["origin"])
+                reach = max(math.hypot(x - ox, y - oy) for x, y in pts) + 6
+                cid = f"k{uid}{i}"
+                defs.append(f'<clipPath id="{cid}">' + el("circle", cx=f(ox), cy=f(oy), r=f(reach * a["fill"])) +
+                            "</clipPath>")
+                fills.append(el("path", d=outline, fill=f"url(#{pid})", clip_path=f"url(#{cid})"))
+        twinkle.update(a["twinkles"])
+        if a["ring"] > 0:
+            k0 = ar["ring"].index(a["origin"]) if a["origin"] in ar["ring"] else 0
+            path = outline if a["ring"] >= 1 else ring_part(pts, k0, a["ring"])
+            ww = w * (1 + 0.9 * g)
+
+            def line(colour, width):
+                return el("path", d=path, fill="none", stroke=colour, stroke_width=f(width), stroke_linejoin="round",
+                          stroke_linecap="round")
+            if not star and a["lit"]:
+                glows.append(line(t[k + "_pale"], ww + 2 * cd.GLOW))
+                cores.append(line(t[k + "_core"], ww * cd.CORE))
+            tubes.append(line(t[k], ww))
+    grid = []
+    for i in range(15):
+        x = SP / 2 + i * SP
+        sw = 1.5 if i in (0, 14) else 1
+        grid.append(el("line", x1=f(x), y1=f(SP / 2), x2=f(x), y2=f(360 - SP / 2), stroke=t["grid"], stroke_width=sw))
+        grid.append(el("line", x1=f(SP / 2), y1=f(x), x2=f(360 - SP / 2), y2=f(x), stroke=t["grid"], stroke_width=sw))
+    if star:
+        grid += [el("circle", cx=f(SP / 2 + i * SP), cy=f(SP / 2 + j * SP), r=1, fill=t["point"])
+                 for i in range(15) for j in range(15)]
+    drag = []
+    if st.get("guides"):
+        p, side, q = st["guides"]
+        drag.append(cd.guides(t, side, *c(p), SP, 360, q))
+    marks = []
+    for p, k, wd, col in st.get("threats", []):
+        x, y = c(p)
+        marks.append(el("circle", cx=f(x), cy=f(y), r=f(0.42 * SP * k), fill="none", stroke=col, stroke_width=f(wd)))
+    for p, r, wd in st.get("ripples", []):
+        x, y = c(p)
+        marks.append(el("circle", cx=f(x), cy=f(y), r=f(r), fill="none", stroke=t[st.get("ripple_side", "blue")],
+                        stroke_width=f(wd)))
+    bands, pieces = [], []
+    for side in ("red", "blue"):
+        for p in st[side]:
+            s = scale.get(p, 1.0) * twinkle.get(p, 1.0)
+            if s <= 0.01:
+                continue
+            x, y = c(p)
+            cut = captured[p]["cuts"].get(p, 1.0) if p in captured else 0.0
+            if not star and cut <= 0:  # a live neon piece glows; the light goes out as its cut is drawn
+                gl = cd.GLOW * glowin.get(p, 1.0)
+                if gl > 0.05:
+                    bands.append(cd.band(t, side, x, y, d * s, t[side + "_pale"], gl))
+            pieces.append(el("path", d=cd.piece_d(t, side, x, y, d * s), fill=t[side]))
+            if cut > 0:
+                L = d * 0.75 / math.sqrt(2)
+                if side == "red":  # in blue's area: the cut falls, along blue's hatching
+                    (ax, ay), (bx, by), col = (x - L, y - L), (x + L, y + L), t["blue_wash"]
+                else:
+                    (ax, ay), (bx, by), col = (x - L, y + L), (x + L, y - L), t["red_wash"]
+                pieces.append(el("path", d=f"M{f(ax)} {f(ay)}L{f(ax + (bx - ax) * cut)} {f(ay + (by - ay) * cut)}",
+                                 stroke=col, stroke_width=f(d / 6), fill="none"))
+            if p == st.get("last") and scale.get(p, 1.0) >= 0.999:
+                pieces.append(el("circle", cx=f(x), cy=f(y), r=f(d * 0.15), fill=t["paper"]))
+    for p, side, k in st.get("closing", []):
+        x, y = c(p)
+        pieces.append(el("circle", cx=f(x), cy=f(y), r=f(SP / 6 * k), fill="none", stroke=t[side], stroke_width=1.5))
+    extra = []
+    for p, side, q in st.get("edges", []):
+        x, y = c(p)
+        extra.append(el("line", x1=f(x), y1=1.5, x2=f(x), y2=f(1.5 + 8 * q), stroke=t[side], stroke_width=2.5,
+                        stroke_linecap="round"))
+        extra.append(el("line", x1=1.5, y1=f(y), x2=f(1.5 + 8 * q), y2=f(y), stroke=t[side], stroke_width=2.5,
+                        stroke_linecap="round"))
+    if st.get("burst"):
+        extra.append(burst(t, st))
+    for p, side, q, away in st.get("sparks", []):
+        extra.append(sparks(t, p, side, q, away, st["red"] + st["blue"]))
+    for p, side in st.get("preview", []):
+        x, y = c(p)
+        extra.append(el("path", d=cd.piece_d(t, side, x, y, d), fill=t[side + "_pale"]) +
+                     el("circle", cx=f(x), cy=f(y), r=f(0.45 * SP), fill="none", stroke=t[side], stroke_width=f(w)))
+    dx = st.get("shake", 0.0)
+    body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=360, height=360, fill=t["paper"]) +
+            f'<g transform="translate({f(dx)} 0)">' + "".join(fills + grid + drag + bands + glows + tubes + cores +
+                                                              marks + pieces + extra) + "</g>")
     return svg(360, 360, body, label="The board, 15 by 15 points")
 
 
@@ -386,15 +584,18 @@ def hint(t, p, q):
 
 def side_row(t, side, name, score, turn, align, pop_k=1.0, chip=""):
     ink = t[side]
-    shape = (el("circle", cx=7, cy=7, r=6, fill=ink) if side == "red" else
-             el("path", d="M7 0 L14 7 L7 14 L0 7 Z", fill=ink))
+    if t.get("style"):
+        shape = cd.theme_piece(t, side, 18)
+    else:
+        shape = svg(14, 14, el("circle", cx=7, cy=7, r=6, fill=ink) if side == "red" else
+                    el("path", d="M7 0 L14 7 L7 14 L0 7 Z", fill=ink))
     ulw = len(name) * 11 + 10
     ul = ""
     if turn > 0:
         ul = (f'<span style="position: absolute; left: -4px; bottom: -7px; display: block; height: 8px; '
               f'width: {f(ulw * turn)}px; overflow: hidden">{cd.underline(ink, ulw)}</span>')
     return (f'<div style="display: flex; align-items: center; gap: 8px; justify-content: {align}">'
-            f'{svg(14, 14, shape)}<span style="position: relative; {cd.TITLE}; color: {ink}">{name}{ul}</span>{chip}'
+            f'{shape}<span style="position: relative; {cd.TITLE}; color: {ink}">{name}{ul}</span>{chip}'
             f'{cd.tally(score, ink)}<span style="display: inline-block; transform: scale({f(pop_k)}); {cd.SCORE}; '
             f'color: {ink}">{score}</span></div>')
 
@@ -516,6 +717,16 @@ def placed(t_ms, at):
     return pop(t_ms, at)
 
 
+GLOW_IN = (120, 200)  # Neon arcade: a new piece's glow grows in once the piece has reached its peak
+
+
+def land(st, p, T, at):
+    """A piece landing at `at`: its size, its links and, in Neon arcade, its glow."""
+    st["scale"][p] = placed(T, at)
+    st["grow"][p] = prog(T - at, 80, 230)
+    st.setdefault("glowin", {})[p] = prog(T - at, *GLOW_IN)
+
+
 def fading_edges(p, T, at):
     """Edge marks of the computer's earlier move: they go when the player's dot lands at `at`."""
     if T < at:
@@ -534,8 +745,7 @@ def base_threat_ui():
 def computer_lands(T, at, p, st, side="blue"):
     """The computer's dot lands at time at: the piece, its links, two ripples and the edge marks."""
     u = T - at
-    st["scale"][p] = placed(T, at)
-    st["grow"][p] = prog(u, 80, 230)
+    land(st, p, T, at)
     ripples = []
     for start in (0, 200):
         q = prog(u, start, start + 700, EASE_OUT)
@@ -550,7 +760,7 @@ def computer_lands(T, at, p, st, side="blue"):
 
 
 def scene_turn(theme, T, uid, finger=True):
-    t = THEMES[theme]
+    t = LOOKS[theme]
     you_at, opp_at = 400, 900
     you_p, opp_p = (9, 9), (10, 9)
     red = TR + ([you_p] if T >= you_at else [])
@@ -561,8 +771,7 @@ def scene_turn(theme, T, uid, finger=True):
     if T < you_at:
         st["preview"] = [(you_p, "red")]
     else:
-        st["scale"][you_p] = placed(T, you_at)
-        st["grow"][you_p] = prog(T - you_at, 80, 230)
+        land(st, you_p, T, you_at)
         if T >= you_at + 200:
             st["last"] = you_p
     if T >= opp_at:
@@ -616,7 +825,7 @@ def point_under(at, taken):
 
 
 def scene_drag(theme, T, uid):
-    t = THEMES[theme]
+    t = LOOKS[theme]
     target, lift = DRAG_ON[-1][1], DRAG_ON[-1][0]
     red = TR + ([target] if T >= lift else [])
     st = position(red, TB, [area_state(R1), area_state(B1)], last=(7, 7))
@@ -657,20 +866,63 @@ def scene_drag(theme, T, uid):
 CAPTURE_AT = 400
 
 
-def capture_parts(T, at, a, closing, big):
-    """The capture timeline from the moment the closing dot lands (at)."""
+TWINKLE, TWINKLE_PEAK = 120, 1.25  # Star chart: a star swells to 125% and back as the line reaches it
+FLICKER = (40, 80)  # Neon arcade: the lit tube goes dark again from 40 to 80 ms after it lights
+
+
+def capture_parts(T, at, a, closing, big, style=None):
+    """The capture timeline from the moment the closing dot lands (at). style is a board theme's: Star
+    chart traces its line at an even speed and twinkles each star it reaches; Neon arcade draws the
+    tube unlit and lights it, with one flicker, as it closes."""
     u = T - at
     if big:
-        ring = prog(u, 150, 650, EASE_IN_OUT)
+        start, close = 150, 650
         fill = prog(u, 650, 950)
         cut0, cut_gap = 700, 30
     else:
-        ring = prog(u, 150, 550, EASE_IN_OUT)
+        start, close = 150, 550
         fill = prog(u, 500, 800)
         cut0, cut_gap = 600, 40
+    ring = prog(u, start, close, linear if style == "star" else EASE_IN_OUT)
     inside = sorted(a["inside"], key=lambda p: math.hypot(p[0] - closing[0], p[1] - closing[1]))
     cuts = {p: prog(u, cut0 + k * cut_gap, cut0 + k * cut_gap + 100, linear) for k, p in enumerate(inside)}
-    return area_state(a, ring=ring, fill=fill, origin=closing, cuts=cuts)
+    twinkles = {}
+    if style == "star":
+        k0 = a["ring"].index(closing)
+        for p, share in ring_reached(a["ring"], k0).items():
+            twinkles[p] = bump(u, start + share * (close - start), TWINKLE, TWINKLE_PEAK)
+    lit = u >= close and not (close + FLICKER[0] <= u < close + FLICKER[1])
+    return area_state(a, ring=ring, fill=fill, origin=closing, cuts=cuts, twinkles=twinkles, lit=lit)
+
+
+def capture_extras(t, st, u, a, closing, big):
+    """Neon arcade's sparks where the tube closes, for 250 ms, flying out of the area."""
+    close = 650 if big else 550
+    if t.get("style") == "neon" and close <= u < close + 250:
+        mx = sum(p[0] for p in a["ring"]) / len(a["ring"])
+        my = sum(p[1] for p in a["ring"]) / len(a["ring"])
+        st["sparks"] = [(closing, "red", (u - close) / 250, math.atan2(closing[1] - my, closing[0] - mx))]
+
+
+def theme_caption(t, u, big):
+    """The step a board theme changes, for the caption above its GIF; None where it plays as Notebook."""
+    close = 650 if big else 550
+    style = t.get("style")
+    if style == "star":
+        if 150 <= u < close:
+            return "The line is traced star to star"
+        if close <= u < close + 300:
+            return "The haze blends in" if not big else "The haze blends in, the burst"
+    if style == "neon":
+        if u < 150:
+            return "The disc lands; its glow grows in"
+        if u < close:
+            return "The tube is drawn, unlit"
+        if u < close + FLICKER[1]:
+            return "The tube lights up, with a flicker"
+        if u < close + 250:
+            return "Sparks; the captured go dark"
+    return None
 
 
 def score_flight(t, T, at, n, start, big, you_before, mission_before):
@@ -705,30 +957,31 @@ def score_flight(t, T, at, n, start, big, you_before, mission_before):
 
 
 def scene_capture(theme, T, uid):
-    t = THEMES[theme]
+    t = LOOKS[theme]
     at, closing = CAPTURE_AT, (3, 11)
     red = [p for p in TR if p != closing] + ([closing] if T >= at else [])
     areas = [area_state(B1)]
     if T >= at:
-        areas.append(capture_parts(T, at, R1, closing, big=False))
+        areas.append(capture_parts(T, at, R1, closing, big=False, style=t.get("style")))
     st = position(red, TB, areas, last=(12, 12))
     st["scale"], st["grow"] = {}, {}
     st["edges"] = fading_edges((12, 12), T, at)
     if T >= at:
-        st["scale"][closing] = placed(T, at)
-        st["grow"][closing] = prog(T - at, 80, 230)
+        land(st, closing, T, at)
         if T >= at + 200:
             st["last"] = closing
+        capture_extras(t, st, T - at, R1, closing, big=False)
     u = T - at
     over, you, mission, you_pop, mpop = score_flight(t, T, at, 2, (fc((4, 10.5))[0] + 8, fc((4, 10.5))[1]), False, 0, 0)
     ui = dict(mood="upset" if u >= 800 else "happy", bubble="Ouch!" if u >= 800 else "Your move…", you=you, opp=1,
               left=17 if T < at else 16, mission=mission, mission_pop=mpop, you_pop=you_pop, board=st, over=over,
               turn=("you", 1.0) if T < at else ("opp", prog(u, 0, 200)))
-    cap = ("Before: your dot will close the ring", "") if T < at else ("A capture of 2", f"+{u} ms")
+    cap = ("Before: your dot will close the ring", "") if T < at else (theme_caption(t, u, False) or "A capture of 2",
+                                                                           f"+{u} ms")
     return screen(t, ui, uid), cap
 
 
-def big_state(T, at, skip_at=None):
+def big_state(T, at, skip_at=None, t=THEMES["light"]):
     """The big capture; a tap at skip_at jumps to the end."""
     t_eff = T if skip_at is None or T < skip_at else at + 5000
     closing = (5, 7)
@@ -742,9 +995,10 @@ def big_state(T, at, skip_at=None):
         st["threats"] = [(p, 1.0, 2, None) for p in PAIR + CLUSTER]
         st["closing"] = [((9, 9), "blue", 1.0), ((5, 7), "red", 1.0)]
     else:
-        areas.append(capture_parts(t_eff, at, BIG, closing, big=True))
-        st["scale"][closing] = placed(t_eff, at)
-        st["grow"][closing] = prog(u, 80, 230)
+        # Added to the board's own list: position() copied the areas above.
+        st["areas"].append(capture_parts(t_eff, at, BIG, closing, big=True, style=t.get("style")))
+        capture_extras(t, st, u, BIG, closing, big=True)
+        land(st, closing, t_eff, at)
         if u >= 200:
             st["last"] = closing
         # The pair is still one move from capture after the big capture.
@@ -759,14 +1013,14 @@ def big_state(T, at, skip_at=None):
 
 
 def scene_big(theme, T, uid):
-    t = THEMES[theme]
+    t = LOOKS[theme]
     take2 = 2600  # the second take starts here: the same capture, skipped by a tap
     if T < take2:
         at, skip_at, tt = CAPTURE_AT, None, T
     else:
         tt = T - take2
         at, skip_at = CAPTURE_AT, CAPTURE_AT + 500
-    st, u = big_state(tt, at, skip_at)
+    st, u = big_state(tt, at, skip_at, t)
     for i, th in enumerate(st.get("threats", [])):
         st["threats"][i] = (th[0], th[1], th[2], t["hi"])
     start = (156, BOARD_TOP + 262)  # below the area, where the canvas frame shows it
@@ -780,7 +1034,7 @@ def scene_big(theme, T, uid):
     if tt < at:
         cap = ("Before: your dot will close the ring", "")
     elif skip_at is None:
-        cap = ("A big capture: 6 at once", f"+{u} ms")
+        cap = (theme_caption(t, u, True) or "A big capture: 6 at once", f"+{u} ms")
     elif tt < skip_at:
         cap = ("Again, and a tap at +500 ms", f"+{tt - at} ms")
     else:
@@ -810,7 +1064,7 @@ def threat_rings(t, T, at, groups, closings):
 
 
 def scene_threat(theme, T, uid):
-    t = THEMES[theme]
+    t = LOOKS[theme]
     at = 400  # the computer's dot that makes the threat
     p = (7, 7)
     blue = [b for b in TB if b != p] + ([p] if T >= at else [])
@@ -842,7 +1096,7 @@ RUN_BLUE = [(13, 10), (2, 1), (13, 4), (8, 12), (2, 13)]
 
 
 def scene_running_out(theme, T, uid):
-    t = THEMES[theme]
+    t = LOOKS[theme]
     t0, gap = 400, 1000
     red, blue = list(TR), list(TB)
     st = position(red, blue, [area_state(R1), area_state(B1)], last=(7, 7))
@@ -910,7 +1164,7 @@ UNDO_YOU, UNDO_OPP, UNDO_BEFORE = (9, 8), (7, 7), (12, 12)
 
 
 def scene_boosters(theme, T, uid):
-    t = THEMES[theme]
+    t = LOOKS[theme]
     start = 0
     for i, (name, lead, length) in enumerate(BOOSTER_PARTS):
         total = lead + length + HOLD
@@ -1091,7 +1345,7 @@ AREA_ORDER = [(B1, "opp"), (R1, "you"), (BIG, "you")]
 
 def scene_end(theme, T, uid):
     """The big capture has just finished the mission, so the game ends."""
-    t = THEMES[theme]
+    t = LOOKS[theme]
     st = position(TR + [(5, 7)], TB, [], last=(5, 7))
     st["scale"], st["grow"] = {}, {}
     u = T - END_AT
@@ -1175,7 +1429,7 @@ def level_card(t, uid):
 
 
 def scene_unlock(theme, T, uid):
-    t = THEMES[theme]
+    t = LOOKS[theme]
     x7, y7 = stop_xy(7)
     x8, y8 = stop_xy(8)
     over = []
@@ -1324,6 +1578,27 @@ STRIPS = {  # name: (scene, crop, scale, [(T, label)])
 }
 
 
+# The moments a board theme changes (motion.md, Star chart and Neon arcade): a GIF of each in the
+# theme's light and dark versions, and a strip of key frames in the light version, cropped to the board
+# around the change. Strip names: <moment>-<theme>; GIFs: <scene>-<theme>-<light|dark>.gif.
+THEMED = {
+    "star-chart": ("capture", "big-capture"),
+    "neon-arcade": ("turn", "capture", "big-capture"),
+}
+THEME_STRIPS = {  # name: (scene, theme, crop, scale, [(T, label)])
+    "capture-star-chart": ("capture", "star-chart", sq((4, 10.5), 120), 2, [
+        (CAPTURE_AT + u, f"{u} ms" if u == 0 else str(u)) for u in (0, 200, 300, 400, 550, 650, 1250)]),
+    "big-capture-star-chart": ("big-capture", "star-chart", sq((4.5, 5), 190), 1.5, [
+        (CAPTURE_AT + u, f"{u} ms" if u == 0 else str(u)) for u in (0, 250, 400, 550, 650, 750, 1400)]),
+    "placing-neon-arcade": (lambda th, T, u: scene_turn(th, T, u, finger=False), "neon-arcade", sq((9, 8.5), 120), 3,
+                            [(360, "preview"), (400, "0 ms"), (480, "80"), (520, "120"), (560, "160"), (600, "200")]),
+    "capture-neon-arcade": ("capture", "neon-arcade", sq((4, 10.5), 120), 2, [
+        (CAPTURE_AT + u, f"{u} ms" if u == 0 else str(u)) for u in (0, 360, 560, 600, 640, 720, 1250)]),
+    "big-capture-neon-arcade": ("big-capture", "neon-arcade", sq((4.5, 5), 190), 1.5, [
+        (CAPTURE_AT + u, f"{u} ms" if u == 0 else str(u)) for u in (0, 400, 660, 700, 740, 820, 1400)]),
+}
+
+
 def booster_strip():
     rows = []
     start = 0
@@ -1365,11 +1640,18 @@ def shoot(cells, cols, cell_w, cell_h, out, scale, gap=0, bg="#FFFFFF"):
         src = os.path.join(tmp, "sheet.html")
         with open(src, "w") as fh:
             fh.write(cd.page(body, "Motion sheet"))
-        subprocess.run([cd.CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars",
-                        f"--user-data-dir={os.path.join(tmp, 'profile')}",
-                        f"--force-device-scale-factor={scale}", f"--window-size={math.ceil(width)},{math.ceil(height)}",
-                        "--virtual-time-budget=20000", f"--screenshot={out}", "file://" + src],
-                       check=True, capture_output=True)
+        for attempt in range(3):  # Chrome now and then hangs on a sheet; a fresh start draws it
+            try:
+                subprocess.run([cd.CHROME, "--headless=new", "--disable-gpu", "--hide-scrollbars",
+                                f"--user-data-dir={os.path.join(tmp, f'profile{attempt}')}",
+                                f"--force-device-scale-factor={scale}",
+                                f"--window-size={math.ceil(width)},{math.ceil(height)}",
+                                "--virtual-time-budget=20000", f"--screenshot={out}", "file://" + src],
+                               check=True, capture_output=True, timeout=120)
+                break
+            except subprocess.TimeoutExpired:
+                if attempt == 2:
+                    raise
 
 
 def make_gif(name, theme, workdir):
@@ -1381,8 +1663,8 @@ def make_gif(name, theme, workdir):
         html, caption = draw(theme, T, f"{name[:3]}{theme[0]}{i}")
         cells.append(cell(html, crop, caption))
     ch = h + CAP
-    cols = max(1, int(7800 / SHEET_SCALE // w))
-    rows = max(1, int(7800 / SHEET_SCALE // ch))
+    cols = max(1, int(SHEET_PX / SHEET_SCALE // w))
+    rows = max(1, int(SHEET_PX / SHEET_SCALE // ch))
     per = cols * rows
     frames_dir = os.path.join(workdir, f"{name}-{theme}")
     os.makedirs(frames_dir, exist_ok=True)
@@ -1408,14 +1690,14 @@ def make_gif(name, theme, workdir):
     print(out, os.path.getsize(out) // 1024, "KB")
 
 
-def make_strip(name, rows, scene, crop, scale):
+def make_strip(name, rows, scene, crop, scale, theme="light"):
     draw = scene if callable(scene) else SCENES[scene][0]
     x, y, w, h = crop
     cols = max(len(r) for r in rows)
     cells = []
     for r, row in enumerate(rows):
         for i, (T, label) in enumerate(row):
-            html, _ = draw("light", T, f"s{name[:3]}{r}{i}")
+            html, _ = draw(theme, T, f"s{name[:3]}{r}{i}")
             cells.append(cell(html, crop, label=label))
         cells.extend(f'<div style="width: {f(w)}px"></div>' for _ in range(cols - len(row)))
     out = os.path.join(HERE, f"strip-{name}.png")
@@ -1435,6 +1717,14 @@ def main():
             if not only or name in only:
                 for theme in THEMES:
                     make_gif(name, theme, work)
+        for name, (scene, board, crop, scale, times) in THEME_STRIPS.items():
+            if not only or name in only or board in only:
+                make_strip(name, [times], scene, crop, scale, f"{board}-light")
+        for board, names in THEMED.items():
+            for name in names:
+                if not only or f"{name}-{board}" in only or board in only:
+                    for v in ("light", "dark"):
+                        make_gif(name, f"{board}-{v}", work)
         shutil.rmtree(work, ignore_errors=True)
 
 

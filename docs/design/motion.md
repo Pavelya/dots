@@ -2,13 +2,14 @@
 
 This page describes every animation in Pinfold before it is built: what moves, in which order,
 for how long, and what the player can do meanwhile. The animations are built in V-05 (the board
-and the screens), V-06 (the booster effects) and A-14 (the computer's last move). They follow the
-times on this page.
+and the screens), V-06 (the booster effects), A-14 (the computer's last move) and V-13 (the board
+themes). They follow the times on this page.
 
 Every time is in milliseconds (ms), counted from the moment's start, which each section names.
 Colours and sizes are those of the [Notebook theme](theme-notebook.md) and
 [Piece shapes](pieces.md). The [canvas](canvas/README.md) shows the still frames these
-animations start and end on.
+animations start and end on. The board themes move at the same times; their sections,
+[Star chart](#star-chart) and [Neon arcade](#neon-arcade), list only what they change.
 
 Each moment has a strip of key frames and a GIF made from the canvas mock-ups. The GIFs have a dark
 band above the frame that names the step and shows the time since it started. The band and the
@@ -71,6 +72,11 @@ does while the animation runs.
 | [Level unlock](#level-unlock) | the map shows after Next | 2100 ms | 0 | jumps to the Level card | the new state and the card at once |
 | [Level opening](#level-opening-notes-and-cards) | the board shows | 1500 ms | 0 | finishes it and counts | the corner note at once |
 | [Notes and cards](#level-opening-notes-and-cards) | a note is opened or closed | 300 ms in, 200 ms out | 0: the buttons work at once | counts as usual | the note at once |
+
+**The same times in every theme.** Star chart and Neon arcade change how a step looks, never when
+it starts or how long the moment lasts. So the sounds and vibrations stay in step in every theme
+([Sound](sound.md), rule 3): a capture's ring closes at 550 ms and a big capture's at 650 ms,
+whatever the board looks like.
 
 ## Placing by drag
 
@@ -380,6 +386,164 @@ These have no GIF. The canvas frame "Game: the level opens" shows the opening.
   puzzle, Play a game, the booster preview): they slide up from below in 300 ms (ease out) while
   the background dims; they leave by sliding down in 200 ms (ease in). Their buttons work at once.
 
+## Star chart
+
+The [Star chart theme](theme-star-chart.md) is a printed star chart: straight lines, solid
+colours, nothing glows. Its board moves as Notebook's, at the same times, except in a capture. There
+Notebook's pen stroke becomes a constellation line traced from star to star, and the wash becomes a
+haze that blends in. This section lists only those changes.
+
+Every other moment on this page plays as written, in the theme's colours: Gold ink where the page
+says the red side's ink, Ice ink for the blue side's, Nova for Highlighter, Starlight for Pencil and
+Dust for Graphite. Placing a dot, the computer's move, the threat pulse, the boosters and the end of
+the game have no section here, because nothing about them changes. The canvas frames are the
+[Star chart frames](canvas/README.md#star-chart).
+
+### Capture in Star chart
+
+0 ms is the moment the closing star lands, as in [Capture](#capture). The GIFs below show the same
+capture of two comets as Notebook's.
+
+<img src="motion/strip-capture-star-chart.png" width="720" alt="Key frames: the gold line traced from the closing star up the left side, over the top and down the right, each star swelling as the line reaches it; the haze and hatching blending in; the comets cut">
+
+<img src="motion/capture-star-chart-light.gif" width="270" alt="Animation: a capture of two comets in Star chart">
+
+[Same in the dark version](motion/capture-star-chart-dark.gif)
+
+| Time | What changes from Notebook | Easing |
+| --- | --- | --- |
+| 150 to 550 | The ring is a constellation line. It is traced from the closing star, round the area from star to star, and back to the closing star, at an even speed, as if drawn with a ruler. It is straight and of even width from the first moment. | linear |
+| As the line reaches each star | That star twinkles: it swells to 125% and back in 120 ms. The closing star twinkles last, at 550 ms, as the line comes back to it, with the medium vibration. | ease in-out |
+| 500 to 800 | The haze and its hatching blend in from Paper over the whole area at once. They do not spread from the closing star. | ease out |
+
+The cuts, +N, the opponent's face and the score are Notebook's.
+
+### Big capture in Star chart
+
+<img src="motion/strip-big-capture-star-chart.png" width="720" alt="Key frames: the line traced round the six comets star by star, the closing star twinkling, the burst of gold strokes and the haze blending in, then the comets cut">
+
+<img src="motion/big-capture-star-chart-light.gif" width="270" alt="Animation: a capture of six comets in Star chart, played in full, then again with a tap at 500 ms that finishes it at once">
+
+[Same in the dark version](motion/big-capture-star-chart-dark.gif)
+
+| Time | What changes from Notebook | Easing |
+| --- | --- | --- |
+| 150 to 650 | The line is traced star to star, as in a capture. With ten stars on the ring, a star twinkles about every 50 ms. | linear |
+| 650 | The closing star twinkles as the line comes back to it, with the strong vibration, the shake and the burst. | ease in-out |
+| 650 to 950 | The haze and hatching blend in over the whole area. | ease out |
+
+The shake and the burst of 14 short strokes are Notebook's, in Gold ink, as on the canvas frame
+"Game: right after a big capture".
+
+**Why these changes.**
+
+- **An even speed.** Notebook's ring speeds up and slows down like a hand with a pen. A chart's
+  lines are ruled, so the line runs at one speed. It still takes the same 400 ms (500 ms for a big
+  capture), so the ring's sound fits it.
+- **A twinkle, not a glow.** The theme page rules out glows. A star that swells as the line
+  reaches it gives the line of light from the mood board (picture 2) in solid colours.
+- **A haze that blends in.** A nebula appears where it is; it does not flow in from one side. The
+  haze blends from Paper to its colour, so nothing on the board turns see-through (rule 3).
+
+**With animations removed,** the line, the haze and the cuts show at once, as in Notebook. No
+star twinkles.
+
+## Neon arcade
+
+The [Neon arcade theme](theme-neon-arcade.md) is light on a dark screen: every live piece and
+every tube sits in a band of glow. Its board moves as Notebook's, at the same times, with the light
+added. A piece lights up just after it lands. A tube lights up as it closes, with a burst of sparks.
+A captured piece goes dark. Every glow is a solid band that grows or switches on, never a blur that
+fades in. This section lists only those changes.
+
+Every other moment on this page plays as written, in the theme's colours: Magenta ink where the
+page says the red side's ink, Cyan ink for the blue side's, Volt for Highlighter, Main text for
+Pencil and Dim text for Graphite. The canvas frames are the
+[Neon arcade frames](canvas/README.md#neon-arcade).
+
+**A glow follows its piece.** Whenever a piece grows, shrinks or swells (placing, a bomb, Undo's
+rub-out), its glow band grows, shrinks and swells with it. When an area lights up at the end of the
+game, the whole tube thickens to 190%: glow, tube and core together.
+
+### Placing a dot in Neon arcade
+
+0 ms is the moment the dot is placed, as in
+[Placing a dot](#placing-a-dot-and-chain-lines). The computer's dot lands the same way, with its
+ripples in Cyan ink.
+
+<img src="motion/strip-placing-neon-arcade.png" width="720" alt="Key frames: the pale disc in its ring; the magenta disc growing without glow; at 120 ms its pale band starting to grow; at 200 ms the band full and the pinhole in the disc">
+
+<img src="motion/turn-neon-arcade-light.gif" width="360" alt="Animation: the player places a magenta disc, which lights up; the computer's cyan triangle lands beside the thumb with two spreading rings and lights up">
+
+[Same in the dark version](motion/turn-neon-arcade-dark.gif)
+
+| Time | What changes from Notebook | Easing |
+| --- | --- | --- |
+| 0 to 120 | The piece grows to 115%, as in Notebook, unlit: it has no glow yet. | ease out |
+| 120 to 200 | While it settles to 100%, its glow grows from nothing to the 1.5 dp band. | ease out |
+
+**The last move.** The theme page leaves open how the last move moves. It moves as Notebook's: the
+pinhole jumps to the new piece at 200 ms and stays still. The mood board's pulsing ring is left out:
+a ring means a threat on this board, and nothing moves for longer than 5 seconds (rule 4).
+
+### Capture in Neon arcade
+
+0 ms is the moment the closing disc lands, as in [Capture](#capture). The GIFs show the same
+capture of two triangles as Notebook's.
+
+<img src="motion/strip-capture-neon-arcade.png" width="720" alt="Key frames: the magenta tube drawn round the two triangles without glow; at 560 ms it lights and sparks fly from the closing disc; at 600 ms it is dark again; at 640 ms lit for good; the triangles cut and without glow">
+
+<img src="motion/capture-neon-arcade-light.gif" width="270" alt="Animation: a capture of two triangles in Neon arcade">
+
+[Same in the dark version](motion/capture-neon-arcade-dark.gif)
+
+| Time | What changes from Notebook | Easing |
+| --- | --- | --- |
+| 150 to 550 | The tube is drawn from the closing disc, round the area and back, as Notebook's ring is, but unlit: in the side's ink only, without its glow and core. It is straight and of even width. | ease in-out |
+| 550 | The tube lights up: its glow and core switch on, with the medium vibration. | |
+| 590 to 630 | One flicker: the glow and core go out for 40 ms and come back for good, as a neon tube does when it starts. | |
+| 550 to 800 | Sparks: up to ten short streaks fly out from the closing disc, away from the area, growing and then shrinking away. Each is a small tube, 2.2 dp of the side's ink with its core along the middle. None crosses a piece. | ease out |
+| 600 onwards | Each captured piece's glow goes out at once when its cut starts: the light is out. | |
+
+The wash spreads from the closing disc as Notebook's does. The cuts, +N, the face and the score are
+Notebook's.
+
+### Big capture in Neon arcade
+
+<img src="motion/strip-big-capture-neon-arcade.png" width="720" alt="Key frames: the tube drawn round the six triangles without glow; at 660 ms it lights, sparks fly from the closing disc and the burst starts; at 700 ms the flicker; the wash spreading; the triangles cut, without glow">
+
+<img src="motion/big-capture-neon-arcade-light.gif" width="270" alt="Animation: a capture of six triangles in Neon arcade, played in full, then again with a tap at 500 ms that finishes it at once">
+
+[Same in the dark version](motion/big-capture-neon-arcade-dark.gif)
+
+| Time | What changes from Notebook | Easing |
+| --- | --- | --- |
+| 150 to 650 | The tube is drawn unlit. | ease in-out |
+| 650 | It lights up, with the strong vibration and the shake. | |
+| 690 to 730 | The flicker. | |
+| 650 to 900 | The sparks from the closing disc, at the same time as the burst. | ease out |
+| 700 onwards | Each captured piece goes dark as its cut starts, 30 ms apart. | |
+
+The shake and the burst of 14 short strokes round the area are Notebook's, in Magenta ink, as on
+the canvas frame "Game: right after a big capture".
+
+**Why these changes.**
+
+- **Lit after it lands.** A sign lights once it is up. The glow grows in while the piece settles,
+  so placing still ends at 200 ms.
+- **The tube lights when it closes.** A tube lights only when the circuit is complete. The light
+  comes on at the moment of the closing sound and vibration, so the three arrive together.
+- **One flicker.** It makes the light read as a neon tube starting. It is a single 40 ms dip on a
+  5 dp band, far below the WCAG limit of three flashes in any one second, and it is only on a
+  capture, not on every dot.
+- **Sparks where it closes,** as in the mood board (picture 2). They fly away from the area, so
+  they never cover the pieces just captured.
+- **Dark when captured.** The theme page gives a captured piece no glow. It goes out with its cut,
+  so the two signs that don't rely on colour arrive together.
+
+**With animations removed,** a placed piece shows with its glow at once, and a capture shows its
+lit tube, wash, cuts and dark pieces at once. There is no flicker and no sparks.
+
 ## Checks
 
 - **No animation holds the next tap for more than 0.3 s.** The board takes every tap at once, and a
@@ -389,6 +553,9 @@ These have no GIF. The canvas frame "Game: the level opens" shows the opening.
   once (second half of the big-capture GIF).
 - **Booster effects are under 1.5 s** (the V-06 check): Wall 400 ms, Hint 500 ms, Bomb 450 ms,
   Double dot 300 ms and then 250 ms per dot, Undo 600 ms.
+- **The board themes keep these limits.** Star chart and Neon arcade use the same times, so a
+  capture still takes 1250 ms and a big capture 1400 ms. A tap finishes their twinkles, flicker
+  and sparks with the rest (second half of each theme's big-capture GIF).
 
 ## New in this storyboard
 
@@ -402,6 +569,11 @@ These looks are new here. They are proposals for the owner to accept or change:
 - The hint: the point circled twice, like the next level on the map.
 - The double dot: the "×2" chip beside the player's name.
 - A big capture's +N and words below the area, where the canvas frame shows them.
+- Star chart: the constellation line traced at an even speed, each star twinkling as the line
+  reaches it, and the haze blending in over the whole area.
+- Neon arcade: a piece's glow growing in after it lands; the tube drawn unlit and lighting up as it
+  closes, with one flicker; sparks from the closing piece; a captured piece going dark with its cut;
+  the last move marked by the pinhole alone.
 
 ## The mock-ups
 
@@ -410,9 +582,14 @@ using the canvas drawing ([`canvas/draw.py`](canvas/draw.py)). It draws 25 frame
 Google Chrome renders them and ffmpeg makes the GIFs.
 
 ```sh
-python3 docs/design/motion/draw.py            # every GIF and strip (about 7 minutes)
-python3 docs/design/motion/draw.py capture    # only the ones named
+python3 docs/design/motion/draw.py               # every GIF and strip (several minutes)
+python3 docs/design/motion/draw.py capture       # only the ones named
+python3 docs/design/motion/draw.py star-chart    # only one board theme's: star-chart or neon-arcade
 ```
+
+A board theme's GIFs are named `<moment>-<theme>-<light|dark>.gif` and its strips
+`strip-<moment>-<theme>.png`. Its board is drawn from the theme page's values, as on the canvas
+frames, with links off.
 
 It needs Python 3, Google Chrome, ffmpeg and a network connection (the fonts come from Google
 Fonts). Change a time on this page, in the script and in the app together: the app reads every
