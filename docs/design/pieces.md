@@ -4,7 +4,8 @@ The two sides differ by shape as well as by colour. **Red pieces are round dots.
 are diamonds.** A player who can't tell red from blue, or who plays in greyscale, can still read
 the board. This page gives the shapes, the mark for the last move, the mark for a captured piece
 and the placement preview. Colours and every other board size are on the
-[Notebook theme](theme-notebook.md) page.
+[Notebook theme](theme-notebook.md) page. The Star chart theme has its own pieces, gold stars and
+ice-blue comets, on the [Star chart theme](theme-star-chart.md) page.
 
 <img src="pieces/pieces-4x.svg" alt="The pieces in the light and the dark version: red dot, blue diamond, each with the last-move pinhole, each captured with a cut, and each as a preview" width="768">
 
