@@ -69,7 +69,7 @@ One session works on one issue. Given "Work on B-02" (a task ID):
 3. **Open the design first.** Before writing code, open every item in the issue's "Design inputs":
    canvas frames (PNGs in `docs/design/canvas/`), wireframes (linked from `flows.md`, Wireframes),
    `flows.md`, `game-screens.md`, `motion.md`, `sound.md`, `illustrations.md`, and the theme and
-   piece pages (`theme-notebook.md`, `pieces.md`, `theme-star-chart.md`). All are in `docs/design/`. Build what they show.
+   piece pages (`theme-notebook.md`, `pieces.md`, `theme-star-chart.md`, `theme-neon-arcade.md`). All are in `docs/design/`. Build what they show.
    If a task changes what the player sees or hears and has no "Design inputs", stop and ask the
    owner which ones apply.
 4. **Stay within the issue.** Anything else you notice (a bug, a stale doc, a better idea) becomes

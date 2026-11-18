@@ -96,4 +96,5 @@ Fonts (Google Fonts, Open Font License):
 - [Orbitron](https://fonts.google.com/specimen/Orbitron): headings, wide and geometric
 - [Exo 2](https://fonts.google.com/specimen/Exo+2): everything else, technical but readable
 
-The colours and fonts are a first proposal. D-03 sets the final ones and checks the contrast.
+The colours and fonts were a first proposal. The final colours, and the reason the theme keeps
+Notebook's fonts, are on the [Neon arcade theme](../theme-neon-arcade.md) page.
