@@ -24,8 +24,10 @@ each picture keeps to the four colours, a script swaps them for the dark version
 makes the dark versions when the pictures come in.
 
 **Other themes.** A theme draws the game screen's pictures with the same swap, from its own inks.
-The [Star chart theme](theme-star-chart.md#the-faces) lists its inks and file names; it needs no
-new prompts. The map pages keep the Notebook inks in every theme.
+The [Star chart theme](theme-star-chart.md#the-faces) and the
+[Neon arcade theme](theme-neon-arcade.md#the-faces) list their inks and file names; neither needs
+new prompts. Neon arcade's dark version swaps the blue inks differently, so the white eyes stay
+clear on a bright cyan. The map pages keep the Notebook inks in every theme.
 
 ## Making the pictures
 
