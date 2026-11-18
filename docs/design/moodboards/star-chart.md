@@ -95,4 +95,5 @@ Fonts (Google Fonts, Open Font License):
 - [Fraunces](https://fonts.google.com/specimen/Fraunces): headings, a soft and elegant serif
 - [Inter](https://fonts.google.com/specimen/Inter): everything else, plain and clear
 
-The colours and fonts are a first proposal. D-03 sets the final ones and checks the contrast.
+The colours and fonts were a first proposal. The final colours, and the reason the theme keeps
+Notebook's fonts, are on the [Star chart theme](../theme-star-chart.md) page.

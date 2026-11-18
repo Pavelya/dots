@@ -23,6 +23,10 @@ each picture keeps to the four colours, a script swaps them for the dark version
 `#6B90E8`, `#5E3834`, `#2F3F66`) and keeps white, so no second set of prompts is needed. Claude
 makes the dark versions when the pictures come in.
 
+**Other themes.** A theme draws the game screen's pictures with the same swap, from its own inks.
+The [Star chart theme](theme-star-chart.md#the-faces) lists its inks and file names; it needs no
+new prompts. The map pages keep the Notebook inks in every theme.
+
 ## Making the pictures
 
 1. Start a new ChatGPT chat for each prompt and paste the prompt exactly as written. Don't upload
