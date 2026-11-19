@@ -1,13 +1,15 @@
 # Sound
 
-This page names every sound in Pinfold before it is made: 17 sound effects and 6 music tracks.
-For each one it gives when it plays, how long it is, its mood, and how it is made, with the exact
-file name to save and the exact prompt or recipe. The effects are made in V-08, the music in V-09,
-and V-10 makes the app play them.
+This page names every sound in Pinfold before it is made: 17 sound effects, the board sounds of
+the two later themes, and 6 music tracks. For each one it gives when it plays, how long it is, its
+mood, and how it is made, with the exact file name to save and the exact prompt or recipe. The
+effects are made in V-08, the music in V-09, and V-10 makes the app play them. V-26 makes the
+later themes' board sounds and plays them.
 
-Sounds made on the board belong to the theme: the effects here are the Notebook theme's, and a
-later theme may bring its own. Music belongs to the world, whatever theme the player picks
-([decision 0028](../decisions/0028-worlds-and-themes.md)).
+Sounds made on the board belong to the theme. The effects in the tables below are the Notebook
+theme's, the theme at launch. Star chart and Neon arcade replace 9 of them with their own
+([Board sounds of the other themes](#board-sounds-of-the-other-themes)). Music belongs to the
+world, whatever theme the player picks ([decision 0028](../decisions/0028-worlds-and-themes.md)).
 
 The times come from the [motion storyboard](motion.md): a sound starts at the moment its animation
 step starts, and its "When it plays" names that step.
@@ -47,6 +49,7 @@ step starts, and its "When it plays" names that step.
 | Suno Sounds, during the Suno Pro month (decision 0020) | The owner | `fx_*.wav` ([the three source sounds](#the-three-source-sounds)) | The dot, the ring, the bomb |
 | A phone recording, if Suno's version is not clean | The owner | `fx_*.m4a` or `.wav` | The same three, one by one as needed |
 | Made in code | Claude, in V-08, with [`sound/make_effects.py`](sound/make_effects.py) | none; the script makes `sfx_*` | The other 14 |
+| Made in code | Claude, in V-26, with the same script | none; the script makes `sfx_star_chart_*` and `sfx_neon_arcade_*` | Every board sound of [Star chart](#star-chart) and [Neon arcade](#neon-arcade) |
 | Suno songs, during the Suno Pro month | The owner | `music_*.wav` ([music](#music)) | The six music tracks |
 | CC0 (Kenney, Freesound) | Claude or the owner | the sound's page link, saved with it | Only if both Suno and the phone fail |
 
@@ -167,7 +170,9 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 | Level opening | silent |
 | Notes and cards | silent |
 
-If G-06 adds special points with their own animation, they need a row here too.
+If G-06 adds special points with their own animation, they need a row here too. Star chart and
+Neon arcade check their own sounds against their motion sections
+([Star chart](#star-chart), [Neon arcade](#neon-arcade)).
 
 ## In the app
 
@@ -266,6 +271,140 @@ Notes are named with their octave: D5 is the D above middle C (C4).
 | `sfx_star` | A short, soft paper click, then mallet D6 | 400 ms |
 | `sfx_world_open` | Mallet D5, E5, G5, A5, D6, E6, 80 ms apart, then a pluck and mallet chord D4, A4, E5, held | 2 s |
 | `sfx_reward` | Mallet A6, D7, E7, A7 within 150 ms, over a pluck chord D4, A4 | 600 ms |
+
+## Board sounds of the other themes
+
+[Star chart](theme-star-chart.md) and [Neon arcade](theme-neon-arcade.md) each bring their own
+sounds for what happens on the board. Every other effect stays Notebook's in every theme.
+
+### What a theme replaces
+
+| Notebook's sound | In Star chart and Neon arcade | Why |
+| --- | --- | --- |
+| `sfx_place_1`, `_2`, `_3` | the theme's own | A piece lands on the board. |
+| `sfx_ring_draw` | the theme's own | The ring is drawn on the board. The wall, hint and undo play it too, so all three follow the theme. |
+| `sfx_ring_close` | the theme's own | The ring closes on the board. |
+| `sfx_captured` | the theme's own | It plays in place of `sfx_ring_close`, at the same moment. |
+| `sfx_capture_big` | the theme's own | The ring closes and the burst flies out on the board. |
+| `sfx_threat` | the theme's own | The threat rings draw in on the board. |
+| `sfx_bomb` | the theme's own | The bomb drops on the board. |
+| `sfx_double_dot` | the theme's own | A booster: the other four boosters' sounds come from the theme, so this one does too. |
+| `sfx_area_light` | the theme's own | The board's rings light up at the end of a game. |
+| `sfx_dots_low` | Notebook's | The count is in the score row, not on the board. A quiet tick, heard once a game. |
+| `sfx_boss_turn` | Notebook's | The boss is the same character in every theme, recoloured, not redrawn (theme pages, The faces). Its sound is its voice. |
+| `sfx_win`, `sfx_lose`, `sfx_draw`, `sfx_star` | Notebook's | They play on the result note, which keeps Notebook's paper and tape in every theme. |
+| `sfx_world_open`, `sfx_reward` | Notebook's | The map and the Shop are Notebook's in every theme (decision 0028). |
+
+So each theme has 9 sounds of its own, in 11 files. Each file is named
+`sfx_<theme>_<Notebook's name without sfx_>`, for example `sfx_star_chart_place_1`.
+
+### Rules for a theme's sounds
+
+The [rules for all sound](#rules-for-all-sound) hold. These come on top:
+
+1. **Notebook's moments, lengths and volumes.** Each theme sound starts at the moment of the
+   Notebook sound it replaces and lasts as long. It has the same "Volume" and the same loudness
+   (-22 LUFS, rule 9). Only the file changes, so the app keeps every other rule.
+2. **The same speeds.** The app plays a theme's file at the speeds Notebook's file gets: the dot at
+   85% to 105% (rules 7 and 10), the ring at 75%, 80% and 160% (Boosters). Those speeds move a note
+   off D, E, G and A. So the dot and the ring drawn have **no clear note**: a click, a slide or a
+   hiss. `sfx_<theme>_area_light` is on D5, like Notebook's, so the app's speeds give D, E, G and
+   A.
+3. **Soft, as Notebook's.** Star chart's bells end inside Notebook's lengths. Neon arcade's synth
+   tones are softened square waves, with no overtones above 4 times the note, never the raw beep
+   of an old game console.
+4. **Made in code.** Both themes are drawn in code from their theme pages, and their sounds are
+   what code makes well: glass bells and synth tones. Every run of the script gives the same files.
+   They need no Suno month and no new licence. The Suno terms the owner saved do not yet show that
+   they cover Sounds (V-14).
+
+The building blocks below are described like Notebook's [sounds made in code](#sounds-made-in-code).
+The script holds the exact values.
+
+### Star chart
+
+**Quiet glass and starlight.** A printed chart is drawn with a ruler, so its sounds are even and
+clear. Small glass bells play where Notebook has felt mallets. Each star or comet lands with a
+tiny glass tick, and the line ruled from star to star is an even, airy shimmer. Nothing thuds: the
+big capture and the bomb have a soft, low swell.
+
+- **glass:** a small glass bell, like a celesta: a clear tone with two faint overtones out of tune
+  with it (2.76 and 5.40 times the note, as a struck bar has), a 2 ms start and a slow fade, about
+  half as long again as the mallet's. A quieter second tone, 2 cents higher, makes it shimmer
+  slowly, as a star twinkles. **Damped glass** fades in 50 ms, like a bell touched by a finger,
+  and has no shimmer;
+- **tick:** a tiny glass tick: a 1 ms click and four high overtones out of tune with each other,
+  between 3 and 9 kHz, gone in about 40 ms. It has no clear note;
+- **hush:** soft high noise between 2 and 8 kHz, like a breath, at one loudness all through;
+- **swell:** a low, soft tone that swells in and fades away without falling in pitch: the chart's
+  calm thump.
+
+| File | Replaces | Recipe | Length | Volume |
+| --- | --- | --- | --- | --- |
+| `sfx_star_chart_place_1`, `_2`, `_3` | `sfx_place_*` | Tick; each take with its own four overtones | 120 ms | half |
+| `sfx_star_chart_ring_draw` | `sfx_ring_draw` | Hush, with 8 faint ticks spread evenly over it, one every 47 ms: the line ruled at an even speed, stars twinkling along it | 400 ms | full |
+| `sfx_star_chart_ring_close` | `sfx_ring_close` | Glass D6, then A6 60 ms later: Notebook's notes an octave higher, the closing star twinkling | 400 ms | full |
+| `sfx_star_chart_captured` | `sfx_captured` | Glass A5, then E5 80 ms later, softer, both without the shimmer | 500 ms | full |
+| `sfx_star_chart_capture_big` | `sfx_capture_big` | Swell D2, in over 15 ms, with a glass chord D5, A5, E6 on it, and 6 faint ticks from 30 to 250 ms as the burst flies out | 700 ms | full |
+| `sfx_star_chart_threat` | `sfx_threat` | Damped glass G4 twice, 120 ms apart | 300 ms | full |
+| `sfx_star_chart_bomb` | `sfx_bomb` | Silent for 150 ms while the bomb drops. Then a swell D2, in over 5 ms, a short puff of low hush (200 Hz to 2.5 kHz), and 6 ticks, each fainter, 50 ms apart, as the specks fly out | 450 ms | full |
+| `sfx_star_chart_double_dot` | `sfx_double_dot` | Glass D5, then D6 80 ms later | 300 ms | full |
+| `sfx_star_chart_area_light` | `sfx_area_light` | Glass D5; the app plays it faster for each later area, as Notebook's | 300 ms | half |
+
+**Against the motion storyboard** ([Motion, Star chart](motion.md#star-chart)):
+
+| Motion moment | Sound | In step with |
+| --- | --- | --- |
+| A star or comet lands | `sfx_star_chart_place_*` at 0 ms | the light vibration |
+| Capture | `sfx_star_chart_ring_draw`, 150 to 550 ms | the line traced at an even speed: the hush keeps one loudness, as the line keeps one speed |
+| | `sfx_star_chart_ring_close` or `_captured` at 550 ms | the closing star's twinkle and the medium vibration |
+| Big capture | `sfx_star_chart_ring_draw` at 80% speed, 150 to 650 ms | the line traced star to star; at 80% it lasts 500 ms |
+| | `sfx_star_chart_capture_big` at 650 ms | the closing star's twinkle, the strong vibration, the shake; its ticks fly out with the burst |
+| Threat pulse | `sfx_star_chart_threat` at 0 ms | the threat rings drawing in |
+| Bomb | `sfx_star_chart_bomb` at 0 ms; its swell at 150 ms | the blast and the strong vibration; its ticks with the twelve specks |
+| Wall, hint, double dot, undo, end of game | as in Notebook's table, with the theme's files | |
+
+### Neon arcade
+
+**An arcade cabinet, turned down low.** Soft synth tones play where Notebook has felt mallets.
+Each disc or triangle lands with a quick electric zap, and a tube being drawn is a rush of noise
+that rises and falls with the stroke. A tube lights with a crackle and a note, and its flicker is
+heard as a short drop in the sound.
+
+- **blip:** a short synth tone: a square wave softened so it keeps only its overtones up to 4
+  times the note, a 2 ms start and a quick fall;
+- **zap:** a blip whose pitch slides down all through the sound, so it never settles on a note;
+- **crackle:** a few tiny electric clicks at random moments, above 1.5 kHz, like a neon tube
+  starting;
+- **sub:** a low tone that falls quickly in pitch, from 110 Hz to 40 Hz, with a soft square edge:
+  Notebook's thump, made electric;
+- **flicker:** the sound drops to a seventh of its level for 40 ms, with 3 ms edges, in step with
+  the tube's flicker.
+
+| File | Replaces | Recipe | Length | Volume |
+| --- | --- | --- | --- | --- |
+| `sfx_neon_arcade_place_1`, `_2`, `_3` | `sfx_place_*` | Zap from 1.8, 1.6 or 1.4 kHz (one for each take) down to a quarter of that over the 120 ms, mostly gone within 50 ms, with two clicks of crackle at its start | 120 ms | half |
+| `sfx_neon_arcade_ring_draw` | `sfx_ring_draw` | Noise through a soft filter that opens from 600 Hz to 3 kHz and closes again, getting louder as it opens: slow, fast, slow, as the tube is drawn | 400 ms | full |
+| `sfx_neon_arcade_ring_close` | `sfx_ring_close` | Crackle in the first 30 ms; blip D5; blip A5 at 80 ms, as the light comes back for good; the flicker from 40 to 80 ms | 400 ms | full |
+| `sfx_neon_arcade_captured` | `sfx_captured` | Blip A4, then E4 80 ms later, softer; the flicker from 40 to 80 ms | 500 ms | full |
+| `sfx_neon_arcade_capture_big` | `sfx_capture_big` | Sub, with a blip chord D4, A4, E5 on it; crackle over the first 250 ms, with the sparks; the flicker from 40 to 80 ms | 700 ms | full |
+| `sfx_neon_arcade_threat` | `sfx_threat` | Blip G3 twice, 120 ms apart, each gone in about 60 ms: Notebook's double knock as an arcade warning | 300 ms | full |
+| `sfx_neon_arcade_bomb` | `sfx_bomb` | A quiet zap from 1.2 kHz down to 300 Hz while the bomb drops, 0 to 150 ms. At 150 ms a burst of noise whose filter closes from 4 kHz to 200 Hz over 300 ms, over a sub | 450 ms | full |
+| `sfx_neon_arcade_double_dot` | `sfx_double_dot` | Blip D5, then D6 80 ms later | 300 ms | full |
+| `sfx_neon_arcade_area_light` | `sfx_area_light` | Blip D5 that swells and fades over its 300 ms, brightest in the middle, as the tube thickens and thins; the app plays it faster for each later area | 300 ms | half |
+
+**Against the motion storyboard** ([Motion, Neon arcade](motion.md#neon-arcade)):
+
+| Motion moment | Sound | In step with |
+| --- | --- | --- |
+| A disc or triangle lands | `sfx_neon_arcade_place_*` at 0 ms | the light vibration; the glow growing in from 120 ms is silent |
+| Capture | `sfx_neon_arcade_ring_draw`, 150 to 550 ms | the tube drawn unlit, slow, fast, slow: the noise rises and falls with it |
+| | `sfx_neon_arcade_ring_close` or `_captured` at 550 ms | the tube lighting up and the medium vibration; its flicker at 590 to 630 ms is 40 to 80 ms into the file; the crackle with the first sparks |
+| Big capture | `sfx_neon_arcade_ring_draw` at 80% speed, 150 to 650 ms | the tube drawn unlit |
+| | `sfx_neon_arcade_capture_big` at 650 ms | the tube lighting up, the strong vibration and the shake; its flicker at 690 to 730 ms; the crackle with the sparks and the burst |
+| Threat pulse | `sfx_neon_arcade_threat` at 0 ms | the threat rings drawing in |
+| Bomb | `sfx_neon_arcade_bomb` at 0 ms; its burst at 150 ms | the bomb growing in; then the blast and the strong vibration |
+| Wall, hint, double dot, undo, end of game | as in Notebook's table, with the theme's files | |
 
 ## Music
 
@@ -406,7 +545,12 @@ Pinfold-audio/
 This folder is the master copy. Only the finished, compressed files enter the repository: the
 full-length WAVs are large, and git would keep every version for ever. All 17 effects together
 come to about 0.13 MB in the app; the six music loops to 9.7 MB, which the app ships as they
-are.
+are. The board sounds of Star chart and Neon arcade add about 0.13 MB.
+
+**For Star chart and Neon arcade the owner makes nothing.** All 22 files are made in code. The
+owner's part is listening: Claude makes the files in V-26, and the owner hears them on a phone
+from the `dots-debug-apk` that CI builds. If a sound needs changing, its recipe on this page
+changes with it.
 
 To bring them in, the owner starts a session with, for example, "Work on V-09, files in
 ~/Pinfold-audio". In that session Claude cuts and converts the files, puts them in the app, adds
