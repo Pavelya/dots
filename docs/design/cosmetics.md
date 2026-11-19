@@ -36,8 +36,8 @@ the code names them: gold and ice in Star chart, magenta and cyan in Neon arcade
   finished ring shows at once, as the theme's own ring does
   ([motion page](motion.md#rules-for-all-motion), rule 5). A piece style is the same with or
   without animations.
-- **Defaults.** The theme's own pieces and ring are the default. A theme, a piece style and a ring
-  effect are chosen separately.
+- **Defaults.** The theme's own pieces and ring are the default, called **Standard** wherever the
+  player chooses. A theme, a piece style and a ring effect are chosen separately.
 - **Where they're chosen.** In the Shop, with the Cosmetic preview's Use it button, and in
   Settings, with a Pieces row and a Rings row next to Theme, each opening a page like the Theme
   page. Both places set the same saved choice. D-30 designs the Settings rows and pages.
@@ -202,7 +202,7 @@ The Shop shows every item on a small board of 5 x 5 points: a red ring round one
 red piece and three blue pieces loose, and the last move marked
 ([D-27 wireframes](flows.md#wireframes), Shop). A theme's tile is drawn by that theme. A piece
 style's or ring effect's tile is drawn in the theme in use, in the version the phone picks, so the
-player sees the item on their own board. The default tile, **Theme's own**, shows the theme's own
+player sees the item on their own board. The default tile, **Standard**, shows the theme's own
 pieces or ring. At 140 dp the spacing is 28 dp, so pieces are 14 dp across.
 
 | | Light | Dark |

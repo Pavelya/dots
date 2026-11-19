@@ -1468,9 +1468,9 @@ def level_card_frame(t, uid):
 SHOP_BOARD = dict(red=[(1, 2), (2, 1), (3, 2), (2, 3), (0, 4)], blue=[(2, 2), (4, 1), (3, 4), (0, 0)],
                   areas=[area("red", [(1, 2), (2, 1), (3, 2), (2, 3)], [(2, 2)])], last=(3, 4))
 SHOP_ITEMS = {  # tab: [(name, piece style, ring effect, status, status ink)]
-    "pieces": [("Theme's own", None, None, "In use", "red"), ("Hearts and clubs", "cards", None, "Owned", "graphite"),
+    "pieces": [("Standard", None, None, "In use", "red"), ("Hearts and clubs", "cards", None, "Owned", "graphite"),
                ("Flame and frost", "fire", None, "$0.99", "pencil")],
-    "rings": [("Theme's own", None, None, "In use", "red"), ("Lasso", None, "lasso", "$0.99", "pencil"),
+    "rings": [("Standard", None, None, "In use", "red"), ("Lasso", None, "lasso", "$0.99", "pencil"),
               ("Rubber stamp", None, "stamp", "Owned", "graphite")],
 }
 
