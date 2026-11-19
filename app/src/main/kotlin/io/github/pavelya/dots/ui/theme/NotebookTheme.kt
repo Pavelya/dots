@@ -62,6 +62,17 @@ internal val NotebookBoard = BoardLook(
     guideCasing = Measure(),
 )
 
+/** Notebook's text styles (theme-notebook.md, "Type"); Star chart and Neon arcade keep them. */
+internal val NotebookType = TypeScale(
+    display = TextStyle(fontFamily = Caveat, fontSize = 40.sp, lineHeight = 48.sp, fontWeight = FontWeight.Bold),
+    headline = TextStyle(fontFamily = Caveat, fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.SemiBold),
+    title = TextStyle(fontFamily = Nunito, fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
+    score = TextStyle(fontFamily = Nunito, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold, fontFeatureSettings = "tnum"),
+    body = TextStyle(fontFamily = Nunito, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium),
+    label = TextStyle(fontFamily = Nunito, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
+    small = TextStyle(fontFamily = Nunito, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
+)
+
 /**
  * The launch look (decision 0012): red and blue ink on squared school paper, Caveat for big
  * headings and Nunito for everything else. Every value comes from docs/design/theme-notebook.md
@@ -106,16 +117,6 @@ internal fun BoardLook.highContrast(): BoardLook = copy(
     glow = Measure(),
 )
 
-/** Notebook's text styles (theme-notebook.md, "Type"); Star chart and Neon arcade keep them. */
-internal val NotebookType = TypeScale(
-    display = TextStyle(fontFamily = Caveat, fontSize = 40.sp, lineHeight = 48.sp, fontWeight = FontWeight.Bold),
-    headline = TextStyle(fontFamily = Caveat, fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.SemiBold),
-    title = TextStyle(fontFamily = Nunito, fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
-    score = TextStyle(fontFamily = Nunito, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold, fontFeatureSettings = "tnum"),
-    body = TextStyle(fontFamily = Nunito, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium),
-    label = TextStyle(fontFamily = Nunito, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
-    small = TextStyle(fontFamily = Nunito, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
-)
 
 
 /**
