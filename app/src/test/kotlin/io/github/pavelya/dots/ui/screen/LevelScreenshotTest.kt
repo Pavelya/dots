@@ -150,29 +150,58 @@ class LevelScreenshotTest {
     @Test
     fun resultWinDark() = win("result_level_win_dark", dark = true)
 
+    /** Result over the final board in the other themes (canvas frames `result-win-star-chart` and `result-win-neon-arcade`). */
     @Test
-    fun resultLossAfterTheThirdFailure() {
+    fun resultWinStarChart() = win("result_level_win_star_chart", GameTheme.STAR_CHART)
+
+    @Test
+    fun resultWinStarChartDark() = win("result_level_win_star_chart_dark", GameTheme.STAR_CHART, dark = true)
+
+    @Test
+    fun resultWinNeonArcade() = win("result_level_win_neon_arcade", GameTheme.NEON_ARCADE)
+
+    @Test
+    fun resultWinNeonArcadeDark() = win("result_level_win_neon_arcade_dark", GameTheme.NEON_ARCADE, dark = true)
+
+    private fun loss(name: String, theme: GameTheme = GameTheme.NOTEBOOK) {
         val journal = CampaignJournal { _: Level, result: LevelResult -> LevelEnd(result, CampaignMap.Opened.NOTHING, LevelEnd.HELP_AFTER_FAILURES, null) }
         val vm = level11(journal)
-        show { GameScreen(vm, onToMap = {}, onRules = {}) }
+        show(theme) { GameScreen(vm, onToMap = {}, onRules = {}) }
         play(vm, Pos(0, 6))
         play(vm, Pos(1, 6))
         play(vm, Pos(2, 6))
         waitFor("So close!")
-        capture("result_level_loss")
+        capture(name)
     }
 
     @Test
-    fun resultFreePlay() {
+    fun resultLossAfterTheThirdFailure() = loss("result_level_loss")
+
+    @Test
+    fun resultLossStarChart() = loss("result_level_loss_star_chart", GameTheme.STAR_CHART)
+
+    @Test
+    fun resultLossNeonArcade() = loss("result_level_loss_neon_arcade", GameTheme.NEON_ARCADE)
+
+    private fun freePlay(name: String, theme: GameTheme = GameTheme.NOTEBOOK) {
         val vm = gameViewModel(
             newSettings = { GameSettings(width = 5, height = 5, dotsPerPlayer = 1, opening = Opening.EMPTY) },
             newComputer = { firstFreePoint },
             computerDispatcher = Dispatchers.Unconfined,
             replyDelayMillis = 0,
         )
-        show { GameScreen(vm, onToMap = {}, onRules = {}) }
+        show(theme) { GameScreen(vm, onToMap = {}, onRules = {}) }
         play(vm, Pos(2, 2))
         waitFor("A draw")
-        capture("result_free_play")
+        capture(name)
     }
+
+    @Test
+    fun resultFreePlay() = freePlay("result_free_play")
+
+    @Test
+    fun resultFreePlayStarChart() = freePlay("result_free_play_star_chart", GameTheme.STAR_CHART)
+
+    @Test
+    fun resultFreePlayNeonArcade() = freePlay("result_free_play_neon_arcade", GameTheme.NEON_ARCADE)
 }

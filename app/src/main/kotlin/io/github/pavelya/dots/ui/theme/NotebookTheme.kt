@@ -27,8 +27,8 @@ private val Nunito = FontFamily(
     Font(R.font.nunito_extrabold, FontWeight.ExtraBold),
 )
 
-/** The Notebook board: theme-notebook.md, "The board", and pieces.md. */
-private val NotebookBoard = BoardLook(
+/** The Notebook board: theme-notebook.md, "The board", and pieces.md. The other themes start from it. */
+internal val NotebookBoard = BoardLook(
     grid = Measure(dp = 1f),
     edge = Measure(dp = 1.5f),
     dot = Measure(ofSpacing = 0.5f, min = 9f, max = 20f),
@@ -69,7 +69,7 @@ private val NotebookBoard = BoardLook(
  */
 internal val NotebookTheme: GameTheme = GameTheme(
     name = "Notebook",
-    light = notebookPalette(
+    light = inkPalette(
         dark = false,
         paper = 0xFFFBF8F1, card = 0xFFFFFFFF, grid = 0xFFD3DFEE,
         red = 0xFFC0392B, blue = 0xFF1F4E9C,
@@ -78,7 +78,7 @@ internal val NotebookTheme: GameTheme = GameTheme(
         highlighter = 0xFFA86200, highlighterFaint = 0xFFE9C58F,
         pencil = 0xFF2E2E2E, graphite = 0xFF5E5A53, margin = 0xFFEBB2AA,
     ),
-    dark = notebookPalette(
+    dark = inkPalette(
         dark = true,
         paper = 0xFF1C1B19, card = 0xFF272522, grid = 0xFF34383E,
         red = 0xFFFF9384, blue = 0xFF6B90E8,
@@ -88,32 +88,42 @@ internal val NotebookTheme: GameTheme = GameTheme(
         pencil = 0xFFEDE8DF, graphite = 0xFFA8A399, margin = 0xFF5A3531,
     ),
     board = NotebookBoard,
-    highContrastBoard = NotebookBoard.copy(
-        // High-contrast pieces (pieces.md, "High contrast"): larger, each in a band of the paper or
-        // wash under it; the preview outlined in ink; drag's guides wider, on a strip.
-        dot = Measure(ofSpacing = 0.6f, min = 9f, max = 24f),
-        halo = Measure(dp = 1.5f),
-        previewOutline = Measure(dp = 1.5f),
-        guide = Measure(dp = 2f),
-        guideCasing = Measure(dp = 1f),
-    ),
-    type = TypeScale(
-        display = TextStyle(fontFamily = Caveat, fontSize = 40.sp, lineHeight = 48.sp, fontWeight = FontWeight.Bold),
-        headline = TextStyle(fontFamily = Caveat, fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.SemiBold),
-        title = TextStyle(fontFamily = Nunito, fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
-        score = TextStyle(fontFamily = Nunito, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold, fontFeatureSettings = "tnum"),
-        body = TextStyle(fontFamily = Nunito, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium),
-        label = TextStyle(fontFamily = Nunito, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
-        small = TextStyle(fontFamily = Nunito, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
-    ),
+    highContrastBoard = NotebookBoard.highContrast(),
+    type = NotebookType,
+)
+
+/**
+ * [board] with high-contrast pieces (pieces.md, "High contrast"), as every theme draws them:
+ * larger, each in a band of the paper or wash under it; the preview outlined in ink; drag's guides
+ * wider, on a strip. The band takes the place of a glow round the pieces.
+ */
+internal fun BoardLook.highContrast(): BoardLook = copy(
+    dot = Measure(ofSpacing = 0.6f, min = 9f, max = 24f),
+    halo = Measure(dp = 1.5f),
+    previewOutline = Measure(dp = 1.5f),
+    guide = Measure(dp = 2f),
+    guideCasing = Measure(dp = 1f),
+    glow = Measure(),
+)
+
+/** Notebook's text styles (theme-notebook.md, "Type"); Star chart and Neon arcade keep them. */
+internal val NotebookType = TypeScale(
+    display = TextStyle(fontFamily = Caveat, fontSize = 40.sp, lineHeight = 48.sp, fontWeight = FontWeight.Bold),
+    headline = TextStyle(fontFamily = Caveat, fontSize = 28.sp, lineHeight = 36.sp, fontWeight = FontWeight.SemiBold),
+    title = TextStyle(fontFamily = Nunito, fontSize = 20.sp, lineHeight = 28.sp, fontWeight = FontWeight.Bold),
+    score = TextStyle(fontFamily = Nunito, fontSize = 24.sp, lineHeight = 28.sp, fontWeight = FontWeight.ExtraBold, fontFeatureSettings = "tnum"),
+    body = TextStyle(fontFamily = Nunito, fontSize = 16.sp, lineHeight = 24.sp, fontWeight = FontWeight.Medium),
+    label = TextStyle(fontFamily = Nunito, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.Bold),
+    small = TextStyle(fontFamily = Nunito, fontSize = 12.sp, lineHeight = 16.sp, fontWeight = FontWeight.Medium),
 )
 
 
 /**
- * The Notebook inks in one version, and the Material roles they fill (theme-notebook.md,
- * "Interface colours"). The tape is Highlighter faint, as on the canvas.
+ * A theme's inks in one version, and the Material roles they fill, as Notebook fills them
+ * (theme-notebook.md, "Interface colours"). The tape is Highlighter faint, as on the canvas, and
+ * errors are in Red ink, unless the theme says otherwise; so are the colours Notebook doesn't have.
  */
-private fun notebookPalette(
+internal fun inkPalette(
     dark: Boolean,
     paper: Long, card: Long, grid: Long,
     red: Long, blue: Long,
@@ -121,6 +131,11 @@ private fun notebookPalette(
     redPale: Long, bluePale: Long,
     highlighter: Long, highlighterFaint: Long,
     pencil: Long, graphite: Long, margin: Long,
+    tape: Long = highlighterFaint,
+    error: Long = red,
+    chartPoint: Long = grid,
+    redCore: Long = red,
+    blueCore: Long = blue,
 ): Palette {
     val p = Color(paper)
     val c = Color(card)
@@ -129,7 +144,7 @@ private fun notebookPalette(
             primary = Color(blue), onPrimary = p, secondary = Color(red), onSecondary = p,
             background = p, onBackground = Color(pencil), surface = p, onSurface = Color(pencil),
             onSurfaceVariant = Color(graphite), outline = Color(graphite), outlineVariant = Color(grid),
-            error = Color(red), onError = p,
+            error = Color(error), onError = p,
             surfaceContainerLowest = c, surfaceContainerLow = c, surfaceContainer = c,
             surfaceContainerHigh = c, surfaceContainerHighest = c,
         )
@@ -138,7 +153,7 @@ private fun notebookPalette(
             primary = Color(blue), onPrimary = p, secondary = Color(red), onSecondary = p,
             background = p, onBackground = Color(pencil), surface = p, onSurface = Color(pencil),
             onSurfaceVariant = Color(graphite), outline = Color(graphite), outlineVariant = Color(grid),
-            error = Color(red), onError = p,
+            error = Color(error), onError = p,
             surfaceContainerLowest = c, surfaceContainerLow = c, surfaceContainer = c,
             surfaceContainerHigh = c, surfaceContainerHighest = c,
         )
@@ -158,8 +173,11 @@ private fun notebookPalette(
         pencil = Color(pencil),
         graphite = Color(graphite),
         margin = Color(margin),
-        tape = Color(highlighterFaint),
+        tape = Color(tape),
         scrim = Color.Black.copy(alpha = if (dark) 0.55f else 0.4f),
         material = material,
+        chartPoint = Color(chartPoint),
+        redCore = Color(redCore),
+        blueCore = Color(blueCore),
     )
 }
