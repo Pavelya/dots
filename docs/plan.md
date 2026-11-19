@@ -116,13 +116,14 @@ section 8. "First needed in" names the task that first needs the tool or account
 - **Repository:** design files in `docs/design/`, decisions in `docs/decisions/`, the asset
   register in `docs/assets.md`, issue and pull-request templates in `.github/`.
 - **Build:** one version catalog (`gradle/libs.versions.toml`), kept current by Dependabot;
-  `minSdk` 24 (Android 7); `targetSdk` the newest Android. The store app adds a release build type
-  with code shrinking.
+  `minSdk` 24 (Android 7); `targetSdk` the newest Android. The release build shrinks the code with
+  R8.
 - **CI:** engine and CLI tests, app and screenshot tests, lint and the debug APK on every pull
-  request and push to `main`; the POC test build on a `poc-v*` tag. A release build on tags comes
-  with the store app.
+  request and push to `main`, plus the release build to check that shrinking works; the POC test
+  build on a `poc-v*` tag; the store release on a `v*` tag, uploaded to the internal testing track
+  ([`release.md`](release.md), decision 0031).
 - **Secrets:** only in GitHub Actions secrets, never in the repository (decision 0017). The store
-  upload key and its passwords go there too, with an offline backup; Play App Signing keeps the
-  real signing key.
+  upload key and its password are there too, with copies in the password manager and offline;
+  Play App Signing keeps the app signing key. The full list: [`release.md`](release.md).
 - **Web pages:** a privacy policy and a small game page on GitHub Pages (the repository is public)
   or Google Sites.

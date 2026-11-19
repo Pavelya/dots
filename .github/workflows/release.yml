@@ -1,0 +1,112 @@
+name: store release
+
+# Builds the store app's release bundle, signs it with the upload key and puts it on Google Play's
+# internal testing track. Start it by pushing a tag v<major>.<minor>.<patch> (for example v0.1.0) on
+# a commit of main; the tag sets the version (decision 0031). How to release, and the one-time
+# setup: docs/release.md.
+#
+# "Run workflow" on the Actions tab is a dry run, from any branch: it builds and signs the bundle
+# and uploads nothing to Google Play. Use it to check the upload key.
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version for the dry run, for example 0.1.0"
+        required: true
+        default: "0.0.1"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      DRY_RUN: ${{ github.event_name == 'workflow_dispatch' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # to check that the tagged commit is on main
+      - name: The tagged commit is on main
+        if: ${{ github.event_name == 'push' }}
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "::error::Commit $GITHUB_SHA is not on main. Tag a commit of main."
+            exit 1
+          fi
+      - name: Version
+        # v1.2.3 -> version name 1.2.3, version code 1 002 003 (decision 0031). Each part 0 to 999.
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          if [ "$DRY_RUN" = true ]; then version="$INPUT_VERSION"; else version="${GITHUB_REF_NAME#v}"; fi
+          if ! [[ "$version" =~ ^(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})\.(0|[1-9][0-9]{0,2})$ ]]; then
+            echo "::error::The version must look like 1.2.3, each part 0 to 999 without leading zeros; got '$version'."
+            exit 1
+          fi
+          code=$(( BASH_REMATCH[1] * 1000000 + BASH_REMATCH[2] * 1000 + BASH_REMATCH[3] ))
+          if [ "$code" -lt 1 ]; then echo "::error::Version 0.0.0 has version code 0, which Google Play refuses."; exit 1; fi
+          echo "VERSION_NAME=$version" >> "$GITHUB_ENV"
+          echo "VERSION_CODE=$code" >> "$GITHUB_ENV"
+          echo "Version $version, version code $code"
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v6
+      - name: Upload key
+        # From the Actions secrets UPLOAD_KEYSTORE_BASE64 and UPLOAD_KEYSTORE_PASSWORD. Without
+        # them the bundle would be unsigned, and Google Play refuses it.
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$UPLOAD_KEYSTORE_BASE64" ]; then
+            echo "::error::The Actions secret UPLOAD_KEYSTORE_BASE64 is missing (docs/release.md, One-time setup)."
+            exit 1
+          fi
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.keystore"
+          echo "UPLOAD_KEYSTORE_FILE=$RUNNER_TEMP/upload.keystore" >> "$GITHUB_ENV"
+      - name: Test and build
+        env:
+          UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+        run: ./gradlew --continue :engine:test :cli:test :app:verifyRoborazziDebug :app:lintDebug :app:bundleRelease
+      - name: Signing certificate
+        # Fails on an unsigned bundle, the standard debug key and the old test key, which was public
+        # in this repository's history (decision 0017). The upload key's certificate is printed for
+        # comparison with Play Console (Test and release > App integrity > Upload key certificate).
+        run: |
+          bundle=app/build/outputs/bundle/release/app-release.aab
+          certs=$(keytool -printcert -jarfile "$bundle")
+          echo "$certs"
+          if ! echo "$certs" | grep -q "SHA256:"; then
+            echo "::error::The bundle is not signed."; exit 1
+          fi
+          if echo "$certs" | grep -q "CN=Android Debug"; then
+            echo "::error::The bundle is signed with the debug key."; exit 1
+          fi
+          if echo "$certs" | grep -q "12:C7:8C:2D:E6:DA:A3:1C:1B:4D:95:24:26:09:F2:29:06:6F:62:78:74:16:38:ED:B9:46:43:8E:B1:EE:0E:97"; then
+            echo "::error::The bundle is signed with the old, public test key."; exit 1
+          fi
+          cp "$bundle" "pinfold-$VERSION_NAME.aab"
+      - name: Bundle and R8 mapping
+        uses: actions/upload-artifact@v7
+        with:
+          name: pinfold-${{ env.VERSION_NAME }}-bundle
+          path: |
+            pinfold-${{ env.VERSION_NAME }}.aab
+            app/build/outputs/mapping/release/mapping.txt
+      - name: Upload to the internal testing track
+        if: ${{ env.DRY_RUN != 'true' }}
+        # Needs the Actions secret PLAY_SERVICE_ACCOUNT_JSON. Without it (before the one-time setup
+        # is finished) the bundle stays in the artifact above, for an upload by hand in Play Console.
+        env:
+          PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$PLAY_SERVICE_ACCOUNT_JSON" ]; then
+            echo "::warning::No PLAY_SERVICE_ACCOUNT_JSON secret: nothing was uploaded. Upload pinfold-$VERSION_NAME.aab from this run's artifacts by hand (docs/release.md)."
+            exit 0
+          fi
+          .github/scripts/play-upload.sh io.github.pavelya.pinfold "pinfold-$VERSION_NAME.aab" internal "$VERSION_NAME"

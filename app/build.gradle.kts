@@ -14,33 +14,58 @@ android {
         applicationId = "io.github.pavelya.pinfold"
         minSdk = 24
         targetSdk = 37
-        // Release builds on a poc-v* tag set these (.github/workflows/poc-release.yml), so each test
-        // build is a higher version than the one before and installs over it.
+        // CI sets these. Every CI build and POC test build: 100 + the number of commits, so a newer
+        // build installs over an older one. Store builds on a v* tag: from the tag (decision 0031).
         versionCode = providers.environmentVariable("VERSION_CODE").map(String::toInt).getOrElse(1)
         versionName = providers.environmentVariable("VERSION_NAME").getOrElse("0.1-poc")
     }
 
-    // The POC test key signs the builds testers install, so a new test build installs over the
-    // previous one. CI writes it from the Actions secrets POC_KEYSTORE_BASE64 and
+    // The POC test key signs the debug builds testers install, so a new test build installs over
+    // the previous one. CI writes it from the Actions secrets POC_KEYSTORE_BASE64 and
     // POC_KEYSTORE_PASSWORD and points POC_KEYSTORE_FILE at it. Without it (a local build, or a
-    // Dependabot pull request, which gets no secrets) the build uses the standard Android debug key.
-    // Never used for the store app, which gets its own upload key (task R-02).
+    // Dependabot pull request, which gets no secrets) debug builds use the standard Android debug key.
     val pocKeystoreFile = providers.environmentVariable("POC_KEYSTORE_FILE").orNull
-    if (pocKeystoreFile != null) {
-        val pocKeystorePassword = providers.environmentVariable("POC_KEYSTORE_PASSWORD").orNull
-            ?: error("POC_KEYSTORE_FILE is set but POC_KEYSTORE_PASSWORD is not")
-        signingConfigs {
+    // The upload key signs the store app's release bundle, which Google Play then re-signs with the
+    // app signing key it keeps (docs/release.md). The release workflow writes it from the Actions
+    // secrets UPLOAD_KEYSTORE_BASE64 and UPLOAD_KEYSTORE_PASSWORD and points UPLOAD_KEYSTORE_FILE at
+    // it. Without it the release bundle is built unsigned, which Google Play refuses.
+    val uploadKeystoreFile = providers.environmentVariable("UPLOAD_KEYSTORE_FILE").orNull
+
+    signingConfigs {
+        if (pocKeystoreFile != null) {
+            val password = providers.environmentVariable("POC_KEYSTORE_PASSWORD").orNull
+                ?: error("POC_KEYSTORE_FILE is set but POC_KEYSTORE_PASSWORD is not")
             create("pocTest") {
                 storeFile = file(pocKeystoreFile)
-                storePassword = pocKeystorePassword
+                storePassword = password
                 keyAlias = "poc-test"
-                keyPassword = pocKeystorePassword
+                keyPassword = password
             }
         }
-        buildTypes {
-            debug {
-                signingConfig = signingConfigs.getByName("pocTest")
+        if (uploadKeystoreFile != null) {
+            val password = providers.environmentVariable("UPLOAD_KEYSTORE_PASSWORD").orNull
+                ?: error("UPLOAD_KEYSTORE_FILE is set but UPLOAD_KEYSTORE_PASSWORD is not")
+            create("upload") {
+                storeFile = file(uploadKeystoreFile)
+                storePassword = password
+                keyAlias = "upload"
+                keyPassword = password
             }
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfigs.findByName("pocTest")?.let { signingConfig = it }
+        }
+        release {
+            // R8 removes unused code and renames what is left; resource shrinking then drops unused
+            // resources. The bundle carries R8's mapping file, so Google Play shows crash reports
+            // with the real names.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
+            signingConfigs.findByName("upload")?.let { signingConfig = it }
         }
     }
 
