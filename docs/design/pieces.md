@@ -6,7 +6,8 @@ the board. This page gives the shapes, the mark for the last move, the mark for 
 and the placement preview. Colours and every other board size are on the
 [Notebook theme](theme-notebook.md) page. The Star chart theme has its own pieces, gold stars and
 ice-blue comets, on the [Star chart theme](theme-star-chart.md) page, and Neon arcade has magenta
-discs and cyan triangles, on the [Neon arcade theme](theme-neon-arcade.md) page.
+discs and cyan triangles, on the [Neon arcade theme](theme-neon-arcade.md) page. The Shop's two piece styles,
+Hearts and clubs and Flame and frost, are on [Piece styles and ring effects](cosmetics.md).
 
 <img src="pieces/pieces-4x.svg" alt="The pieces in the light and the dark version: red dot, blue diamond, each with the last-move pinhole, each captured with a cut, and each as a preview" width="768">
 
