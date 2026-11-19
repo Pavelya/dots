@@ -307,6 +307,24 @@ is now.
 level/1 2-5 | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3 hint:b2 b2 c2 bomb:d3 d3 e2 undo c4 e2
 ```
 
+Boosters on top of the level's own come before the `|`, one word each:
+
+| Word | What it is |
+|------|------------|
+| `+hint` | Given for this game: the free Hint after three failures. |
+| `*wall` | Brought from the player's own boosters (decision 0027). |
+| `!wall` | Given by a rewarded ad for this retry (decision 0030). At most one. |
+
+```
+level/1 2-1 +hint *wall !wall | wall:d5 d6 a7 wall:g1 a1 g7
+```
+
+The player's own and the given ones are used first and never cost stars. The ad's booster costs
+the same as one of the level's own: on `boosters` levels, a game with it never earns more stars
+than the same game without it. Its kind is `Level.adBooster`, the first kind the level allows in
+the order a level file lists them (wall, hint, bomb, double dot), never Undo. A level that allows
+only Undo offers none.
+
 ### Boss rules
 
 A boss level bends one rule in the computer's favour, and the player is told before the first

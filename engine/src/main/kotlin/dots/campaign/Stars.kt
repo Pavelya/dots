@@ -22,7 +22,9 @@ enum class StarMeasure(val text: String) {
 
     /**
      * Boosters unused: the level's boosters the player has left, all kinds together. Boosters
-     * given on top of the level's own (a gift) do not count.
+     * given on top of the level's own (a gift) or brought by the player do not count: they are
+     * used first. A booster from a rewarded ad counts as used from the start, so using it costs
+     * the same as using one of the level's own (decision 0030).
      */
     BOOSTERS("boosters"),
 }
@@ -104,13 +106,17 @@ data class LevelResult(val status: MissionStatus, val stars: Int, val starScore:
     val isPassed: Boolean get() = status.outcome == Outcome.PASSED
 }
 
-/** What [stars]'s measure counts for [level] in [state]. */
-internal fun count(stars: Stars, level: Level, state: GameState): Int = when (stars.measure) {
+/** What [stars]'s measure counts for [level] in [state], where [ad] is the booster a rewarded ad gave, if any. */
+internal fun count(stars: Stars, level: Level, state: GameState, ad: Booster? = null): Int = when (stars.measure) {
     StarMeasure.MARGIN -> state.score(level.human) - state.score(level.computer)
     StarMeasure.MOVES -> when (val mission = level.mission) {
         is Mission.Capture -> (mission.moves - state.dotsPlaced(level.human)).coerceAtLeast(0)
         else -> state.dotsLeft(level.human) ?: 0
     }
     StarMeasure.SAVED -> level.map.points(LevelMap.HUMAN).count { !state.isCaptured(it) }
-    StarMeasure.BOOSTERS -> level.boosters.entries.sumOf { (booster, count) -> minOf(state.boostersLeft(level.human, booster), count) }
+    // The ad's booster is taken off what is left, so leaving it unused earns nothing, and using it
+    // as well as all the level's own of its kind takes one off the other kinds.
+    StarMeasure.BOOSTERS -> level.boosters.entries.sumOf { (booster, count) ->
+        minOf(state.boostersLeft(level.human, booster) - (if (booster == ad) 1 else 0), count)
+    }.coerceAtLeast(0)
 }

@@ -91,6 +91,13 @@ data class Level(
     /** A new game of this level; [gift] gives the player boosters on top of the level's own. */
     fun newGame(gift: Map<Booster, Int> = emptyMap()): GameState = start(gift)
 
+    /**
+     * The booster a rewarded ad offers for a retry of this level (decision 0030): the first kind in
+     * [boosters], in the order a level file lists them, other than Undo. Null when the level allows
+     * only Undo, or no booster at all. [LevelRecord.ad] holds it for the one game.
+     */
+    val adBooster: Booster? get() = Booster.entries.firstOrNull { it != Booster.UNDO && it in boosters }
+
     /** Where the mission stands in [state], a position of this level's game. */
     fun status(state: GameState): MissionStatus = judge(mission, state, human)
 
@@ -100,16 +107,20 @@ data class Level(
     /** The level is passed when its mission is; in "win", a draw (for instance 0-0) is not enough. */
     fun isPassed(end: GameState): Boolean = status(end).outcome == Outcome.PASSED
 
-    /** What the [stars]' measure counts in [state], or null if the level has no star targets. */
-    fun starScore(state: GameState): Int? = stars?.let { count(it, this, state) }
+    /**
+     * What the [stars]' measure counts in [state], or null if the level has no star targets. [ad] is
+     * the booster the game was given by a rewarded ad, if any ([LevelRecord.ad]).
+     */
+    fun starScore(state: GameState, ad: Booster? = null): Int? = stars?.let { count(it, this, state, ad) }
 
     /**
      * The result of a level game that ended in [end]: the mission's status and the stars. A passed
-     * level earns 1 to 3 stars (1 when it has no star targets), a failed one none.
+     * level earns 1 to 3 stars (1 when it has no star targets), a failed one none. [ad] is the
+     * booster the game was given by a rewarded ad, if any; [LevelRecord.result] passes it.
      */
-    fun result(end: GameState): LevelResult {
+    fun result(end: GameState, ad: Booster? = null): LevelResult {
         val status = status(end)
-        val score = starScore(end)
+        val score = starScore(end, ad)
         val earned = when {
             status.outcome != Outcome.PASSED -> 0
             score == null -> 1
