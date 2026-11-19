@@ -58,9 +58,9 @@ Claude trims, cleans and normalises every effect and saves it in the app as `sfx
 records which take of each was kept and how it was cut. It makes the files and checks them:
 
 ```sh
-python3 docs/design/sound/make_effects.py --sources <folder with fx_*.wav>   # all 17 effects
-python3 docs/design/sound/make_effects.py                                    # only the 14 made in code
-python3 docs/design/sound/make_effects.py --check    # the set, the loudness and the peaks
+python3 docs/design/sound/make_effects.py --sources <folder with fx_*.wav>   # every effect
+python3 docs/design/sound/make_effects.py           # only those made in code: Notebook's 14 and the themes' 22 files
+python3 docs/design/sound/make_effects.py --check   # the set, the loudness and the peaks of all 41 files
 ```
 
 It needs Python 3 and vorbis-tools (`brew install vorbis-tools`).

@@ -8,8 +8,12 @@ import androidx.compose.runtime.staticCompositionLocalOf
  * Whether anything is heard follows [AudioState]'s rules.
  */
 interface Audio {
-    /** Plays [effect] at [rate] (1 is as recorded; 0.5 to 2), unless the game is silent now. */
-    fun play(effect: Effect, rate: Float = 1f): Sounding
+    /**
+     * Plays [effect] at [rate] (1 is as recorded; 0.5 to 2), unless the game is silent now. [file]
+     * is the sound heard: the effect's own, or a theme's in its place (`GameTheme.sounds`), at the
+     * effect's volume. A file that cannot be played gives way to the effect's own.
+     */
+    fun play(effect: Effect, rate: Float = 1f, file: String = effect.file): Sounding
 
     /** The music of the screen shown: it fades over from the one before. Null fades the music out. */
     fun music(track: Track?)
@@ -23,7 +27,7 @@ interface Audio {
     companion object {
         /** Plays nothing: for screens drawn in tests and previews. */
         val SILENT: Audio = object : Audio {
-            override fun play(effect: Effect, rate: Float): Sounding = Sounding.NONE
+            override fun play(effect: Effect, rate: Float, file: String): Sounding = Sounding.NONE
             override fun music(track: Track?) = Unit
             override fun settings(sound: Boolean, musicVolume: Int, effectsVolume: Int) = Unit
             override fun onScreen(shown: Boolean) = Unit

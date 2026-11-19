@@ -1,11 +1,12 @@
-"""Make Pinfold's 17 sound effects (19 files) for the app, and check them.
+"""Make Pinfold's sound effects for the app, and check them.
 
-The recipes and the reasons behind them are on docs/design/sound.md. This script is the prompt of
-the 14 effects made in code, and the record of how the other three were cut from the owner's
-source sounds.
+Notebook's 17 effects (19 files), and the 9 board sounds of each of Star chart and Neon arcade
+(11 files each). The recipes and the reasons behind them are on docs/design/sound.md. This script
+is the prompt of every effect made in code, and the record of how Notebook's other three were cut
+from the owner's source sounds.
 
-    python3 docs/design/sound/make_effects.py                    # the 14 effects made in code
-    python3 docs/design/sound/make_effects.py --sources DIR      # all 17, DIR holds fx_*.wav
+    python3 docs/design/sound/make_effects.py                    # every effect made in code
+    python3 docs/design/sound/make_effects.py --sources DIR      # and the 3 from DIR's fx_*.wav
     python3 docs/design/sound/make_effects.py --check            # check the files in the app
 
 Needs Python 3.9 or later and vorbis-tools (oggenc and oggdec: `brew install vorbis-tools`, or
@@ -321,6 +322,307 @@ MADE_IN_CODE = {
     "sfx_reward": reward,
 }
 
+# ---------------------------------------------------------------- Star chart's building blocks
+# sound.md, "Star chart": quiet glass and starlight.
+
+
+def glass(note, seconds=1.0, shimmer=True, damped=False):
+    """A small glass bell, like a celesta: a clear tone and two faint overtones out of tune with it
+    (2.76 and 5.40 times the note, as a struck bar has), a 2 ms start and a slow fade, about half as
+    long again as the mallet's. A quieter second tone 2 cents higher makes it shimmer.
+
+    Damped glass fades in 50 ms, like a bell touched by a finger, and has no shimmer.
+    """
+    f = NOTE[note]
+    tau = 0.050 if damped else 0.8 * (NOTE["D5"] / f) ** 0.5
+    out = partials(f, [(1, 0.8, tau), (2.76, 0.12, tau / 3), (5.40, 0.04, tau / 6)], 0.002, seconds)
+    if shimmer and not damped:
+        twin = partials(f * 2 ** (2 / 1200), [(1, 0.35, tau)], 0.002, seconds)
+        out = [a + b for a, b in zip(out, twin)]
+    return out
+
+
+def tick(seed, seconds=0.12):
+    """A tiny glass tick: a 1 ms click and four high overtones out of tune with each other, between
+    3 and 9 kHz, gone in about 40 ms. It has no clear note; each seed gives its own four."""
+    rng = random.Random(seed)
+    out = [0.0] * round(seconds * RATE)
+    for _ in range(4):
+        f, tau = rng.uniform(3000, 9000), rng.uniform(0.008, 0.018)
+        amp, phase = rng.uniform(0.4, 1.0), rng.uniform(0, 2 * math.pi)
+        for i in range(min(len(out), round(tau * 9 * RATE))):
+            out[i] += amp * envelope(i, 0.0005, tau) * math.sin(phase + 2 * math.pi * f * i / RATE)
+    click = highpass([rng.uniform(-1, 1) * math.exp(-i / (0.0004 * RATE)) for i in range(round(0.004 * RATE))], 2000)
+    for i, v in enumerate(click):
+        out[i] += 0.8 * v
+    return out
+
+
+def hush(seconds, low=2000, high=8000, seed=3):
+    """Soft noise between `low` and `high` Hz, like a breath, at one loudness all through."""
+    rng = random.Random(seed)
+    x = [rng.uniform(-1, 1) for _ in range(round(seconds * RATE))]
+    return lowpass(lowpass(highpass(highpass(x, low), low), high), high)
+
+
+def swell(note, seconds, attack, tau):
+    """A low, soft tone that swells in over `attack` and fades away, without falling in pitch."""
+    return partials(NOTE[note], [(1, 1.0, tau), (2, 0.25, tau / 2)], attack, seconds)
+
+
+# ---------------------------------------------------------------- Star chart's board sounds
+
+
+def star_chart_place(take):  # tick, each take with its own four overtones; 120 ms
+    return fade(tick(100 + take, 0.12), 0, 0.04)
+
+
+def star_chart_ring_draw():  # hush, with 8 faint ticks spread evenly over it, one every 47 ms; 400 ms
+    s = Sound(0.40)
+    s.add(0.000, fade(hush(0.40), 0.03, 0.06), 0.18)
+    for k in range(8):
+        s.add(0.020 + 0.047 * k, tick(200 + k, 0.06), 0.35)
+    return fade(s.x, 0, 0.05)
+
+
+def star_chart_ring_close():  # glass D6, then A6 60 ms later; 400 ms
+    s = Sound(0.40)
+    s.add(0.000, glass("D6", 0.4))
+    s.add(0.060, glass("A6", 0.4), 0.85)
+    return fade(s.x, 0, 0.10)
+
+
+def star_chart_captured():  # glass A5, then E5 80 ms later, softer, both without the shimmer; 500 ms
+    s = Sound(0.50)
+    s.add(0.000, glass("A5", 0.5, shimmer=False))
+    s.add(0.080, glass("E5", 0.5, shimmer=False), 0.6)
+    return fade(s.x, 0, 0.12)
+
+
+def star_chart_capture_big():  # swell D2 in over 15 ms, glass chord D5, A5, E6, 6 ticks from 30 to 250 ms; 700 ms
+    s = Sound(0.70)
+    s.add(0.000, swell("D2", 0.7, 0.015, 0.20), 0.9)
+    for note in ("D5", "A5", "E6"):
+        s.add(0.010, glass(note, 0.7), 0.35)
+    for k in range(6):
+        s.add(0.030 + 0.044 * k, tick(300 + k, 0.06), 0.25)
+    return fade(s.x, 0, 0.15)
+
+
+def star_chart_threat():  # damped glass G4 twice, 120 ms apart; 300 ms
+    s = Sound(0.30)
+    s.add(0.000, glass("G4", 0.3, damped=True))
+    s.add(0.120, glass("G4", 0.3, damped=True), 0.85)
+    return fade(s.x, 0, 0.05)
+
+
+def star_chart_bomb():  # silent to 150 ms; swell D2 in over 5 ms, a puff of low hush, 6 ticks 50 ms apart; 450 ms
+    s = Sound(0.45)
+    s.add(0.150, swell("D2", 0.30, 0.005, 0.10))
+    s.add(0.150, fade(hush(0.20, 200, 2500, seed=9), 0.002, 0.15), 0.35)
+    for k in range(6):  # each fainter, as the specks fly out
+        s.add(0.160 + 0.050 * k, tick(400 + k, 0.06), 0.25 * (1 - k / 8))
+    return fade(s.x, 0, 0.08)
+
+
+def star_chart_double_dot():  # glass D5, then D6 80 ms later; 300 ms
+    s = Sound(0.30)
+    s.add(0.000, glass("D5", 0.3))
+    s.add(0.080, glass("D6", 0.3), 0.9)
+    return fade(s.x, 0, 0.06)
+
+
+def star_chart_area_light():  # glass D5; the app plays it faster for each later area; 300 ms
+    s = Sound(0.30)
+    s.add(0.000, glass("D5", 0.3))
+    return fade(s.x, 0, 0.08)
+
+
+# ---------------------------------------------------------------- Neon arcade's building blocks
+# sound.md, "Neon arcade": an arcade cabinet, turned down low.
+
+
+def soft_square(freq_at, amp_at, seconds):
+    """A square wave softened to its overtones up to 4 times the note: the note and its 3rd.
+
+    freq_at(t) gives the pitch and amp_at(t) the level at t seconds.
+    """
+    out, phase = [], 0.0
+    for i in range(round(seconds * RATE)):
+        t = i / RATE
+        phase += 2 * math.pi * freq_at(t) / RATE
+        out.append(amp_at(t) * (math.sin(phase) + math.sin(3 * phase) / 3))
+    return out
+
+
+def blip(note, seconds, tau):
+    """A short synth tone: a soft square wave, a 2 ms start and a quick fall."""
+    f = NOTE[note]
+    return soft_square(lambda t: f, lambda t: envelope(round(t * RATE), 0.002, tau), seconds)
+
+
+def zap(start_hz, end_hz, seconds, tau):
+    """A blip whose pitch slides from start_hz down to end_hz all through the sound: no settled note."""
+    k = math.log(end_hz / start_hz)
+    return soft_square(lambda t: start_hz * math.exp(k * t / seconds),
+                       lambda t: envelope(round(t * RATE), 0.001, tau), seconds)
+
+
+def crackle(seconds, count, seed):
+    """`count` tiny electric clicks at random moments, above 1.5 kHz, like a neon tube starting."""
+    rng = random.Random(seed)
+    out = [0.0] * round(seconds * RATE)
+    for _ in range(count):
+        at, amp = round(rng.uniform(0, 0.9 * seconds) * RATE), rng.uniform(0.3, 1.0)
+        for i in range(round(0.0015 * RATE)):
+            if at + i < len(out):
+                out[at + i] += amp * rng.uniform(-1, 1) * math.exp(-i / (0.0004 * RATE))
+    return highpass(out, 1500)
+
+
+def sub(seconds):
+    """A low tone that falls quickly in pitch, from 110 Hz to 40 Hz, with a soft square edge."""
+    out, phase = [], 0.0
+    for i in range(round(seconds * RATE)):
+        phase += 2 * math.pi * (40 + 70 * math.exp(-i / RATE / 0.05)) / RATE
+        out.append(envelope(i, 0.003, 0.14) * (math.sin(phase) + 0.2 * math.sin(3 * phase)))
+    return out
+
+
+def flicker(x, start=0.040, end=0.080):
+    """The sound drops to a seventh of its level from start to end, with 3 ms edges: the tube's flicker."""
+    a, b, edge, low = round(start * RATE), round(end * RATE), round(0.003 * RATE), 1 / 7
+    for i in range(max(0, a - edge), min(len(x), b + edge)):
+        if i < a:
+            x[i] *= 1 - (1 - low) * (i - (a - edge)) / edge
+        elif i >= b:
+            x[i] *= low + (1 - low) * (i - b) / edge
+        else:
+            x[i] *= low
+    return x
+
+
+def sweep_noise(seconds, cutoff_at, level_at, seed):
+    """Noise through a soft (two-pole) low-pass whose cutoff_at(u) and level_at(u) move with u, 0 to 1."""
+    rng = random.Random(seed)
+    n = round(seconds * RATE)
+    out, z1, z2 = [], 0.0, 0.0
+    for i in range(n):
+        u = i / n
+        a = 1 - math.exp(-2 * math.pi * cutoff_at(u) / RATE)
+        z1 += a * (rng.uniform(-1, 1) - z1)
+        z2 += a * (z1 - z2)
+        out.append(z2 * level_at(u))
+    return out
+
+
+# ---------------------------------------------------------------- Neon arcade's board sounds
+
+
+def neon_arcade_place(take):  # zap from 1.8, 1.6 or 1.4 kHz to a quarter of that, two clicks of crackle; 120 ms
+    f = (1800, 1600, 1400)[take - 1]
+    s = Sound(0.12)
+    s.add(0.000, zap(f, f / 4, 0.12, 0.020))  # mostly gone within 50 ms
+    s.add(0.000, crackle(0.01, 2, 500 + take), 0.3)
+    return fade(s.x, 0, 0.04)
+
+
+def neon_arcade_ring_draw():  # noise, its filter opening from 600 Hz to 3 kHz and closing, louder as it opens; 400 ms
+    def speed(u):  # slow, fast, slow, as the tube is drawn
+        return math.sin(math.pi * u) ** 2
+
+    x = sweep_noise(0.40, lambda u: 600 + 2400 * speed(u), lambda u: 0.15 + 0.85 * speed(u), 21)
+    return fade(highpass(x, 200), 0.01, 0.05)
+
+
+def neon_arcade_ring_close():  # crackle in the first 30 ms, blip D5, blip A5 at 80 ms, the flicker; 400 ms
+    s = Sound(0.40)
+    s.add(0.000, crackle(0.03, 6, 31), 0.4)
+    s.add(0.000, blip("D5", 0.4, 0.12))
+    s.add(0.080, blip("A5", 0.4, 0.12), 0.85)
+    return fade(flicker(s.x), 0, 0.10)
+
+
+def neon_arcade_captured():  # blip A4, then E4 80 ms later, softer; the flicker; 500 ms
+    s = Sound(0.50)
+    s.add(0.000, blip("A4", 0.5, 0.14))
+    s.add(0.080, blip("E4", 0.5, 0.16), 0.6)
+    return fade(flicker(s.x), 0, 0.12)
+
+
+def neon_arcade_capture_big():  # sub, blip chord D4, A4, E5, crackle over the first 250 ms; the flicker; 700 ms
+    s = Sound(0.70)
+    s.add(0.000, sub(0.7), 0.9)
+    for note in ("D4", "A4", "E5"):
+        s.add(0.010, blip(note, 0.7, 0.22), 0.3)
+    s.add(0.000, crackle(0.25, 14, 41), 0.35)
+    return fade(flicker(s.x), 0, 0.15)
+
+
+def neon_arcade_threat():  # blip G3 twice, 120 ms apart, each gone in about 60 ms; 300 ms
+    s = Sound(0.30)
+    s.add(0.000, blip("G3", 0.08, 0.03))
+    s.add(0.120, blip("G3", 0.08, 0.03), 0.85)
+    return fade(s.x, 0, 0.05)
+
+
+def neon_arcade_bomb():  # a quiet zap while it drops; at 150 ms a noise burst closing 4 kHz to 200 Hz, over a sub; 450 ms
+    s = Sound(0.45)
+    s.add(0.000, fade(zap(1200, 300, 0.15, 0.5), 0, 0.01), 0.25)
+    burst = sweep_noise(0.30, lambda u: 4000 * (200 / 4000) ** u, lambda u: 1.0, 51)
+    s.add(0.150, [v * envelope(i, 0.002, 0.09) for i, v in enumerate(burst)], 1.6)
+    s.add(0.150, sub(0.30), 0.9)
+    return fade(s.x, 0, 0.06)
+
+
+def neon_arcade_double_dot():  # blip D5, then D6 80 ms later; 300 ms
+    s = Sound(0.30)
+    s.add(0.000, blip("D5", 0.3, 0.07))
+    s.add(0.080, blip("D6", 0.3, 0.09), 0.9)
+    return fade(s.x, 0, 0.06)
+
+
+def neon_arcade_area_light():  # blip D5 that swells and fades over its 300 ms, brightest in the middle; 300 ms
+    f, out, phase = NOTE["D5"], [], 0.0
+    for i in range(round(0.30 * RATE)):
+        phase += 2 * math.pi * f / RATE
+        tube = math.sin(math.pi * i / RATE / 0.30)  # as the tube thickens and thins
+        out.append(tube ** 1.5 * (math.sin(phase) + tube * math.sin(3 * phase) / 3))
+    return fade(out, 0.002, 0.03)
+
+
+# Each theme's files, named sfx_<theme>_<Notebook's name without sfx_> (sound.md, "What a theme replaces").
+THEMES = {
+    "star_chart": {
+        "place_1": lambda: star_chart_place(1),
+        "place_2": lambda: star_chart_place(2),
+        "place_3": lambda: star_chart_place(3),
+        "ring_draw": star_chart_ring_draw,
+        "ring_close": star_chart_ring_close,
+        "captured": star_chart_captured,
+        "capture_big": star_chart_capture_big,
+        "threat": star_chart_threat,
+        "bomb": star_chart_bomb,
+        "double_dot": star_chart_double_dot,
+        "area_light": star_chart_area_light,
+    },
+    "neon_arcade": {
+        "place_1": lambda: neon_arcade_place(1),
+        "place_2": lambda: neon_arcade_place(2),
+        "place_3": lambda: neon_arcade_place(3),
+        "ring_draw": neon_arcade_ring_draw,
+        "ring_close": neon_arcade_ring_close,
+        "captured": neon_arcade_captured,
+        "capture_big": neon_arcade_capture_big,
+        "threat": neon_arcade_threat,
+        "bomb": neon_arcade_bomb,
+        "double_dot": neon_arcade_double_dot,
+        "area_light": neon_arcade_area_light,
+    },
+}
+
+THEME_EFFECTS = {f"sfx_{theme}_{name}": make for theme, sounds in THEMES.items() for name, make in sounds.items()}
+
 # ---------------------------------------------------------------- the 3 effects from source sounds
 # Each source file holds several takes; these are the ones kept, chosen for a single clean event
 # with the quietest room around it. Times are in seconds from the start of the source file.
@@ -431,7 +733,7 @@ def write_ogg(name, x, folder):
 
 
 def expected_names():
-    return sorted(list(MADE_IN_CODE) + [row[0] for row in FROM_SOURCES])
+    return sorted(list(MADE_IN_CODE) + list(THEME_EFFECTS) + [row[0] for row in FROM_SOURCES])
 
 
 def check(folder):
@@ -443,14 +745,14 @@ def check(folder):
     for name in sorted(set(found) - set(expected_names())):
         problems.append(f"{name}.ogg is not in sound.md's list")
     levels = {}
-    print(f"  {'file':24} {'length':>7} {'loudness':>9} {'peak':>9}")
+    print(f"  {'file':32} {'length':>7} {'loudness':>9} {'peak':>9}")
     with tempfile.TemporaryDirectory() as tmp:
         for name in found:
             wav = Path(tmp) / f"{name}.wav"
             subprocess.run(["oggdec", "-Q", "-o", str(wav), str(folder / f"{name}.ogg")], check=True)
             x = read_wav(wav)
             levels[name], peak = loudness(x), peak_db(x)
-            print(f"  {name + '.ogg':24} {len(x) / RATE * 1000:5.0f} ms {levels[name]:5.1f} LUFS {peak:5.1f} dBFS")
+            print(f"  {name + '.ogg':32} {len(x) / RATE * 1000:5.0f} ms {levels[name]:5.1f} LUFS {peak:5.1f} dBFS")
             if peak > MAX_PEAK_DB + 0.5:  # encoding may add a little to the peak
                 problems.append(f"{name}.ogg peaks at {peak:.1f} dBFS")
     if levels:
@@ -477,7 +779,7 @@ def main():
         sys.exit(0 if check(out) else 1)
     out.mkdir(parents=True, exist_ok=True)
     print(f"Writing to {out}")
-    for name, make in MADE_IN_CODE.items():
+    for name, make in {**MADE_IN_CODE, **THEME_EFFECTS}.items():
         write_ogg(name, make(), out)
     if args.sources:
         for name, *row in FROM_SOURCES:

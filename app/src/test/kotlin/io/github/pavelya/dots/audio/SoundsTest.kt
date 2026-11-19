@@ -1,5 +1,6 @@
 package io.github.pavelya.dots.audio
 
+import io.github.pavelya.dots.ui.theme.GameTheme
 import java.io.File
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -15,7 +16,8 @@ class SoundsTest {
 
     @Test
     fun `every effect file is played, and every effect has its file`() {
-        assertEquals(shipped("sfx_"), Effect.entries.map { it.asset }.sorted())
+        val themes = GameTheme.ALL.flatMap { it.sounds.values }.map { "audio/$it.ogg" }
+        assertEquals(shipped("sfx_"), (Effect.entries.map { it.asset } + themes).sorted())
     }
 
     @Test

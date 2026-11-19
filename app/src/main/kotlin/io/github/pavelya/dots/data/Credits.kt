@@ -52,9 +52,10 @@ object Credits {
     )
 
     /**
-     * The sound effects and music the app ships with (V-08, V-09). The effects come from
-     * docs/design/sound/make_effects.py: three from the owner's Suno sounds, the rest made in code.
-     * The music loops are cut from the owner's Suno tracks by docs/design/sound/make_music.py.
+     * The sound effects and music the app ships with. The effects come from
+     * docs/design/sound/make_effects.py: three from the owner's Suno sounds, the rest made in code,
+     * Star chart's and Neon arcade's board sounds among them. The music loops are cut from the
+     * owner's Suno tracks by docs/design/sound/make_music.py.
      */
     val sounds: List<Asset> = listOf(
         Asset(
@@ -70,7 +71,7 @@ object Credits {
             listOf(
                 "ring_close", "captured", "capture_big", "threat", "dots_low", "boss_turn", "double_dot",
                 "area_light", "win", "lose", "draw", "star", "world_open", "reward",
-            ).map(::effect),
+            ).map(::effect) + listOf("star_chart", "neon_arcade").flatMap(::themeEffects),
         ),
         Asset(
             "Music",
@@ -82,6 +83,12 @@ object Credits {
 
     /** A sound effect's file in the app's assets: `sfx_win` is `assets/audio/sfx_win.ogg`. */
     private fun effect(name: String) = "assets/audio/sfx_$name.ogg"
+
+    /** A theme's board sounds (sound.md, "What a theme replaces"): `star_chart` gives `assets/audio/sfx_star_chart_place_1.ogg` and the rest. */
+    private fun themeEffects(theme: String) = listOf(
+        "place_1", "place_2", "place_3", "ring_draw", "ring_close", "captured", "capture_big", "threat", "bomb",
+        "double_dot", "area_light",
+    ).map { effect("${theme}_$it") }
 
     /** A music loop's file in the app's assets: `map` is `assets/audio/music_map.ogg`. */
     private fun music(name: String) = "assets/audio/music_$name.ogg"

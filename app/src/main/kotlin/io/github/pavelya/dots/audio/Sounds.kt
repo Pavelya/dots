@@ -39,6 +39,19 @@ enum class Effect(val file: String, val share: Float, val millis: Long, val duck
     companion object {
         /** The dot's three takes, played in turn (sound.md, rule 7). */
         val PLACE = listOf(PLACE_1, PLACE_2, PLACE_3)
+
+        /**
+         * The board's sounds: the effects a theme replaces with its own (sound.md, "What a theme
+         * replaces"). Every other effect is Notebook's in every theme.
+         */
+        val BOARD = listOf(PLACE_1, PLACE_2, PLACE_3, RING_DRAW, RING_CLOSE, CAPTURED, CAPTURE_BIG, THREAT, BOMB, DOUBLE_DOT, AREA_LIGHT)
+
+        /**
+         * A theme's own files for the [BOARD] sounds, as sound.md names them: `sfx_<theme>_` and
+         * Notebook's name without `sfx_`, so theme `star_chart` plays `sfx_star_chart_place_1`
+         * for [PLACE_1].
+         */
+        fun ofTheme(theme: String): Map<Effect, String> = BOARD.associateWith { "sfx_${theme}_${it.file.removePrefix("sfx_")}" }
     }
 }
 
