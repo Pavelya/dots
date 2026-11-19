@@ -60,6 +60,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.BoardView
+import io.github.pavelya.dots.ui.theme.FaceInks
 import io.github.pavelya.dots.ui.theme.Palette
 
 /** The hand-cut shape of a booster chip on the card. */
@@ -238,7 +239,8 @@ private fun Opponent(level: Level, style: Palette) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.clearAndSetSemantics { contentDescription = "$name, $strength, $headStart" },
     ) {
-        Face(face, 48.dp)
+        // The level card is a note on the map, which stays Notebook's in every theme (decision 0028).
+        Face(face, 48.dp, inks = FaceInks.NOTEBOOK)
         Column {
             Text(name, style = NoteText.label, color = if (boss) style.red else style.blue)
             Text(strength, style = NoteText.small, color = style.graphite)

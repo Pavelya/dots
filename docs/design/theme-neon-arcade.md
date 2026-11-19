@@ -296,7 +296,8 @@ Each recoloured picture is saved beside the Notebook one as `<sheet>_<name>_neon
 `<sheet>_<name>_neon_arcade_dark.png` (for example `opponent_moods_happy_neon_arcade.png`), for
 every face the game screen shows: the computer's moods and strengths and the World 1 boss faces
 (`opponent_moods_*`, `opponent_strengths_*`, `boss_world_1_*`). The faces of later bosses get the
-same two versions when they are made. V-25 makes them.
+same two versions when they are made. [`make_pictures.py`](illustrations/make_pictures.py) makes
+them (`themes`, and `cut` for a new sheet), and the app picks them by the theme's `faceInks`.
 
 ### Outside the game screen
 

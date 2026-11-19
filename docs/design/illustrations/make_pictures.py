@@ -6,6 +6,7 @@ opponent-moods.png. This script is the record of how each sheet was cut.
 
     python3 docs/design/illustrations/make_pictures.py preview SHEET.png [--out DIR]
     python3 docs/design/illustrations/make_pictures.py cut --sources DIR [--date YYYY-MM-DD]
+    python3 docs/design/illustrations/make_pictures.py themes [--date YYYY-MM-DD]
     python3 docs/design/illustrations/make_pictures.py check
     python3 docs/design/illustrations/make_pictures.py self-test
 
@@ -21,7 +22,9 @@ pixels takes a few seconds.
 3. `cut` cuts every sheet in DIR that SHEETS names, writes its pictures into the app and adds or
    updates the sheet's row in the asset register (docs/assets.md). Run it again after any change;
    it replaces the sheet's pictures and row.
-4. `check` checks the pictures in the app against SHEETS: both versions there, the same shape,
+4. `themes` makes the theme versions of the pictures the game screen shows (the sheets marked
+   `themed`), from the pictures already in the app; `cut` makes them too. See "Themes" below.
+5. `check` checks the pictures in the app against SHEETS: every version there, the same shape,
    only the allowed inks, a register row. `self-test` runs every step on two sheets drawn in code.
 
 How a sheet is cleaned. Each pixel is read as one ink laid over the sheet's paper (the colour
@@ -41,6 +44,13 @@ The files. Pictures go to app/src/main/res/drawable-nodpi/ as <sheet>_<name>.png
 <sheet>_<name>_dark.png, with the sheet's name in snake case (opponent_moods_happy.png). The dark
 version swaps each ink for the dark version's ink and keeps white. Both sit in one folder, and the
 app picks one from the theme it draws with, as it does for colours.
+
+Themes. Star chart and Neon arcade draw the faces on the game screen in their own inks
+(theme-star-chart.md and theme-neon-arcade.md, "The faces"). Each theme version is the Notebook
+light picture with each of its four inks swapped for the theme's ink, white kept, in the light
+and the dark version: <sheet>_<name>_<theme>.png and <sheet>_<name>_<theme>_dark.png, with one
+register row per sheet and theme. The map pages stay Notebook's in every theme (decision 0028),
+so only the sheets marked `themed` get them.
 """
 
 import argparse
@@ -76,12 +86,39 @@ PALE_BIAS = 20.0  # prefer a full pale ink to a faint dark one (colour distance 
 PAD = 2  # transparent pixels kept round each picture, before scaling
 
 
+def hx(code):
+    return tuple(int(code[i:i + 2], 16) for i in (1, 3, 5))
+
+
+@dataclass
+class Theme:
+    title: str  # the theme's name, for the register
+    page: str  # the theme page with the inks
+    light: List[tuple]  # the inks of the light version, in the order of LIGHT
+    dark: List[tuple]  # the inks of the dark version, in the order of LIGHT
+
+
+# The themes that draw the game screen's pictures in their own inks, by the snake-case name in
+# the file names. The inks are the tables under "The faces" on each theme page. Neon arcade's
+# dark version gives the body (blue ink) the light version's deeper cyan, so the white eyes stay
+# clear, and the pale lines the bright cyan.
+THEMES: Dict[str, Theme] = {
+    "star_chart": Theme("Star chart", "docs/design/theme-star-chart.md",
+                        light=[hx("#9A5B00"), hx("#0E5C85"), hx("#E2CDAD"), hx("#B5CDE0")],
+                        dark=[hx("#F6CB6E"), hx("#6DBAE6"), hx("#6B5B45"), hx("#2D5678")]),
+    "neon_arcade": Theme("Neon arcade", "docs/design/theme-neon-arcade.md",
+                         light=[hx("#C8106E"), hx("#00778E"), hx("#F5B9D7"), hx("#A3DDE7")],
+                         dark=[hx("#FF3D8B"), hx("#00778E"), hx("#6A1D4A"), hx("#26E5FF")]),
+}
+
+
 @dataclass
 class Sheet:
     prompt: str  # where the prompt is, for the register
     what: str  # "What it is", for the register
     dp: int  # the largest size of a picture on the screen, in dp
     eyes: bool = False  # big pale patches inside a drawing are white eyeballs
+    themed: bool = False  # the game screen shows it, so every theme in THEMES gets its own version
     gap: float = 0.02  # pieces closer than this share of the sheet's shorter side are one drawing
     pictures: Optional[Dict[str, List[int]]] = None  # name: numbers from `preview`; None until cut
 
@@ -91,14 +128,14 @@ ON_PAGE = "on docs/design/illustrations.md"
 # Every sheet, by its prompt's name. `pictures` is filled in when the owner's sheet arrives.
 SHEETS: Dict[str, Sheet] = {
     # Worried and surprised wait for a moment of the game that shows them.
-    "opponent-moods": Sheet(f"Prompt 1 {ON_PAGE}", "The computer's moods, above the board", 108, eyes=True,
+    "opponent-moods": Sheet(f"Prompt 1 {ON_PAGE}", "The computer's moods, above the board", 108, eyes=True, themed=True,
                             pictures={"happy": [1], "smug": [2], "_worried": [3], "upset": [4], "_surprised": [5],
                                       "sulky": [6]}),
     # The strengths are also the computer's face above the board between moods, so they are cut for 108 dp.
     "opponent-strengths": Sheet(f"Prompt 2 {ON_PAGE}", "The computer's three strengths, on the level card and above the board", 108, eyes=True,
-                                pictures={"sleepy": [1], "calm": [2], "sharp": [3]}),
+                                themed=True, pictures={"sleepy": [1], "calm": [2], "sharp": [3]}),
     "boss-world-1": Sheet(f"Prompt 3 {ON_PAGE}", "The World 1 boss, the ink bottle, above the board and on its level card", 108, eyes=True,
-                          pictures={"smug": [1], "attacking": [2], "beaten": [3]}),
+                          themed=True, pictures={"smug": [1], "attacking": [2], "beaten": [3]}),
     "map-world-1-nature": Sheet(f"Prompt 4 {ON_PAGE}", "World 1 map page: landscape doodles beside the path", 84,
                                 pictures={"pines": [1], "tree": [2], "pond": [3], "hill": [4], "mountains": [5],
                                           "cloud": [6], "rock": [7], "grass_short": [8], "grass_tall": [9],
@@ -478,6 +515,47 @@ def cut_sheet(root, name, sheet, source, date):
            "ChatGPT image generation (owner's Pro plan)", date, sheet.prompt,
            "Ours; OpenAI's terms assign output rights to the user", "the owner, with ChatGPT", edits]
     put_row(root / REGISTER, row)
+    if sheet.themed:
+        written += theme_sheet(root, name, sheet, date)
+    return written
+
+
+def theme_pattern(name, theme):
+    """The register's file pattern for a sheet's pictures in a theme."""
+    return f"`{(DRAWABLES / (snake(name) + '_*_' + theme + '*.png')).as_posix()}`"
+
+
+def theme_sheet(root, name, sheet, date):
+    """Writes every theme's versions of the sheet's pictures, from the light pictures in the app,
+    and the theme's row into the register. Returns the files."""
+    folder = root / DRAWABLES
+    prefix = snake(name) + "_"
+    kept = [title for title in sheet.pictures if not title.startswith("_")]
+    written = []
+    for key, theme in THEMES.items():
+        for old in folder.glob(f"{prefix}*_{key}.png"):
+            old.unlink()
+        for old in folder.glob(f"{prefix}*_{key}_dark.png"):
+            old.unlink()
+        for title in kept:
+            light = folder / f"{prefix}{title}.png"
+            if not light.exists():
+                sys.exit(f"{light}: missing; cut the sheet {name} first")
+            w, h, px = read_png(light)
+            for inks, suffix in ((theme.light, ""), (theme.dark, "_dark")):
+                swap = dict(zip(LIGHT + [WHITE], inks + [WHITE]))
+                out = [(*swap[p[:3]], p[3]) if p[3] else (0, 0, 0, 0) for p in px]
+                path = folder / f"{prefix}{title}_{key}{suffix}.png"
+                write_png(path, w, h, out)
+                written.append(path)
+        what = sheet.what.split(",")[0]
+        row = [theme_pattern(name, key), f"{what}, above the board in the {theme.title} theme, light and dark",
+               f"Claude Code (owner's Claude plan), recoloured by `{SCRIPT}` from the app's pictures, "
+               "which came from ChatGPT image generation (owner's Pro plan)", date,
+               f"Recoloured from `{(DRAWABLES / (prefix + '*.png')).as_posix()}` ({sheet.prompt})",
+               "Ours; OpenAI's terms assign output rights to the user", "the owner, with ChatGPT; recoloured by Claude",
+               f"{len(kept)} pictures; each ink swapped for the theme's, as on `{theme.page}`, The faces; white kept"]
+        put_row(root / REGISTER, row)
     return written
 
 
@@ -554,10 +632,27 @@ def cut(root, sources, date):
             sys.exit(f"{name}: run preview on {source} and write its pictures into SHEETS first")
         day = date or datetime.date.fromtimestamp(source.stat().st_mtime).isoformat()
         files = cut_sheet(root, name, sheet, source, day)
-        print(f"{name}: {len(files) // 2} pictures, light and dark")
+        themes = f" and in {len(THEMES)} themes" if sheet.themed else ""
+        print(f"{name}: {len(files) // (1 + len(versions(sheet)))} pictures, light and dark{themes}")
         done += 1
     if not done:
         sys.exit(f"no sheet named in SHEETS is in {sources}")
+
+
+def themes(root, date):
+    for name, sheet in SHEETS.items():
+        if sheet.themed and sheet.pictures is not None:
+            files = theme_sheet(root, name, sheet, date)
+            print(f"{name}: {len(files)} pictures in {', '.join(t.title for t in THEMES.values())}, light and dark")
+
+
+def versions(sheet):
+    """Every version of a picture but the light one: its file name's ending and its inks."""
+    found = [("_dark", DARK)]
+    if sheet.themed:
+        for key, theme in THEMES.items():
+            found += [(f"_{key}", theme.light), (f"_{key}_dark", theme.dark)]
+    return found
 
 
 def check(root, sheets=None):
@@ -573,33 +668,44 @@ def check(root, sheets=None):
             if files:
                 problems.append(f"{name}: pictures in the app, but no pictures in SHEETS")
             continue
-        wanted = {f"{prefix}{t}{s}.png" for t in sheet.pictures if not t.startswith("_") for s in ("", "_dark")}
+        others = versions(sheet)
+        kept = [t for t in sheet.pictures if not t.startswith("_")]
+        wanted = {f"{prefix}{t}{s}.png" for t in kept for s in [""] + [s for s, _ in others]}
         found = {f.name for f in files}
         problems += [f"{name}: missing {f}" for f in sorted(wanted - found)]
         problems += [f"{name}: {f} is not in SHEETS" for f in sorted(found - wanted)]
         if f"| `{(DRAWABLES / (prefix + '*.png')).as_posix()}` |" not in register:
             problems.append(f"{name}: no row in {REGISTER}")
-        for title in sheet.pictures:
-            light, dark = folder / f"{prefix}{title}.png", folder / f"{prefix}{title}_dark.png"
-            if title.startswith("_") or not light.exists() or not dark.exists():
+        if sheet.themed:
+            for key in THEMES:
+                if f"| {theme_pattern(name, key)} |" not in register:
+                    problems.append(f"{name}: no row in {REGISTER} for {key}")
+        allowed = set(LIGHT + ([WHITE] if sheet.eyes else []))
+        for title in kept:
+            light = folder / f"{prefix}{title}.png"
+            if not light.exists():
                 continue
             lw, lh, lp = read_png(light)
-            dw, dh, dp = read_png(dark)
-            if (lw, lh) != (dw, dh):
-                problems.append(f"{light.name}: {lw}x{lh}, but its dark version is {dw}x{dh}")
+            bad = next(((r, g, b) for r, g, b, a in lp if a and (r, g, b) not in allowed), None)
+            if bad:
+                problems.append(f"{light.name}: colour #{bad[0]:02X}{bad[1]:02X}{bad[2]:02X} is not one of the inks")
                 continue
-            allowed = set(LIGHT + ([WHITE] if sheet.eyes else []))
-            swap = dict(zip(LIGHT + [WHITE], DARK + [WHITE]))
-            for (r, g, b, a), (dr, dg, db, da) in zip(lp, dp):
-                if a != da:
-                    problems.append(f"{light.name}: its dark version is not the same shape")
-                    break
-                if a and (r, g, b) not in allowed:
-                    problems.append(f"{light.name}: colour #{r:02X}{g:02X}{b:02X} is not one of the inks")
-                    break
-                if a and swap[(r, g, b)] != (dr, dg, db):
-                    problems.append(f"{dark.name}: #{dr:02X}{dg:02X}{db:02X} is not the dark ink for #{r:02X}{g:02X}{b:02X}")
-                    break
+            for suffix, inks in others:
+                other = folder / f"{prefix}{title}{suffix}.png"
+                if not other.exists():
+                    continue
+                ow, oh, op = read_png(other)
+                if (lw, lh) != (ow, oh):
+                    problems.append(f"{other.name}: {ow}x{oh}, but {light.name} is {lw}x{lh}")
+                    continue
+                swap = dict(zip(LIGHT + [WHITE], inks + [WHITE]))
+                for (r, g, b, a), (orr, og, ob, oa) in zip(lp, op):
+                    if a != oa:
+                        problems.append(f"{other.name}: not the same shape as {light.name}")
+                        break
+                    if a and swap[(r, g, b)] != (orr, og, ob):
+                        problems.append(f"{other.name}: #{orr:02X}{og:02X}{ob:02X} is not its ink for #{r:02X}{g:02X}{b:02X}")
+                        break
     return problems
 
 
@@ -700,7 +806,7 @@ def doodles_sheet(path):
 
 def self_test():
     sheets = {
-        "test-faces": Sheet("A sheet drawn in code", "Test faces", 20, eyes=True,
+        "test-faces": Sheet("A sheet drawn in code", "Test faces", 20, eyes=True, themed=True,
                             pictures={"plain": [1], "capped": [2]}),
         "test-doodles": Sheet("A sheet drawn in code", "Test doodles", 200,
                               pictures={"tree": [1], "pond": [2], "grass": [3, 4, 5], "cloud": [6], "hill": [7]}),
@@ -733,7 +839,8 @@ def self_test():
                 for name in sheets:
                     cut_sheet(root, name, sheets[name], sources / f"{name}.png", "2026-11-17")
             files = sorted(p.name for p in (root / DRAWABLES).glob("*.png"))
-            expect(len(files) == 2 * 2 + 5 * 2, f"14 files, light and dark ({len(files)})")
+            expect(len(files) == 2 * (2 + 2 * len(THEMES)) + 5 * 2,
+                   f"22 files: light and dark, and the faces in each theme ({len(files)})")
             expect(check(root, sheets) == [], "check passes: only the inks, dark versions swapped, rows there")
             _, _, plain = read_png(root / DRAWABLES / "test_faces_plain.png")
             expect(any(p[:3] == WHITE and p[3] == 255 for p in plain), "the eyes are opaque white")
@@ -750,7 +857,13 @@ def self_test():
             gw, gh, _ = read_png(root / DRAWABLES / "test_doodles_grass.png")
             expect(gw > 3 * gh, f"the three tufts are one picture ({gw}x{gh})")
             rows = [l for l in (root / REGISTER).read_text().split("\n") if l.startswith("| `")]
-            expect(len(rows) == 2, "one register row per sheet, after cutting twice")
+            expect(len(rows) == 2 + len(THEMES), "one register row per sheet and theme, after cutting twice")
+            _, _, plain_dark = read_png(root / DRAWABLES / "test_faces_plain_neon_arcade_dark.png")
+            inks_dark = {q[:3] for q in plain_dark if q[3]}
+            expect(THEMES["neon_arcade"].dark[1] == THEMES["neon_arcade"].light[1] and
+                   THEMES["neon_arcade"].dark[1] in inks_dark and WHITE in inks_dark,
+                   "Neon arcade's dark face: the body in the deeper cyan, the eyes still white")
+            expect(not any((root / DRAWABLES).glob("test_doodles_*_star_chart*.png")), "the doodles have no theme versions")
             cells = [re.split(r"(?<!\\)\|", r.strip().strip("|")) for r in rows]
             expect(all(len(c) == 8 and all(x.strip() for x in c) for c in cells), "each row has 8 filled cells")
             # A broken picture fails the check.
@@ -759,6 +872,15 @@ def self_test():
             bp[next(i for i, q in enumerate(bp) if q[3] == 255)] = (1, 2, 3, 255)
             write_png(bad, bw, bh, bp)
             expect(any("not one of the inks" in p for p in check(root, sheets)), "check finds a wrong colour")
+            themed = root / DRAWABLES / "test_faces_capped_star_chart.png"
+            tw2, th2, tp = read_png(themed)
+            i = next(i for i, q in enumerate(tp) if q[3] == 255)
+            tp[i] = (*THEMES["neon_arcade"].light[0], 255)
+            write_png(themed, tw2, th2, tp)
+            expect(any("is not its ink" in p for p in check(root, sheets)), "check finds a wrong theme ink")
+            themed.unlink()
+            expect(any("missing test_faces_capped_star_chart.png" in p for p in check(root, sheets)),
+                   "check finds a missing theme version")
         finally:
             for name in sheets:
                 SHEETS.pop(name)
@@ -776,6 +898,8 @@ def main():
     c = sub.add_parser("cut", help="cut the sheets in a folder into the app")
     c.add_argument("--sources", required=True)
     c.add_argument("--date", help="the day the sheets were made (default: each file's date)")
+    t = sub.add_parser("themes", help="make the theme versions of the game screen's pictures")
+    t.add_argument("--date", default=datetime.date.today().isoformat(), help="the day, for the register")
     sub.add_parser("check", help="check the pictures in the app")
     sub.add_parser("self-test", help="run every step on two sheets drawn in code")
     args = parser.parse_args()
@@ -783,6 +907,8 @@ def main():
         preview(args.sheet, args.out)
     elif args.command == "cut":
         cut(REPO, args.sources, args.date)
+    elif args.command == "themes":
+        themes(REPO, args.date)
     elif args.command == "check":
         problems = check(REPO)
         print("\n".join(problems) or "all pictures pass")

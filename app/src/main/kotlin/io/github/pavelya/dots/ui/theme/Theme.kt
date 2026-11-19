@@ -37,6 +37,11 @@ data class GameTheme(
      * every look, and not read yet: every look plays the game's own effects (`audio.Effect`).
      */
     val sounds: Map<String, Int> = emptyMap(),
+    /**
+     * The inks of the opponent's faces on the game screen (docs/design/illustrations.md, "Other
+     * themes"). The map and its notes, the level card among them, stay Notebook's (decision 0028).
+     */
+    val faceInks: FaceInks = FaceInks.NOTEBOOK,
 ) {
     fun palette(dark: Boolean): Palette = if (dark) this.dark else light
 
@@ -194,3 +199,10 @@ fun DotsTheme(
         MaterialTheme(colorScheme = palette.material, typography = theme.type.material, content = content)
     }
 }
+
+/**
+ * The inks a theme draws the opponent's faces in: one set of pictures per value, recoloured from
+ * Notebook's by docs/design/illustrations/make_pictures.py with the inks of the theme's page
+ * ("The faces" on theme-star-chart.md and theme-neon-arcade.md).
+ */
+enum class FaceInks { NOTEBOOK, STAR_CHART, NEON_ARCADE }
