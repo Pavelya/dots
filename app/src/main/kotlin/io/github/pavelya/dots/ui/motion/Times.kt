@@ -166,6 +166,76 @@ class Capturing(val big: Boolean) {
     }
 }
 
+/**
+ * Star chart's capture (motion.md, "Capture in Star chart"): the line is traced at an even speed,
+ * and each star swells as the line reaches it. 0 ms is the moment the closing star lands.
+ */
+object Twinkle {
+    /** A star swells to [PEAK] and back in this long, from the moment the line reaches it. */
+    const val LENGTH = 120f
+    const val PEAK = 1.25f
+
+    /** How far the line has been traced round the ring: at an even speed, as if ruled. */
+    fun traced(capture: Capturing, t: Float): Float = phase(t, capture.ringStart, capture.ringEnd, Ease.LINEAR)
+
+    /**
+     * A star's size as a share of its own, for a star the line reaches at [reached] of the way
+     * round (the closing star at 1, when the line comes back to it).
+     */
+    fun size(capture: Capturing, t: Float, reached: Float): Float {
+        val start = capture.ringStart + reached * (capture.ringEnd - capture.ringStart)
+        return 1f + (PEAK - 1f) * swell(t, start, start + LENGTH)
+    }
+
+    /** How far the haze and its hatching have blended in from the paper, over the whole area at once. */
+    fun haze(capture: Capturing, t: Float): Float = capture.wash(t)
+}
+
+/**
+ * Neon arcade's light (motion.md, "Neon arcade"): a placed piece lights up as it settles; a ring is
+ * drawn unlit and lights up as it closes, with one flicker and a burst of sparks.
+ */
+object NeonLight {
+    /** A new piece's glow grows from nothing to its band between these times after it is placed. */
+    const val GLOW_FROM = 120f
+    const val GLOW_TO = 200f
+
+    /** The lit tube goes dark again this long after it lights, for [FLICKER] ms. */
+    const val FLICKER_AFTER = 40f
+    const val FLICKER = 40f
+
+    /** The sparks fly for this long from the moment the tube lights. */
+    const val SPARKS = 250f
+
+    /** Up to this many sparks, spread over [SPARK_SPREAD] degrees away from the area. */
+    const val SPARK_COUNT = 10
+    const val SPARK_SPREAD = 160f
+
+    /** A spark flies from this far from the closing piece's centre to [SPARK_TO], and is at most [SPARK_LONG] long, in dp at 24 dp spacing. */
+    const val SPARK_FROM = 9f
+    const val SPARK_TO = 27f
+    const val SPARK_LONG = 6f
+
+    /** A spark's tube and core, in dp at 24 dp spacing. */
+    const val SPARK_LINE = 2.2f
+    const val SPARK_CORE = 0.8f
+
+    /** How much of its glow a piece placed [t] ms ago shows. */
+    fun glow(t: Float): Float = phase(t, GLOW_FROM, GLOW_TO, Ease.OUT)
+
+    /** Whether the ring of [capture] is lit at [t]: once it has closed, but for the flicker. */
+    fun lit(capture: Capturing, t: Float): Boolean {
+        val close = capture.ringEnd
+        return t >= close && !(t >= close + FLICKER_AFTER && t < close + FLICKER_AFTER + FLICKER)
+    }
+
+    /** How far the sparks have flown, from 0 to 1; null outside their flight. */
+    fun sparks(capture: Capturing, t: Float): Float? {
+        val close = capture.ringEnd
+        return if (t < close || t >= close + SPARKS) null else (t - close) / SPARKS
+    }
+}
+
 /** The threat pulse (motion.md): 0 ms is [DELAY] after the dot that makes the threat lands. */
 object Threat {
     const val DELAY = 200f

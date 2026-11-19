@@ -85,7 +85,39 @@ data class BoardLook(
      * colour of the paper or wash under it. None when it is 0.
      */
     val guideCasing: Measure,
+    /** A point at every grid crossing, across, in the palette's chart point colour, drawn over the grid. None when it is 0. */
+    val chartPoint: Measure = Measure(),
+    /**
+     * A band round every live piece in its side's pale ink, following its outline with round
+     * corners: its glow. Captured pieces and the preview have none, and high-contrast bands
+     * ([halo]) take its place. None when it is 0.
+     */
+    val glow: Measure = Measure(),
+    /** A band to either side of the ring in the captor's pale ink: the ring's glow. None when it is 0. */
+    val ringGlow: Measure = Measure(),
+    /** A line along the middle of the ring in the captor's core colour, as a share of the ring's width. None when it is 0. */
+    val ringCore: Float = 0f,
+    /** How a capture draws its ring and fills its area (docs/design/motion.md). */
+    val capture: CaptureMotion = CaptureMotion.PEN,
 )
+
+/** How a capture plays in a theme; the times are the same in every theme (docs/design/motion.md). */
+enum class CaptureMotion {
+    /** Notebook's: the ring drawn like a pen stroke, the wash spreading from the closing dot. */
+    PEN,
+
+    /**
+     * Star chart's: the ring traced at an even speed from star to star, each star twinkling as the
+     * line reaches it; the haze blends in from the paper over the whole area at once.
+     */
+    CONSTELLATION,
+
+    /**
+     * Neon arcade's: the ring drawn unlit, in ink only; it lights up as it closes, flickers once,
+     * and throws sparks from the closing piece. Each captured piece goes dark as its cut starts.
+     */
+    NEON,
+}
 
 /**
  * A length on the board: [ofSpacing] times the spacing between two points, plus [dp], kept
@@ -103,7 +135,11 @@ data class Measure(
     fun px(spacing: Float, density: Float): Float = (spacing * ofSpacing + dp * density).coerceIn(min * density, max * density)
 }
 
-/** A side's piece: its [shape], [across] times the dot size (docs/design/pieces.md). */
+/**
+ * A side's piece: its [shape], [across] times the dot size (docs/design/pieces.md and the theme
+ * pages). For a dot or a diamond [across] is its width; for a star or a triangle, the circle
+ * through its points; for a comet, its round head, and the tail grows with it.
+ */
 @Immutable
 data class Piece(val shape: PieceShape, val across: Float = 1f)
 
@@ -113,4 +149,13 @@ enum class PieceShape {
 
     /** A square turned 45°, its corners pointing along the grid lines. */
     DIAMOND,
+
+    /** A fat five-pointed star, one point straight up, its inner corners at 0.55 of its points' radius. */
+    STAR,
+
+    /** A round head on the point with a tail of three streaks running up and to the left. */
+    COMET,
+
+    /** An equilateral triangle, one corner straight up, its centre on the point. */
+    TRIANGLE,
 }

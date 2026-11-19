@@ -15,22 +15,34 @@ import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.ui.theme.GameTheme
+import io.github.pavelya.dots.ui.theme.ThemeCase
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
-/** Reference images in app/src/test/screenshots; re-record with `./gradlew :app:recordRoborazziDebug`. */
-@RunWith(RobolectricTestRunner::class)
+/**
+ * Boards in each theme ([ThemeCase]): Notebook's images keep their names, the other themes' take
+ * the theme's name. Reference images in app/src/test/screenshots; they are recorded in CI
+ * (CLAUDE.md, "Recording screenshots").
+ */
+@RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w400dp-h400dp-xhdpi")
-class BoardScreenshotTest {
+class BoardScreenshotTest(private val case: ThemeCase) {
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun themes(): List<Array<Any>> = ThemeCase.parameters()
+    }
+
     @get:Rule
     val compose = createComposeRule()
 
-    private val style = BoardStyle.of(GameTheme.NOTEBOOK, dark = false)
+    private val style = BoardStyle.of(case.theme, dark = false)
 
     private fun capture(
         name: String,
@@ -45,7 +57,7 @@ class BoardScreenshotTest {
                 BoardView(state, style, "board", Modifier.fillMaxSize(), lastMove, preview, dangers = dangers, guides = guides)
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/${case.name(name)}.png")
     }
 
     @Test
@@ -163,12 +175,12 @@ class BoardScreenshotTest {
         compose.setContent {
             Box(Modifier.size(360.dp)) {
                 BoardView(
-                    allPieces, BoardStyle.of(GameTheme.NOTEBOOK, dark, highContrast), "board", Modifier.fillMaxSize(),
+                    allPieces, BoardStyle.of(case.theme, dark, highContrast), "board", Modifier.fillMaxSize(),
                     lastMove = Pos(7, 1), preview = Pos(4, 6), dangers = dangers, guides = true,
                 )
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/${case.name(name)}.png")
     }
 
     @Test
@@ -183,15 +195,22 @@ class BoardScreenshotTest {
     @Test
     fun piecesHighContrastDark() = capturePieces("board_pieces_contrast_dark", dark = true, highContrast = true)
 
+    /** The POC's plain look, once. */
     @Test
-    fun plainTheme() = captureThemed("theme_board_plain", GameTheme.PLAIN, dark = false)
+    fun plainTheme() {
+        assumeTrue(case.isNotebook)
+        captureThemed("theme_board_plain", GameTheme.PLAIN, dark = false)
+    }
 
     @Test
-    fun plainThemeDark() = captureThemed("theme_board_plain_dark", GameTheme.PLAIN, dark = true)
+    fun plainThemeDark() {
+        assumeTrue(case.isNotebook)
+        captureThemed("theme_board_plain_dark", GameTheme.PLAIN, dark = true)
+    }
 
     @Test
-    fun notebookTheme() = captureThemed("theme_board_notebook", GameTheme.NOTEBOOK, dark = false)
+    fun theme() = captureThemed("theme_board_${case.key}", case.theme, dark = false)
 
     @Test
-    fun notebookThemeDark() = captureThemed("theme_board_notebook_dark", GameTheme.NOTEBOOK, dark = true)
+    fun themeDark() = captureThemed("theme_board_${case.key}_dark", case.theme, dark = true)
 }

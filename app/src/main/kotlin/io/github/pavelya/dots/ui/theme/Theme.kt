@@ -20,7 +20,8 @@ import dots.engine.Player
  * ([io.github.pavelya.dots.ui.screen.MapPages], decision 0028).
  *
  * [NOTEBOOK] is the game's look, with the values of docs/design/theme-notebook.md and pieces.md.
- * [PLAIN] is the POC's look, kept to show that a look is data.
+ * [STAR_CHART] and [NEON_ARCADE] are the cosmetic themes of docs/design/theme-star-chart.md and
+ * theme-neon-arcade.md (decision 0028). [PLAIN] is the POC's look, kept to show that a look is data.
  */
 @Immutable
 data class GameTheme(
@@ -51,6 +52,14 @@ data class GameTheme(
     companion object {
         val PLAIN: GameTheme get() = PlainTheme
         val NOTEBOOK: GameTheme get() = NotebookTheme
+        val STAR_CHART: GameTheme get() = StarChartTheme
+        val NEON_ARCADE: GameTheme get() = NeonArcadeTheme
+
+        /**
+         * The themes a player can have: Notebook, the default, then the cosmetic ones. Which of them a
+         * player may choose is not the theme's business (decision 0029).
+         */
+        val ALL: List<GameTheme> get() = listOf(NotebookTheme, StarChartTheme, NeonArcadeTheme)
 
         /** The theme the screen is drawn in. */
         val current: GameTheme
@@ -108,12 +117,20 @@ data class Palette(
     /** Over the board behind Pause. */
     val scrim: Color,
     val material: ColorScheme,
+    /** The small point at each grid crossing, in a theme whose board has them ([BoardLook.chartPoint]). */
+    val chartPoint: Color = grid,
+    /** The bright line along the middle of Red's ring, in a theme whose rings have one ([BoardLook.tubeCore]). */
+    val redCore: Color = red,
+    /** The bright line along the middle of Blue's ring. */
+    val blueCore: Color = blue,
 ) {
     fun ink(player: Player): Color = if (player == Player.RED) red else blue
 
     fun wash(player: Player): Color = if (player == Player.RED) redWash else blueWash
 
     fun pale(player: Player): Color = if (player == Player.RED) redPale else bluePale
+
+    fun core(player: Player): Color = if (player == Player.RED) redCore else blueCore
 
     companion object {
         /** The inks of the theme and version the screen is drawn in. */

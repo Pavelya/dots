@@ -41,11 +41,13 @@ import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.GameTheme
 import io.github.pavelya.dots.ui.theme.Palette
+import io.github.pavelya.dots.ui.theme.ThemeCase
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -60,18 +62,28 @@ import org.robolectric.annotation.GraphicsMode
  * with the canvas's boosters in the tool bar (draw.py, `BOOSTERS`). The booster previews (A-05) are
  * drawn on the threat position: Undo's as the canvas frame `game-undo`, Wall's and Bomb's as the
  * wireframes' "Booster aimed" in the same note.
+ *
+ * Every test runs in each theme ([ThemeCase]): Notebook, and Star chart and Neon arcade, whose
+ * images are shown next to their own canvas frames (`game-threat-star-chart` and so on). The
+ * Boosters screen is not the game screen, so it stays Notebook's (decision 0028).
  */
-@RunWith(RobolectricTestRunner::class)
+@RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w360dp-h800dp-xhdpi")
-class GameScreenshotTest {
+class GameScreenshotTest(private val case: ThemeCase) {
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun themes(): List<Array<Any>> = ThemeCase.parameters()
+    }
+
     @get:Rule
     val compose = createComposeRule()
 
     private val human = Player.RED
 
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
-    private fun show(theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false, highContrast: Boolean = false, content: @Composable () -> Unit) {
+    private fun show(theme: GameTheme = case.theme, dark: Boolean = false, highContrast: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
             DotsTheme(theme, dark, highContrast) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
@@ -79,7 +91,7 @@ class GameScreenshotTest {
         }
     }
 
-    private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+    private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/${case.name(name)}.png")
 
     private fun levelOpens(name: String, dark: Boolean) {
         show(dark = dark) {
@@ -340,6 +352,7 @@ class GameScreenshotTest {
 
     /** The Boosters screen (canvas frame `boosters`) with the canvas's counts. */
     private fun boostersScreen(name: String, dark: Boolean) {
+        assumeTrue("the Boosters screen is not the game screen", case.isNotebook)
         show(dark = dark) { BoostersNote(mapOf(Booster.WALL to 2, Booster.HINT to 1, Booster.DOUBLE_DOT to 1, Booster.UNDO to 1), onClose = {}) }
         capture(name)
     }

@@ -52,10 +52,15 @@ import io.github.pavelya.dots.ui.motion.WallEffect
 import io.github.pavelya.dots.ui.motion.length
 import io.github.pavelya.dots.ui.screen.Doodles
 import io.github.pavelya.dots.ui.motion.Placing
+import io.github.pavelya.dots.ui.motion.NeonLight
 import io.github.pavelya.dots.ui.motion.Threat
+import io.github.pavelya.dots.ui.motion.Twinkle
 import io.github.pavelya.dots.ui.theme.BoardLook
+import io.github.pavelya.dots.ui.theme.CaptureMotion
+import io.github.pavelya.dots.ui.theme.PieceShape
 import kotlin.math.PI
 import kotlin.math.abs
+import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.floor
 import kotlin.math.hypot
@@ -164,8 +169,26 @@ private class Frame(
     val bt: Float,
     /** What an Undo takes back that the position no longer shows. */
     val undone: UndoneParts,
+    /**
+     * For each dot on a ring being drawn, how far round the ring the line reaches it, from the
+     * closing dot: the closing dot itself at 1, when the line comes back to it.
+     */
+    val reached: Map<Pos, Float> = emptyMap(),
 ) {
     val newDot: Pos? get() = moment?.dot?.takeIf { t < Placing.SETTLED }
+
+    /**
+     * The size of the piece on ([x], [y]) as a share of its own: a dot just placed grows to 115% and
+     * settles (motion.md, "Placing a dot"); one Undo gives back after a bomb grows back in; in Star
+     * chart, a star the line has just reached twinkles (motion.md, "Capture in Star chart").
+     */
+    fun pieceScale(x: Int, y: Int, look: BoardLook): Float {
+        val dot = newDot
+        val base = if (dot != null && dot.x == x && dot.y == y) Placing.dotScale(t) else grownBack(x, y)
+        if (look.capture != CaptureMotion.CONSTELLATION || timing == null) return base
+        val share = reached[Pos(x, y)] ?: return base
+        return base * Twinkle.size(timing, t, share)
+    }
 
     /** The booster whose effect is playing in this frame, or null. */
     val boosting: BoosterMoment? get() = booster?.takeIf { bt < it.length }
@@ -205,11 +228,16 @@ private class Frame(
             val timing = if (captures.isEmpty() || moment == null) null else Capturing.of(moment.captured)
             val capturing = HashMap<Int, AreaCapture>()
             val cuts = HashMap<Pos, Float>()
+            val reached = HashMap<Pos, Float>()
             if (timing != null && t < timing.length) {
                 for (capture in captures) {
                     val inside = capture.dots.firstOrNull() ?: capture.region.firstOrNull() ?: continue
                     val index = regions.indexOfFirst { inside in it }
-                    if (index >= 0 && index !in capturing) capturing[index] = AreaCapture(capture, ringIndex(areas[index].ring, capture.closing))
+                    if (index >= 0 && index !in capturing) {
+                        val start = ringIndex(areas[index].ring, capture.closing)
+                        capturing[index] = AreaCapture(capture, start)
+                        reached += reachedOn(areas[index].ring, start)
+                    }
                     val nearest = capture.dots.sortedBy { hypot((it.x - capture.closing.x).toFloat(), (it.y - capture.closing.y).toFloat()) }
                     nearest.forEachIndexed { i, dot -> cuts[dot] = timing.cut(t, i) }
                 }
@@ -222,7 +250,20 @@ private class Frame(
                     if (index >= 0) lit[index] = glow.ending.glow(now, i)
                 }
             }
-            return Frame(moment, t, capturing, timing, cuts, edgeMarks, lit, booster, bt, undone)
+            return Frame(moment, t, capturing, timing, cuts, edgeMarks, lit, booster, bt, undone, reached)
+        }
+
+        /** How far round [ring] the line reaches each of its dots, starting from its [start]th; that one is reached again at 1. */
+        private fun reachedOn(ring: List<Pos>, start: Int): Map<Pos, Float> {
+            val seq = ring.drop(start) + ring.take(start) + ring[start]
+            val legs = seq.zipWithNext { a, b -> hypot((b.x - a.x).toFloat(), (b.y - a.y).toFloat()) }
+            val total = legs.sum()
+            if (total <= 0f) return emptyMap()
+            var run = 0f
+            return seq.drop(1).zip(legs).associate { (dot, leg) ->
+                run += leg
+                dot to run / total
+            }
         }
 
         /** Where [ring] reaches the closing dot, or the ring's dot nearest to it. */
@@ -352,13 +393,18 @@ private fun DrawScope.drawPosition(
         val capturing = frame.capturing[i]
         val lit = frame.glow[i] ?: 0f
         val wash = if (lit > 0f) lerp(style.palette.wash(area.by), style.palette.pale(area.by), lit) else style.palette.wash(area.by)
-        if (capturing == null) {
-            drawArea(area.by, strokes[i], style, wash)
-        } else {
-            drawSpreadingArea(area, strokes[i], capturing.capture, frame, geometry, style, wash)
+        when {
+            capturing == null -> drawArea(area.by, strokes[i], style, wash)
+            // Star chart: the haze and its hatching blend in from the paper over the whole area.
+            style.look.capture == CaptureMotion.CONSTELLATION -> {
+                val haze = 1f - Twinkle.haze(frame.timing!!, frame.t)
+                if (haze < 1f) drawArea(area.by, strokes[i], style, fade(wash, style.paper, haze), fade(style.palette.pale(area.by), style.paper, haze))
+            }
+            else -> drawSpreadingArea(area, strokes[i], capturing.capture, frame, geometry, style, wash)
         }
     }
     drawGrid(state, geometry, style)
+    drawChartPoints(state, geometry, style)
     val boosting = frame.boosting
     val wallGoingUp = boosting?.point?.takeIf { boosting.booster == Booster.WALL }
     drawWalls(state, geometry, style, skip = wallGoingUp)
@@ -374,13 +420,26 @@ private fun DrawScope.drawPosition(
     }
     guided?.let { drawGuides(state, it, geometry, style, areas, strokes, guideReach) }
     drawHalos(state, geometry, style, areas, strokes, frame)
-    areas.forEachIndexed { i, area ->
-        val width = 1f + 0.9f * (frame.glow[i] ?: 0f)
-        val capturing = frame.capturing[i]
-        val drawn = if (capturing == null) 1f else frame.timing!!.ring(frame.t)
-        drawAreaRing(area.by, strokes[i], style, from = capturing?.start ?: 0, drawn = drawn, width = width)
+    drawGlows(state, geometry, style, frame)
+    // A tube is drawn in three passes, every ring's glow before any tube, so no glow lies over another ring's tube.
+    val layers = if (style.look.ringGlow.dp > 0f || style.look.ringCore > 0f) RingLayer.entries else listOf(RingLayer.TUBE)
+    for (layer in layers) {
+        areas.forEachIndexed { i, area ->
+            val width = 1f + 0.9f * (frame.glow[i] ?: 0f)
+            val capturing = frame.capturing[i]
+            val timing = frame.timing
+            // Neon arcade: the tube is drawn unlit and lights up as it closes.
+            val lit = capturing == null || timing == null || style.look.capture != CaptureMotion.NEON || NeonLight.lit(timing, frame.t)
+            if (layer != RingLayer.TUBE && !lit) return@forEachIndexed
+            val drawn = when {
+                capturing == null -> 1f
+                style.look.capture == CaptureMotion.CONSTELLATION -> Twinkle.traced(timing!!, frame.t)
+                else -> timing!!.ring(frame.t)
+            }
+            drawAreaRing(area.by, strokes[i], style, from = capturing?.start ?: 0, drawn = drawn, width = width, layer = layer)
+        }
+        undoneAreas.forEachIndexed { i, area -> drawAreaRing(area.by, undoneStrokes[i], style, drawn = 1f - frame.rubbedOut(area.by), layer = layer) }
     }
-    undoneAreas.forEachIndexed { i, area -> drawAreaRing(area.by, undoneStrokes[i], style, drawn = 1f - frame.rubbedOut(area.by)) }
     drawThreatRings(dangers, geometry, style, frame)
     drawRipples(geometry, style, frame)
     drawDots(state, geometry, style, frame)
@@ -401,6 +460,7 @@ private fun DrawScope.drawPosition(
     pinhole?.takeIf { state.ownerAt(it) != null }?.let { drawLastMove(geometry.center(it), geometry, style) }
     drawClosingPoints(state, dangers, geometry, style, frame)
     drawBurst(geometry, style, frame)
+    drawSparksOfLight(state, geometry, style, frame)
     drawBomb(geometry, style, frame)
     drawSparks(geometry, style, frame)
     val ink = style.color(Player.RED)
@@ -576,13 +636,37 @@ private fun DrawScope.drawArea(by: Player, stroke: RingStroke, style: BoardStyle
     }
 }
 
+/** The passes of a ring drawn as a tube (theme-neon-arcade.md, "The ring"); a plain ring is the tube alone. */
+private enum class RingLayer { GLOW, TUBE, CORE }
+
 /**
  * The ring round a captured area, in the captor's ink, each side with round ends, [width] times
  * as thick as drawn. While a capture plays, it is drawn like a pen stroke: from side [from] (the
- * closing dot) round the area, as far as [drawn] of its length.
+ * closing dot) round the area, as far as [drawn] of its length. As a tube, its [layer] is the
+ * glow to either side of it in the captor's pale ink, the tube itself, or the core along its
+ * middle; all three thicken together.
  */
-private fun DrawScope.drawAreaRing(by: Player, stroke: RingStroke, style: BoardStyle, from: Int = 0, drawn: Float = 1f, width: Float = 1f) {
-    val ink = style.color(by)
+private fun DrawScope.drawAreaRing(
+    by: Player,
+    ring: RingStroke,
+    style: BoardStyle,
+    from: Int = 0,
+    drawn: Float = 1f,
+    width: Float = 1f,
+    layer: RingLayer = RingLayer.TUBE,
+) {
+    val look = style.look
+    val ink = when (layer) {
+        RingLayer.GLOW -> style.palette.pale(by)
+        RingLayer.TUBE -> style.color(by)
+        RingLayer.CORE -> style.palette.core(by)
+    }
+    val glow = look.ringGlow.px(0f, density)
+    val stroke = when (layer) {
+        RingLayer.GLOW -> RingStroke(ring.outline, ring.sides.map { (side, w) -> side to w + 2 * glow })
+        RingLayer.TUBE -> ring
+        RingLayer.CORE -> RingStroke(ring.outline, ring.sides.map { (side, w) -> side to w * look.ringCore })
+    }
     if (drawn >= 1f) {
         for ((side, w) in stroke.sides) drawPath(side, ink, style = Stroke(w * width, cap = StrokeCap.Round))
         return
@@ -658,11 +742,13 @@ private fun DrawScope.drawPlus(state: GameState, plus: List<Pos>, geometry: Boar
 /** Pieces a booster would take away: pale, in a dashed Graphite ring (Undo's preview, motion.md). */
 private fun DrawScope.drawGone(state: GameState, gone: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
     val dot = style.look.dot.px(geometry.spacing, density)
+    val glow = style.look.glow.px(geometry.spacing, density)
     for (point in gone) {
         val owner = state.ownerAt(point.x, point.y) ?: continue
         val c = geometry.center(point)
         val piece = style.piece(owner)
-        drawPiece(piece.copy(across = piece.across * 1.1f), c, dot, style.paper)
+        // The paper hides the live piece under it, and its glow in Neon arcade.
+        if (glow > 0f) drawPieceBand(piece, c, dot, style.paper, glow + dot * 0.05f) else drawPiece(piece.copy(across = piece.across * 1.1f), c, dot, style.paper)
         drawPiece(piece, c, dot, style.palette.pale(owner))
         drawDashedRing(c, geometry.spacing * 0.45f, style.graphite, 1.5.dp.toPx())
     }
@@ -723,13 +809,90 @@ private fun DrawScope.drawHalos(state: GameState, geometry: BoardGeometry, style
     val halo = style.look.halo.px(geometry.spacing, density)
     if (halo <= 0f) return
     val dot = style.look.dot.px(geometry.spacing, density)
-    val newDot = frame.newDot
     onSurface(areas, strokes, style) { surface ->
         for (y in 0 until state.height) for (x in 0 until state.width) {
             val owner = state.ownerAt(x, y) ?: continue
-            val scale = if (newDot != null && newDot.x == x && newDot.y == y) Placing.dotScale(frame.t) else frame.grownBack(x, y)
+            val scale = frame.pieceScale(x, y, style.look)
             if (scale <= 0f) continue
-            drawPiece(style.piece(owner).grown(halo, dot).let { it.copy(across = it.across * scale) }, geometry.center(x, y), dot, surface)
+            val piece = style.piece(owner)
+            if (piece.shape == PieceShape.DOT || piece.shape == PieceShape.DIAMOND) {
+                drawPiece(piece.grown(halo, dot).let { it.copy(across = it.across * scale) }, geometry.center(x, y), dot, surface)
+            } else {
+                drawPieceBand(piece.copy(across = piece.across * scale), geometry.center(x, y), dot, surface, halo * scale)
+            }
+        }
+    }
+}
+
+/**
+ * Neon arcade's glow (theme-neon-arcade.md, "The board"): a band [BoardLook.glow] wide round every
+ * live piece in its side's pale ink. It grows and shrinks with its piece, a piece just placed
+ * lights up as it settles (motion.md, "Placing a dot in Neon arcade"), and a captured piece goes
+ * dark as its cut starts.
+ */
+private fun DrawScope.drawGlows(state: GameState, geometry: BoardGeometry, style: BoardStyle, frame: Frame) {
+    val glow = style.look.glow.px(geometry.spacing, density)
+    if (glow <= 0f || style.look.halo.px(geometry.spacing, density) > 0f) return
+    val dot = style.look.dot.px(geometry.spacing, density)
+    val newDot = frame.newDot
+    for (y in 0 until state.height) for (x in 0 until state.width) {
+        val owner = state.ownerAt(x, y) ?: continue
+        val pos = Pos(x, y)
+        val cut = if (state.isCaptured(x, y)) frame.cuts[pos] ?: 1f else frame.cutLeft(pos)
+        if (cut > 0f) continue
+        val scale = frame.pieceScale(x, y, style.look)
+        val lit = if (newDot == pos) NeonLight.glow(frame.t) else 1f
+        if (scale <= 0f || lit <= 0f) continue
+        val piece = style.piece(owner)
+        drawPieceBand(piece.copy(across = piece.across * scale), geometry.center(x, y), dot, style.palette.pale(owner), glow * scale * lit)
+    }
+}
+
+/** A point at every grid crossing, in a theme whose grid has them (theme-star-chart.md, "Chart points"). */
+private fun DrawScope.drawChartPoints(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
+    val across = style.look.chartPoint.px(geometry.spacing, density)
+    if (across <= 0f) return
+    for (y in 0 until state.height) for (x in 0 until state.width) {
+        if (!state.isHole(x, y)) drawCircle(style.palette.chartPoint, across / 2, geometry.center(x, y))
+    }
+}
+
+/**
+ * Neon arcade's sparks (motion.md, "Capture in Neon arcade"): as the tube lights up, up to ten
+ * short lit streaks fly out from the closing piece, away from the area, growing and then shrinking
+ * away. A way that would cross another piece is left out.
+ */
+private fun DrawScope.drawSparksOfLight(state: GameState, geometry: BoardGeometry, style: BoardStyle, frame: Frame) {
+    if (style.look.capture != CaptureMotion.NEON) return
+    val timing = frame.timing ?: return
+    val q = NeonLight.sparks(timing, frame.t) ?: return
+    val u = geometry.unit()
+    val from = (NeonLight.SPARK_FROM + (NeonLight.SPARK_TO - NeonLight.SPARK_FROM - NeonLight.SPARK_LONG) * Ease.OUT.transform(q)) * u
+    val length = NeonLight.SPARK_LONG * sin(PI * q).toFloat() * u
+    if (length < 0.3f * u) return
+    val pieces = (0 until state.height).flatMap { y -> (0 until state.width).filter { x -> state.ownerAt(x, y) != null }.map { x -> Pos(x, y) } }
+    for (capture in frame.moment?.captures.orEmpty()) {
+        val closing = capture.closing
+        val center = geometry.center(closing)
+        val ring = capture.ring.map(geometry::center)
+        val away = atan2(center.y - ring.sumOf { it.y.toDouble() }.toFloat() / ring.size, center.x - ring.sumOf { it.x.toDouble() }.toFloat() / ring.size)
+        val spread = Math.toRadians(NeonLight.SPARK_SPREAD.toDouble()).toFloat()
+        for (k in 0 until NeonLight.SPARK_COUNT) {
+            val angle = away + (k - (NeonLight.SPARK_COUNT - 1) / 2f) * spread / (NeonLight.SPARK_COUNT - 1)
+            val dx = cos(angle)
+            val dy = sin(angle)
+            // None crosses a piece: every point of its flight stays 8 dp from the other pieces' centres.
+            val crosses = pieces.any { p ->
+                p != closing && generateSequence(NeonLight.SPARK_FROM) { it + 2f }.takeWhile { it <= NeonLight.SPARK_TO }.any { r ->
+                    val c = geometry.center(p)
+                    hypot(center.x + dx * r * u - c.x, center.y + dy * r * u - c.y) < 8f * u
+                }
+            }
+            if (crosses) continue
+            val start = Offset(center.x + dx * from, center.y + dy * from)
+            val end = Offset(center.x + dx * (from + length), center.y + dy * (from + length))
+            drawLine(style.color(capture.by), start, end, NeonLight.SPARK_LINE * u, cap = StrokeCap.Round)
+            drawLine(style.palette.core(capture.by), start, end, NeonLight.SPARK_CORE * u, cap = StrokeCap.Round)
         }
     }
 }
@@ -863,13 +1026,11 @@ private fun DrawScope.drawClosingPoints(state: GameState, dangers: List<Danger>,
 private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style: BoardStyle, frame: Frame) {
     val look = style.look
     val dot = look.dot.px(geometry.spacing, density)
-    val newDot = frame.newDot
     for (y in 0 until state.height) for (x in 0 until state.width) {
         val owner = state.ownerAt(x, y) ?: continue
         val color = style.color(owner)
         val center = geometry.center(x, y)
-        // A dot just placed grows to 115% and settles (motion.md, "Placing a dot"); one Undo gives back after a bomb grows back in.
-        val scale = if (newDot != null && newDot.x == x && newDot.y == y) Placing.dotScale(frame.t) else frame.grownBack(x, y)
+        val scale = frame.pieceScale(x, y, look)
         if (scale <= 0f) continue
         val piece = style.piece(owner).let { if (scale == 1f) it else it.copy(across = it.across * scale) }
         // A dot being captured keeps its ink until its cut is drawn across it; Undo takes the cut back.
@@ -999,7 +1160,12 @@ private fun DrawScope.drawBombHits(geometry: BoardGeometry, style: BoardStyle, f
     val owner = boosting.by.opponent
     val piece = style.piece(owner).let { it.copy(across = it.across * size) }
     val dot = style.look.dot.px(geometry.spacing, density)
-    for (hit in boosting.removed) drawPiece(piece, geometry.center(hit), dot, style.color(owner))
+    // In Neon arcade a hit keeps its glow, which swells and shrinks with it.
+    val glow = if (style.look.halo.px(geometry.spacing, density) > 0f) 0f else style.look.glow.px(geometry.spacing, density) * size
+    for (hit in boosting.removed) {
+        drawPieceBand(piece, geometry.center(hit), dot, style.palette.pale(owner), glow)
+        drawPiece(piece, geometry.center(hit), dot, style.color(owner))
+    }
 }
 
 /**

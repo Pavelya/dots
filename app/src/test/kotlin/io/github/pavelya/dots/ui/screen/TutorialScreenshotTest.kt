@@ -20,11 +20,13 @@ import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.theme.DotsTheme
+import io.github.pavelya.dots.ui.theme.ThemeCase
 import kotlinx.coroutines.Dispatchers
 import org.junit.Rule
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -32,25 +34,32 @@ import org.robolectric.annotation.GraphicsMode
  * The tutorial's levels with their step note and hand (the wireframes' "Tutorial level") and How to
  * play (the wireframes' "Rules"), shown next to their frames
  * in the PR. Reference images in app/src/test/screenshots; they are recorded in CI (CLAUDE.md,
- * "Recording screenshots").
+ * "Recording screenshots"). The tutorial's levels are the game screen, so they run in each theme
+ * ([ThemeCase]); How to play is a menu screen and stays Notebook's (decision 0028).
  */
-@RunWith(RobolectricTestRunner::class)
+@RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w360dp-h800dp-xhdpi")
-class TutorialScreenshotTest {
+class TutorialScreenshotTest(private val case: ThemeCase) {
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun themes(): List<Array<Any>> = ThemeCase.parameters()
+    }
+
     @get:Rule
     val compose = createComposeRule()
 
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
     private fun show(content: @Composable () -> Unit) {
         compose.setContent {
-            DotsTheme(dark = false) {
+            DotsTheme(case.theme, dark = false) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
             }
         }
     }
 
-    private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+    private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/${case.name(name)}.png")
 
     private fun waitFor(text: String) =
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isNotEmpty() }
@@ -123,6 +132,7 @@ class TutorialScreenshotTest {
 
     @Test
     fun rules() {
+        assumeTrue("How to play is not the game screen", case.isNotebook)
         show { RulesScreen(onBack = {}, onPlayTutorial = {}) }
         capture("rules_screen")
     }

@@ -37,12 +37,14 @@ import io.github.pavelya.dots.data.SampleProgress
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.dailyGame
 import io.github.pavelya.dots.ui.theme.DotsTheme
+import io.github.pavelya.dots.ui.theme.ThemeCase
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -51,11 +53,20 @@ import org.robolectric.annotation.GraphicsMode
  * the map (the wireframes' Today's puzzle: play, resume, solved), the daily board, and the daily
  * Result (the wireframes' Daily result), shown next to their frames in the PR. Reference images in
  * app/src/test/screenshots; they are recorded in CI (CLAUDE.md, "Recording screenshots").
+ *
+ * The daily board and its Result are the game screen, so they run in each theme ([ThemeCase]).
+ * The map and the notes over it stay Notebook's (decision 0028).
  */
-@RunWith(RobolectricTestRunner::class)
+@RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w360dp-h800dp-xhdpi")
-class DailyScreenshotTest {
+class DailyScreenshotTest(private val case: ThemeCase) {
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun themes(): List<Array<Any>> = ThemeCase.parameters()
+    }
+
     @get:Rule
     val compose = createComposeRule()
 
@@ -77,19 +88,20 @@ class DailyScreenshotTest {
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
     private fun show(dark: Boolean = false, content: @Composable () -> Unit) {
         compose.setContent {
-            DotsTheme(dark = dark) {
+            DotsTheme(case.theme, dark = dark) {
                 Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
             }
         }
     }
 
-    private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
+    private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/${case.name(name)}.png")
 
     private fun waitFor(text: String, substring: Boolean = false) =
         compose.waitUntil(timeoutMillis = 10_000) { compose.onAllNodes(hasText(text, substring = substring)).fetchSemanticsNodes().isNotEmpty() }
 
     /** Today's puzzle over the dimmed map, as the dialog draws it. */
     private fun note(action: DailyAction, dark: Boolean = false, shown: DailyPuzzle? = puzzle, today: Day = puzzle.day) {
+        assumeTrue("Today's puzzle is a note over the map", case.isNotebook)
         val map = Campaign.map(SampleProgress.midWorld)
         show(dark) {
             Box {
@@ -116,6 +128,7 @@ class DailyScreenshotTest {
 
     @Test
     fun `the map's note shows the streak`() {
+        assumeTrue("the map is not the game screen", case.isNotebook)
         show { MapScreen(Campaign.map(SampleProgress.midWorld), actions, streak = 6) }
         compose.onNodeWithText("Streak 6").assertIsDisplayed()
         capture("map_daily_streak")

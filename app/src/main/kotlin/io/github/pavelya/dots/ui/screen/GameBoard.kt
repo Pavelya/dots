@@ -84,6 +84,7 @@ import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.board.BoardMarks
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.PlayableBoard
+import io.github.pavelya.dots.ui.board.bounds
 import io.github.pavelya.dots.ui.board.drawPiece
 import io.github.pavelya.dots.ui.motion.BombEffect
 import io.github.pavelya.dots.ui.motion.BoosterTimes
@@ -99,6 +100,7 @@ import io.github.pavelya.dots.ui.motion.phase
 import io.github.pavelya.dots.ui.motion.rememberBoosterTimeline
 import io.github.pavelya.dots.ui.motion.rememberChangeTimeline
 import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
+import io.github.pavelya.dots.ui.theme.BoardLook
 import io.github.pavelya.dots.ui.theme.Palette
 import kotlin.math.ceil
 import kotlin.math.floor
@@ -632,7 +634,8 @@ private fun SideLine(
                 liveRegion = LiveRegionMode.Polite
             },
     ) {
-        Piece(player, style, Modifier.size(if (compact) 12.dp else 14.dp))
+        // A 12 dp dot, as on the board at 24 dp spacing; on a small phone 6/7 of that.
+        Piece(player, style, Modifier.size(pieceBox(if (compact) 72f / 7 else 12f)))
         Text(
             name,
             style = if (compact) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleLarge,
@@ -659,15 +662,29 @@ private fun SideLine(
 
 
 /**
- * A side's piece in the theme's shape (pieces.md, "Beyond the board"). The dot size is 6/7 of the
- * box, so a diamond of 7/6 of the dot size fills it.
+ * A side's piece in the theme's shape (pieces.md, "Beyond the board"). Both sides are drawn at one
+ * dot size, at which the wider of the two fills the box: in Notebook the dot size is 6/7 of the
+ * box, so a diamond of 7/6 of the dot size fills it. Each piece is centred by its own outline, so
+ * a comet's head sits low and to the right, its tail reaching up and to the left.
  */
 @Composable
 internal fun Piece(player: Player, style: Palette, modifier: Modifier) {
     val ink = style.ink(player)
-    val piece = BoardStyle.current.piece(player)
-    Canvas(modifier) { drawPiece(piece, center, size.minDimension * 6f / 7f, ink) }
+    val look = BoardStyle.current.look
+    val piece = if (player == Player.RED) look.red else look.blue
+    Canvas(modifier) {
+        val dot = size.minDimension / look.pieceReach()
+        drawPiece(piece, center - piece.bounds(dot).center, dot, ink)
+    }
 }
+
+/** How wide a box holds both sides' pieces, in dot sizes: 7/6 in Notebook, for its diamond. */
+private fun BoardLook.pieceReach(): Float = maxOf(red.bounds(1f).maxDimension, blue.bounds(1f).maxDimension)
+
+/** The box for a side's piece drawn at a dot size of [dot] dp (the score row's 12 dp). */
+@Composable
+@ReadOnlyComposable
+private fun pieceBox(dot: Float): Dp = (dot * BoardStyle.current.look.pieceReach()).dp
 
 /** The canvas's pen stroke under a name: a slightly wavy line, 4 dp under the text, drawn as far as [drawn] says. */
 private fun Modifier.penStroke(ink: Color, drawn: () -> Float = { 1f }): Modifier = drawWithContent {

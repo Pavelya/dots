@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -44,14 +45,17 @@ import io.github.pavelya.dots.game.UndoneTurn
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.motion.EndOfGame
+import io.github.pavelya.dots.ui.motion.LocalReduceMotion
 import io.github.pavelya.dots.ui.motion.rememberTimeline
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.Palette
+import io.github.pavelya.dots.ui.theme.ThemeCase
 import org.junit.Assert.assertEquals
+import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
+import org.robolectric.ParameterizedRobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
@@ -61,13 +65,40 @@ import org.robolectric.annotation.GraphicsMode
  * strip in docs/design/motion/ with the same time. The boards are the canvas's game of Level 7
  * ([CanvasGame]), as on the strips. Reference images in app/src/test/screenshots; they are
  * recorded in CI (CLAUDE.md, "Recording screenshots").
+ *
+ * The end of the game and the bomb also run in Star chart and Neon arcade ([ThemeCase]), whose areas
+ * and glows light up in their own way; their frames are named `motion_<moment>_<theme>_<time>`.
+ * The theme's own moments, timed to the millisecond, are ThemeMotionScreenshotTest's.
  */
-@RunWith(RobolectricTestRunner::class)
+@RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(qualifiers = "w360dp-h800dp-xhdpi")
-class MotionScreenshotTest {
+class MotionScreenshotTest(private val case: ThemeCase) {
+    companion object {
+        @JvmStatic
+        @ParameterizedRobolectricTestRunner.Parameters(name = "{0}")
+        fun themes(): List<Array<Any>> = ThemeCase.parameters()
+    }
+
     @get:Rule
     val compose = createComposeRule()
+
+    /**
+     * The times at which this theme's frames of a moment are taken: Notebook's, or a theme's own
+     * strip's. A moment a theme leaves as Notebook's (no times) is not run in it.
+     */
+    private fun times(notebook: LongArray, starChart: LongArray? = null, neonArcade: LongArray? = null): LongArray {
+        val times = when (case) {
+            ThemeCase.STAR_CHART -> starChart
+            ThemeCase.NEON_ARCADE -> neonArcade
+            else -> notebook
+        }
+        assumeTrue("the moment plays as Notebook's in ${case.key}", times != null)
+        return times!!
+    }
+
+    /** Runs only in Notebook: a moment the other themes play as Notebook's, or a screen they don't change. */
+    private fun notebookOnly() = times(longArrayOf())
 
     private val human = Player.RED
 
@@ -75,11 +106,13 @@ class MotionScreenshotTest {
      * Draws [content] as the phone would, with the clock stopped, then starts it: the moments that
      * [content] holds start on the next frame, which is their 0 ms.
      */
-    private fun show(content: @Composable () -> Unit) {
+    private fun show(reduce: Boolean = false, content: @Composable () -> Unit) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
-            DotsTheme {
-                Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
+            CompositionLocalProvider(LocalReduceMotion provides reduce) {
+                DotsTheme(case.theme) {
+                    Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
+                }
             }
         }
         compose.mainClock.advanceTimeByFrame()
@@ -92,7 +125,8 @@ class MotionScreenshotTest {
         for (time in times) {
             compose.mainClock.advanceTimeBy(time - now)
             now = time
-            compose.onRoot().captureRoboImage("src/test/screenshots/motion_${name}_$time.png")
+            val theme = if (case.isNotebook) "" else "_${case.key}"
+            compose.onRoot().captureRoboImage("src/test/screenshots/motion_${name}${theme}_$time.png")
         }
     }
 
@@ -153,6 +187,7 @@ class MotionScreenshotTest {
     @Test
     fun placing() {
         val move = CanvasGame.threat.state.play(Pos(10, 9))
+        notebookOnly()
         show { Board(landing(threat, move, Pos(10, 9), Player.RED, edgeMarks = null), links = true) }
         frames("placing", 40, 80, 120, 200)
     }
@@ -164,6 +199,7 @@ class MotionScreenshotTest {
      */
     @Test
     fun computersMoveAndThreat() {
+        notebookOnly()
         show { Board(landing(beforeBlue, CanvasGame.threat, Pos(7, 7), Player.BLUE, edgeMarks = Pos(7, 7))) }
         frames("turn", 100, 325, 450, 900, 1250, 5250)
     }
@@ -172,13 +208,28 @@ class MotionScreenshotTest {
     @Test
     fun capture() {
         val before = ui(MoveResult(CanvasGame.beforeSmallCapture, emptyList()), lastMove = Pos(11, 2)).copy(edgeMarks = Pos(11, 2))
+        notebookOnly()
         show { Board(landing(before, CanvasGame.smallCapture, Pos(4, 9), Player.RED, edgeMarks = null)) }
         frames("capture", 300, 600, 750, 950, 1250)
+    }
+
+    /**
+     * The capture with the phone's animations removed (motion.md, "Star chart" and "Neon arcade"):
+     * the ring, the area and the cuts at once; in Neon arcade the tube lit, the captured pieces
+     * dark and the new disc lit. Notebook's is checked by AnimationsOffTest.
+     */
+    @Test
+    fun captureWithAnimationsRemoved() {
+        assumeTrue("Notebook's is checked by AnimationsOffTest", !case.isNotebook)
+        val before = ui(MoveResult(CanvasGame.beforeSmallCapture, emptyList()), lastMove = Pos(11, 2)).copy(edgeMarks = Pos(11, 2))
+        show(reduce = true) { Board(landing(before, CanvasGame.smallCapture, Pos(4, 9), Player.RED, edgeMarks = null)) }
+        compose.onRoot().captureRoboImage("src/test/screenshots/motion_capture_${case.key}_animations_off.png")
     }
 
     /** The big capture of six dots (strip-big-capture): Red closes the big ring at (5, 7). */
     @Test
     fun bigCapture() {
+        notebookOnly()
         show { Board(landing(threat, CanvasGame.bigCapture, Pos(5, 7), Player.RED, edgeMarks = null)) }
         frames("big_capture", 400, 700, 900, 1100, 1400)
     }
@@ -190,6 +241,9 @@ class MotionScreenshotTest {
      */
     @Test
     fun endOfGameAndStars() {
+        // In the other themes the areas light up in their own way: the tubes thicken with their glow and core.
+        val notebook = longArrayOf(250, 450, 750, 1250, 1250 + 150, 1100 + 300 + 150, 1100 + 300 + 400, 1100 + 300 + 800, 1100 + 300 + 1100)
+        val ends = times(notebook, starChart = longArrayOf(450, 750, 1250, 2500), neonArcade = longArrayOf(450, 750, 1250, 2500))
         val state = CanvasGame.bigCapture.state
         val level = CanvasGame.level
         val areas = state.areas()
@@ -217,12 +271,13 @@ class MotionScreenshotTest {
                 if (ended) ResultNote(over, Names(true, human), onNext = {}, onAgain = {}, onAgainWithHint = {}, onMap = {})
             }
         }
-        frames("end", 250, 450, 750, 1250, 1250 + 150, 1100 + 300 + 150, 1100 + 300 + 400, 1100 + 300 + 800, 1100 + 300 + 1100)
+        frames("end", *ends)
     }
 
     /** Dots running out (strip-running-out): the count at 6, 5, 4, 3, 2 and 1 dots left. */
     @Test
     fun dotsRunningOut() {
+        notebookOnly()
         compose.setContent {
             DotsTheme {
                 Surface {
@@ -241,6 +296,7 @@ class MotionScreenshotTest {
      */
     @Test
     fun levelUnlock() {
+        notebookOnly()
         val level7 = Campaign.level(1, 7)
         val level8 = Campaign.level(1, 8)
         val before = Campaign.levels.takeWhile { it != level7 }
@@ -256,6 +312,7 @@ class MotionScreenshotTest {
     /** Drag's guides (strip-drag): drawn out from the ring in 100 ms as the finger goes down. */
     @Test
     fun dragGuides() {
+        notebookOnly()
         val point = Pos(10, 7)
         val opening = GameUiState(state = CanvasGame.opening.state, vsComputer = true, preview = point)
         show { GameBoard(opening, human, CanvasGame.parts(opening.state), input = BoardInput(PlacingMethod.DRAG, {}, {}, {}), onUndo = {}, onPause = {}) }
@@ -319,6 +376,7 @@ class MotionScreenshotTest {
     /** Wall (strip-boosters, first row): the square drawn round (9, 9) by 200 ms, hatched by 400 ms. */
     @Test
     fun wall() {
+        notebookOnly()
         show { BoostedBoard(used(Action.Wall(Pos(9, 9)))) }
         frames("wall", 0, 100, 200, 300, 400)
     }
@@ -326,6 +384,7 @@ class MotionScreenshotTest {
     /** Hint (second row): (9, 9) circled twice, 250 ms per loop. */
     @Test
     fun hint() {
+        notebookOnly()
         show { BoostedBoard(used(Action.Hint(Pos(9, 9)))) }
         frames("hint", 0, 125, 250, 375, 500)
     }
@@ -333,6 +392,7 @@ class MotionScreenshotTest {
     /** Hint, then the player's dot lands on (9, 9): the circles shrink away in 150 ms. */
     @Test
     fun hintThenDot() {
+        notebookOnly()
         val hinted = used(Action.Hint(Pos(9, 9))).copy(booster = null)
         val move = hinted.state.play(Pos(9, 9))
         val landed = landing(hinted, move, Pos(9, 9), Player.RED, edgeMarks = null)
@@ -343,13 +403,16 @@ class MotionScreenshotTest {
     /** Bomb (third row): it drops on (8, 7), and at 150 ms the four blue dots round it swell, shrink away, and the specks fly. */
     @Test
     fun bomb() {
+        // Neon arcade: the hits' glow swells and shrinks with them.
+        val at = times(longArrayOf(0, 150, 220, 300, 450), neonArcade = longArrayOf(150, 220, 300))
         show { BoostedBoard(used(Action.Bomb(Pos(8, 7)))) }
-        frames("bomb", 0, 150, 220, 300, 450)
+        frames("bomb", *at)
     }
 
     /** Double dot (fourth row, 0 to 300 ms): the "×2" chip grows in beside "You". */
     @Test
     fun doubleDot() {
+        notebookOnly()
         show { BoostedBoard(used(Action.DoubleDot)) }
         frames("double_dot", 0, 150, 300)
     }
@@ -357,6 +420,7 @@ class MotionScreenshotTest {
     /** Double dot, the first dot (the row's 700 ms): (9, 9) sparks, and the chip turns to ×1 and swells. */
     @Test
     fun doubleDotFirst() {
+        notebookOnly()
         val chosen = used(Action.DoubleDot).copy(booster = null)
         val move = chosen.state.play(Pos(9, 9))
         val landed = landing(chosen, move, Pos(9, 9), Player.RED, edgeMarks = null)
@@ -367,6 +431,7 @@ class MotionScreenshotTest {
     /** Double dot, the second dot (the row's 1200 and 1350 ms): (10, 9) sparks, the chip shrinks away, and the turn passes. */
     @Test
     fun doubleDotSecond() {
+        notebookOnly()
         val chosen = used(Action.DoubleDot).copy(booster = null)
         val first = chosen.state.play(Pos(9, 9))
         val between = ui(first, lastMove = Pos(9, 9)).copy(doubleDots = 1)
@@ -382,6 +447,7 @@ class MotionScreenshotTest {
      */
     @Test
     fun undo() {
+        notebookOnly()
         show { BoostedBoard(used(Action.Undo)) }
         frames("undo", 0, 125, 300, 450, 600)
     }
@@ -393,6 +459,7 @@ class MotionScreenshotTest {
      */
     @Test
     fun undoGivesBackABomb() {
+        notebookOnly()
         val after = CanvasGame.boosted.state
         val before = after.apply(Action.Bomb(Pos(8, 7))).state.play(Pos(9, 9)).state.play(Pos(13, 13)).state
         val undone = UndoneTurn(
@@ -414,6 +481,7 @@ class MotionScreenshotTest {
      */
     @Test
     fun undoGivesBackAWall() {
+        notebookOnly()
         show { BoostedBoard(used(Action.Undo, givenBack = Booster.WALL to Pos(9, 9))) }
         frames("undo_wall", 100, 300, 500)
     }

@@ -7,6 +7,7 @@ import dots.engine.Pos
 import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.ThreatMark
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -292,5 +293,48 @@ class MotionTimesTest {
         assertEquals(DoubleDotEffect.SPARK, BoardMoment(1, dot, Player.RED, announced = false, doubleDots = 2).playOut)
         assertEquals(Placing.LENGTH, BoardMoment(2, dot, Player.RED, announced = false, hintBefore = dot).playOut)
         assertNotNull(DoubleDotEffect.spark(Placing.LENGTH))
+    }
+
+    @Test
+    fun `Star chart traces its line at an even speed from 150 to 550 ms, twinkles each star in 120 ms, and blends its haze in`() {
+        val capture = Capturing(big = false)
+        near(150f, starts { Twinkle.traced(capture, it) })
+        near(550f, ends { Twinkle.traced(capture, it) })
+        // An even speed: halfway round at halfway through.
+        assertEquals(0.5f, Twinkle.traced(capture, 350f), 0.001f)
+        // A star reached a quarter of the way round swells from 250 ms to 125% at 310 ms and is back at 370 ms.
+        assertEquals(1f, Twinkle.size(capture, 250f, 0.25f))
+        assertEquals(1.25f, Twinkle.size(capture, 310f, 0.25f), 0.001f)
+        assertEquals(1f, Twinkle.size(capture, 370f, 0.25f))
+        // The closing star twinkles last, as the line comes back to it at 550 ms (650 ms in a big capture).
+        assertEquals(1f, Twinkle.size(capture, 550f, 1f))
+        assertTrue(Twinkle.size(capture, 600f, 1f) > 1.2f)
+        assertTrue(Twinkle.size(Capturing(big = true), 710f, 1f) > 1.2f)
+        near(120f, Twinkle.LENGTH)
+        near(500f, starts { Twinkle.haze(capture, it) })
+        near(800f, ends { Twinkle.haze(capture, it) })
+        near(650f, starts { Twinkle.haze(Capturing(big = true), it) })
+        near(950f, ends { Twinkle.haze(Capturing(big = true), it) })
+    }
+
+    @Test
+    fun `Neon arcade lights a piece from 120 to 200 ms, and a tube as it closes, with one 40 ms flicker and 250 ms of sparks`() {
+        assertEquals(0f, NeonLight.glow(120f))
+        near(200f, ends { NeonLight.glow(it) })
+        assertEquals(Placing.SETTLED, NeonLight.GLOW_TO)
+        for ((big, close) in listOf(false to 550f, true to 650f)) {
+            val capture = Capturing(big)
+            assertFalse(NeonLight.lit(capture, close - 1))
+            assertTrue(NeonLight.lit(capture, close))
+            assertTrue(NeonLight.lit(capture, close + 39))
+            assertFalse(NeonLight.lit(capture, close + 40))
+            assertFalse(NeonLight.lit(capture, close + 79))
+            assertTrue(NeonLight.lit(capture, close + 80))
+            assertTrue(NeonLight.lit(capture, capture.length))
+            assertNull(NeonLight.sparks(capture, close - 1))
+            assertEquals(0f, NeonLight.sparks(capture, close))
+            assertNull(NeonLight.sparks(capture, close + 250))
+        }
+        assertEquals(10, NeonLight.SPARK_COUNT)
     }
 }
