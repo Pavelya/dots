@@ -18,6 +18,8 @@ import io.github.pavelya.dots.data.SettingsRepository
 import io.github.pavelya.dots.data.StatsRepository
 import io.github.pavelya.dots.data.ThemeRepository
 import io.github.pavelya.dots.data.ThemeRule
+import io.github.pavelya.dots.haptics.AndroidHaptics
+import io.github.pavelya.dots.haptics.Haptics
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -48,6 +50,15 @@ class DotsApplication : Application() {
         get() = sound ?: AndroidAudio(this).also { sound = it }
         set(value) {
             sound = value
+        }
+
+    private var vibrations: Haptics? = null
+
+    /** The game's vibrations (docs/design/motion.md, rule 6), made the first time the app's screen asks for them. Tests may replace it. */
+    var haptics: Haptics
+        get() = vibrations ?: AndroidHaptics(this).also { vibrations = it }
+        set(value) {
+            vibrations = value
         }
 
     /** Google Play's review prompt, asked for after a level won with three stars; tests replace it. */

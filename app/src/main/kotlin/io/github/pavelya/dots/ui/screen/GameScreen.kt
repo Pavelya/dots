@@ -41,6 +41,7 @@ import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.ui.board.BoardInput
+import io.github.pavelya.dots.ui.motion.Beats
 import io.github.pavelya.dots.ui.motion.Cues
 import io.github.pavelya.dots.ui.motion.EndOfGame
 import io.github.pavelya.dots.ui.motion.LocalReduceMotion
@@ -278,10 +279,10 @@ fun GameScreen(
 }
 
 /**
- * The game's sounds (docs/design/sound.md): each dot's [moment] and each booster's effect
- * ([boosting]) as it plays, and at the end of a game that [endedHere] the captured areas lighting
- * up ([ending]), unless animations are removed. Each moment is heard once, also when the screen is
- * drawn again after Rules ([GameViewModel.heard]).
+ * The game's sounds (docs/design/sound.md) and vibrations (motion.md, rule 6): each dot's [moment]
+ * and each booster's effect ([boosting]) as it plays, and at the end of a game that [endedHere] the
+ * captured areas lighting up ([ending]), unless animations are removed. Each moment is heard and
+ * felt once, also when the screen is drawn again after Rules ([GameViewModel.heard]).
  */
 @Composable
 private fun GameSounds(ui: GameUiState, viewModel: GameViewModel, moment: Timeline, boosting: Timeline, ending: Timeline, endedHere: Boolean) {
@@ -290,13 +291,15 @@ private fun GameSounds(ui: GameUiState, viewModel: GameViewModel, moment: Timeli
     // The dots run low once a game (sound.md, sfx_dots_low).
     val warned = remember(ui.round) { BooleanArray(1) }
     val landed = ui.moment
-    PlayCues(landed?.id, moment, play = { landed != null && firstTime(landed.id) }) {
+    PlayCues(landed?.id, moment, play = { landed != null && firstTime(landed.id) }, beats = { landed?.let(Beats::moment).orEmpty() }) {
         val cues = landed?.let { Cues.moment(it, ui.state, human, warned[0]) }.orEmpty()
         if (cues.any { it.effect == Effect.DOTS_LOW }) warned[0] = true
         cues
     }
     val used = ui.booster
-    PlayCues(used?.id, boosting, play = { used != null && firstTime(used.id) }) { used?.let(Cues::booster).orEmpty() }
+    PlayCues(used?.id, boosting, play = { used != null && firstTime(used.id) }, beats = { used?.let(Beats::booster).orEmpty() }) {
+        used?.let(Cues::booster).orEmpty()
+    }
     val reduce = LocalReduceMotion.current
     val endStarted by remember(ending) { derivedStateOf { ending.now > 0f } }
     PlayCues(ui.round.takeIf { ui.isOver && endedHere && !reduce && endStarted }, ending) { Cues.ending(EndOfGame(ui.captureOrder.size)) }

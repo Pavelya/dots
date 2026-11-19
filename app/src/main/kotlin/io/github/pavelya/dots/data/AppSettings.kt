@@ -38,7 +38,7 @@ data class AppSettings(
     val musicVolume: Int = DEFAULT_VOLUME,
     /** The sound effects' volume in Settings, from 0 (silent) to [MAX_VOLUME]. */
     val effectsVolume: Int = DEFAULT_VOLUME,
-    /** Vibration when a dot lands and a ring closes (motion.md, rule 6); V-07 makes the phone vibrate. */
+    /** Vibration when a dot lands, a ring closes, a bomb goes off and a star is stamped (motion.md, rule 6). */
     val vibration: Boolean = true,
     /** High-contrast pieces on every board (pieces.md, "High contrast"). */
     val highContrast: Boolean = false,
