@@ -44,6 +44,6 @@ class OldFramesProbeTest {
             now = time
             log.append("Q08 named=$time clockNow=${clock?.now}\n")
         }
-        println(log)
+        org.junit.Assert.fail(log.toString())
     }
 }
