@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- The light, medium and strong vibrations of play (motion.md, rule 6). Granted without asking. -->
+    <uses-permission android:name="android.permission.VIBRATE" />
+
     <application
         android:name=".DotsApplication"
         android:allowBackup="true"

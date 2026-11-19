@@ -57,6 +57,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.DailyEnd
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.game.GameUiState
+import io.github.pavelya.dots.ui.motion.Beats
 import io.github.pavelya.dots.ui.motion.Cues
 import io.github.pavelya.dots.ui.motion.LocalReduceMotion
 import io.github.pavelya.dots.ui.motion.PlayCues
@@ -110,8 +111,8 @@ internal fun ResultNote(
     val dailyEnd = ui.dailyEnd
     val reveal = rememberTimeline(ui.round, ResultReveal.LENGTH)
     val still = LocalReduceMotion.current
-    PlayCues(ui.round.takeIf { sounds }, reveal) {
-        val stars = end?.result?.takeIf { it.isPassed }?.stars ?: 0
+    val stars = end?.result?.takeIf { it.isPassed }?.stars ?: 0
+    PlayCues(ui.round.takeIf { sounds }, reveal, beats = { Beats.result(stars, still) }) {
         Cues.result(Cues.headline(ui, names.human), stars, streak = dailyEnd?.passed == true, still = still)
     }
     Box(

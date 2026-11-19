@@ -33,8 +33,10 @@ grey thumb are part of the mock-up, not the game. Each GIF also exists in the da
    marks on the computer's move, the threat rings, the counter's colour, "Last dot!", the stars. Only
    the ripples, pulses, shakes, bursts and flights go.
 6. **Touch.** A light vibration when a dot lands, a medium one when a ring closes, a strong one for
-   a big capture and a bomb. The vibration setting turns them off. Sounds, when they come, start
-   at the same moments.
+   a big capture and a bomb, and a light one as each earned star is stamped. The computer's dots
+   and captures are felt too. The vibration setting turns them off, and so does the phone's own
+   touch feedback (Android Settings, Sound and vibration). Sounds start at the same moments. With
+   animations removed the stars are not stamped, so they are not felt.
 
 **Easing.** How a movement speeds up and slows down:
 

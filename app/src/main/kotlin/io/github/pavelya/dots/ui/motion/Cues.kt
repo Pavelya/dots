@@ -15,6 +15,8 @@ import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.OpponentLook
+import io.github.pavelya.dots.haptics.Buzz
+import io.github.pavelya.dots.haptics.LocalHaptics
 import io.github.pavelya.dots.ui.theme.GameTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -136,30 +138,64 @@ object Cues {
         if (!worldOpens) emptyList() else listOf(Cue(Effect.WORLD_OPEN, if (still) 0f else Unlocking.FILL_TO + WORLD_OPEN_IN_PAGE))
 }
 
+/** A vibration, [buzz], to start [at] ms into a moment. */
+data class Beat(val buzz: Buzz, val at: Float)
+
 /**
- * Plays [cues] once for each [key], timed from now, if [play] says so when it starts; nothing for a
- * null [key]. Each plays the file of the theme the screen is drawn in ([GameTheme.sound]): the
- * theme's own board sounds, Notebook's for the rest. A tap that finishes [clock] (motion.md, rule 1)
- * stops the sounds still to come and fades out those playing in 50 ms (sound.md, rule 8).
+ * Which vibration starts when (docs/design/motion.md, rule 6), on the same beats as the sounds
+ * (sound.md, rule 3): light as a dot lands, medium as a ring closes, strong as a big capture's
+ * ring closes and as a bomb goes off, light as each earned star is stamped. Every dot and every
+ * capture is felt, the computer's too, as each is heard.
+ */
+object Beats {
+    /** The vibrations of a dot that has just landed. */
+    fun moment(moment: BoardMoment): List<Beat> = buildList {
+        add(Beat(Buzz.LIGHT, 0f))
+        moment.capturing?.let { add(Beat(if (it.big) Buzz.STRONG else Buzz.MEDIUM, it.ringEnd)) }
+    }
+
+    /** The vibrations of a booster the player has just used, from the tap on Confirm: only the bomb's blast. */
+    fun booster(used: BoosterMoment): List<Beat> =
+        if (used.booster == Booster.BOMB) listOf(Beat(Buzz.STRONG, BombEffect.BLAST)) else emptyList()
+
+    /**
+     * The result note's vibrations, from the moment it starts to slide up: one as each of the
+     * [stars] earned lands. With animations [still], the stars are not stamped, and nothing is felt.
+     */
+    fun result(stars: Int, still: Boolean): List<Beat> =
+        if (still) emptyList() else List(stars.coerceIn(0, Cues.STARS.size)) { i -> Beat(Buzz.LIGHT, ResultReveal.starStart(i) + ResultReveal.STAR) }
+}
+
+/**
+ * Plays [cues] and [beats] once for each [key], timed from now, if [play] says so when it starts;
+ * nothing for a null [key]. Each sound plays the file of the theme the screen is drawn in
+ * ([GameTheme.sound]): the theme's own board sounds, Notebook's for the rest. Each beat vibrates
+ * the phone ([LocalHaptics]). A tap that finishes [clock] (motion.md, rule 1) stops the sounds and
+ * vibrations still to come and fades out the sounds playing in 50 ms (sound.md, rule 8).
  */
 @Composable
-fun PlayCues(key: Any?, clock: Timeline?, play: () -> Boolean = { true }, cues: () -> List<Cue>) {
+fun PlayCues(key: Any?, clock: Timeline?, play: () -> Boolean = { true }, beats: () -> List<Beat> = { emptyList() }, cues: () -> List<Cue>) {
     val audio = LocalAudio.current
+    val haptics = LocalHaptics.current
     val theme by rememberUpdatedState(GameTheme.current)
     val latest by rememberUpdatedState(cues)
+    val latestBeats by rememberUpdatedState(beats)
     val allowed by rememberUpdatedState(play)
     LaunchedEffect(key) {
         if (key == null || !allowed()) return@LaunchedEffect
-        val list = latest().sortedBy { it.at }
-        if (list.isEmpty()) return@LaunchedEffect
-        val finishes = clock?.finishes
         val sounding = ArrayList<Sounding>()
+        // Sounds and vibrations in one list, so those on the same millisecond start together.
+        val sounds: List<Pair<Float, () -> Unit>> = latest().map { cue -> cue.at to { sounding += audio.play(cue.effect, cue.rate, theme.sound(cue.effect)) } }
+        val felt: List<Pair<Float, () -> Unit>> = latestBeats().map { beat -> beat.at to { haptics.buzz(beat.buzz) } }
+        val steps = (sounds + felt).sortedBy { it.first }
+        if (steps.isEmpty()) return@LaunchedEffect
+        val finishes = clock?.finishes
         val schedule = launch {
             var t = 0f
-            for (cue in list) {
-                if (cue.at > t) delay((cue.at - t).toLong())
-                t = cue.at
-                sounding += audio.play(cue.effect, cue.rate, theme.sound(cue.effect))
+            for ((at, step) in steps) {
+                if (at > t) delay((at - t).toLong())
+                t = at
+                step()
             }
         }
         if (clock != null) {

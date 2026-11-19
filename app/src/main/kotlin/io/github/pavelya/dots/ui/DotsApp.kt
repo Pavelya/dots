@@ -74,6 +74,7 @@ import io.github.pavelya.dots.game.dailyGame
 import io.github.pavelya.dots.game.freeGame
 import io.github.pavelya.dots.game.freeGameLike
 import io.github.pavelya.dots.game.levelGame
+import io.github.pavelya.dots.haptics.LocalHaptics
 import io.github.pavelya.dots.ui.screen.BoostersNote
 import io.github.pavelya.dots.ui.screen.ChestNote
 import io.github.pavelya.dots.ui.screen.DailyAction
@@ -209,8 +210,13 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
     // The game's sound (docs/design/sound.md): the player's settings, whether the game is on the
     // screen, and the music of the screen shown; the game screen names its own ([gameTrack]).
     val audio = remember { app.audio }
+    // The vibrations follow the Vibration setting; nothing vibrates until it has been read.
+    val haptics = remember { app.haptics }
     LaunchedEffect(appSettings) {
-        appSettings?.let { audio.settings(it.sound, it.musicVolume, it.effectsVolume) }
+        appSettings?.let {
+            audio.settings(it.sound, it.musicVolume, it.effectsVolume)
+            haptics.settings(it.vibration)
+        }
     }
     LifecycleStartEffect(audio) {
         audio.onScreen(true)
@@ -226,7 +232,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
     }
     // The level just passed, whose unlock the map plays after Next.
     var unlock by remember { mutableStateOf<Unlock?>(null) }
-    CompositionLocalProvider(LocalReduceMotion provides reduceMotion.value, LocalAudio provides audio) {
+    CompositionLocalProvider(LocalReduceMotion provides reduceMotion.value, LocalAudio provides audio, LocalHaptics provides haptics) {
         DotsTheme(highContrast = appSettings?.highContrast ?: false) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
