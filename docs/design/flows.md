@@ -41,6 +41,7 @@ flowchart TD
     rules["Rules"]
     settings["Settings"]
     details["Settings details"]
+    theme["Theme"]
     stats["Stats"]
     ranks["Leaderboards and achievements"]
     shop["Shop"]
@@ -65,6 +66,8 @@ flowchart TD
     rules -->|"Play tutorial"| board
     settings -->|"Replay tutorial"| board
     settings --> details
+    settings -->|"Theme, when there is a choice"| theme
+    theme -->|"More themes, once the Shop exists"| shop
     stats --> ranks
     shop --> preview
 ```
@@ -160,6 +163,7 @@ over the map or the board, which stay visible around it.
 | Cosmetic preview | An item in Shop | The item on a sample board, its price or how to earn it, and whether it is owned or in use. Buy or Use. | C-02 |
 | Settings | Settings on the map | The controls listed under [Settings](#settings). | A-09 |
 | Settings details | A row in Settings | Language, privacy (the policy and ad choices), Play Games backup, credits and licences. | A-09, A-10 |
+| Theme | Theme in Settings, shown only when more than one theme can be chosen | One card per theme the player can choose, each on a small sample board drawn by that theme. The theme in use is ticked; tapping another puts it in use at once. See [Choosing a theme](#choosing-a-theme). | A-23 |
 | Developer menu | Seven taps on the version line at the bottom of Settings | The POC's difficulty picker and test-only settings. Not for players, so it is left out of the two-tap check. | A-01 |
 | Android screens | An action in the game | Not drawn by us: the share screen, the feedback email, the review prompt (A-12), Play Games sign-in, Google Play purchase, a rewarded ad, the ad consent form. Closing one returns to the screen that opened it. | A-07, A-12, O-02, C-02, C-03 |
 
@@ -179,13 +183,63 @@ Settings is one scrolling screen. Changes take effect at once and survive a rest
 to the map.
 
 - **Sound and vibration:** music volume, sound-effects volume, vibration on or off.
-- **Board:** high-contrast pieces, threat highlights, links between dots (off by default; the
-  [theme page](theme-notebook.md#the-board) says where links show anyway), placing a dot (drag,
-  the default, or two taps; decisions 0024 and 0026).
+- **Board:** theme (only when more than one can be chosen; see
+  [Choosing a theme](#choosing-a-theme)), high-contrast pieces, threat highlights, links between
+  dots (off by default; the [theme page](theme-notebook.md#the-board) says where links show
+  anyway), placing a dot (drag, the default, or two taps; decisions 0024 and 0026).
 - **Help and app:** Replay tutorial, Send feedback (an email, A-12), Language (shown once a second
   language ships, A-10), Privacy (the policy and ad choices, C-03), Play Games backup (O-02),
   Credits and licences.
 - **After launch:** notifications (O-05), delete my online data (O-06).
+
+## Choosing a theme
+
+A theme sets how the board is drawn and how it sounds (decision 0028). Notebook is the default.
+Until the Shop exists, only debug builds offer the other themes (decision 0029).
+
+- **Where.** Settings has a **Theme** row at the top of Board, with the theme in use on its right.
+  It opens the Theme page. The row shows only when more than one theme can be chosen: always on a
+  debug build, and on a release build once the Shop exists and the player owns a second theme. A release build
+  before the Shop has no row, so players never see Star chart or Neon arcade.
+- **The Theme page** is a full screen on Notebook paper, like Settings. The map, Settings and the
+  Shop are drawn the Notebook way in every theme (decision 0028). It shows one card per theme the
+  player can choose, in the order Notebook, Star chart, Neon arcade. Each card has a small sample
+  board, the theme's name and one line about it. The sample is drawn by the theme itself, not a
+  picture, in the light or dark version the phone picks. It is the same small position in every
+  theme: a capture by the red side around one blue piece, and a few loose pieces of each side.
+- **Picking.** Tapping a card puts that theme in use at once, with no confirm button, like every
+  other setting. The tick and "In use" move to that card, and the card plays the theme's first
+  placing sound (`sfx_place_1`, or `sfx_star_chart_place_1` and `sfx_neon_arcade_place_1`) at the
+  sound-effects volume. Tapping the theme in use does nothing. Back returns to Settings. Every
+  board from then on, a resumed game included, is drawn in the new theme.
+- **A theme the player can't choose is not on the page.** It is not shown locked or greyed out.
+  Before the Shop exists, nothing on the page points anywhere else. Once the Shop exists, if the
+  player lacks a theme, the page ends with a link, **More themes in the Shop**, which opens the
+  Shop.
+- **One choice, two ways to make it.** The game keeps one saved value: the theme in use. The
+  Theme page and the Shop's Cosmetic preview (its Use it button, and In use) both read and set
+  it, so they always agree. If the theme in use can no longer be chosen, the game goes back to
+  Notebook without a message. That happens after a refund, or when a backup made on a debug build
+  is restored on a release build.
+- **Debug builds** show a dashed note at the top of the Theme page, so a tester knows players
+  won't see the other themes yet.
+
+The words:
+
+| Where | Text |
+| --- | --- |
+| Settings row | **Theme**, with the theme in use on the right: Notebook, Star chart or Neon arcade |
+| Page title | **Theme** |
+| Notebook card | **Notebook**. Red and blue ink on squared paper. |
+| Star chart card | **Star chart**. Gold stars and ice-blue comets on a chart of the sky. |
+| Neon arcade card | **Neon arcade**. Magenta and cyan pieces, with rings of neon light. |
+| The card in use | A tick and **In use** |
+| Under the cards | Light or dark follows your phone's dark theme. |
+| Link, once the Shop exists | **More themes in the Shop** |
+| Note on debug builds | Debug build: every theme is here. Players get only Notebook until the Shop opens. |
+
+For TalkBack the cards are one group of choices named Theme. Each card is read as its name and
+its line, then selected or not selected; the sample board is not read.
 
 ## The two-tap check
 
@@ -211,6 +265,7 @@ the developer menu are left out.
 | Leaderboards or achievements | Stats → Leaderboards or Achievements | 2 |
 | Shop and an item's preview | Shop → the item | 2 |
 | Settings | Settings | 1 |
+| Theme (when there is a choice) | Settings → Theme | 2 |
 | Online lobby, a game or an invite (after launch) | Online → the game or Invite | 2 |
 | Ranked (after launch) | Online → Ranked | 2 |
 | Weekly challenge (after launch) | Today's puzzle → Play on the challenge card | 2 |
@@ -345,7 +400,9 @@ people the owner has shared it with.
   map's landscape and world pictures are doodles that mark where art goes.
 - **States.** Some frames show more than one state, picked in the frame's Tweaks: the map (home,
   a world opens), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
-  game), the game board (every moment), Cosmetic preview, Settings details, Invite and Ranked.
+  game), the game board (every moment), Cosmetic preview, Settings (with or without the Theme
+  row), Settings details, Theme (a debug build or after the Shop opens, and the theme in use),
+  Invite and Ranked.
 - **Screens Google draws.** Leaderboards and achievements, and the other Android screens, are drawn
   by Google. Their frame shows only what we draw: the sign-in question over Stats.
 
