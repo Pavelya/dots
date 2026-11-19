@@ -32,10 +32,15 @@ the code names them: gold and ice in Star chart, magenta and cyan in Neon arcade
 - **The same times.** A capture still closes at 550 ms (650 ms for a big one), with the theme's
   sound and vibration, and still takes 1250 ms (1400 ms). There are no new sounds: board sounds
   belong to the theme ([`sound.md`](sound.md)).
-- **With animations removed,** a ring effect falls back to the theme's own ring and fill
-  ([`money.md`](money.md)). A piece style is the same with or without animations.
+- **With animations removed,** a ring effect keeps its look and drops only its motion: the
+  finished ring shows at once, as the theme's own ring does
+  ([motion page](motion.md#rules-for-all-motion), rule 5). A piece style is the same with or
+  without animations.
 - **Defaults.** The theme's own pieces and ring are the default. A theme, a piece style and a ring
   effect are chosen separately.
+- **Where they're chosen.** In the Shop, with the Cosmetic preview's Use it button, and in
+  Settings, with a Pieces row and a Rings row next to Theme, each opening a page like the Theme
+  page. Both places set the same saved choice. D-30 designs the Settings rows and pages.
 
 ## Where they show
 
@@ -143,6 +148,9 @@ as the rope pulls tight; the stars along the way don't, because the rope doesn't
 then. In Neon arcade the rope is thrown unlit and lights at 550 ms (650 ms), with the theme's
 flicker and sparks.
 
+**With animations removed,** the tight rope, the wash and the cuts show at once, as the theme's
+capture does; sound and vibration are the theme's. There is no throw and no pull.
+
 <img src="pieces/cosmetics-strip-lasso.png" width="720" alt="Key frames of a capture with Lasso, Notebook light and dark: the loose rope drawn round two blue pieces, the loop complete, pulling tight, tight, the wash spreading and the cuts, done">
 
 ### Rubber stamp
@@ -165,6 +173,9 @@ are the theme's, and run under the inner line.
 A big capture brings the stamp down from 250 to 650 ms, with the strong vibration, the shake and
 the burst at 650 ms. In Star chart the closing star twinkles as the stamp comes down. In Neon arcade
 the ring comes down unlit and lights at 550 ms (650 ms), with the flicker and sparks.
+
+**With animations removed,** the ring, its inner line, the wash and the cuts show at once in their
+own colours, as the theme's capture does; sound and vibration are the theme's. Nothing comes down.
 
 <img src="pieces/cosmetics-strip-stamp.png" width="720" alt="Key frames of a capture with Rubber stamp, Notebook light and dark: the area coming down large and pale, shrinking and darkening, landing, the cuts, done">
 

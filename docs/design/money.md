@@ -56,7 +56,8 @@ every theme, drawn with that theme's inks, and in its light and dark versions.
   ([`pieces.md`](pieces.md)). It keeps the last-move pinhole, the cut on a captured piece, the
   preview and the high-contrast version.
 - **A ring effect keeps a capture easy to read.** The ring, the fill and the captured pieces stay
-  as clear as in the theme. With reduced motion, the effect falls back to the theme's own ring.
+  as clear as in the theme. With animations removed, the effect keeps its look and drops only its
+  motion.
 - A theme, a piece style and a ring effect are chosen separately. The default piece style and
   ring effect are the theme's own.
 
