@@ -308,8 +308,8 @@ theme sets.
 ### Left to other tasks
 
 The capture's burst of sparks and how the pieces and tubes light up are on the motion page
-([Motion, Neon arcade](motion.md#neon-arcade)). The board sounds are D-24. The canvas frames are
-D-22.
+([Motion, Neon arcade](motion.md#neon-arcade)). The board sounds are on the
+[sound page](sound.md#neon-arcade). The canvas frames are D-22.
 
 ## Type
 
