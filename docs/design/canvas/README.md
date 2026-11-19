@@ -9,7 +9,8 @@ wireframes, and use every colour and size from the [Notebook theme](../theme-not
 The frames live on [Pinfold canvas](https://claude.ai/artifact/GpJSNGSjeJGhZQCCojXNNj), a Claude
 design canvas: light on the top row, dark below. The canvas opens only for people the owner has
 shared it with. The PNGs on this page are exported from the same drawing. Below the two Notebook
-rows, Star chart and then Neon arcade each have a light row and a dark row.
+rows, Star chart and then Neon arcade each have a light row and a dark row, and below them the
+piece styles, ring effects and Shop.
 
 ## The frames
 
@@ -79,6 +80,28 @@ notes, the tool bar, the fonts and their shapes stay Notebook's, as the theme pa
 | **Small phone: a threat.** | <img src="small-game-threat-neon-arcade-light.png" width="160" alt="Neon arcade, light: a threat on a small phone"> | <img src="small-game-threat-neon-arcade-dark.png" width="160" alt="Neon arcade, dark: a threat on a small phone"> |
 | **Game: a threat, high-contrast pieces.** The same moment with High-contrast pieces on in Settings: bigger pieces, each in a band of the surface under it. | <img src="game-threat-contrast-neon-arcade-light.png" width="180" alt="Neon arcade, light: a threat with high-contrast pieces"> | <img src="game-threat-contrast-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: a threat with high-contrast pieces"> |
 
+## Piece styles and ring effects
+
+The Shop's small cosmetics (decision 0030): two piece styles, Hearts and clubs and Flame and frost,
+and two ring effects, Lasso and Rubber stamp. Every value comes from
+[Piece styles and ring effects](../cosmetics.md). Each item is drawn in Notebook and in one other
+theme, light and dark: a piece style on the threat, a ring effect right after the big capture. Only
+the pieces or the rings change; everything else is the theme's frame. Then the Shop's Pieces and
+Rings tabs, each item on its small board, as on the D-27 wireframe.
+
+| Frame | Light | Dark |
+| --- | --- | --- |
+| **Hearts and clubs, Notebook.** Red hearts and blue clubs. | <img src="cosmetic-hearts-and-clubs-notebook-light.png" width="180" alt="Hearts and clubs in Notebook, light"> | <img src="cosmetic-hearts-and-clubs-notebook-dark.png" width="180" alt="Hearts and clubs in Notebook, dark"> |
+| **Hearts and clubs, Neon arcade.** Magenta hearts and cyan clubs, each live piece in its glow. | <img src="cosmetic-hearts-and-clubs-neon-arcade-light.png" width="180" alt="Hearts and clubs in Neon arcade, light"> | <img src="cosmetic-hearts-and-clubs-neon-arcade-dark.png" width="180" alt="Hearts and clubs in Neon arcade, dark"> |
+| **Flame and frost, Notebook.** Red flames and blue snowflakes. | <img src="cosmetic-flame-and-frost-notebook-light.png" width="180" alt="Flame and frost in Notebook, light"> | <img src="cosmetic-flame-and-frost-notebook-dark.png" width="180" alt="Flame and frost in Notebook, dark"> |
+| **Flame and frost, Star chart.** Gold flames and ice snowflakes. | <img src="cosmetic-flame-and-frost-star-chart-light.png" width="180" alt="Flame and frost in Star chart, light"> | <img src="cosmetic-flame-and-frost-star-chart-dark.png" width="180" alt="Flame and frost in Star chart, dark"> |
+| **Lasso, Notebook.** Each ring a twisted rope in the captor's ink. | <img src="cosmetic-lasso-notebook-light.png" width="180" alt="Lasso in Notebook, light"> | <img src="cosmetic-lasso-notebook-dark.png" width="180" alt="Lasso in Notebook, dark"> |
+| **Lasso, Star chart.** Straight ropes between the stars. | <img src="cosmetic-lasso-star-chart-light.png" width="180" alt="Lasso in Star chart, light"> | <img src="cosmetic-lasso-star-chart-dark.png" width="180" alt="Lasso in Star chart, dark"> |
+| **Rubber stamp, Notebook.** Each ring with a thin second line inside it. | <img src="cosmetic-rubber-stamp-notebook-light.png" width="180" alt="Rubber stamp in Notebook, light"> | <img src="cosmetic-rubber-stamp-notebook-dark.png" width="180" alt="Rubber stamp in Notebook, dark"> |
+| **Rubber stamp, Neon arcade.** The tube with its glow, and the inner line without. | <img src="cosmetic-rubber-stamp-neon-arcade-light.png" width="180" alt="Rubber stamp in Neon arcade, light"> | <img src="cosmetic-rubber-stamp-neon-arcade-dark.png" width="180" alt="Rubber stamp in Neon arcade, dark"> |
+| **Shop: piece styles.** The Pieces tab: Theme's own (in use), Hearts and clubs and Flame and frost, each on the Shop's small board in the theme in use. | <img src="shop-pieces-light.png" width="180" alt="Light: the Shop's Pieces tab"> | <img src="shop-pieces-dark.png" width="180" alt="Dark: the Shop's Pieces tab"> |
+| **Shop: ring effects.** The Rings tab: Theme's own (in use), Lasso and Rubber stamp. | <img src="shop-rings-light.png" width="180" alt="Light: the Shop's Rings tab"> | <img src="shop-rings-dark.png" width="180" alt="Dark: the Shop's Rings tab"> |
+
 ## Real size
 
 Every frame is 360 x 800 dp, the screen of a common Android phone. The board is 15 x 15 points at
@@ -139,6 +162,7 @@ the PNGs with Google Chrome:
 python3 docs/design/canvas/draw.py                  # the PNGs on this page
 python3 docs/design/canvas/draw.py --canvas DIR     # also the canvas files, in DIR/project/
 python3 docs/design/canvas/draw.py --only neon-arcade   # one theme: notebook, star-chart or neon-arcade
+python3 docs/design/canvas/draw.py --only cosmetics     # the piece styles, ring effects and Shop
 ```
 
 It needs Python 3, Google Chrome and a network connection (the fonts come from Google Fonts). A

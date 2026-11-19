@@ -30,18 +30,18 @@ pull request.
 | Notebook | theme | the default | free | always owned |
 | Star chart | theme | the board, pieces, rings and board sounds ([`theme-star-chart.md`](theme-star-chart.md)) | $2.99 | 150 stars |
 | Neon arcade | theme | the board, pieces, rings and board sounds ([`theme-neon-arcade.md`](theme-neon-arcade.md)) | $2.99 | 200 stars |
-| Piece style 1 | piece style | only the pieces | $0.99 | 40 stars |
-| Ring effect 1 | ring effect | only how a ring is drawn | $0.99 | 70 stars |
-| Piece style 2 | piece style | only the pieces | $0.99 | 100 stars |
-| Ring effect 2 | ring effect | only how a ring is drawn | $0.99 | 125 stars |
+| Hearts and clubs | piece style | only the pieces ([`cosmetics.md`](cosmetics.md)) | $0.99 | 40 stars |
+| Lasso | ring effect | only how a ring is drawn ([`cosmetics.md`](cosmetics.md)) | $0.99 | 70 stars |
+| Flame and frost | piece style | only the pieces ([`cosmetics.md`](cosmetics.md)) | $0.99 | 100 stars |
+| Rubber stamp | ring effect | only how a ring is drawn ([`cosmetics.md`](cosmetics.md)) | $0.99 | 125 stars |
 
 The campaign has 225 stars. "Earned at" counts the stars earned in the campaign, the same count
 the player's title uses (decision 0027). Stars never go down, so an earned item is never lost. A
 chest may give a piece style or ring effect earlier than its star count (C-05). The engine keeps
 the same counts in `Cosmetic` (`dots.campaign`); a count changed here changes there too.
 
-The piece styles and ring effects get their names and looks in their design task. Their names
-follow decision 0028: no world or theme uses them.
+The piece styles and ring effects are drawn on [Piece styles and ring effects](cosmetics.md). Their
+names follow decision 0028: no world or theme uses them.
 
 If the piece styles and ring effects are not ready at launch, the Shop opens with the two themes.
 Nothing else on this page changes.
@@ -56,7 +56,8 @@ every theme, drawn with that theme's inks, and in its light and dark versions.
   ([`pieces.md`](pieces.md)). It keeps the last-move pinhole, the cut on a captured piece, the
   preview and the high-contrast version.
 - **A ring effect keeps a capture easy to read.** The ring, the fill and the captured pieces stay
-  as clear as in the theme. With reduced motion, the effect falls back to the theme's own ring.
+  as clear as in the theme. With animations removed, the effect keeps its look and drops only its
+  motion.
 - A theme, a piece style and a ring effect are chosen separately. The default piece style and
   ring effect are the theme's own.
 

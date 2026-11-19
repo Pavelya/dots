@@ -6,6 +6,7 @@ two Google Fonts):
     python3 docs/design/canvas/draw.py                  # the PNGs in docs/design/canvas/
     python3 docs/design/canvas/draw.py --canvas DIR     # also the design canvas files, in DIR/project/
     python3 docs/design/canvas/draw.py --only star-chart  # one theme: notebook, star-chart or neon-arcade
+    python3 docs/design/canvas/draw.py --only cosmetics   # the piece styles, ring effects and Shop
 
 Every frame is 360 x 800 dp, the size of a common Android phone, or 320 x 568 dp for a small phone,
 drawn in the light and the dark
@@ -170,18 +171,26 @@ def preview(t, side, x, y, sp, dot):
     return piece + el("circle", cx=f(x), cy=f(y), r=f(0.45 * sp), fill="none", stroke=t[side], stroke_width=2)
 
 
-def bowed_segments(points, seed):
-    """The ring as a pen stroke: each side bows by up to 0.4 dp and varies in width by up to 15%."""
+def bowed_controls(points, seed):
+    """Each side of a pen-stroke ring: (start, the quadratic's control point, end, width at 2 dp)."""
     rnd = random.Random(seed)
-    segs, path = [], []
+    out = []
     n = len(points)
     for i in range(n):
         (x1, y1), (x2, y2) = points[i], points[(i + 1) % n]
         length = math.hypot(x2 - x1, y2 - y1)
         nx, ny = -(y2 - y1) / length, (x2 - x1) / length
         k = rnd.uniform(-0.4, 0.4) * 2
-        qx, qy = (x1 + x2) / 2 + nx * k, (y1 + y2) / 2 + ny * k
-        segs.append((f"M{f(x1)} {f(y1)} Q{f(qx)} {f(qy)} {f(x2)} {f(y2)}", 2 * (1 + rnd.uniform(-0.15, 0.15))))
+        q = ((x1 + x2) / 2 + nx * k, (y1 + y2) / 2 + ny * k)
+        out.append(((x1, y1), q, (x2, y2), 2 * (1 + rnd.uniform(-0.15, 0.15))))
+    return out
+
+
+def bowed_segments(points, seed):
+    """The ring as a pen stroke: each side bows by up to 0.4 dp and varies in width by up to 15%."""
+    segs, path = [], []
+    for i, ((x1, y1), (qx, qy), (x2, y2), w) in enumerate(bowed_controls(points, seed)):
+        segs.append((f"M{f(x1)} {f(y1)} Q{f(qx)} {f(qy)} {f(x2)} {f(y2)}", w))
         path.append((f"M{f(x1)} {f(y1)} " if i == 0 else "") + f"Q{f(qx)} {f(qy)} {f(x2)} {f(y2)}")
     return segs, " ".join(path) + " Z"
 
@@ -316,8 +325,117 @@ def poly(pts):
     return "M" + " L".join(f"{f(x)} {f(y)}" for x, y in pts) + " Z"
 
 
+# ------------------------------------------- piece styles and ring effects ----
+# The cosmetics of docs/design/cosmetics.md (D-29). A piece style changes only the pieces and a ring
+# effect only the rings, inside any theme and drawn with its inks. t["pieces"] and t["rings"] name
+# them; without them a theme draws its own. Shapes are in dot sizes, centred on the point, y down.
+
+def wound(pts):
+    """pts turned one way round, so that overlapping parts of one piece add up (nonzero fill)."""
+    area2 = sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(pts, pts[1:] + pts[:1]))
+    return pts if area2 > 0 else pts[::-1]
+
+
+def circle_pts(cx, cy, r, n=32):
+    return [(cx + r * math.cos(2 * math.pi * k / n), cy + r * math.sin(2 * math.pi * k / n)) for k in range(n)]
+
+
+def capsule_pts(angle, reach, width, n=10, start=None):
+    """A bar with round ends at angle degrees: through the centre, its tips reach from it; or from start
+    (x, y), reaching that far."""
+    a, r = math.radians(angle), width / 2
+    ux, uy, nx, ny = math.cos(a), math.sin(a), -math.sin(a), math.cos(a)
+    if start is not None:
+        mx, my = start[0] + ux * reach / 2, start[1] + uy * reach / 2
+        return [(mx + px, my + py) for px, py in capsule_pts(angle, reach / 2, width, n)]
+    out = []
+    for end in (1, -1):
+        cx, cy = ux * (reach - r) * end, uy * (reach - r) * end
+        for k in range(n + 1):
+            b = math.pi * k / n
+            out.append((cx + (nx * math.cos(b) + ux * math.sin(b)) * r * end,
+                        cy + (ny * math.cos(b) + uy * math.sin(b)) * r * end))
+    return out
+
+
+def cubic_pts(p0, c1, c2, p1, n=12):
+    return [tuple((1 - s) ** 3 * a + 3 * (1 - s) ** 2 * s * b + 3 * (1 - s) * s ** 2 * c + s ** 3 * e
+                  for a, b, c, e in zip(p0, c1, c2, p1)) for s in (k / n for k in range(n))]
+
+
+HEART_AREA, HEART_N = 0.80, 64      # heart: area in square dot sizes; points round the curve
+
+
+def heart_shape():
+    """The heart x = 16 sin^3 t, y = -(13 cos t - 5 cos 2t - 2 cos 3t - cos 4t), scaled to HEART_AREA
+    and centred on its centroid. Its area is 180 pi in its own units."""
+    k = math.sqrt(HEART_AREA / (180 * math.pi))
+    pts = [(16 * math.sin(s) ** 3, -(13 * math.cos(s) - 5 * math.cos(2 * s) - 2 * math.cos(3 * s) - math.cos(4 * s)))
+           for s in (2 * math.pi * i / HEART_N for i in range(HEART_N))]
+    a = sum(x1 * y2 - x2 * y1 for (x1, y1), (x2, y2) in zip(pts, pts[1:] + pts[:1])) / 2
+    cy = sum((y1 + y2) * (x1 * y2 - x2 * y1) for (x1, y1), (x2, y2) in zip(pts, pts[1:] + pts[:1])) / (6 * a)
+    return [[(x * k, (y - cy) * k) for x, y in pts]]
+
+
+CLUB_LOBE, CLUB_REACH, CLUB_HUB = 0.27, 0.30, 0.20                   # club: lobes, their centres, the hub
+CLUB_STEM = [(-0.07, 0.15), (0.07, 0.15), (0.22, 0.58), (-0.22, 0.58)]  # its foot
+
+
+def club_shape():
+    """Three round lobes, up, lower left and lower right, round a hub, on a foot."""
+    lobes = [circle_pts(CLUB_REACH * math.cos(math.radians(a)), CLUB_REACH * math.sin(math.radians(a)), CLUB_LOBE)
+             for a in (-90, 30, 150)]
+    return lobes + [circle_pts(0, 0, CLUB_HUB), CLUB_STEM]
+
+
+FLAME = [  # cubic Bezier sides, from the main tip clockwise: start, two controls; the next start ends each
+    ((0.08, -0.68), (0.34, -0.42), (0.50, -0.16)),
+    ((0.48, 0.12), (0.47, 0.37), (0.26, 0.52)),
+    ((0.00, 0.52), (-0.27, 0.52), (-0.48, 0.36)),
+    ((-0.48, 0.10), (-0.48, -0.12), (-0.43, -0.30)),
+    ((-0.34, -0.46), (-0.28, -0.30), (-0.20, -0.20)),
+    ((-0.12, -0.16), (-0.13, -0.40), (-0.05, -0.55)),
+]
+FROST_ARM, FROST_REACH, FROST_HUB = 0.22, 0.62, 0.24    # snowflake: arm width, tips from the centre, hub
+FROST_TWIG, FROST_TWIG_AT, FROST_TWIG_LONG = 0.15, 0.36, 0.20  # its twigs: width, where on the arm, length
+
+
+def flame_shape():
+    """A flame, point up and leaning a little right, with a smaller tongue on its left."""
+    pts = []
+    for i, (p0, c1, c2) in enumerate(FLAME):
+        pts += cubic_pts(p0, c1, c2, FLAME[(i + 1) % len(FLAME)][0])
+    return [pts]
+
+
+def frost_shape():
+    """A snowflake: six arms with round tips, one straight up, round a hub, each arm with a pair of
+    twigs pointing out at 50 degrees."""
+    twigs = []
+    for a in range(-90, 270, 60):
+        base = (FROST_TWIG_AT * math.cos(math.radians(a)), FROST_TWIG_AT * math.sin(math.radians(a)))
+        twigs += [capsule_pts(a + turn, FROST_TWIG_LONG, FROST_TWIG, 6, start=base) for turn in (-50, 50)]
+    return [capsule_pts(a, FROST_REACH, FROST_ARM) for a in (90, 30, -30)] + [circle_pts(0, 0, FROST_HUB)] + twigs
+
+
+SHAPES = {"heart": heart_shape(), "club": club_shape(), "flame": flame_shape(), "frost": frost_shape()}
+PIECE_STYLES = {  # piece style: (the red side's shape, the blue side's)
+    "cards": ("heart", "club"),
+    "fire": ("flame", "frost"),
+}
+
+
+def shape_d(name, x, y, d):
+    return "".join(poly([(x + px * d, y + py * d) for px, py in wound(part)]) for part in SHAPES[name])
+
+
 def piece_d(t, side, x, y, d):
     """The outline of a piece in a board theme, as an SVG path."""
+    if t.get("pieces"):
+        return shape_d(PIECE_STYLES[t["pieces"]][side != "red"], x, y, d)
+    if t["style"] == "notebook" and side == "blue":  # Notebook's diamond, 7/6 of the dot size
+        h = d * 7 / 12
+        return f"M{f(x)} {f(y - h)}L{f(x + h)} {f(y)}L{f(x)} {f(y + h)}L{f(x - h)} {f(y)}Z"
     if t["style"] == "star" and side == "red":  # a five-pointed star, one point up
         r = d * STAR_ACROSS / 2
         return poly([(x + (r if k % 2 == 0 else r * STAR_INNER) * math.cos(math.radians(-90 + 36 * k)),
@@ -349,41 +467,144 @@ def band(t, side, x, y, d, colour, width, clip=None):
 
 def theme_piece(t, side, size):
     """A side's piece beside its name in the score row, at a 12 dp dot, without glow."""
-    x, y = (size - 5.5, size - 5.5) if t["style"] == "star" and side == "blue" else (size / 2, size / 2)
+    comet = t["style"] == "star" and side == "blue" and not t.get("pieces")
+    x, y = (size - 5.5, size - 5.5) if comet else (size / 2, size / 2)
     return svg(size, size, el("path", d=piece_d(t, side, x, y, 12), fill=t[side]))
 
 
+LASSO_WIDTH, LASSO_TWIST, LASSO_SLANT, LASSO_STRIPE = 1.6, 4, 55, 0.3  # Lasso, in ring widths and twists per grid step
+STAMP_GAP = 2.5                                                      # Stamp: dp between the ring's edge and its inner line
+
+
+def ring_sides(t, pts, seed):
+    """Each side of a ring: (start, the quadratic's control point or None, end, width as a share of the ring's)."""
+    if t["style"] == "notebook":
+        return [(a, q, b, wf / 2) for a, q, b, wf in bowed_controls(pts, seed)]
+    return [(pts[i], None, pts[(i + 1) % len(pts)], 1.0) for i in range(len(pts))]
+
+
+def rope(sides, w, sp, ink, pale):
+    """Lasso's ring: a cord LASSO_WIDTH ring widths wide in the captor's ink, crossed by slanted twists in
+    its pale colour, a whole number of them on each side of the ring."""
+    half = LASSO_WIDTH * w / 2
+    cord, twists = [], []
+    for a, q, b, _ in sides:
+        q = q or ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2)
+        cord.append(f"M{f(a[0])} {f(a[1])} Q{f(q[0])} {f(q[1])} {f(b[0])} {f(b[1])}")
+        length = math.hypot(b[0] - a[0], b[1] - a[1])
+        n = max(1, round(length / (sp / LASSO_TWIST)))
+        for j in range(n):
+            s = (j + 0.5) / n
+            x = (1 - s) ** 2 * a[0] + 2 * (1 - s) * s * q[0] + s ** 2 * b[0]
+            y = (1 - s) ** 2 * a[1] + 2 * (1 - s) * s * q[1] + s ** 2 * b[1]
+            dx = 2 * (1 - s) * (q[0] - a[0]) + 2 * s * (b[0] - q[0])
+            dy = 2 * (1 - s) * (q[1] - a[1]) + 2 * s * (b[1] - q[1])
+            norm = math.hypot(dx, dy)
+            ux, uy = dx / norm, dy / norm
+            r = math.radians(LASSO_SLANT)  # the twist leans LASSO_SLANT degrees from the cord's line
+            vx, vy = ux * math.cos(r) - uy * math.sin(r), ux * math.sin(r) + uy * math.cos(r)
+            k = half * 0.92 / math.sin(r)
+            twists.append(f"M{f(x - vx * k)} {f(y - vy * k)}L{f(x + vx * k)} {f(y + vy * k)}")
+    return [el("path", d=" ".join(cord), fill="none", stroke=ink, stroke_width=f(2 * half), stroke_linecap="round"),
+            el("path", d=" ".join(twists), fill="none", stroke=pale, stroke_width=f(LASSO_STRIPE * w))]
+
+
+def mix(a, b, share):
+    """Colour a blended share of the way to colour b (solid colours: nothing on the board is see-through)."""
+    if share >= 1 or b is None:
+        return b
+    ca, cb = (tuple(int(h.lstrip("#")[i:i + 2], 16) for i in (0, 2, 4)) for h in (a, b))
+    return "#" + "".join(f"{round(x + (y - x) * share):02X}" for x, y in zip(ca, cb))
+
+
+def part_of(sides, share):
+    """The first share of a ring's sides, as drawn so far, the last side cut where the pen has got to."""
+    lengths = [math.hypot(b[0] - a[0], b[1] - a[1]) for a, _, b, _ in sides]
+    left, out = share * sum(lengths), []
+    for (a, q, b, wf), length in zip(sides, lengths):
+        if left <= 0:
+            break
+        if left >= length:
+            out.append((a, q, b, wf))
+        else:
+            q, s = q or ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2), left / length
+            aq = (a[0] + (q[0] - a[0]) * s, a[1] + (q[1] - a[1]) * s)
+            qb = (q[0] + (b[0] - q[0]) * s, q[1] + (b[1] - q[1]) * s)
+            out.append((a, aq, (aq[0] + (qb[0] - aq[0]) * s, aq[1] + (qb[1] - aq[1]) * s), wf))
+        left -= length
+    return out
+
+
 def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False):
-    """The board of moment key in a board theme, in its page's drawing order."""
-    pos = POSITIONS[key]
+    """The board of moment key (or a position) in a board theme, in its page's drawing order. Notebook
+    draws here too when a piece style or a ring effect is in use."""
+    pos = POSITIONS[key] if isinstance(key, str) else key
+    n = round(size / sp)
     c = lambda p: (sp / 2 + p[0] * sp, sp / 2 + p[1] * sp)  # noqa: E731
     d, w, star = theme_dot(sp, contrast), theme_ring(sp), t["style"] == "star"
+    nb, neon, effect = t["style"] == "notebook", t["style"] == "neon", t.get("rings")
+    hatch = 5 if nb else HATCH
     captured = {p: a["captor"] for a in pos["areas"] for p in a["inside"]}
     defs, fills, glows, tubes, cores = [], [], [], [], []
     for i, a in enumerate(pos["areas"]):
-        outline, k = poly([c(p) for p in a["ring"]]), a["captor"]
+        pts, k = [c(p) for p in a["ring"]], a["captor"]
+        if a.get("scale", 1) != 1:  # a ring on its way to its place (the motion strips)
+            mx, my = sum(x for x, _ in pts) / len(pts), sum(y for _, y in pts) / len(pts)
+            pts = [(mx + (x - mx) * a["scale"], my + (y - my) * a["scale"]) for x, y in pts]
+        ink, wash, pale, core = (mix(t["paper"], t.get(k + x), a.get("tint", 1)) for x in ("", "_wash", "_pale", "_core"))
+        sides = ring_sides(t, pts, str(a["ring"][0]))
+        drawn = sides if a.get("upto", 1) >= 1 else part_of(sides[a["start"]:] + sides[:a["start"]], a["upto"])
+        outline = bowed_segments(pts, str(a["ring"][0]))[1] if nb else poly(pts)
+        traced = outline if drawn is sides else "".join(
+            (f"M{f(a_[0])} {f(a_[1])}" if j == 0 else "") + (f" Q{f(q[0])} {f(q[1])} {f(b[0])} {f(b[1])}" if q else
+                                                              f" L{f(b[0])} {f(b[1])}") for j, (a_, q, b, _) in enumerate(drawn))
+        lit = neon and a.get("lit", True)
         angle = -45 if k == "red" else 45  # red's areas rise to the right (/), blue's fall (\)
         defs.append(f'<clipPath id="c{uid}{i}">{el("path", d=outline)}</clipPath>'
-                    f'<pattern id="h{uid}{i}" width="{HATCH}" height="{HATCH}" patternUnits="userSpaceOnUse" '
-                    f'patternTransform="rotate({angle})">' + el("rect", width=HATCH, height=HATCH, fill=t[k + "_wash"]) +
-                    el("line", x1=0, y1=HATCH / 2, x2=HATCH, y2=HATCH / 2, stroke=t[k + "_pale"], stroke_width=1) +
+                    f'<pattern id="h{uid}{i}" width="{hatch}" height="{hatch}" patternUnits="userSpaceOnUse" '
+                    f'patternTransform="rotate({angle})">' + el("rect", width=hatch, height=hatch, fill=wash) +
+                    el("line", x1=0, y1=hatch / 2, x2=hatch, y2=hatch / 2, stroke=pale, stroke_width=1) +
                     "</pattern>")
-        fills.append(el("path", d=outline, fill=f"url(#h{uid}{i})"))
-        line = lambda colour, width: el("path", d=outline, fill="none", stroke=colour, stroke_width=f(width),  # noqa: E731
+        if a.get("fill", 1) >= 1:
+            fills.append(el("path", d=outline, fill=f"url(#h{uid}{i})"))
+        elif a["fill"] > 0:  # the wash spreading from the closing piece
+            ox, oy = c(a["ring"][a["start"]])
+            r = a["fill"] * max(math.hypot(x - ox, y - oy) for x, y in pts)
+            defs.append(f'<clipPath id="f{uid}{i}">{el("circle", cx=f(ox), cy=f(oy), r=f(r))}</clipPath>')
+            fills.append(el("path", d=outline, fill=f"url(#h{uid}{i})", clip_path=f"url(#f{uid}{i})"))
+        line = lambda colour, width: el("path", d=traced, fill="none", stroke=colour, stroke_width=f(width),  # noqa: E731
                                         stroke_linejoin="round", stroke_linecap="round")
-        if not star:  # a neon tube: glow, tube and core, each drawn for every ring in turn
-            glows.append(line(t[k + "_pale"], w + 2 * GLOW))
-            cores.append(line(t[k + "_core"], w * CORE))
-        tubes.append(line(t[k], w))
+        if effect == "lasso":  # a cord with slanted twists, in a neon glow as wide as the cord
+            if lit:
+                glows.append(line(pale, LASSO_WIDTH * w + 2 * GLOW))
+            tubes.extend(rope(drawn, w, sp, ink, pale))
+            continue
+        if lit:  # a neon tube: glow, tube and core, each drawn for every ring in turn
+            glows.append(line(pale, w + 2 * GLOW))
+            cores.append(line(core, w * CORE))
+        if nb:  # Notebook's pen stroke, side by side
+            tubes.extend(el("path", d=f"M{f(a_[0])} {f(a_[1])} Q{f(q[0])} {f(q[1])} {f(b[0])} {f(b[1])}", fill="none",
+                            stroke=ink, stroke_width=f(share * w), stroke_linecap="round") for a_, q, b, share in drawn)
+        else:
+            tubes.append(line(ink, w))
+        if effect == "stamp":  # a thin inner line in the captor's ink, STAMP_GAP inside the ring's edge
+            iw = max(1.0, w / 2)
+            g = w / 2 + STAMP_GAP + iw / 2
+            defs.append(f'<mask id="m{uid}{i}" maskUnits="userSpaceOnUse" x="0" y="0" width="{f(size)}" '
+                        f'height="{f(size)}">' + el("path", d=outline, fill="#FFFFFF") +
+                        el("path", d=outline, fill="none", stroke="#000000", stroke_width=f(2 * g - iw),
+                           stroke_linejoin="round") + "</mask>")
+            tubes.append(el("path", d=outline, fill="none", stroke=ink, stroke_width=f(2 * g + iw),
+                            stroke_linejoin="round", mask=f"url(#m{uid}{i})"))
     grid = []
-    for i in range(15):
+    for i in range(n):
         x = sp / 2 + i * sp
-        sw = 1.5 if i in (0, 14) else 1
+        sw = 1.5 if i in (0, n - 1) else 1
         grid.append(el("line", x1=f(x), y1=f(sp / 2), x2=f(x), y2=f(size - sp / 2), stroke=t["grid"], stroke_width=sw))
         grid.append(el("line", x1=f(sp / 2), y1=f(x), x2=f(size - sp / 2), y2=f(x), stroke=t["grid"], stroke_width=sw))
     if star:  # a chart point at every crossing; a piece covers its own
         grid += [el("circle", cx=f(sp / 2 + i * sp), cy=f(sp / 2 + j * sp), r=1, fill=t["point"])
-                 for i in range(15) for j in range(15)]
+                 for i in range(n) for j in range(n)]
     link_lines = []
     if links:
         for side in ("red", "blue"):
@@ -409,10 +630,10 @@ def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False)
                     i = rings_of[p]
                     bands.append(band(t, side, x, y, d, t[pos["areas"][i]["captor"] + "_wash"], BAND,
                                       clip=f"url(#c{uid}{i})"))
-            elif not star and p not in captured:
+            elif neon and p not in captured or neon and p not in pos.get("cuts", captured):
                 bands.append(band(t, side, x, y, d, t[side + "_pale"], GLOW))
             pieces.append(el("path", d=piece_d(t, side, x, y, d), fill=t[side]))
-            if p in captured:
+            if p in captured and p in pos.get("cuts", captured):
                 L = d * 0.75 / math.sqrt(2)
                 if side == "red":  # in blue's area: the cut falls, along blue's hatching
                     cut, col = f"M{f(x - L)} {f(y - L)}L{f(x + L)} {f(y + L)}", t["blue_wash"]
@@ -421,8 +642,10 @@ def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False)
                 pieces.append(el("path", d=cut, stroke=col, stroke_width=f(d / 6), fill="none"))
             if p == pos["last"]:
                 pieces.append(el("circle", cx=f(x), cy=f(y), r=f(d * 0.15), fill=t["paper"]))
-    marks = [el("circle", cx=f(c(p)[0]), cy=f(c(p)[1]), r=f(0.42 * sp), fill="none", stroke=t["hi"], stroke_width=2)
-             for p in pos.get("near", [])]
+    marks = [el("circle", cx=f(c(p)[0]), cy=f(c(p)[1]), r=f(0.42 * sp), fill="none", stroke=t["hi_faint"],
+                stroke_width=1.5) for p in pos.get("far", [])]
+    marks += [el("circle", cx=f(c(p)[0]), cy=f(c(p)[1]), r=f(0.42 * sp), fill="none", stroke=t["hi"], stroke_width=2)
+              for p in pos.get("near", [])]
     for p, side in pos.get("ghosts", []):
         x, y = c(p)
         pieces.append(el("path", d=piece_d(t, side, x, y, d), fill=t[side + "_pale"]))
@@ -431,8 +654,8 @@ def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False)
     for p, side in pos.get("closing", []):
         x, y = c(p)
         pieces.append(el("circle", cx=f(x), cy=f(y), r=f(sp / 6), fill="none", stroke=t[side], stroke_width=1.5))
-    if pos.get("drag"):
-        p, side = pos["drag"]
+    if pos.get("drag") or pos.get("preview"):
+        p, side = pos.get("drag") or pos["preview"]
         x, y = c(p)
         pieces.append(el("path", d=piece_d(t, side, x, y, d), fill=t[side + "_pale"],
                          stroke=t[side] if contrast else None, stroke_width=1.5 if contrast else None,
@@ -442,12 +665,13 @@ def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False)
         pieces.extend(burst(t, pos, c))
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=size, height=size, fill=t["paper"]) +
             "".join(fills + grid + link_lines + drag + bands + glows + tubes + cores + marks + pieces))
-    return svg(size, size, body, label="The board, 15 by 15 points")
+    return svg(size, size, body, label=f"The board, {n} by {n} points")
 
 
 def any_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False):
-    """Notebook's board, or a board theme's."""
-    if t.get("style"):
+    """Notebook's board, or a board theme's, or any board with a piece style or a ring effect."""
+    if t.get("style") or t.get("pieces") or t.get("rings"):
+        t = dict(t, style=t.get("style", "notebook"))
         return theme_board_svg(t, key, uid, size, sp, links, contrast)
     return board_svg(t, key, uid, size, sp, links=links)
 
@@ -1236,6 +1460,59 @@ def level_card_frame(t, uid):
     return map_frame(t, uid, scrim + card)
 
 
+# ---------------------------------------------------- the Shop's small boards ----
+# The Shop (D-27 wireframes, Shop) shows every item on a small board of 5 x 5 points: a red ring round
+# one blue piece, and a few loose pieces of each side. Themes draw their own; a piece style or a ring
+# effect is drawn in the theme in use, in the version the phone picks (docs/design/cosmetics.md).
+
+SHOP_BOARD = dict(red=[(1, 2), (2, 1), (3, 2), (2, 3), (0, 4)], blue=[(2, 2), (4, 1), (3, 4), (0, 0)],
+                  areas=[area("red", [(1, 2), (2, 1), (3, 2), (2, 3)], [(2, 2)])], last=(3, 4))
+SHOP_ITEMS = {  # tab: [(name, piece style, ring effect, status, status ink)]
+    "pieces": [("Standard", None, None, "In use", "red"), ("Hearts and clubs", "cards", None, "Owned", "graphite"),
+               ("Flame and frost", "fire", None, "$0.99", "pencil")],
+    "rings": [("Standard", None, None, "In use", "red"), ("Lasso", None, "lasso", "$0.99", "pencil"),
+              ("Rubber stamp", None, "stamp", "Owned", "graphite")],
+}
+
+
+def shop_board(t, pieces, rings, uid, size):
+    """An item on the Shop's small board, drawn in the theme in use (here t)."""
+    board = dict(t, style=t.get("style", "notebook"), pieces=pieces, rings=rings)
+    return theme_board_svg(board, SHOP_BOARD, uid, size=size, sp=size / 5)
+
+
+def shop_frame(t, uid, tab):
+    """The Shop on its Pieces or Rings tab, as on the D-27 wireframe, with each item on its small board.
+    The screen is Notebook's in every theme; the boards are drawn in the theme in use, here Notebook."""
+    tabs = "".join(
+        f'<button type="button" role="tab" aria-selected="{"true" if key == tab else "false"}" style="height: 48px; '
+        + (f'border: 2px solid {t["blue"]}; border-bottom: none; border-radius: 12px 14px 0 0; background: {t["card"]}; '
+           f'color: {t["blue"]}; margin-bottom: -2px; ' if key == tab else
+           f'border: none; background: transparent; color: {t["graphite"]}; ')
+        + f'font-family: inherit; {LABEL}; font-size: 15px; padding: 0 14px">{label}</button>'
+        for key, label in (("themes", "Themes"), ("pieces", "Pieces"), ("rings", "Rings")))
+    tiles = []
+    for k, (name, pieces, rings, status, ink) in enumerate(SHOP_ITEMS[tab]):
+        tiles.append(f'<button type="button" style="border: none; background: {t["card"]}; box-shadow: 0 1px 4px {t["shadow"]}; '
+                     f'transform: rotate({(-1, 1, 0.5, -0.8)[k]}deg); color: {t["pencil"]}; font-family: inherit; padding: 8px; '
+                     f'display: flex; flex-direction: column; gap: 6px; text-align: left">'
+                     f'{shop_board(t, pieces, rings, f"{uid}{k}", 140)}'
+                     f'<span style="{HAND24}">{name}</span>'
+                     f'<span style="{SMALL}; font-weight: 800; color: {t[ink]}">{status}</span></button>')
+    back = icon("M15 5l-7 7 7 7", t["blue"], 26, 2)
+    inner = (f'<div style="position: absolute; left: 4px; top: 28px; display: flex; align-items: center; gap: 8px">'
+             f'<button type="button" aria-label="Back to the map" style="width: 48px; height: 48px; border: none; '
+             f'background: transparent; padding: 0; display: flex; align-items: center; justify-content: center">{back}</button>'
+             f'<span style="{DISPLAY}; color: {t["blue"]}">Shop</span></div>'
+             f'<div role="tablist" aria-label="Kinds" style="position: absolute; left: 0; right: 0; top: 92px; display: flex; '
+             f'gap: 4px; padding: 0 16px; border-bottom: 2px solid {t["blue"]}">{tabs}</div>'
+             f'<div style="position: absolute; left: 16px; right: 16px; top: 160px; display: grid; '
+             f'grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">{"".join(tiles)}</div>'
+             f'<div style="position: absolute; left: 0; right: 0; bottom: 28px; text-align: center; {LABEL}; '
+             f'color: {t["graphite"]}; text-decoration: underline">Restore purchases</div>')
+    return root(t, inner, grid=True)
+
+
 # ------------------------------------------------------------------ output ----
 
 SMALL_PHONE = (320, 568)
@@ -1274,6 +1551,18 @@ THEME_FRAMES = [fr for stem in THEME_STEMS for fr in FRAMES if fr[0] == stem] + 
 ]
 THEME_NAMES = {"star-chart": ("StarChart", "Star chart"), "neon-arcade": ("NeonArcade", "Neon arcade")}
 
+# The piece styles and ring effects (docs/design/cosmetics.md): each in Notebook and in one other theme,
+# light and dark. A piece style on the threat, which shows every piece and mark; a ring effect right
+# after the big capture, which shows three rings. Then the Shop's two tabs for them.
+COSMETICS = [  # file name, canvas name, title, piece style, ring effect, moment, the other theme
+    ("hearts-and-clubs", "HeartsAndClubs", "Hearts and clubs", "cards", None, "threat", "neon-arcade"),
+    ("flame-and-frost", "FlameAndFrost", "Flame and frost", "fire", None, "threat", "star-chart"),
+    ("lasso", "Lasso", "Lasso", None, "lasso", "big", "star-chart"),
+    ("rubber-stamp", "RubberStamp", "Rubber stamp", None, "stamp", "big", "neon-arcade"),
+]
+SHOP_FRAMES = [("shop-pieces", "ShopPieces", "Shop: piece styles", "pieces"),
+               ("shop-rings", "ShopRings", "Shop: ring effects", "rings")]
+
 
 def jobs(only=None):
     """Every frame to draw: (file stem, canvas file name, title, drawer, size, theme colours, uid)."""
@@ -1291,6 +1580,20 @@ def jobs(only=None):
             for version, t in versions.items():
                 out.append((f"{stem}-{theme}-{version}", name + camel + ("" if version == "light" else "Dark"),
                             f"{title}, {label}, {version}", draw, size, t, f"{name}{camel[0]}{version[0]}"))
+    if only in (None, "cosmetics"):
+        for stem, name, title, pieces, rings, moment, other in COSMETICS:
+            for theme in ("notebook", other):
+                camel, label = THEME_NAMES.get(theme, ("Notebook", "Notebook"))
+                for version in ("light", "dark"):
+                    base = dict(THEMES[version], style="notebook") if theme == "notebook" else BOARD_THEMES[theme][version]
+                    t = dict(base, pieces=pieces, rings=rings)
+                    out.append((f"cosmetic-{stem}-{theme}-{version}", name + camel + ("" if version == "light" else "Dark"),
+                                f"{title}, {label}, {version}", lambda t, u, m=moment: game_frame(t, m, u), (W, H), t,
+                                f"{name}{camel[0]}{version[0]}"))
+        for stem, name, title, tab in SHOP_FRAMES:
+            for version, t in THEMES.items():
+                out.append((f"{stem}-{version}", name + ("" if version == "light" else "Dark"), f"{title}, {version}",
+                            lambda t, u, tab=tab: shop_frame(t, u, tab), (W, H), t, f"{name}{version[0]}"))
     return out
 
 
