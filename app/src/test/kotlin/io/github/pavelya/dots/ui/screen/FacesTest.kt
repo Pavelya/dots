@@ -3,6 +3,8 @@ package io.github.pavelya.dots.ui.screen
 import dots.campaign.Campaign
 import dots.campaign.Strength
 import io.github.pavelya.dots.game.Mood
+import io.github.pavelya.dots.ui.theme.FaceInks
+import io.github.pavelya.dots.ui.theme.GameTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
@@ -49,5 +51,21 @@ class FacesTest {
             assertNull(boss.name, Faces.boss(boss))
         }
         assertNotEquals(null, Faces.boss(Campaign.levels.first { it.rule != null }))
+    }
+
+    @Test
+    fun `every face has its own picture in each theme's inks, light and dark`() {
+        val faces = listOf(Mood.HAPPY, Mood.SMUG, Mood.UPSET, Mood.SULKY).map { Faces.of(it, null) } +
+            Strength.entries.map { Faces.strength(it) }.distinct() +
+            Faces.INK_BOTTLE.let { listOf(it.smug, it.attacking, it.beaten) }
+        assertEquals(10, faces.size)
+        val drawables = faces.flatMap { face -> FaceInks.entries.flatMap { face.of(it).let { p -> listOf(p.light, p.dark) } } }
+        assertEquals(10 * 3 * 2, drawables.distinct().size)
+    }
+
+    @Test
+    fun `Notebook draws Notebook's faces`() {
+        assertEquals(FaceInks.NOTEBOOK, GameTheme.NOTEBOOK.faceInks)
+        assertEquals(FaceInks.NOTEBOOK, GameTheme.PLAIN.faceInks)
     }
 }

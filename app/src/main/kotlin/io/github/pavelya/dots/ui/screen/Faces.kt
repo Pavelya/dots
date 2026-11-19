@@ -16,11 +16,25 @@ import dots.campaign.Level
 import dots.campaign.Strength
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.Mood
+import io.github.pavelya.dots.ui.theme.FaceInks
 import io.github.pavelya.dots.ui.theme.GameTheme
 
 /** A boss's own faces (docs/design/illustrations.md): sure of itself, on its special turn, and beaten. */
 @Immutable
-data class BossFaces(val smug: Picture, val attacking: Picture, val beaten: Picture)
+data class BossFaces(val smug: FacePicture, val attacking: FacePicture, val beaten: FacePicture)
+
+/**
+ * One face in each theme's inks ([FaceInks]): Notebook's, cut from the owner's sheet, and the
+ * Star chart and Neon arcade versions recoloured from it, each light and dark.
+ */
+@Immutable
+data class FacePicture(val notebook: Picture, val starChart: Picture, val neonArcade: Picture) {
+    fun of(inks: FaceInks): Picture = when (inks) {
+        FaceInks.NOTEBOOK -> notebook
+        FaceInks.STAR_CHART -> starChart
+        FaceInks.NEON_ARCADE -> neonArcade
+    }
+}
 
 /**
  * The opponent's faces, cut from the owner's sheets (docs/design/illustrations.md, "The computer"
@@ -32,19 +46,59 @@ data class BossFaces(val smug: Picture, val attacking: Picture, val beaten: Pict
  * its special turn. A boss without them keeps the computer's faces.
  */
 object Faces {
-    private val HAPPY = Picture(R.drawable.opponent_moods_happy, R.drawable.opponent_moods_happy_dark)
-    private val SMUG = Picture(R.drawable.opponent_moods_smug, R.drawable.opponent_moods_smug_dark)
-    private val UPSET = Picture(R.drawable.opponent_moods_upset, R.drawable.opponent_moods_upset_dark)
-    private val SULKY = Picture(R.drawable.opponent_moods_sulky, R.drawable.opponent_moods_sulky_dark)
-    private val SLEEPY = Picture(R.drawable.opponent_strengths_sleepy, R.drawable.opponent_strengths_sleepy_dark)
-    private val CALM = Picture(R.drawable.opponent_strengths_calm, R.drawable.opponent_strengths_calm_dark)
-    private val SHARP = Picture(R.drawable.opponent_strengths_sharp, R.drawable.opponent_strengths_sharp_dark)
+    private val HAPPY = FacePicture(
+        Picture(R.drawable.opponent_moods_happy, R.drawable.opponent_moods_happy_dark),
+        Picture(R.drawable.opponent_moods_happy_star_chart, R.drawable.opponent_moods_happy_star_chart_dark),
+        Picture(R.drawable.opponent_moods_happy_neon_arcade, R.drawable.opponent_moods_happy_neon_arcade_dark),
+    )
+    private val SMUG = FacePicture(
+        Picture(R.drawable.opponent_moods_smug, R.drawable.opponent_moods_smug_dark),
+        Picture(R.drawable.opponent_moods_smug_star_chart, R.drawable.opponent_moods_smug_star_chart_dark),
+        Picture(R.drawable.opponent_moods_smug_neon_arcade, R.drawable.opponent_moods_smug_neon_arcade_dark),
+    )
+    private val UPSET = FacePicture(
+        Picture(R.drawable.opponent_moods_upset, R.drawable.opponent_moods_upset_dark),
+        Picture(R.drawable.opponent_moods_upset_star_chart, R.drawable.opponent_moods_upset_star_chart_dark),
+        Picture(R.drawable.opponent_moods_upset_neon_arcade, R.drawable.opponent_moods_upset_neon_arcade_dark),
+    )
+    private val SULKY = FacePicture(
+        Picture(R.drawable.opponent_moods_sulky, R.drawable.opponent_moods_sulky_dark),
+        Picture(R.drawable.opponent_moods_sulky_star_chart, R.drawable.opponent_moods_sulky_star_chart_dark),
+        Picture(R.drawable.opponent_moods_sulky_neon_arcade, R.drawable.opponent_moods_sulky_neon_arcade_dark),
+    )
+    private val SLEEPY = FacePicture(
+        Picture(R.drawable.opponent_strengths_sleepy, R.drawable.opponent_strengths_sleepy_dark),
+        Picture(R.drawable.opponent_strengths_sleepy_star_chart, R.drawable.opponent_strengths_sleepy_star_chart_dark),
+        Picture(R.drawable.opponent_strengths_sleepy_neon_arcade, R.drawable.opponent_strengths_sleepy_neon_arcade_dark),
+    )
+    private val CALM = FacePicture(
+        Picture(R.drawable.opponent_strengths_calm, R.drawable.opponent_strengths_calm_dark),
+        Picture(R.drawable.opponent_strengths_calm_star_chart, R.drawable.opponent_strengths_calm_star_chart_dark),
+        Picture(R.drawable.opponent_strengths_calm_neon_arcade, R.drawable.opponent_strengths_calm_neon_arcade_dark),
+    )
+    private val SHARP = FacePicture(
+        Picture(R.drawable.opponent_strengths_sharp, R.drawable.opponent_strengths_sharp_dark),
+        Picture(R.drawable.opponent_strengths_sharp_star_chart, R.drawable.opponent_strengths_sharp_star_chart_dark),
+        Picture(R.drawable.opponent_strengths_sharp_neon_arcade, R.drawable.opponent_strengths_sharp_neon_arcade_dark),
+    )
 
     /** World 1's boss, the Ink Bottle. */
     val INK_BOTTLE = BossFaces(
-        smug = Picture(R.drawable.boss_world_1_smug, R.drawable.boss_world_1_smug_dark),
-        attacking = Picture(R.drawable.boss_world_1_attacking, R.drawable.boss_world_1_attacking_dark),
-        beaten = Picture(R.drawable.boss_world_1_beaten, R.drawable.boss_world_1_beaten_dark),
+        smug = FacePicture(
+            Picture(R.drawable.boss_world_1_smug, R.drawable.boss_world_1_smug_dark),
+            Picture(R.drawable.boss_world_1_smug_star_chart, R.drawable.boss_world_1_smug_star_chart_dark),
+            Picture(R.drawable.boss_world_1_smug_neon_arcade, R.drawable.boss_world_1_smug_neon_arcade_dark),
+        ),
+        attacking = FacePicture(
+            Picture(R.drawable.boss_world_1_attacking, R.drawable.boss_world_1_attacking_dark),
+            Picture(R.drawable.boss_world_1_attacking_star_chart, R.drawable.boss_world_1_attacking_star_chart_dark),
+            Picture(R.drawable.boss_world_1_attacking_neon_arcade, R.drawable.boss_world_1_attacking_neon_arcade_dark),
+        ),
+        beaten = FacePicture(
+            Picture(R.drawable.boss_world_1_beaten, R.drawable.boss_world_1_beaten_dark),
+            Picture(R.drawable.boss_world_1_beaten_star_chart, R.drawable.boss_world_1_beaten_star_chart_dark),
+            Picture(R.drawable.boss_world_1_beaten_neon_arcade, R.drawable.boss_world_1_beaten_neon_arcade_dark),
+        ),
     )
 
     /** The pictures are cut at 4 pixels per dp for a face 108 dp tall (make_pictures.py). */
@@ -55,7 +109,7 @@ object Faces {
     fun boss(level: Level?): BossFaces? = if (level?.rule != null && level.world == 1) INK_BOTTLE else null
 
     /** The computer's face for how strong it plays; calm when the strength is not known. */
-    fun strength(strength: Strength?): Picture = when {
+    fun strength(strength: Strength?): FacePicture = when {
         strength == null -> CALM
         strength <= Strength.EASY -> SLEEPY
         strength <= Strength.NORMAL -> CALM
@@ -63,7 +117,7 @@ object Faces {
     }
 
     /** The face for [mood], against the computer at [strength] or a [boss] with its own faces. */
-    fun of(mood: Mood, strength: Strength?, boss: BossFaces? = null): Picture = if (boss != null) {
+    fun of(mood: Mood, strength: Strength?, boss: BossFaces? = null): FacePicture = if (boss != null) {
         when (mood) {
             Mood.UPSET, Mood.SULKY -> boss.beaten
             Mood.ATTACKING -> boss.attacking
@@ -81,13 +135,14 @@ object Faces {
 }
 
 /**
- * A face in a square [size] dp across, the light or dark version as the theme draws. Every face is
+ * A face in a square [size] dp across, in the [inks] of the theme it is drawn in (the game screen
+ * follows the theme; the map's notes pass Notebook's), light or dark as the theme draws. Every face is
  * drawn at one scale, [Faces.FULL_SIZE] for a full-size square, so the blot stays the same size
  * from mood to mood and a sleeping cap or a crown only reaches further out.
  */
 @Composable
-fun Face(picture: Picture, size: Dp, modifier: Modifier = Modifier) {
-    val image: ImageBitmap = ImageBitmap.imageResource(picture.of(GameTheme.isDark))
+fun Face(picture: FacePicture, size: Dp, modifier: Modifier = Modifier, inks: FaceInks = GameTheme.current.faceInks) {
+    val image: ImageBitmap = ImageBitmap.imageResource(picture.of(inks).of(GameTheme.isDark))
     val dpPerPx = size / Faces.FULL_SIZE / Faces.PX_PER_DP
     Box(modifier.size(size), contentAlignment = Alignment.Center) {
         Image(

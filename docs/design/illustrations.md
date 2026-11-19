@@ -49,8 +49,11 @@ picture in the script's list of sheets. Then it sets every pixel to one of the f
 on sheets with eyes), turns the paper transparent, makes the dark version, scales each sheet's
 pictures to 4 pixels per dp of their size on screen and writes them to
 `app/src/main/res/drawable-nodpi/` as `<sheet>_<name>.png` and `<sheet>_<name>_dark.png`. It also
-adds the sheet's row to the asset register. `make_pictures.py check` checks the pictures in the
-app, and `make_pictures.py self-test` runs every step on two sheets drawn in code.
+adds the sheet's row to the asset register. For the faces, which the game screen shows, it also
+writes each theme's versions (`<sheet>_<name>_star_chart.png`, `..._star_chart_dark.png` and the
+same for `neon_arcade`) with a register row per theme; `make_pictures.py themes` makes them again
+from the pictures in the app. `make_pictures.py check` checks the pictures in the app, and
+`make_pictures.py self-test` runs every step on two sheets drawn in code.
 
 A sheet cuts cleanly when its drawings stand apart, with clear paper between them, as the prompts
 ask. Pale paper shut inside a drawing becomes transparent, so a pond or a window shows the page

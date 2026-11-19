@@ -231,8 +231,10 @@ looking pasted in.
 
 Each recoloured picture is saved beside the Notebook one as `<sheet>_<name>_star_chart.png` and
 `<sheet>_<name>_star_chart_dark.png` (for example `opponent_moods_happy_star_chart.png`), for every
-picture shown on the game screen: the six moods, the three strengths and the three World 1 boss
-faces. The faces of later bosses get the same two versions when they are made.
+face the game screen shows: the computer's moods and strengths and the World 1 boss faces
+(`opponent_moods_*`, `opponent_strengths_*`, `boss_world_1_*`). The faces of later bosses get the
+same two versions when they are made. [`make_pictures.py`](illustrations/make_pictures.py) makes
+them (`themes`, and `cut` for a new sheet), and the app picks them by the theme's `faceInks`.
 
 The lines inside a face (eyebrows, mouth, hatching) stay as clear as in Notebook: Ice pale on Ice
 ink is 4.42 light and 3.61 dark, against Notebook's 4.89 and 3.35.
