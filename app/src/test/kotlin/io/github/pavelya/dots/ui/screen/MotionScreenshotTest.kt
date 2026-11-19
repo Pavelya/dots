@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -46,11 +49,17 @@ import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.motion.EndOfGame
 import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import io.github.pavelya.dots.ui.motion.Timeline
+import io.github.pavelya.dots.ui.motion.rememberBoosterTimeline
+import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
 import io.github.pavelya.dots.ui.motion.rememberTimeline
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.Palette
 import io.github.pavelya.dots.ui.theme.ThemeCase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -65,6 +74,10 @@ import org.robolectric.annotation.GraphicsMode
  * strip in docs/design/motion/ with the same time. The boards are the canvas's game of Level 7
  * ([CanvasGame]), as on the strips. Reference images in app/src/test/screenshots; they are
  * recorded in CI (CLAUDE.md, "Recording screenshots").
+ *
+ * The test clock draws a frame every 16 ms from the moments' start, so a frame shows the first of
+ * them at or after the time in its name: at most 15 ms later. Each frame checks that the clocks of
+ * the moments on screen read that time ([at]).
  *
  * The end of the game and the bomb also run in Star chart and Neon arcade ([ThemeCase]), whose areas
  * and glows light up in their own way; their frames are named `motion_<moment>_<theme>_<time>`.
@@ -102,32 +115,92 @@ class MotionScreenshotTest(private val case: ThemeCase) {
 
     private val human = Player.RED
 
+    /** The test clock's time, in ms, of the frame on which the moments on screen started: their 0 ms. */
+    private var start = -1L
+
+    /** The clocks of the moments on screen, checked at every frame ([at]). */
+    private val clocks = mutableListOf<Timeline>()
+
+    /** The screen's coroutine scope, on its frame clock: a moment that starts later is waited for there ([startsNow]). */
+    private lateinit var screen: CoroutineScope
+
+    /** Notes the time of the next frame as [start]: the moments asked for a frame with it start on that one. */
+    private suspend fun markStart() {
+        withFrameNanos { start = it / 1_000_000 }
+    }
+
     /**
-     * Draws [content] as the phone would, with the clock stopped, then starts it: the moments that
-     * [content] holds start on the next frame, which is their 0 ms.
+     * Draws [content] as the phone would, with the clock stopped, then steps it to the frame on which
+     * the moments that [content] holds start: their 0 ms.
      */
     private fun show(reduce: Boolean = false, content: @Composable () -> Unit) {
         compose.mainClock.autoAdvance = false
+        start = -1
         compose.setContent {
+            screen = rememberCoroutineScope()
+            LaunchedEffect(Unit) { markStart() }
             CompositionLocalProvider(LocalReduceMotion provides reduce) {
                 DotsTheme(case.theme) {
                     Surface { Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) { content() } }
                 }
             }
         }
-        compose.mainClock.advanceTimeByFrame()
-        compose.mainClock.advanceTimeByFrame()
+        awaitStart()
+    }
+
+    /** Steps the clock to the frame on which a moment set off just now (a touch) starts: its 0 ms. */
+    private fun startsNow() {
+        start = -1
+        screen.launch { markStart() }
+        awaitStart()
+    }
+
+    private fun awaitStart() {
+        repeat(5) { if (start < 0) compose.mainClock.advanceTimeByFrame() }
+        check(start >= 0) { "the moments did not start within 5 frames" }
+        check(compose.mainClock.currentTime == start) { "the clock went past the moments' start" }
+    }
+
+    /**
+     * Steps the clock to the first frame at or after each of [times] ms from the moments' start,
+     * checks that every clock on [clocks] reads that time there, and runs [each].
+     */
+    private fun at(vararg times: Long, each: (Long) -> Unit) {
+        for (time in times) {
+            val frame = start + (time + FRAME - 1) / FRAME * FRAME
+            val now = compose.mainClock.currentTime
+            check(frame >= now) { "$time ms is before the frame already drawn" }
+            compose.mainClock.advanceTimeBy(frame - now, ignoreFrameDuration = true)
+            for (clock in clocks) assertAt(time, clock)
+            each(time)
+        }
     }
 
     /** Captures a frame at each of [times] ms, named `motion_[name]_<time>`. */
-    private fun frames(name: String, vararg times: Long) {
-        var now = 0L
-        for (time in times) {
-            compose.mainClock.advanceTimeBy(time - now)
-            now = time
-            val theme = if (case.isNotebook) "" else "_${case.key}"
-            compose.onRoot().captureRoboImage("src/test/screenshots/motion_${name}${theme}_$time.png")
+    private fun frames(name: String, vararg times: Long) = at(*times) { time ->
+        val theme = if (case.isNotebook) "" else "_${case.key}"
+        compose.onRoot().captureRoboImage("src/test/screenshots/motion_${name}${theme}_$time.png")
+    }
+
+    /** Adds [clock] to the clocks checked at every frame. */
+    @Composable
+    private fun checked(clock: Timeline): Timeline = remember(clock) { clock.also { clocks += it } }
+
+    /**
+     * Each frame shows the moment at the time in its name, within one frame (Q-08): the moments'
+     * clocks read it at every frame [at] steps to, here at times between frames, on frames and past
+     * the end of the moment.
+     */
+    @Test
+    fun framesAreAtTheTimesInTheirNames() {
+        notebookOnly()
+        show {
+            checked(rememberTimeline(1, 10_000f))
+            checked(rememberTimeline(2, 500f))
+            Board(landing(threat, CanvasGame.bigCapture, Pos(5, 7), Player.RED, edgeMarks = null))
         }
+        assertEquals("clocks checked", 3, clocks.size)
+        at(0, 1, 15, 16, 17, 40, 100, 125, 325, 490, 500, 560, 600, 1400, 5250) {}
     }
 
     /** What the screen shows against the computer after [move], with the threat highlight on, as the view model makes it. */
@@ -174,7 +247,8 @@ class MotionScreenshotTest(private val case: ThemeCase) {
 
     @Composable
     private fun Board(ui: GameUiState, links: Boolean = false, input: BoardInput = BoardInput.NONE) {
-        GameBoard(ui, human, parts(ui), input = input, onUndo = {}, onPause = {}, links = links)
+        val moment = checked(rememberMomentTimeline(ui.moment))
+        GameBoard(ui, human, parts(ui), input = input, onUndo = {}, onPause = {}, links = links, moment = moment)
     }
 
     /** Before the threat: Blue to move, Red's last dot (4, 9). */
@@ -264,7 +338,7 @@ class MotionScreenshotTest(private val case: ThemeCase) {
         )
         val times = EndOfGame(order.size)
         show {
-            val ending = rememberTimeline(1, times.length)
+            val ending = checked(rememberTimeline(1, times.length))
             val ended by remember { derivedStateOf { !ending.running } }
             Box {
                 GameBoard(over, human, CanvasGame.parts(state), input = BoardInput.NONE, onUndo = {}, onPause = {}, ending = ending)
@@ -319,7 +393,7 @@ class MotionScreenshotTest(private val case: ThemeCase) {
         compose.onNodeWithTag(BOARD_TAG).performTouchInput {
             down(BoardGeometry(15, 15, width.toFloat(), height.toFloat()).center(point))
         }
-        compose.mainClock.advanceTimeByFrame()
+        startsNow()
         frames("drag", 50, 100)
     }
 
@@ -370,7 +444,9 @@ class MotionScreenshotTest(private val case: ThemeCase) {
 
     @Composable
     private fun BoostedBoard(ui: GameUiState) {
-        GameBoard(ui, human, boosterParts(ui), input = BoardInput.NONE, onUndo = {}, onPause = {})
+        val moment = checked(rememberMomentTimeline(ui.moment))
+        val boosting = checked(rememberBoosterTimeline(ui.booster))
+        GameBoard(ui, human, boosterParts(ui), input = BoardInput.NONE, onUndo = {}, onPause = {}, moment = moment, boosting = boosting)
     }
 
     /** Wall (strip-boosters, first row): the square drawn round (9, 9) by 200 ms, hatched by 400 ms. */
@@ -485,6 +561,19 @@ class MotionScreenshotTest(private val case: ThemeCase) {
         show { BoostedBoard(used(Action.Undo, givenBack = Booster.WALL to Pos(9, 9))) }
         frames("undo_wall", 100, 300, 500)
     }
+}
+
+/** The test clock's frame: one every 16 ms (Compose's TestMonotonicFrameClock). */
+private const val FRAME = 16L
+
+/**
+ * Checks that [clock] reads [time] ms, or its end once past it, within one frame: never before it
+ * (give or take the clock's float rounding).
+ */
+private fun assertAt(time: Long, clock: Timeline) {
+    val named = minOf(time.toFloat(), clock.length)
+    val now = clock.now
+    assertTrue("a clock of ${clock.length} ms reads $now ms at the frame named $time ms", now > named - 0.5f && now < named + FRAME)
 }
 
 /** Every point of the board, row by row. */
