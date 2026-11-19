@@ -1,12 +1,11 @@
 package io.github.pavelya.dots.haptics
 
+import android.annotation.SuppressLint
 import android.content.Context
-import android.os.Build
 import android.os.VibrationAttributes
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings
-import androidx.annotation.RequiresApi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -18,7 +17,7 @@ import org.robolectric.shadows.ShadowVibrator
 
 /** Off means off: the Vibration setting and the phone's own touch feedback. Robolectric runs Android 16 here (robolectric.properties). */
 @RunWith(RobolectricTestRunner::class)
-@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+@SuppressLint("NewApi") // Robolectric runs one Android version, newer than every call here
 class AndroidHapticsTest {
     private val context: Context get() = RuntimeEnvironment.getApplication()
     private val vibrator: Vibrator get() = context.getSystemService(Vibrator::class.java)
