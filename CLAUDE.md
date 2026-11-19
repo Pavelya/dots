@@ -15,7 +15,7 @@ explains the rules and how the computer opponent works.
 | `gradle/libs.versions.toml` | Every dependency version. Dependabot updates it; don't bump versions by hand unless the task asks for it. |
 | `docs/plan.md` | The plan: the game, phases, gates, tools and accounts. Task cards are issues. |
 | `docs/poc/` | The proof of concept: charter, architecture, test protocol. |
-| `docs/design/` | Design work: names, investigation, references, mood boards, the Notebook theme, the brand, and the screens and flows (`flows.md`). |
+| `docs/design/` | Design work: names, investigation, references, mood boards, the Notebook theme, the brand, the screens and flows (`flows.md`), and money: what is sold and where ads appear (`money.md`). |
 | `docs/decisions/` | One file per settled decision, `NNNN-short-title.md`. |
 
 ## Commands
@@ -68,7 +68,7 @@ One session works on one issue. Given "Work on B-02" (a task ID):
    (`git fetch origin && git switch -c task/F-3-safe-to-publish origin/main`).
 3. **Open the design first.** Before writing code, open every item in the issue's "Design inputs":
    canvas frames (PNGs in `docs/design/canvas/`), wireframes (linked from `flows.md`, Wireframes),
-   `flows.md`, `game-screens.md`, `motion.md`, `sound.md`, `illustrations.md`, and the theme and
+   `flows.md`, `game-screens.md`, `money.md`, `motion.md`, `sound.md`, `illustrations.md`, and the theme and
    piece pages (`theme-notebook.md`, `pieces.md`, `theme-star-chart.md`, `theme-neon-arcade.md`). All are in `docs/design/`. Build what they show.
    If a task changes what the player sees or hears and has no "Design inputs", stop and ask the
    owner which ones apply.

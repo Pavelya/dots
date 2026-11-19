@@ -148,21 +148,21 @@ over the map or the board, which stay visible around it.
 | World map (home) | Loading; Back from Rules, Stats, Shop or Settings; leaving a game | One scrolling map with a section per world. Finished levels with their stars, the next level circled and marked "next", boss levels as fortresses, a chest every 10 levels, locked worlds with the stars they need. No Play buttons: a level opens its Level card. Labelled icons for Today's puzzle, Play a game, How to play, Stats, Shop and Settings; the player's title and stars. | A-01, A-02, A-04 |
 | Level card | A level on the map, Next on Result | Over the map: the mission in one line, a small picture of the board, the computer's face for its strength, its head start, allowed boosters and star targets. A boss level adds the boss's name, face and rule. One button: Start, or Resume when the level's game is saved. Tapping a booster opens Boosters. | A-03 |
 | Boosters | A booster on the Level card | Wall, Hint, Bomb, Double dot and Undo: how many the player has, what each does, how to earn more. Close returns to where it opened. | A-05 |
-| Chest | Next on the Result of every 10th level | Over the map: pick one of two rewards. | A-04 |
+| Chest | Next on the Result of every 10th level | Over the map: pick one of two rewards. When both are boosters, an ad offer can keep both ([`money.md`](money.md)). | A-04, C-03 |
 | Game board | Start, Play, Resume, Retry, Play again | The opponent above the board, with a face and a tally; the player below it, with a tally and the tool bar. Whose turn, dots left, the last move (A-14), the mission note, special points and any boss countdown. In the campaign, the boosters sit in the tool bar, Undo among them (decision 0023). In free play, the tool bar holds an Undo button with no count; two players and the daily puzzle have no undo. A pause icon opens Pause. | A-03, A-05, A-13, A-14 |
 | Booster preview | A booster on a campaign board | Over the board: one line on what the booster does, the points it can act on, and its effect at the chosen point. Confirm or Cancel. One booster per turn. Undo has no point: its preview shows the turn it takes back, pale in dashed rings, and does not count as the turn's booster. | A-05 |
 | Pause | Pause icon or Back on the board | Over the board: Resume, Restart (asks first, where the mode allows it) and To the map. Small icons for sound on or off and How to play. | A-01 |
-| Result | The end of a game, View result on Today's puzzle | Over the final board: the captured areas light up and the score counts up, then a note with the outcome, score, stars and anything newly unlocked. Campaign win: Next, with a small Retry. Campaign failure: Retry, with a small Map. Daily: Share, or Retry after a failed attempt, with a small Map. Free play and two players: Play again, with a small Map. | A-03, A-07, A-08 |
+| Result | The end of a game, View result on Today's puzzle | Over the final board: the captured areas light up and the score counts up, then a note with the outcome, score, stars and anything newly unlocked. Campaign win: Next, with a small Retry. Campaign failure: Retry, with a small Map, and from World 2 an ad offer of one booster for the retry ([`money.md`](money.md)). Daily: Share, or Retry after a failed attempt, with a small Map. Free play and two players: Play again, with a small Map. | A-03, A-07, A-08, C-03 |
 | Tutorial | Levels 1 to 3 of World 1, Play tutorial on Rules, Replay tutorial in Settings | The game board with a few dots placed and one sentence at a time: placing, linking, capturing. Threat highlights are on. Hints can be skipped. A replay is practice and does not change campaign progress. | A-06 |
 | Today's puzzle | The puzzle's note on the map | Over the map: the date, the mission, the streak, whether a freeze is left this week, and the time to the next puzzle. Play, Resume or View result. | A-07 |
 | Play a game | Play a game on the map | Over the map: two big cards, Free play (against the computer) and Two players (two people on one phone). A card starts a game at once with the defaults, or resumes the saved one. A small link changes board size and game length. The computer plays at the strength reached in the campaign; two players use the pure rules. | A-08 |
 | Rules | How to play on the map or in Pause | Placing, capturing, empty rings, the border and how a game ends, with small board pictures. Play tutorial. | A-06 |
 | Stats | Stats on the map | Games played and won, captures, best capture, longest streak, stars per world, the player's title. Opens Leaderboards and achievements. | A-11 |
 | Leaderboards and achievements | Stats | The daily puzzle and total-star leaderboards and the achievements, shown by Google Play Games. Asks to sign in when the player is not. Closing returns to Stats. | O-02 |
-| Shop | Shop on the map | Themes, piece styles and ring effects, each on a small board; owned items marked. Restore purchases. | C-02 |
-| Cosmetic preview | An item in Shop | The item on a sample board, its price or how to earn it, and whether it is owned or in use. Buy or Use. | C-02 |
+| Shop | Shop on the map | Themes, piece styles and ring effects, each on a small board, with its price, or how to earn it where Google Play can't sell; owned items marked. Restore purchases. The catalogue and prices are in [`money.md`](money.md). | C-02 |
+| Cosmetic preview | An item in Shop | The item on a sample board, its price and how to earn it, and whether it is owned or in use. Buy or Use. Where Google Play can't sell, only how to earn it. | C-02 |
 | Settings | Settings on the map | The controls listed under [Settings](#settings). | A-09 |
-| Settings details | A row in Settings | Language, privacy (the policy and ad choices), Play Games backup, credits and licences. | A-09, A-10 |
+| Settings details | A row in Settings | Language, privacy (the policy, ad choices and the Show ad offers switch), Play Games backup, credits and licences. | A-09, A-10, C-03 |
 | Theme | Theme in Settings, shown only when more than one theme can be chosen | One card per theme the player can choose, each on a small sample board drawn by that theme. The theme in use is ticked; tapping another puts it in use at once. See [Choosing a theme](#choosing-a-theme). | A-23 |
 | Developer menu | Seven taps on the version line at the bottom of Settings | The POC's difficulty picker and test-only settings. Not for players, so it is left out of the two-tap check. | A-01 |
 | Android screens | An action in the game | Not drawn by us: the share screen, the feedback email, the review prompt (A-12), Play Games sign-in, Google Play purchase, a rewarded ad, the ad consent form. Closing one returns to the screen that opened it. | A-07, A-12, O-02, C-02, C-03 |
@@ -188,7 +188,7 @@ to the map.
   dots (off by default; the [theme page](theme-notebook.md#the-board) says where links show
   anyway), placing a dot (drag, the default, or two taps; decisions 0024 and 0026).
 - **Help and app:** Replay tutorial, Send feedback (an email, A-12), Language (shown once a second
-  language ships, A-10), Privacy (the policy and ad choices, C-03), Play Games backup (O-02),
+  language ships, A-10), Privacy (the policy, ad choices and Show ad offers, C-03), Play Games backup (O-02),
   Credits and licences.
 - **After launch:** notifications (O-05), delete my online data (O-06).
 
@@ -302,8 +302,9 @@ The first tap a new player makes is a move on the board.
   beside it. Next returns to the map, where the stars fly to the level; when a world opens, its
   page turns and the path goes on.
 - **Fail or draw.** Result says how close it was. Retry is the main button, with a small Map.
-  After the third failure on the same level, Result offers a hint or a booster (A-03). If C-01
-  places a rewarded ad here, its offer sits below Retry.
+  After the third failure on the same level, Result offers a hint or a booster (A-03). From
+  World 2, a rewarded ad offer of one booster for the retry sits below Retry
+  ([`money.md`](money.md)).
 - **Starting a level.** Every level starts from its Level card. The board then shows the mission,
   and any boss rule, big for a moment before it shrinks into the corner note. No tap is needed.
 - **Boss levels.** The boss rule shows on the Level card and on the board before the first move.
@@ -347,15 +348,21 @@ The first tap a new player makes is a move on the board.
 
 ## Shop and rewarded ads
 
-- The Shop is separate from play. A preview shows the price in local currency, or how to earn the
-  item. Owned items can be put to use offline.
+What is sold, the prices, how each item is earned and where ads appear are in
+[`money.md`](money.md) (decision 0030).
+
+- The Shop is separate from play. A preview shows the price in local currency and how to earn the
+  item; where Google Play can't sell, only how to earn it. Owned items can be put to use offline.
 - A purchase returns to the same preview and shows whether it is owned, pending, cancelled or
   failed. A failure offers Retry. Restore purchases sits in Shop. If a purchase is refunded, the
-  item goes back to the default.
+  item goes back to the default, unless the player has also earned it.
+- Rewarded ads appear only on the Result of a failed campaign level and on a chest of two
+  boosters, at most 3 a day, never in World 1 and never during a game. Show ad offers in Settings,
+  Privacy, hides them all.
 - A rewarded ad names its reward before the player chooses to watch. Declining, or an ad that
-  fails, never blocks play. The reward is given once, after the ad completes. C-01 sets where ads
-  appear. Every ad reward can also be earned by playing (decision 0004), and boosters go to the
-  campaign's stock.
+  fails, never blocks play; an offer whose ad isn't ready is not shown. The reward is given once,
+  after the ad completes. Every ad reward can also be earned by playing (decision 0004). A booster
+  from an ad is for the retry only and does not join the player's own boosters.
 
 ## Leaderboards at launch
 
@@ -381,7 +388,6 @@ the same place in Stats. Settings shows the Play Games backup.
 These tasks change what some screens show:
 
 - **G-18** decides on timed games. A timed mode would be a new choice in Play a game.
-- **C-01** sets the cosmetics, the prices and where rewarded ads appear.
 - **X-08** sets the gate for ranked games.
 
 ## Wireframes

@@ -82,7 +82,7 @@ mark where art goes; the art itself comes later (D-07 and phase 5).
 | --- | --- | --- |
 | Daily result | Moves against the best possible, streak, time to the next puzzle, Share. | U06, M11, M12 |
 | Stats | The player's title, totals, stars per world; leaderboards and achievements. | P07 |
-| Shop | Themes, piece styles, ring effects, each on a small board. | U03 |
+| Shop | Themes, piece styles, ring effects, each on a small board, with its price and how to earn it ([`money.md`](money.md)). | U03 |
 | Settings | Sound, vibration, high-contrast pieces, threat highlights, help, privacy. | U02 |
 | After launch | Online lobby, invite, online game, ranked, weekly challenge: drawn the same way, on paper. | — |
 
