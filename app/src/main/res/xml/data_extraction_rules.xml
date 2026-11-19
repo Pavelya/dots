@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 12 and newer. Backup and device transfer take only the progress store: stars, the
-     player's own boosters, chests opened and cosmetics owned (ProgressRepository), the daily puzzles
-     solved (DailyRepository), the totals on Stats (StatsRepository) and the theme in use
+     player's own boosters, chests opened and cosmetics they gave (ProgressRepository), the daily
+     puzzles solved (DailyRepository), the totals on Stats (StatsRepository) and the theme in use
      (ThemeRepository). Other settings, saved games and the test log stay on the phone: an
      <include> leaves out everything it does not name. -->
 <data-extraction-rules>

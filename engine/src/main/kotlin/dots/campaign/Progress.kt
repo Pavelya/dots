@@ -10,8 +10,8 @@ import dots.engine.Booster
  * - [boosters]: the boosters the player owns, from chests, on top of what each level gives
  *   (decision 0027). A level game takes the ones its level allows ([owned]).
  * - [chests]: the chests opened, by the code of the level each one follows.
- * - [cosmetics]: the cosmetics owned, by name. None can be earned yet; the Shop (C-02) and later
- *   chests bring them.
+ * - [cosmetics]: the cosmetics chests gave, by [Cosmetic.id] (C-05). Never purchases: those come
+ *   from Google Play (C-02). A cosmetic is earned by chest or by stars ([earned]).
  */
 data class Progress(
     val stars: Map<String, Int> = emptyMap(),
@@ -29,6 +29,15 @@ data class Progress(
 
     /** The player's title, from [total]. */
     val title: Title get() = Title.of(total)
+
+    /**
+     * The cosmetics earned by playing: those [total] stars reach, and those a chest gave. A name
+     * in [cosmetics] that is no [Cosmetic] is left out.
+     */
+    val earned: Set<Cosmetic> get() = Cosmetic.earnedAt(total) + cosmetics.mapNotNull(Cosmetic::of)
+
+    /** True once [cosmetic] is earned by stars or from a chest. */
+    fun hasEarned(cosmetic: Cosmetic): Boolean = total >= cosmetic.stars || cosmetic.id in cosmetics
 
     fun stars(level: Level): Int = stars[level.code] ?: 0
 
@@ -83,7 +92,7 @@ data class Progress(
     val chestsText: String
         get() = chests.sortedWith(compareBy({ order(it)?.first }, { order(it)?.second })).joinToString(" ")
 
-    /** The owned [cosmetics] as one line, sorted. */
+    /** The [cosmetics] chests gave as one line, sorted. */
     val cosmeticsText: String get() = cosmetics.sorted().joinToString(" ")
 
     companion object {

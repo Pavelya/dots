@@ -33,9 +33,9 @@ import java.io.File
 
 /**
  * The player's campaign progress, kept on the phone and in Android's backup: the stars, the
- * player's own boosters, the chests opened and the cosmetics owned ([Progress]), and how many times
- * in a row each unpassed level was failed. [scope] keeps [saved] and [map] up to date while the app
- * runs, and saves the boosters a game spends.
+ * player's own boosters, the chests opened and the cosmetics chests gave ([Progress]), and how
+ * many times in a row each unpassed level was failed. [scope] keeps [saved] and [map] up to date
+ * while the app runs, and saves the boosters a game spends.
  *
  * Each part is one line under its own key. A key the store does not have yet (progress saved by an
  * older version) reads as empty, and an entry that cannot be read is left out ([Progress.parse]).
@@ -166,7 +166,7 @@ class ProgressRepository(private val store: DataStore<Preferences>, scope: Corou
         /** The chests opened, by the level before each: `1-10 2-5`. */
         private val CHESTS = stringPreferencesKey("chests")
 
-        /** The cosmetics owned, by name. */
+        /** The cosmetics chests gave, by name; never purchases. */
         private val COSMETICS = stringPreferencesKey("cosmetics")
 
         /** Failures in a row, by level code: `1-7:2 2-3:1`. */

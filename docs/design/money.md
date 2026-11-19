@@ -37,7 +37,8 @@ pull request.
 
 The campaign has 225 stars. "Earned at" counts the stars earned in the campaign, the same count
 the player's title uses (decision 0027). Stars never go down, so an earned item is never lost. A
-chest may give a piece style or ring effect earlier than its star count (C-05).
+chest may give a piece style or ring effect earlier than its star count (C-05). The engine keeps
+the same counts in `Cosmetic` (`dots.campaign`); a count changed here changes there too.
 
 The piece styles and ring effects get their names and looks in their design task. Their names
 follow decision 0028: no world or theme uses them.

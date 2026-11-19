@@ -40,9 +40,10 @@ fun interface ThemeRule {
 /**
  * The theme in use (docs/design/flows.md, "Choosing a theme"): one saved value, which the Theme page
  * and, once it exists, the Shop's Use it both read and set. It is kept in the progress store, beside
- * the cosmetics owned, so Android's backup brings it back with them. [rule] says which themes the
- * player can choose; a saved theme the player can no longer choose (after a refund, or a debug
- * build's backup restored on a release build) reads as Notebook, without a message.
+ * the stars and chests that earn cosmetics, so Android's backup brings it back with them. [rule]
+ * says which themes the player can choose; a saved theme the player can no longer choose (after a
+ * refund, or a debug build's backup restored on a release build) reads as Notebook, without a
+ * message.
  */
 class ThemeRepository(private val store: DataStore<Preferences>, private val rule: () -> ThemeRule) {
 
