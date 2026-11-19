@@ -12,6 +12,7 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import dots.engine.Player
+import io.github.pavelya.dots.audio.Effect
 
 /**
  * A look for the whole game, as data: every ink, board size, piece, text style and sound the
@@ -33,11 +34,11 @@ data class GameTheme(
     /** The board with the player's "High-contrast pieces" setting on (pieces.md, "High contrast"). */
     val highContrastBoard: BoardLook = board,
     /**
-     * Sound effects this look plays in place of the game's own, by their names in
-     * docs/design/sound.md (`sfx_place_1`, `sfx_ring_draw` and so on), as raw resources. Empty in
-     * every look, and not read yet: every look plays the game's own effects (`audio.Effect`).
+     * The board's sounds this look plays in place of Notebook's (docs/design/sound.md, "Board
+     * sounds of the other themes"): for each [Effect] it replaces, the name of its own file in
+     * `assets/audio/`. Effects it leaves out play Notebook's; [sound] picks.
      */
-    val sounds: Map<String, Int> = emptyMap(),
+    val sounds: Map<Effect, String> = emptyMap(),
     /**
      * The inks of the opponent's faces on the game screen (docs/design/illustrations.md, "Other
      * themes"). The map and its notes, the level card among them, stay Notebook's (decision 0028).
@@ -48,6 +49,9 @@ data class GameTheme(
 
     /** The board's look, with high-contrast pieces when [highContrast]. */
     fun board(highContrast: Boolean): BoardLook = if (highContrast) highContrastBoard else board
+
+    /** The file this look plays for [effect]: its own, if it has one, or Notebook's. */
+    fun sound(effect: Effect): String = sounds[effect] ?: effect.file
 
     companion object {
         val PLAIN: GameTheme get() = PlainTheme

@@ -43,18 +43,19 @@ class AndroidAudio(context: Context) : Audio {
     // Everything below is used only on the audio thread.
     private var state = AudioState()
     private val pool = SoundPool.Builder().setMaxStreams(MAX_STREAMS).setAudioAttributes(EFFECTS).build()
-    private val loaded = HashMap<Effect, Int>()
+    /** Every effect file in the assets, Notebook's and the themes', by its name ([Effect.file]). */
+    private val loaded = HashMap<String, Int>()
     private val deck = MusicDeck(handler, ::open)
     private val focusListener = AudioManager.OnAudioFocusChangeListener { change -> handler.post { focusChanged(change) } }
     private val focusRequest: Any? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) buildFocusRequest() else null
 
     init {
         handler.post {
-            for (effect in Effect.entries) {
+            for (file in effectFiles()) {
                 try {
-                    this.context.assets.openFd(effect.asset).use { loaded[effect] = pool.load(it, 1) }
+                    this.context.assets.openFd("$FOLDER/$file.ogg").use { loaded[file] = pool.load(it, 1) }
                 } catch (e: Exception) {
-                    Log.w(TAG, "Cannot load ${effect.asset}", e)
+                    Log.w(TAG, "Cannot load $FOLDER/$file.ogg", e)
                 }
             }
             update(state.copy(ringer = ringer(), inCall = inCall()))
@@ -83,9 +84,9 @@ class AndroidAudio(context: Context) : Audio {
         }
     }
 
-    override fun play(effect: Effect, rate: Float): Sounding {
+    override fun play(effect: Effect, rate: Float, file: String): Sounding {
         val sound = PlayingEffect()
-        handler.post { start(sound, effect, rate) }
+        handler.post { start(sound, effect, rate, file) }
         return sound
     }
 
@@ -113,11 +114,22 @@ class AndroidAudio(context: Context) : Audio {
         return read.get(5, TimeUnit.SECONDS)
     }
 
-    private fun start(sound: PlayingEffect, effect: Effect, rate: Float) {
+    /** The effect files to load: every `sfx_` file in the assets' audio folder, and Notebook's in any case. */
+    private fun effectFiles(): Set<String> {
+        val shipped = try {
+            context.assets.list(FOLDER).orEmpty().filter { it.startsWith("sfx_") && it.endsWith(".ogg") }.map { it.removeSuffix(".ogg") }
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot list $FOLDER", e)
+            emptyList()
+        }
+        return Effect.entries.map { it.file }.toSet() + shipped
+    }
+
+    private fun start(sound: PlayingEffect, effect: Effect, rate: Float, file: String) {
         val calling = inCall()
         if (calling != state.inCall) update(state.copy(inCall = calling))
         val gain = state.effectsGain * effect.share
-        val id = loaded[effect] ?: return
+        val id = loaded[file] ?: loaded[effect.file] ?: return
         if (gain <= 0f) return
         sound.stream = pool.play(id, gain, gain, 1, 0, rate.coerceIn(MIN_RATE, MAX_RATE))
         sound.volume = gain
@@ -229,6 +241,9 @@ class AndroidAudio(context: Context) : Audio {
     companion object {
         private const val TAG = "Audio"
         private const val MAX_STREAMS = 8
+
+        /** The effects' and the music's folder in the assets. */
+        private const val FOLDER = "audio"
 
         /** What [SoundPool] can play: half speed (an octave down) to double (an octave up). */
         const val MIN_RATE = 0.5f

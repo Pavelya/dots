@@ -15,6 +15,7 @@ import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.OpponentLook
+import io.github.pavelya.dots.ui.theme.GameTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -137,12 +138,14 @@ object Cues {
 
 /**
  * Plays [cues] once for each [key], timed from now, if [play] says so when it starts; nothing for a
- * null [key]. A tap that finishes [clock] (motion.md, rule 1) stops the sounds still to come and
- * fades out those playing in 50 ms (sound.md, rule 8).
+ * null [key]. Each plays the file of the theme the screen is drawn in ([GameTheme.sound]): the
+ * theme's own board sounds, Notebook's for the rest. A tap that finishes [clock] (motion.md, rule 1)
+ * stops the sounds still to come and fades out those playing in 50 ms (sound.md, rule 8).
  */
 @Composable
 fun PlayCues(key: Any?, clock: Timeline?, play: () -> Boolean = { true }, cues: () -> List<Cue>) {
     val audio = LocalAudio.current
+    val theme by rememberUpdatedState(GameTheme.current)
     val latest by rememberUpdatedState(cues)
     val allowed by rememberUpdatedState(play)
     LaunchedEffect(key) {
@@ -156,7 +159,7 @@ fun PlayCues(key: Any?, clock: Timeline?, play: () -> Boolean = { true }, cues: 
             for (cue in list) {
                 if (cue.at > t) delay((cue.at - t).toLong())
                 t = cue.at
-                sounding += audio.play(cue.effect, cue.rate)
+                sounding += audio.play(cue.effect, cue.rate, theme.sound(cue.effect))
             }
         }
         if (clock != null) {

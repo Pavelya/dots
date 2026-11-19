@@ -1,5 +1,7 @@
 package io.github.pavelya.dots.ui.theme
 
+import io.github.pavelya.dots.audio.Effect
+
 /**
  * The Star chart board (theme-star-chart.md, "The board" and "The pieces"): Notebook's sizes, with
  * gold stars and ice comets, a chart point at every crossing, straight rings of even width, and
@@ -48,5 +50,7 @@ internal val StarChartTheme: GameTheme = GameTheme(
     board = StarChartBoard,
     highContrastBoard = StarChartBoard.highContrast(),
     type = NotebookType,
+    // The board's sounds of sound.md, "Star chart"; the rest are Notebook's.
+    sounds = Effect.ofTheme("star_chart"),
     faceInks = FaceInks.STAR_CHART,
 )

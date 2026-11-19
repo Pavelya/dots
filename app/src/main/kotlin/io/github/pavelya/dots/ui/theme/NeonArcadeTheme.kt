@@ -1,5 +1,7 @@
 package io.github.pavelya.dots.ui.theme
 
+import io.github.pavelya.dots.audio.Effect
+
 /**
  * The Neon arcade board (theme-neon-arcade.md, "The board" and "The pieces"): Notebook's sizes,
  * with magenta discs and cyan triangles, each live piece in a 1.5 dp band of glow, rings as straight
@@ -51,5 +53,7 @@ internal val NeonArcadeTheme: GameTheme = GameTheme(
     board = NeonArcadeBoard,
     highContrastBoard = NeonArcadeBoard.highContrast(),
     type = NotebookType,
+    // The board's sounds of sound.md, "Neon arcade"; the rest are Notebook's.
+    sounds = Effect.ofTheme("neon_arcade"),
     faceInks = FaceInks.NEON_ARCADE,
 )
