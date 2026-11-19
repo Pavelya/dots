@@ -68,6 +68,25 @@ class LogCheckTest {
     }
 
     @Test
+    fun `a level game that used the booster from an ad replays, and only with it`() {
+        val level = Campaign.level(2, 4) // wall 1, undo 1
+        val game = Game(LevelRecord(level, emptyList(), ad = level.adBooster))
+        fun wall() = game.apply(Action.Wall(game.state.legalMoves().first()))
+        fun place() = game.apply(Action.Place(game.state.legalMoves().first()))
+
+        wall(); place(); place()
+        wall(); place()
+        assertEquals(0, game.state.boostersLeft(Player.RED, Booster.WALL), "the level's wall and the ad's")
+        val entry = GameLogEntry.start(game.record, level.strength.text, threatHighlight = false, now = 0)
+            .copy(red = game.state.score(Player.RED), blue = game.state.score(Player.BLUE), record = game.record)
+        assertTrue(" !wall |" in entry.toJson(), entry.toJson())
+        assertEquals(0, LogCheck.run(listOf(logFile(entry.toJson()).path)))
+
+        val withoutAd = entry.copy(record = LevelRecord(level, game.record.actions))
+        assertEquals(1, LogCheck.run(listOf(logFile(withoutAd.toJson()).path)), "a second wall needs the ad's")
+    }
+
+    @Test
     fun `a missing file is a problem, not a crash`() {
         assertTrue(LogCheck.run(listOf("/no/such/log.txt")) > 0)
     }

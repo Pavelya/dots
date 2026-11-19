@@ -113,8 +113,9 @@ screens and no ads when the app opens.
 **The booster for a retry** is not added to the player's own boosters. It is for the next attempt
 only, and is lost if the player leaves the level. On levels whose stars count the boosters left,
 using it costs the same as using one of the level's own boosters. So ads can help a player pass a
-level, but never raise the stars that the total-star leaderboard counts. Levels that allow no
-booster but Undo show no offer.
+level, but never raise the stars that the total-star leaderboard counts. The booster offered is
+the first kind the level allows, in the order a level file lists them: wall, hint, bomb, double
+dot. Levels that allow no booster but Undo show no offer.
 
 **Limits**
 
