@@ -106,6 +106,11 @@ The key lives in the Actions secrets `POC_KEYSTORE_BASE64` and `POC_KEYSTORE_PAS
 the repository, and is never used for the store. A build without the key (a local build, or a
 Dependabot pull request, which gets no secrets) uses the standard Android debug key.
 
+Store releases: push a tag such as `v0.1.0` on a commit of `main`. The workflow "store release"
+runs all checks, builds the release bundle with code shrinking, signs it with the upload key and
+puts it on Google Play's internal testing track. The tag sets the version (decision 0031). How to
+release, and the one-time setup of keys and Play Console: [`docs/release.md`](docs/release.md).
+
 ## Rules
 
 Implemented from the Wikipedia article

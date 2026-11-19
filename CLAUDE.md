@@ -17,6 +17,7 @@ explains the rules and how the computer opponent works.
 | `docs/poc/` | The proof of concept: charter, architecture, test protocol. |
 | `docs/design/` | Design work: names, investigation, references, mood boards, the Notebook theme, the brand, the screens and flows (`flows.md`), and money: what is sold and where ads appear (`money.md`). |
 | `docs/decisions/` | One file per settled decision, `NNNN-short-title.md`. |
+| `docs/release.md` | Store releases: the `v*` tag, version numbers, signing keys, Play Console setup. |
 
 ## Commands
 
@@ -36,7 +37,7 @@ Needs JDK 21 and, for `app`, the Android SDK. The Gradle wrapper fetches everyth
 ./gradlew --continue :engine:test :cli:test :cli:installDist :app:verifyRoborazziDebug :app:lintDebug :app:assembleDebug
 ```
 
-Lint treats warnings as errors. If a change alters what the app draws, record new screenshots,
+CI also builds the shrunk release bundle (`./gradlew :app:bundleRelease`) in a second job. Lint treats warnings as errors. If a change alters what the app draws, record new screenshots,
 look at them, and commit them with the change.
 
 **Recording screenshots** (decision 0021). The committed screenshots come from CI, which runs
