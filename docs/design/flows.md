@@ -406,9 +406,10 @@ people the owner has shared it with.
   map's landscape and world pictures are doodles that mark where art goes.
 - **States.** Some frames show more than one state, picked in the frame's Tweaks: the map (home,
   a world opens), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
-  game), the game board (every moment), Cosmetic preview, Settings (with or without the Theme
-  row), Settings details, Theme (a debug build or after the Shop opens, and the theme in use),
-  Invite and Ranked.
+  game), the game board (every moment), Cosmetic preview (Star chart or Neon arcade; for sale,
+  owned or in use), Settings (with or without the Theme row; scrolled to the top or the end),
+  Settings details, Theme (a debug build or after the Shop opens, and the theme in use), Invite
+  and Ranked.
 - **Screens Google draws.** Leaderboards and achievements, and the other Android screens, are drawn
   by Google. Their frame shows only what we draw: the sign-in question over Stats.
 
