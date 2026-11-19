@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import dots.engine.Player
 import io.github.pavelya.dots.audio.Effect
+import io.github.pavelya.dots.data.ThemeId
 
 /**
  * A look for the whole game, as data: every ink, board size, piece, text style and sound the
@@ -64,6 +65,13 @@ data class GameTheme(
          * player may choose is not the theme's business (decision 0029).
          */
         val ALL: List<GameTheme> get() = listOf(NotebookTheme, StarChartTheme, NeonArcadeTheme)
+
+        /** The theme saved as [id]. */
+        fun of(id: ThemeId): GameTheme = when (id) {
+            ThemeId.NOTEBOOK -> NotebookTheme
+            ThemeId.STAR_CHART -> StarChartTheme
+            ThemeId.NEON_ARCADE -> NeonArcadeTheme
+        }
 
         /** The theme the screen is drawn in. */
         val current: GameTheme

@@ -16,6 +16,8 @@ import io.github.pavelya.dots.data.ProgressRepository
 import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.data.SettingsRepository
 import io.github.pavelya.dots.data.StatsRepository
+import io.github.pavelya.dots.data.ThemeRepository
+import io.github.pavelya.dots.data.ThemeRule
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -62,6 +64,15 @@ class DotsApplication : Application() {
         val disk = Executors.newSingleThreadExecutor { task -> Thread(task, "game-store").apply { isDaemon = true } }
         GameStore({ File(filesDir, "games") }, BuildConfig.VERSION_NAME, disk)
     }
+
+    /**
+     * Whether this is a debug build, which offers every theme (decision 0029). Tests set it to
+     * false to see what a release build shows.
+     */
+    var debugBuild: Boolean = BuildConfig.DEBUG
+
+    /** The theme in use and the themes the player can choose. Backed up with the progress. */
+    val themes: ThemeRepository by lazy { ThemeRepository(progressStore) { ThemeRule.beforeShop(debugBuild) } }
 
     /** The player's totals on Stats: games played and won, captures. Backed up with the progress. */
     val stats: StatsRepository by lazy { StatsRepository(progressStore, progressScope) }

@@ -35,6 +35,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.data.SampleProgress
+import io.github.pavelya.dots.data.ThemeId
 import io.github.pavelya.dots.ui.theme.Palette
 
 /** The number of taps on the version line that opens the developer menu, as Android's "Build number" does. */
@@ -59,7 +60,9 @@ enum class SettingsPage(val key: String) {
 
 /**
  * Settings, as the wireframes' frame "Settings" draws it: one scrolling page on the notebook's
- * paper. Sound and feel (music and sound volumes, vibration), the board (high-contrast pieces,
+ * paper. Sound and feel (music and sound volumes, vibration), the board (the [theme] in use, a row
+ * that opens the Theme page through [onTheme] and shows only when there is more than one theme to
+ * choose from, flows.md "Choosing a theme"; high-contrast pieces,
  * threat highlights, links between dots, and placing a dot by drag, the default, or two taps,
  * decisions 0024 and 0026), and help (Replay the tutorial, Send feedback, Privacy, Play Games
  * backup, Credits and licences). Send feedback goes to [onFeedback], which opens an email; the
@@ -77,6 +80,8 @@ fun SettingsScreen(
     onReplayTutorial: () -> Unit,
     onFeedback: () -> Unit,
     onBack: () -> Unit,
+    theme: ThemeId? = null,
+    onTheme: () -> Unit = {},
 ) {
     val style = Palette.current
     PaperPage(stringResource(R.string.home_settings), onBack) {
@@ -90,6 +95,7 @@ fun SettingsScreen(
         SwitchRow(stringResource(R.string.settings_vibration), settings.vibration) { on -> onChange { it.copy(vibration = on) } }
 
         SectionHead(stringResource(R.string.settings_the_board))
+        theme?.let { LinkRow(stringResource(R.string.settings_theme), stringResource(themeName(it)), onClick = onTheme) }
         SwitchRow(stringResource(R.string.settings_high_contrast), settings.highContrast) { on -> onChange { it.copy(highContrast = on) } }
         SwitchRow(stringResource(R.string.settings_threats), settings.threatHighlight) { on -> onChange { it.copy(threatHighlight = on) } }
         SwitchRow(stringResource(R.string.settings_links), settings.links) { on -> onChange { it.copy(links = on) } }

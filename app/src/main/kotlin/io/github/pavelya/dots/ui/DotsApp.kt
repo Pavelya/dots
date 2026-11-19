@@ -67,6 +67,7 @@ import io.github.pavelya.dots.data.GameMode
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.data.ReviewRule
+import io.github.pavelya.dots.data.ThemeId
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.computerFor
 import io.github.pavelya.dots.game.dailyGame
@@ -90,11 +91,13 @@ import io.github.pavelya.dots.ui.screen.SettingsPage
 import io.github.pavelya.dots.ui.screen.SettingsScreen
 import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.screen.StatsScreen
+import io.github.pavelya.dots.ui.screen.ThemeScreen
 import io.github.pavelya.dots.ui.screen.Unlock
 import io.github.pavelya.dots.ui.motion.Capturing
 import io.github.pavelya.dots.ui.motion.LocalReduceMotion
 import io.github.pavelya.dots.ui.motion.animationsRemoved
 import io.github.pavelya.dots.ui.theme.DotsTheme
+import io.github.pavelya.dots.ui.theme.GameTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -150,10 +153,13 @@ object Routes {
     const val SETTINGS_DETAILS = "settings/details/{page}"
     fun settingsDetails(page: SettingsPage) = "settings/details/${page.key}"
 
+    /** From Settings: the themes the player can choose, each on a sample board (flows.md, "Choosing a theme"). */
+    const val THEME = "settings/theme"
+
     /** The POC's test settings; opens from the version line in Settings. */
     const val DEVELOPER = "developer"
 
-    val ALL = listOf(LOADING, MAP, LEVEL, BOOSTERS, CHEST, DAILY, PLAY, GAME, RULES, STATS, LEADERBOARDS, SHOP, COSMETIC, SETTINGS, SETTINGS_DETAILS, DEVELOPER)
+    val ALL = listOf(LOADING, MAP, LEVEL, BOOSTERS, CHEST, DAILY, PLAY, GAME, RULES, STATS, LEADERBOARDS, SHOP, COSMETIC, SETTINGS, SETTINGS_DETAILS, THEME, DEVELOPER)
 }
 
 @Composable
@@ -187,6 +193,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
     }
     // The developer menu's "a year ahead" moves the daily puzzle's clock; high-contrast pieces go to every board.
     val appSettings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+    // The theme the game screen is drawn in; the map, the notes over it and the menu screens stay Notebook (decision 0028).
+    val themeInUse by app.themes.inUse.collectAsStateWithLifecycle(initialValue = ThemeId.DEFAULT)
     LaunchedEffect(appSettings?.dailyAhead) {
         appSettings?.let { app.clock.shiftDays = if (it.dailyAhead) PuzzleClock.YEAR_AHEAD_DAYS else 0 }
     }
@@ -223,7 +231,12 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
             Scaffold(
                 modifier = Modifier.fillMaxSize(),
                 // Paper under the system bars too, as on Android's own start-up screen.
-                containerColor = if (starting) colorResource(R.color.paper) else MaterialTheme.colorScheme.background,
+                // The game screen's paper is its theme's, under the system bars too.
+                containerColor = when {
+                    starting -> colorResource(R.color.paper)
+                    top?.destination?.route == Routes.GAME -> GameTheme.of(themeInUse).palette(GameTheme.isDark).paper
+                    else -> MaterialTheme.colorScheme.background
+                },
             ) { insets ->
                 NavHost(
                     navController = navController,
@@ -464,41 +477,43 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 DisposableEffect(Unit) { onDispose { gameTrack = null } }
                                 val scope = rememberCoroutineScope()
                                 val context = LocalContext.current
-                                GameScreen(
-                                    game,
-                                    onToMap = toMap,
-                                    onRules = { navController.navigate(Routes.RULES) },
-                                    sound = settings.value?.sound ?: AppSettings().sound,
-                                    onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
-                                    placing = settings.value?.placing ?: AppSettings().placing,
-                                    links = settings.value?.links ?: AppSettings().links,
-                                    guidesSkipped = settings.value?.tutorialSkipped ?: false,
-                                    onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
-                                    onShare = { text -> shareText(context, text) },
-                                    toNextPuzzle = app.clock::toNextPuzzle,
-                                    // Google Play's review prompt, after a level won with three stars, at most once a month.
-                                    onLevelResult = { level, end, practice ->
-                                        activity?.let { over -> appScope.launch { askForReview(app, over, level, end, practice, System.currentTimeMillis()) } }
-                                    },
-                                    // Next goes back to the map, which opens the chest the level made
-                                    // ready, if any, and otherwise plays the level's unlock and opens the
-                                    // next level's card.
-                                    onNext = { end ->
-                                        toMap()
-                                        val next = end?.next
-                                        val passed = game.ui.value.level
-                                        val played = if (end != null && passed != null) {
-                                            Unlock(passed, end.starsBefore, end.result.stars, next, end.opened.worlds.isNotEmpty())
-                                        } else {
-                                            null
-                                        }
-                                        when {
-                                            end?.chest != null -> navController.navigate(Routes.chest(end.chest.after))
-                                            played != null && played.plays -> unlock = played
-                                            next != null -> navController.navigate(Routes.level(next.world, next.number))
-                                        }
-                                    },
-                                )
+                                DotsTheme(GameTheme.of(themeInUse), dark = GameTheme.isDark, highContrast = GameTheme.highContrast) {
+                                    GameScreen(
+                                        game,
+                                        onToMap = toMap,
+                                        onRules = { navController.navigate(Routes.RULES) },
+                                        sound = settings.value?.sound ?: AppSettings().sound,
+                                        onSound = { on -> scope.launch { app.settings.update { it.copy(sound = on) } } },
+                                        placing = settings.value?.placing ?: AppSettings().placing,
+                                        links = settings.value?.links ?: AppSettings().links,
+                                        guidesSkipped = settings.value?.tutorialSkipped ?: false,
+                                        onSkipGuides = { scope.launch { app.settings.update { it.copy(tutorialSkipped = true) } } },
+                                        onShare = { text -> shareText(context, text) },
+                                        toNextPuzzle = app.clock::toNextPuzzle,
+                                        // Google Play's review prompt, after a level won with three stars, at most once a month.
+                                        onLevelResult = { level, end, practice ->
+                                            activity?.let { over -> appScope.launch { askForReview(app, over, level, end, practice, System.currentTimeMillis()) } }
+                                        },
+                                        // Next goes back to the map, which opens the chest the level made
+                                        // ready, if any, and otherwise plays the level's unlock and opens the
+                                        // next level's card.
+                                        onNext = { end ->
+                                            toMap()
+                                            val next = end?.next
+                                            val passed = game.ui.value.level
+                                            val played = if (end != null && passed != null) {
+                                                Unlock(passed, end.starsBefore, end.result.stars, next, end.opened.worlds.isNotEmpty())
+                                            } else {
+                                                null
+                                            }
+                                            when {
+                                                end?.chest != null -> navController.navigate(Routes.chest(end.chest.after))
+                                                played != null && played.plays -> unlock = played
+                                                next != null -> navController.navigate(Routes.level(next.world, next.number))
+                                            }
+                                        },
+                                    )
+                                }
                             }
                         }
                     }
@@ -548,6 +563,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 onReplayTutorial = playTutorial,
                                 onFeedback = { sendFeedback(context) },
                                 onBack = back,
+                                // Only when there is more than one theme to choose from (decision 0029).
+                                theme = themeInUse.takeIf { app.themes.choices.size > 1 },
+                                onTheme = { navController.navigate(Routes.THEME) },
                             )
                         }
                     }
@@ -558,6 +576,18 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         } else {
                             SettingsDetailsScreen(page, onPage = { navController.navigate(Routes.settingsDetails(it)) }, onBack = back)
                         }
+                    }
+                    composable(Routes.THEME) {
+                        ThemeScreen(
+                            choices = app.themes.choices,
+                            inUse = themeInUse,
+                            // Saved in the app's scope, like a setting, so Back never cuts the change short.
+                            onUse = { theme -> appScope.launch { app.themes.use(theme) } },
+                            debugNote = app.debugBuild,
+                            // C-02 links the Shop here, once it exists.
+                            onShop = null,
+                            onBack = back,
+                        )
                     }
                     composable(Routes.DEVELOPER) {
                         val context = LocalContext.current

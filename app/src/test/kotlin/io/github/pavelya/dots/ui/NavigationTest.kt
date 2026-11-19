@@ -215,6 +215,9 @@ class NavigationTest {
 
         tap("Settings")
         at(Routes.SETTINGS)
+        // A debug build, as tests are, offers every theme, so Settings has the Theme row.
+        waitFor("Theme")
+        visit("Theme", Routes.THEME, returnTo = Routes.SETTINGS)
         compose.onNodeWithText("Credits and licences").performScrollTo()
         visit("Credits and licences", Routes.SETTINGS_DETAILS, returnTo = Routes.SETTINGS)
         back()
