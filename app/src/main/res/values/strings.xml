@@ -284,6 +284,18 @@
     <string name="settings_the_board">The board</string>
     <string name="settings_high_contrast">High-contrast pieces</string>
     <string name="settings_links">Links between dots</string>
+    <!-- Choosing a theme (flows.md, "Choosing a theme"): the Settings row, and the Theme page. -->
+    <string name="settings_theme">Theme</string>
+    <string name="theme_notebook">Notebook</string>
+    <string name="theme_notebook_line">Red and blue ink on squared paper.</string>
+    <string name="theme_star_chart">Star chart</string>
+    <string name="theme_star_chart_line">Gold stars and ice-blue comets on a chart of the sky.</string>
+    <string name="theme_neon_arcade">Neon arcade</string>
+    <string name="theme_neon_arcade_line">Magenta and cyan pieces, with rings of neon light.</string>
+    <string name="theme_in_use">In use</string>
+    <string name="theme_light_or_dark">Light or dark follows your phone’s dark theme.</string>
+    <string name="theme_more_in_shop">More themes in the Shop</string>
+    <string name="theme_debug_note">Debug build: every theme is here. Players get only Notebook until the Shop opens.</string>
     <string name="settings_feedback">Send feedback</string>
     <!-- The feedback email (A-12): the game's support address (docs/plan.md, Accounts), its subject, and the
          lines under the player's message that say which build and phone it came from. -->
