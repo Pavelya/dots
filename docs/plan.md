@@ -69,7 +69,8 @@ with a new record in `docs/decisions/`.
 
 Everything is free except the one-time Play account ($25) and one month of Suno Pro (about $10).
 Ownership notes for each tool are in the [design investigation](design/investigation.md),
-section 8. "First needed in" names the task that first needs the tool or account.
+section 8. What is set up in Play Console and Google Cloud, with every account's rights:
+[`release.md`](release.md#what-is-set-up). "First needed in" names the task that first needs the tool or account.
 
 ### Tools
 
@@ -107,6 +108,7 @@ section 8. "First needed in" names the task that first needs the tool or account
 | Freesound | Downloading CC0 sounds | Free | [V-08](https://github.com/Pavelya/dots/issues/79) |
 | Suno (Pro for one month, then cancel) | Music with commercial rights | About $10 | [V-09](https://github.com/Pavelya/dots/issues/80) |
 | Google Play Console, personal, with identity check | Publishing; Play Games Services; in-app purchases | $25 once | [R-01](https://github.com/Pavelya/dots/issues/103) |
+| Google Cloud project `pinfold-release`, with a service account | Uploading releases to Play from CI | Free | [R-02](https://github.com/Pavelya/dots/issues/104) |
 | Google payments profile (merchant) | Selling cosmetics | Free; Google keeps a share of each sale | [C-02](https://github.com/Pavelya/dots/issues/86) |
 | AdMob | Rewarded ads | Free | [C-03](https://github.com/Pavelya/dots/issues/87) |
 | Firebase project (Spark plan first) | Crash reports, analytics, online play | Free; Blaze only if server checks need it | [Q-05](https://github.com/Pavelya/dots/issues/100) / [O-01](https://github.com/Pavelya/dots/issues/89) |
