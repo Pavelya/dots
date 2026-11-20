@@ -105,7 +105,11 @@ any page by name.
 **6. Create the app.** Home > **Create app**:
 
 - App name: `Pinfold`
-- Default language: English (United States)
+- Package name: `io.github.pavelya.pinfold`, exactly, all lower case, then **Check availability**.
+  It is the app's permanent ID (decision 0016) and must match the app's `applicationId`; it can
+  never change, and Play refuses a bundle with any other one.
+- Default language: English (United States) – en-US. (Play may suggest another English; any
+  works, and it can change later.)
 - App or game: **Game**
 - Free or paid: **Free** (this can never change to paid; Pinfold is free, decision 0004)
 - Tick both declarations, then **Create app**.
@@ -157,8 +161,14 @@ release**.
 
 - If Play asks how to sign the app, keep **Google-generated key** (Play App Signing).
 - Drag `pinfold-0.1.0.aab` into the App bundles box. Wait until it shows version 1000 (0.1.0).
-- Keep the suggested release name. Release notes: `First internal build.`
-- **Next**, then **Save and publish** (the button may say **Start rollout to Internal testing**).
+- Wait until the bundle shows version code 1000 (0.1.0); until then the release name stays empty.
+  Release name: `0.1.0` (the workflow names later releases the same way). Release notes:
+  `First internal build.`
+- **Next**. The check page shows one warning, "This App Bundle contains native code, and you've
+  not uploaded debug symbols". It is expected on every release: the native code is two Google
+  libraries (Compose and DataStore), shipped without symbols. Pinfold's own crash reports are
+  readable through R8's mapping file.
+- **Save and publish** (the button may say **Start rollout to Internal testing**).
 
 *Worked when:* the Internal testing page shows release 0.1.0 as available to internal testers.
 If Play instead lists tasks that must be finished first, note which, and stop here: those
@@ -181,7 +191,10 @@ signing. The **Upload key certificate** SHA-256 must be the same as the fingerpr
 3. On the phone, signed in with the tester account, open the link, tap **Accept invite**, then
    **Download it on Google Play** and install.
 
-A new release can take up to an hour to show up for testers.
+The first release of a new app can take an hour or more to reach testers; until then the phone
+says "Item not found". If it still does after that, check that the Play Store on the phone uses the
+same Google account that accepted the invite and is on the testers list (profile picture, top
+right).
 
 *Worked when:* Pinfold opens on the phone and a game plays to the end.
 
@@ -280,6 +293,7 @@ workflow on any branch. It builds and signs the game and uploads nothing.
 | --- | --- |
 | `UPLOAD_KEYSTORE_BASE64 is missing` | Step 3. |
 | `Keystore was tampered with, or password was incorrect` | The two secrets don't match. Redo step 3 with the key file from a backup. |
+| Many app tests fail with `MavenArtifactFetcher` and `FileNotFoundException` | Maven Central, where the tests download Android from, had an outage. Open the run and click **Re-run jobs** > **Re-run failed jobs**. Same tag, same version. |
 | `Commit ... is not on main` | Delete the tag (`git push origin :v0.1.2`, `git tag -d v0.1.2`) and tag a commit of `main`. |
 | `The version must look like 1.2.3` | Tags are `v` plus three numbers, for example `v0.1.2`. Delete the tag as above. |
 | `version code ... has already been used` | That version was uploaded before. Tag the next patch number. |
