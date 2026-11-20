@@ -1,22 +1,155 @@
 # Releasing Pinfold on Google Play
 
-A store release starts with a tag such as `v0.1.0` on `main`. The tag starts the workflow
+A store release starts with a tag such as `v0.1.2` on `main`. The tag starts the workflow
 `store release` (`.github/workflows/release.yml`), which tests the game, builds it, signs it with
 the upload key and puts it on Google Play's **internal testing** track. Moving a release on to the
 closed test or to production is done by hand in Play Console. The rules for tags, version numbers
 and keys are in decision 0031.
 
-The first release takes some one-time setup, so it has its own walkthrough below. Every later
-release is three commands: [Every release after the first](#every-release-after-the-first).
+This page has:
+
+- [Make a release](#make-a-release): the three commands, when to release, which number to use.
+- [What is set up](#what-is-set-up): what exists in Play Console, Google Cloud and GitHub, and
+  which rights each account has. Tasks that work in those consoles build on it.
+- [If something goes wrong](#if-something-goes-wrong) and [Keys and secrets](#keys-and-secrets).
+- [Setting it up from nothing](#setting-it-up-from-nothing): the full walkthrough, step by step,
+  for redoing any part of the setup, such as a new upload key.
 
 **Reading the commands.** Open this page in a Markdown preview (in VS Code: Cmd+Shift+V) or on
 GitHub, so each command shows in its own box. Copy a whole box, from its first character to its
 last, and paste it in the terminal. Run every command from the repository folder (`cd ~/dots`, or
 wherever the repository is).
 
-## The first release, step by step
+## Make a release
 
-Do the steps in order. Each one ends with how to tell it worked.
+1. Pick the next version (see [Version numbers](#version-numbers)).
+2. Tag the newest `main` and push the tag (here `v0.1.2`):
+
+   ```sh
+   git fetch origin
+   ```
+
+   ```sh
+   git tag v0.1.2 origin/main
+   ```
+
+   ```sh
+   git push origin v0.1.2
+   ```
+
+3. Open
+   [github.com/Pavelya/dots/actions/workflows/release.yml](https://github.com/Pavelya/dots/actions/workflows/release.yml)
+   and click the newest run, the one with your tag beside it. It takes about six minutes. When it
+   is green and its last step says "is out on the internal track", internal testers get the update
+   from Google Play, usually within minutes.
+
+Nothing else is needed: no step in Play Console, no upload by hand.
+
+The run keeps the signed build and R8's mapping file as an artifact, `pinfold-<version>-bundle`.
+Google Play also gets the mapping file inside the build, so its crash reports show the real code
+names.
+
+**Dry run.** `gh workflow run release.yml -f version=0.0.1`, or Actions > "store release" > Run
+workflow on any branch. It builds and signs the game and uploads nothing. Use it after changing the
+upload key or the workflow.
+
+### When to release
+
+Not after every merge. Every merge to `main` already builds a test APK (`dots-debug-apk` in the
+`test` run) for a quick look. Release to the internal track when the game should be tried on a
+phone the way players will get it:
+
+- after a group of tasks that change what the player sees or hears (a new world, the shop);
+- before showing the game to someone;
+- before the closed test (R-06), which starts from an internal release.
+
+### Version numbers
+
+Each tag is `v` plus three numbers; the version code follows from them (decision 0031).
+
+- **Patch** (`v0.1.2`, `v0.1.3`, ...) for ordinary builds.
+- **Minor** (`v0.2.0`) when something big lands, such as the end of a phase.
+- **`v1.0.0`** for the launch (R-07).
+
+A number is used once and must be higher than every one before. A broken build is fixed on `main`
+and released with the next patch number, never by moving a tag. The one exception is a run that
+failed for a reason outside the code (see the first row of [If something goes
+wrong](#if-something-goes-wrong)): re-run it, same tag.
+
+## What is set up
+
+All of it belongs to the game's Google account (B-05), the same one in Play Console
+and Google Cloud. **A task that changes anything here** (an account's rights, a project, an API, a
+tester list, a secret) **updates this section in the same pull request**, so the next task starts
+from what really exists.
+
+### Play Console
+
+[play.google.com/console](https://play.google.com/console), personal developer account (R-01).
+
+| What | How it is set |
+| --- | --- |
+| App | **Pinfold**, package `io.github.pavelya.pinfold`, Game, Free. The package name can never change; Free can never become paid. |
+| App signing | Play App Signing: Google holds the app signing key. |
+| Upload key certificate | SHA-256 `D1:DF:DE:33:F4:45:1F:F8:0F:F6:B3:82:B5:75:89:11:71:1B:38:D4:36:3E:40:A7:61:6A:B3:91:39:B8:C0:41`. Every release must be signed with this key; the workflow prints the certificate in its "Signing certificate" step. |
+| Internal testing track | Every tag lands here, released at once to the testers. |
+| Internal testers | Email list `Pinfold internal`: the owner's Google account. Testers join through the link on the Testers tab. |
+| Users and permissions | The owner (account owner). The service account below, with one app permission on Pinfold: **Release apps to testing tracks**. Nothing else. |
+
+Anything else in Play Console (store listing, app content declarations, closed testing,
+production, the payments profile, in-app products, Play Games) is set up by the task that needs it,
+which then adds a row here.
+
+### Google Cloud
+
+[console.cloud.google.com](https://console.cloud.google.com/), the same Google account.
+
+| What | How it is set |
+| --- | --- |
+| Project | `pinfold-release`, no organization. Its exact ID is in the project picker (Google adds digits when a name is taken). |
+| Enabled APIs | Google Play Android Developer API. |
+| Service account | `play-release` (email on its Details tab). No Google Cloud roles: its only rights are the Play Console permission above. One JSON key, stored in the Actions secret `PLAY_SERVICE_ACCOUNT_JSON`. |
+
+This project exists for release uploads. Firebase (Q-05, Q-06, O-01) makes Google Cloud projects of
+its own; whether it uses this one is for those tasks to choose. A task that needs the service
+account to do more adds only the Play Console permission it needs, and notes it in the table above.
+
+### GitHub
+
+| What | Where |
+| --- | --- |
+| Workflow | `store release`, `.github/workflows/release.yml`, started by a `v*` tag on `main`. The upload itself: `.github/scripts/play-upload.sh`. |
+| CI check | The `test` workflow's `release-build` job builds the shrunk release on every pull request. |
+| Secrets | `UPLOAD_KEYSTORE_BASE64`, `UPLOAD_KEYSTORE_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON`, and the POC test key's two. See [Keys and secrets](#keys-and-secrets). |
+
+## If something goes wrong
+
+| The run says | What to do |
+| --- | --- |
+| Many app tests fail with `MavenArtifactFetcher` and `FileNotFoundException` | Maven Central, where the tests download Android from, had an outage. Open the run and click **Re-run jobs** > **Re-run failed jobs**. Same tag, same version. |
+| `UPLOAD_KEYSTORE_BASE64 is missing` | Step 3. |
+| `Keystore was tampered with, or password was incorrect` | The two secrets don't match. Redo step 3 with the key file from a backup. |
+| `Commit ... is not on main` | Delete the tag (`git push origin :v0.1.2`, `git tag -d v0.1.2`) and tag a commit of `main`. |
+| `The version must look like 1.2.3` | Tags are `v` plus three numbers, for example `v0.1.2`. Delete the tag as above. |
+| `version code ... has already been used` | That version was uploaded before. Tag the next patch number. |
+| `The caller does not have permission` | Step 14: the service account needs Pinfold and "Release apps to testing tracks". A new invite can take up to a day to start working. |
+| A warning that the release is a draft | Roll it out in Play Console: Internal testing, open the draft. |
+
+## Keys and secrets
+
+| What | Where | If it is lost or leaks |
+| --- | --- | --- |
+| App signing key | Google (Play App Signing) | Google keeps it; it never leaves Google. |
+| Upload key `pinfold-upload.jks` | Actions secret `UPLOAD_KEYSTORE_BASE64`; two copies from step 4 | Make a new key (steps 1 to 3), then Play Console > App integrity > **Request upload key reset**. Google takes a few days. |
+| Upload key password | Actions secret `UPLOAD_KEYSTORE_PASSWORD`; the password manager | As above. |
+| Service account key | Actions secret `PLAY_SERVICE_ACCOUNT_JSON` | Delete the key in Google Cloud and make a new one (step 13.4, then step 15). |
+| POC test key | Actions secrets `POC_KEYSTORE_BASE64`, `POC_KEYSTORE_PASSWORD` | Signs only test builds from GitHub, never the store app. |
+
+## Setting it up from nothing
+
+The whole setup, in order, from no key and no app to a release that reaches the phone by
+itself. [What is set up](#what-is-set-up) shows the result. To redo one part (a new upload key, a
+new service account key), follow just those steps. Each step ends with how to tell it worked.
 
 **You need:** the Mac with the repository and the GitHub CLI signed in (`gh auth status` says
 "Logged in"), the Play Console developer account, a password manager, two USB sticks (or one stick
@@ -247,65 +380,11 @@ rm ~/Downloads/pinfold-release-1a2b3c4d5e6f.json
 
 *Worked when:* `gh secret list` shows `PLAY_SERVICE_ACCOUNT_JSON`.
 
-**16. Release 0.1.1 the normal way.** Follow [Every release after the
-first](#every-release-after-the-first) with `v0.1.1`.
+**16. Release 0.1.1 the normal way.** Follow [Make a release](#make-a-release) with `v0.1.1`.
 
 *Worked when:* the run is green with no warning, and Play Console's Internal testing page shows
 0.1.1 without any step there. If the run's warning says the release is a **draft**, open Internal
 testing, open the draft and roll it out; Google Play does this until the app is published, and the
 workflow handles it each time.
 
-The setup is finished.
-
-## Every release after the first
-
-1. Pick the next version, higher than every one before. A number is used once: a broken build is
-   fixed with the next patch number (`v0.1.2`), never by moving a tag.
-2. Tag the newest `main` and push the tag (here `v0.1.2`):
-
-   ```sh
-   git fetch origin
-   ```
-
-   ```sh
-   git tag v0.1.2 origin/main
-   ```
-
-   ```sh
-   git push origin v0.1.2
-   ```
-
-3. Open
-   [github.com/Pavelya/dots/actions/workflows/release.yml](https://github.com/Pavelya/dots/actions/workflows/release.yml)
-   and click the newest run, the one with your tag beside it. When it is green,
-   testers get the update from Google Play.
-
-The run keeps the signed build and R8's mapping file as an artifact, `pinfold-<version>-bundle`.
-Google Play also gets the mapping file inside the build, so its crash reports show the real code
-names.
-
-**Dry run.** `gh workflow run release.yml -f version=0.0.1`, or Actions > "store release" > Run
-workflow on any branch. It builds and signs the game and uploads nothing.
-
-## If something goes wrong
-
-| The run says | What to do |
-| --- | --- |
-| `UPLOAD_KEYSTORE_BASE64 is missing` | Step 3. |
-| `Keystore was tampered with, or password was incorrect` | The two secrets don't match. Redo step 3 with the key file from a backup. |
-| Many app tests fail with `MavenArtifactFetcher` and `FileNotFoundException` | Maven Central, where the tests download Android from, had an outage. Open the run and click **Re-run jobs** > **Re-run failed jobs**. Same tag, same version. |
-| `Commit ... is not on main` | Delete the tag (`git push origin :v0.1.2`, `git tag -d v0.1.2`) and tag a commit of `main`. |
-| `The version must look like 1.2.3` | Tags are `v` plus three numbers, for example `v0.1.2`. Delete the tag as above. |
-| `version code ... has already been used` | That version was uploaded before. Tag the next patch number. |
-| `The caller does not have permission` | Step 14: the service account needs Pinfold and "Release apps to testing tracks". A new invite can take up to a day to start working. |
-| A warning that the release is a draft | Roll it out in Play Console: Internal testing, open the draft. |
-
-## Keys and secrets
-
-| What | Where | If it is lost or leaks |
-| --- | --- | --- |
-| App signing key | Google (Play App Signing) | Google keeps it; it never leaves Google. |
-| Upload key `pinfold-upload.jks` | Actions secret `UPLOAD_KEYSTORE_BASE64`; two copies from step 4 | Make a new key (steps 1 to 3), then Play Console > App integrity > **Request upload key reset**. Google takes a few days. |
-| Upload key password | Actions secret `UPLOAD_KEYSTORE_PASSWORD`; the password manager | As above. |
-| Service account key | Actions secret `PLAY_SERVICE_ACCOUNT_JSON` | Delete the key in Google Cloud and make a new one (step 13.4, then step 15). |
-| POC test key | Actions secrets `POC_KEYSTORE_BASE64`, `POC_KEYSTORE_PASSWORD` | Signs only test builds from GitHub, never the store app. |
+The setup is finished; from now on, [Make a release](#make-a-release).
