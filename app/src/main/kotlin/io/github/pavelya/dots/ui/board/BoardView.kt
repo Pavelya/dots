@@ -403,6 +403,7 @@ private fun DrawScope.drawPosition(
             else -> drawSpreadingArea(area, strokes[i], capturing.capture, frame, geometry, style, wash)
         }
     }
+    drawPlusDiscs(state, marks.plus, geometry, style)
     drawGrid(state, geometry, style)
     drawChartPoints(state, geometry, style)
     val boosting = frame.boosting
@@ -441,12 +442,12 @@ private fun DrawScope.drawPosition(
         undoneAreas.forEachIndexed { i, area -> drawAreaRing(area.by, undoneStrokes[i], style, drawn = 1f - frame.rubbedOut(area.by), layer = layer) }
     }
     drawThreatRings(dangers, geometry, style, frame)
+    drawPlusRings(state, marks.plus, geometry, style)
     drawRipples(geometry, style, frame)
     drawDots(state, geometry, style, frame)
     drawBombHits(geometry, style, frame)
     drawRubbingOut(geometry, style, frame)
-    drawGone(state, marks.gone, geometry, style)
-    drawPlus(state, marks.plus, geometry, style)
+    drawGone(state, marks.gone, marks.plus, geometry, style)
     val look = style.look
     val spacing = geometry.spacing
     val moment = frame.moment
@@ -457,7 +458,8 @@ private fun DrawScope.drawPosition(
         else -> lastMove
     }
     // A bomb may take the last dot away: the pinhole goes with it.
-    pinhole?.takeIf { state.ownerAt(it) != null }?.let { drawLastMove(geometry.center(it), geometry, style) }
+    // A dot the bomb's plus would take shows no pinhole: it is already pale.
+    pinhole?.takeIf { state.ownerAt(it) != null && !(it in marks.plus && it in marks.gone) }?.let { drawLastMove(geometry.center(it), geometry, style) }
     drawClosingPoints(state, dangers, geometry, style, frame)
     drawBurst(geometry, style, frame)
     drawSparksOfLight(state, geometry, style, frame)
@@ -728,29 +730,39 @@ private fun DrawScope.drawTargets(state: GameState, targets: List<Pos>, geometry
     for (point in targets) drawCircle(ink, geometry.spacing * 0.1f, geometry.center(point))
 }
 
-/** The bomb's plus: each point in a dashed ring in the ink of the side to move, on its wash. */
-private fun DrawScope.drawPlus(state: GameState, plus: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
-    val ink = style.color(state.toMove)
+/**
+ * The bomb's plus (theme-notebook.md, "The marks they lead to"): each point on a disc of the wash of
+ * the side to move, 0.92 of the spacing across. The discs lie under the grid, like a captured
+ * area's wash, so the pieces in the plus stay on top.
+ */
+private fun DrawScope.drawPlusDiscs(state: GameState, plus: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
     val wash = style.palette.wash(state.toMove)
-    for (point in plus) {
-        val c = geometry.center(point)
-        drawCircle(wash, geometry.spacing * 0.46f, c)
-        drawDashedRing(c, geometry.spacing * 0.46f, ink, 1.5.dp.toPx())
-    }
+    for (point in plus) drawCircle(wash, geometry.spacing * 0.46f, geometry.center(point))
 }
 
-/** Pieces a booster would take away: pale, in a dashed Graphite ring (Undo's preview, motion.md). */
-private fun DrawScope.drawGone(state: GameState, gone: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
+/** The bomb's plus rings: dashed, in the ink of the side to move, drawn with the rings and under the pieces. */
+private fun DrawScope.drawPlusRings(state: GameState, plus: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
+    val ink = style.color(state.toMove)
+    for (point in plus) drawDashedRing(geometry.center(point), geometry.spacing * 0.46f, ink, 1.5.dp.toPx())
+}
+
+/**
+ * Pieces a booster would take away: pale, in a dashed Graphite ring (Undo's preview, motion.md).
+ * The bomb's hits lie in its [plus]: they sit on its wash and its rings already mark them.
+ */
+private fun DrawScope.drawGone(state: GameState, gone: List<Pos>, plus: List<Pos>, geometry: BoardGeometry, style: BoardStyle) {
     val dot = style.look.dot.px(geometry.spacing, density)
     val glow = style.look.glow.px(geometry.spacing, density)
     for (point in gone) {
         val owner = state.ownerAt(point.x, point.y) ?: continue
         val c = geometry.center(point)
         val piece = style.piece(owner)
-        // The paper hides the live piece under it, and its glow in Neon arcade.
-        if (glow > 0f) drawPieceBand(piece, c, dot, style.paper, glow + dot * 0.05f) else drawPiece(piece.copy(across = piece.across * 1.1f), c, dot, style.paper)
+        val inPlus = point in plus
+        // The surface under it hides the live piece, and its glow in Neon arcade.
+        val surface = if (inPlus) style.palette.wash(state.toMove) else style.paper
+        if (glow > 0f) drawPieceBand(piece, c, dot, surface, glow + dot * 0.05f) else drawPiece(piece.copy(across = piece.across * 1.1f), c, dot, surface)
         drawPiece(piece, c, dot, style.palette.pale(owner))
-        drawDashedRing(c, geometry.spacing * 0.45f, style.graphite, 1.5.dp.toPx())
+        if (!inPlus) drawDashedRing(c, geometry.spacing * 0.45f, style.graphite, 1.5.dp.toPx())
     }
 }
 
