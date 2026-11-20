@@ -136,7 +136,7 @@ also counts sessions and time in the game by itself. Nothing sent names a player
 ID, no Android ID, no account; only a random ID per installation, which lets a funnel follow one
 installation from level to level.
 
-**Where to look.** [analytics.google.com](https://analytics.google.com/), property `Pinfold`.
+**Where to look.** [analytics.google.com](https://analytics.google.com/), account `Pinfold`.
 Firebase also shows a summary under Analytics > Dashboard. New events appear in reports after
 about a day; DebugView (below) shows them within seconds.
 
@@ -243,7 +243,7 @@ Online play (O-01) uses this project too, and adds rows here.
 
 | What | How it is set |
 | --- | --- |
-| Account and property | Account `Pinfold`, property `Pinfold`, made by Firebase when Analytics was turned on. One Android data stream, `io.github.pavelya.pinfold`. |
+| Account and property | Account `Pinfold`, with one property that Firebase made for the project `pinfold` when Analytics was turned on (its name is shown at the top left). One Android data stream, `io.github.pavelya.pinfold`. |
 | Data retention | 2 months, the shortest. |
 | Google signals | Off. |
 | Granular location and device data | Off. |
