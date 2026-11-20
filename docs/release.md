@@ -515,11 +515,18 @@ as `app/google-services.json`. The game can't be built without it.
 apart from crashes in the closed test.
 
 1. Click the gear icon next to **Project Overview** > **Project settings**.
-2. Click the tab **Integrations**.
-3. On the **Google Play** card, click **Link**.
-4. Firebase lists the apps of your Play Console account. Choose **Pinfold**
-   (`io.github.pavelya.pinfold`) and confirm (**Link**, or **Next** and then **Link**). If Firebase
-   asks to allow access to Play Console, allow it.
+2. Click the tab **Integration** (or **Integrations**).
+3. On the **Google Play** card, click **Link**. A page "Google Play" opens, with the steps "Link
+   Firebase to Google Play" and "Configure integration".
+4. Under **Configure integration**, set the switches:
+   - **Crashlytics: Share app and crash data**: **on**. This is the one we need.
+   - **App Distribution**: off. It is another way to hand out test builds; Pinfold uses Google
+     Play's testing tracks.
+   - **Google Analytics: share in-app purchase and subscription revenue data**: off. The project
+     has no Analytics.
+5. Scroll down. If Firebase lists the apps of your Play Console account, choose **Pinfold**
+   (`io.github.pavelya.pinfold`). Click the button at the bottom (**Link** or **Finish**). If
+   Firebase asks to allow access to Play Console, allow it.
 
 *Worked when:* the Google Play card says **Linked** (or shows **Manage** instead of **Link**).
 
