@@ -10,6 +10,7 @@ This page has:
 
 - [Make a release](#make-a-release): the three commands, when to release, which number to use.
 - [Crash reports](#crash-reports): where crashes show up, what a report holds, a test crash.
+- [Analytics](#analytics): what the game reports, the funnel to level 10, checking events.
 - [What is set up](#what-is-set-up): what exists in Play Console, Google Cloud and GitHub, and
   which rights each account has. Tasks that work in those consoles build on it.
 - [If something goes wrong](#if-something-goes-wrong) and [Keys and secrets](#keys-and-secrets).
@@ -116,6 +117,73 @@ five minutes Crashlytics lists a new issue, `CrashedByAdbException` (on Android 
 `RemoteServiceException`), for that version. Close the issue in Crashlytics afterwards, so it
 doesn't count against the next releases' numbers.
 
+## Analytics
+
+Store builds report a few game events to Google Analytics for Firebase (decision 0033), to see
+where players get stuck or leave. Debug builds from GitHub send nothing; they write each event to
+the phone's log instead (`adb logcat -s Analytics`).
+
+| Event | When | With |
+| --- | --- | --- |
+| `first_open` | The first time the game opens after an install. Firebase sends it by itself. | |
+| `level_start` | A new game of a campaign level: from the map, Play again or Retry. | `level_name` (`1-4`), `level_number` (counted from the first level: 1-1 is 1), `world` |
+| `level_end` | The level's game ended. | the same, plus `success` (1 passed, 0 failed) and `stars` |
+| `booster_used` | A booster was used in a level. | `booster` (`wall`, `hint`, `bomb`, `double-dot`, `undo`), `level_name`, `level_number`, `world` |
+| `daily_puzzle_done` | An attempt at a daily puzzle ended. | `puzzle_number`, `success` |
+
+Practice games (a replay of the tutorial), free play and two players send none of them. Firebase
+also counts sessions and time in the game by itself. Nothing sent names a player: no advertising
+ID, no Android ID, no account; only a random ID per installation, which lets a funnel follow one
+installation from level to level.
+
+**Where to look.** [analytics.google.com](https://analytics.google.com/), property `Pinfold`.
+Firebase also shows a summary under Analytics > Dashboard. New events appear in reports after
+about a day; DebugView (below) shows them within seconds.
+
+**The funnel to level 10.** In Google Analytics: **Explore** > **Funnel exploration**. Set the
+date range, then edit **Steps** (a funnel has at most 10):
+
+| Step | Event | Condition |
+| --- | --- | --- |
+| Install | `first_open` | |
+| Level 1 started | `level_start` | `level_number` = 1 |
+| Level 1 passed | `level_end` | `level_number` = 1 and `success` = 1 |
+| Level 2 | `level_end` | `level_number` = 2 and `success` = 1 |
+| Level 3 | `level_end` | `level_number` = 3 and `success` = 1 |
+| Level 4 | `level_end` | `level_number` = 4 and `success` = 1 |
+| Level 5 | `level_end` | `level_number` = 5 and `success` = 1 |
+| Level 6 | `level_end` | `level_number` = 6 and `success` = 1 |
+| Level 8 | `level_end` | `level_number` = 8 and `success` = 1 |
+| Level 10 | `level_end` | `level_number` = 10 and `success` = 1 |
+
+Leave "Make open funnel" off, so every player starts at the install. The chart shows how many
+installations reached each step and where the rest stopped. The exploration is saved under Explore
+for next time. Explorations look back at most 2 months, the data kept (Part 7).
+
+To see where players fail, a **Free form** exploration with the dimension `level_name`, the metric
+**Event count** and a filter on the event `level_end` and `success` = 0 lists failures per level.
+
+**Checking events on a phone (DebugView).** This needs a store build on the phone, from Google
+Play, the phone connected by USB with USB debugging on, and `adb` (as in [A test
+crash](#crash-reports)). Turn on debug mode for Pinfold:
+
+```sh
+adb shell setprop debug.firebase.analytics.app io.github.pavelya.pinfold
+```
+
+Open the game and play a level. In Firebase: **Analytics** > **DebugView** (or in Google
+Analytics: **Admin** > **DebugView**). The phone appears at the top within a minute, and each
+event shows as it happens; click one to see its parameters. Check that no parameter holds anything
+but what the table above says. Then turn debug mode off again:
+
+```sh
+adb shell setprop debug.firebase.analytics.app .none.
+```
+
+**For the Data safety form (R-03),** besides what crash reports need: app interactions (under
+App activity) and device or other IDs, collected, not shared, encrypted in transit, used for
+analytics. The privacy policy names Google Analytics for Firebase.
+
 ## What is set up
 
 All of it belongs to the game's Google account (B-05), the same one in Play Console
@@ -161,12 +229,27 @@ Decision 0032.
 
 | What | How it is set |
 | --- | --- |
-| Project | `pinfold`, ID `pinfold-1bc9f`, Spark plan (free). Google Analytics off, Gemini in Firebase off. Firebase made a Google Cloud project of the same name for it, with an API key named "Android key (auto created by Firebase)". |
+| Project | `pinfold`, ID `pinfold-1bc9f`, Spark plan (free). Gemini in Firebase off. Firebase made a Google Cloud project of the same name for it, with an API key named "Android key (auto created by Firebase)". |
 | Android app | `io.github.pavelya.pinfold`, nickname Pinfold. Its settings file is `app/google-services.json` in the repository: public settings, not secrets. |
 | Crashlytics | On. Store builds report crashes; the release workflow sends the mapping file for tagged builds. |
 | Google Play link | Project settings > Integration > Google Play: linked to Pinfold. Switches: Crashlytics on (crashes can be filtered by Play track, internal or closed); App Distribution and Google Analytics off. |
+| Google Analytics | Project settings > Integrations > Google Analytics: linked to the Google Analytics property below. Store builds send the events of [Analytics](#analytics). |
 
-Analytics (Q-06) and online play (O-01) use this project too, and add rows here.
+Online play (O-01) uses this project too, and adds rows here.
+
+### Google Analytics
+
+[analytics.google.com](https://analytics.google.com/), the same Google account. Decision 0033.
+
+| What | How it is set |
+| --- | --- |
+| Account and property | Account `Pinfold`, property `Pinfold`, made by Firebase when Analytics was turned on. One Android data stream, `io.github.pavelya.pinfold`. |
+| Data retention | 2 months, the shortest. |
+| Google signals | Off. |
+| Granular location and device data | Off. |
+| Data sharing settings | All off: no sharing with Google products, technical support, or business insights. |
+| Product links | Firebase only. No Google Ads, AdMob or Play link. |
+| Custom definitions | Event-scoped custom dimensions `level_name`, `level_number`, `world`, `success`, `stars`, `booster` and `puzzle_number`, so reports and explorations can use them. |
 
 ### GitHub
 
@@ -554,5 +637,110 @@ phone from Google Play, crash it on purpose, as [A test crash](#crash-reports) e
 the phone, a USB cable and `adb` on the Mac (one Homebrew command, in that section).
 
 *Worked when:* Crashlytics lists the crash for that version.
+
+### Part 7: analytics
+
+This part turns on Google Analytics in the Firebase project, so store builds can report the
+game's events (decision 0033), and switches off everything about ads and people. It takes about
+20 minutes and costs nothing. Like Part 6, it needs only the Mac's browser and the game's Google
+account; no credit card, no password, no GitHub secret.
+
+Google Analytics is a separate site from Firebase, at analytics.google.com, with the same Google
+account. Firebase creates an Analytics **account** (the top level) and in it a **property** (the
+game's reports).
+
+**24. Turn on Google Analytics in Firebase.**
+
+1. Open [console.firebase.google.com](https://console.firebase.google.com/) and the project
+   `pinfold`. Check the round picture in the top right: the game's Google account.
+2. Click the gear icon next to **Project Overview** > **Project settings** > tab **Integrations**.
+3. On the **Google Analytics** card, click **Enable** (it may say **Link**).
+4. Firebase asks for an Analytics account. Choose **Create a new account** and name it `Pinfold`.
+   (If it offers an account that already exists, don't pick it: Pinfold gets its own.)
+5. **Analytics location:** the country you live in. **Data sharing settings and Google Analytics
+   terms:** if there are boxes about sharing data with Google, **untick** them; tick only the box
+   that accepts the terms. Click **Enable Google Analytics** (or **Save**).
+6. Wait until the card says it is linked.
+
+*Worked when:* the Google Analytics card on the Integrations tab shows **Manage** (or a property
+named `Pinfold` or `pinfold`) instead of **Enable**.
+
+Firebase may offer a new `google-services.json`. The game doesn't need it; you can skip it.
+
+**25. Leave the Google Play link's Analytics switch off.** Same tab, the **Google Play** card >
+**Manage**. The switch **Google Analytics: share in-app purchase and subscription revenue data**
+stays **off**. Crashlytics stays on.
+
+*Worked when:* the switches are as [What is set up](#firebase) says.
+
+**26. Open Google Analytics.** Go to [analytics.google.com](https://analytics.google.com/) with
+the same account. If it asks to accept terms, accept them (untick any data sharing boxes). At the
+top left it shows the account and property, `Pinfold`. If it shows another, click the name and
+choose `Pinfold`.
+
+Every setting below is under **Admin**: the gear icon at the bottom left. The Admin page has two
+columns or sections: **Account settings** and **Property settings**.
+
+*Worked when:* the top left shows `Pinfold`.
+
+**27. Keep data for 2 months.** Admin > Property settings > **Data collection and modification**
+> **Data retention**. **Event data retention:** **2 months**. **Reset user data on new activity:**
+off. **Save**.
+
+*Worked when:* it shows 2 months after the page reloads.
+
+**28. Google signals and granular data off.** Admin > Property settings > **Data collection and
+modification** > **Data collection**.
+
+- **Google signals data collection:** off (if it shows **Get started** or **Turn on**, it is off
+  already; don't click it).
+- **Granular location and device data collection:** off. If it asks which regions, choose **all
+  regions**.
+- **Ads personalization:** if it shows "Allow ads personalization" with a list of countries, turn
+  it off for all.
+
+*Worked when:* the page shows Google signals and granular location and device data as off.
+
+**29. Data sharing off.** Admin > Account settings > **Account details** (it may say **Account
+settings**). Scroll to **Data sharing settings**. Untick every box (Google products and services,
+Modeling contributions and business insights, Technical support, Recommendations for your
+business, Google sales experts). **Save**.
+
+*Worked when:* every box is unticked after the page reloads.
+
+**30. Check the links.** Admin > Property settings > **Product links**. Only **Firebase** should
+show a link. If **Google Ads**, **AdMob** or **Google Play** shows one, open it and remove it.
+
+*Worked when:* only Firebase is linked.
+
+**31. Name the event parameters.** Google Analytics shows a parameter in reports and explorations
+only once it is named here. Admin > Property settings > **Data display** > **Custom
+definitions** > tab **Custom dimensions** > **Create custom dimension**. Make seven, one at a time,
+each with **Scope: Event**:
+
+| Dimension name | Event parameter |
+| --- | --- |
+| Level | `level_name` |
+| Level number | `level_number` |
+| World | `world` |
+| Success | `success` |
+| Stars | `stars` |
+| Booster | `booster` |
+| Daily puzzle number | `puzzle_number` |
+
+For each: type the dimension name, choose **Event** as scope, type the parameter exactly as in the
+right column (Google may also offer it in a list once events have arrived), **Save**.
+
+*Worked when:* the Custom dimensions tab lists all seven.
+
+**32. Tell Claude.** Say "Analytics done", with anything that looked different from these steps
+or any setting you couldn't find.
+
+**33. Later, after the next release: check the events.** Once a release with analytics is on your
+phone from Google Play, follow [Checking events on a phone](#analytics): turn on debug mode, play a
+level, and watch the events arrive in DebugView.
+
+*Worked when:* DebugView shows `level_start` and `level_end` with the parameters of the table in
+[Analytics](#analytics), and nothing else of yours.
 
 The setup is finished; from now on, [Make a release](#make-a-release).

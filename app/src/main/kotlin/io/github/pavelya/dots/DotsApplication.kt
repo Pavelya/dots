@@ -6,6 +6,9 @@ import android.content.pm.ApplicationInfo
 import android.os.StrictMode
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.datastore.preferences.preferencesDataStoreFile
+import io.github.pavelya.dots.analytics.Analytics
+import io.github.pavelya.dots.analytics.ReportingJournal
+import io.github.pavelya.dots.analytics.buildAnalytics
 import io.github.pavelya.dots.audio.AndroidAudio
 import io.github.pavelya.dots.audio.Audio
 import io.github.pavelya.dots.data.CountingJournal
@@ -88,8 +91,23 @@ class DotsApplication : Application() {
     /** The player's totals on Stats: games played and won, captures. Backed up with the progress. */
     val stats: StatsRepository by lazy { StatsRepository(progressStore, progressScope) }
 
-    /** Where a game reports itself: the saved games and the log ([games]), and the totals on Stats once it ends. */
-    val journal: GameJournal by lazy { CountingJournal(games, stats) }
+    private var events: Analytics? = null
+
+    /**
+     * Where the game reports level starts and ends, boosters and daily puzzles (decision 0033):
+     * Google Analytics in store builds, nothing in debug builds. Tests may replace it.
+     */
+    var analytics: Analytics
+        get() = events ?: buildAnalytics(this).also { events = it }
+        set(value) {
+            events = value
+        }
+
+    /**
+     * Where a game reports itself: the saved games and the log ([games]), the totals on Stats once
+     * it ends, and each new level game to [analytics]. Every new game starts here.
+     */
+    val journal: GameJournal by lazy { ReportingJournal(CountingJournal(games, stats)) { analytics } }
 
     override fun onCreate() {
         super.onCreate()

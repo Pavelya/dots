@@ -185,7 +185,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
             app.games.loaded.first { it }
             app.settings.update { it.copy(tutorialSkipped = false) }
             val settings = app.settings.settings.first()
-            app.games.start(levelGame(Tutorial.levels.first(), settings.threatHighlight, now = System.currentTimeMillis(), practice = true))
+            app.journal.start(levelGame(Tutorial.levels.first(), settings.threatHighlight, now = System.currentTimeMillis(), practice = true))
             navController.navigate(Routes.game(GameMode.CAMPAIGN)) {
                 if (navController.isOnStack(Routes.MAP)) popUpTo(Routes.MAP) else popUpTo(navController.graph.id) { inclusive = true }
             }
@@ -260,7 +260,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             val opening = openingRoute(progress, app.games.saved(GameMode.CAMPAIGN))
                             if (opening != Routes.MAP && app.games.saved(GameMode.CAMPAIGN) == null) {
                                 val settings = app.settings.settings.first()
-                                app.games.start(levelGame(Campaign.levels.first(), settings.threatHighlight, now = System.currentTimeMillis()))
+                                app.journal.start(levelGame(Campaign.levels.first(), settings.threatHighlight, now = System.currentTimeMillis()))
                             }
                             snapshotFlow { drawn }.first { it }
                             navController.navigate(opening) { popUpTo(Routes.LOADING) { inclusive = true } }
@@ -315,7 +315,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         if (app.games.saved(GameMode.CAMPAIGN)?.levelCode != level.code) {
                                             val settings = app.settings.settings.first()
                                             val owned = app.progress.progress.first().owned(level)
-                                            app.games.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis(), owned = owned))
+                                            app.journal.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis(), owned = owned))
                                         }
                                         navController.navigate(Routes.game(GameMode.CAMPAIGN)) { popUpTo(Routes.MAP) }
                                     }
@@ -400,7 +400,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                     scope.launch {
                                         if (action == DailyAction.PLAY && puzzle != null && app.games.saved(GameMode.DAILY) == null) {
                                             val settings = app.settings.settings.first()
-                                            app.games.start(dailyGame(puzzle, settings.threatHighlight, now = System.currentTimeMillis()))
+                                            app.journal.start(dailyGame(puzzle, settings.threatHighlight, now = System.currentTimeMillis()))
                                         }
                                         navController.navigate(Routes.game(GameMode.DAILY)) { popUpTo(Routes.MAP) }
                                     }
@@ -422,7 +422,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 if (replace || app.games.saved(mode) == null) {
                                     val chosen = app.settings.settings.first()
                                     val strength = if (mode == GameMode.FREE_PLAY) Campaign.strengthReached(app.progress.progress.first()) else null
-                                    app.games.start(freeGame(chosen, strength, now = System.currentTimeMillis()))
+                                    app.journal.start(freeGame(chosen, strength, now = System.currentTimeMillis()))
                                 }
                                 navController.navigate(Routes.game(mode)) { popUpTo(Routes.MAP) }
                             }
@@ -468,6 +468,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         placing = { settings.value?.placing ?: AppSettings().placing },
                                         ownedFor = app.progress::owned,
                                         daily = app.daily,
+                                        analytics = app.analytics,
                                         // The computer answers once the player's capture has played (motion.md, rule 2).
                                         holdFor = { move ->
                                             val dots = move.captures.sumOf { it.dots.size }

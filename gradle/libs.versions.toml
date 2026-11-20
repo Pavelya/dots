@@ -35,6 +35,7 @@ datastore-preferences = { module = "androidx.datastore:datastore-preferences", v
 play-review = { module = "com.google.android.play:review", version.ref = "play-review" }
 firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
+firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 junit4 = { module = "junit:junit", version.ref = "junit4" }
 espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }

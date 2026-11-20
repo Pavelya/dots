@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Store builds only: what Google Analytics for Firebase may collect (decision 0033). -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <!-- No advertising ID: Firebase Analytics adds this permission; the game's analytics don't use it. -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
+    <application>
+        <!-- No advertising ID and no Android ID (SSAID) with the events, even once ads come. -->
+        <meta-data
+            android:name="google_analytics_adid_collection_enabled"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_ssaid_collection_enabled"
+            android:value="false" />
+        <!-- The game is one screen to Android; screen names would say nothing. -->
+        <meta-data
+            android:name="google_analytics_automatic_screen_reporting_enabled"
+            android:value="false" />
+        <!--
+            Consent mode defaults. Nothing for ads, ever. Analytics storage is allowed where the
+            law needs no consent; in the EU, the EEA, the UK and Switzerland the consent form (C-03)
+            sets it from the player's answer.
+        -->
+        <meta-data
+            android:name="google_analytics_default_allow_analytics_storage"
+            android:value="true" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_storage"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_user_data"
+            android:value="false" />
+        <meta-data
+            android:name="google_analytics_default_allow_ad_personalization_signals"
+            android:value="false" />
+    </application>
+
+</manifest>
