@@ -142,7 +142,7 @@ Implemented from the Wikipedia article
   uses it. Dots placed up front (the computer's *head start*) don't count against the budget.
 - **One dot, several chains.** The article lets players choose which chain to draw (and says
   programs usually take the smallest area). This engine captures every newly enclosed area that
-  holds an enemy dot, which is what a player drawing freely on paper would pick.
+  holds an enemy dot, which is what a player drawing freely on paper would pick (decision 0035).
 - **Start positions** may not already enclose an enemy dot.
 - **Board shapes and special points (campaign).** Holes, blocked points and bonus points; see
   [Board shapes and special points](#board-shapes-and-special-points).
