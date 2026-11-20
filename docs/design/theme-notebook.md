@@ -71,6 +71,7 @@ smaller or larger spacing.
 | Closing point (where the attacker would close the ring) | 8 dp across, 1.5 dp line | a third of the spacing across | Ink of the attacker |
 | Preview (the piece about to be placed) | the moving side's piece inside a 22 dp ring, 2 dp line | piece as above; ring 0.9 of the spacing across | Piece: Red pale or Blue pale; ring: ink of the side to move |
 | Drag's guides (the preview's row and column, while the finger is down) | 1.5 dp line, dashes 4 dp long with 3 dp gaps | always the same | Ink of the side to move |
+| Drag's guides while Wall or Bomb is aimed | as above | always the same | Pencil |
 
 Paper fills the board and half a spacing around its outermost points. Outside the board the screen
 is plain paper without a grid, so the board's edge is clear.
@@ -129,6 +130,47 @@ on the board, as in Undo's dashed rings.
 **Contrast.** The guides use the two inks, so their contrast is that of the dots in the contrast
 table: at least 4.17 against paper and either wash, and at least 3.24 where they cross a hatch
 line, in both versions.
+
+### Aiming Wall or Bomb by drag
+
+In a booster preview, Wall and Bomb are aimed the way a dot is placed: with drag, the finger
+slides to the point and lifts. The finger hides the point here too, so the guides show while a
+booster is aimed. Hint, Double dot and Undo have no point to aim at, so they have no guides.
+
+<img src="canvas/game-wall-drag-light.png" width="180" alt="Light: the Wall preview, a thumb on the point that would close blue's ring, a dashed pencil square under it and dashed black lines running to the four edges"> <img src="canvas/game-bomb-drag-light.png" width="180" alt="Light: the Bomb preview, a plus of five dashed red rings under the thumb, the blue dots in it pale, dashed black lines running out from the ends of the plus"> <img src="canvas/small-game-wall-drag-light.png" width="160" alt="Light: the Wall aimed by drag on a small phone">
+
+The canvas frames "Game: Wall aimed by drag", "Game: Bomb aimed by drag" and "Small phone: Wall
+aimed by drag" show them, each in the dark version too. The thumb there is drawn lighter than on
+the drag frames, since the booster's mark is larger than a preview and lies mostly under it.
+
+- **In Pencil.** A booster is not a piece, so its guides are not in the side's ink. Red guides
+  mean "your dot goes here"; Pencil guides mean "your booster goes here", and the wall's square is
+  drawn in Pencil too. Width and dashes are those of the dot's guides.
+- **From the booster's mark.** Each arm starts where the mark ends, so the mark stays clean:
+  - **Wall:** at the side of the wall's dashed square, 0.35 of the spacing from the point (8.4 dp
+    at 24 dp).
+  - **Bomb:** past the plus, at the outer edge of the ring of the plus's point on that side, 1.46
+    of the spacing from the centre (35 dp at 24 dp). Where the plus has no point on a side (a
+    hole), the arm starts at the centre's ring, 0.46 of the spacing out. At the board's edge that
+    arm has no room and is not drawn.
+- **Only over a target.** The targets are the small pale dots of the booster preview: every
+  empty point for a wall, every point whose plus holds an opponent's live dot for a bomb. Over a
+  target the mark and the guides sit on it. Over any other point, or off the board, there are no guides, and
+  the mark goes back to the point chosen before (or there is none yet). Lifting there keeps that
+  point, so the board always shows what lifting would leave.
+- **Lifting on a target chooses it.** The guides go; the mark stays until Confirm or Cancel.
+- **Under the marks that matter,** in the same layer as the dot's guides: rings, threat rings,
+  pieces and closing points lie on top.
+
+**The marks they lead to.** The booster preview draws the targets, the wall's square with a
+dashed outline, and for a bomb the plus: each of its 5 points on a disc of Red wash, 0.92 of the
+spacing across, in a dashed Red ink ring (1.5 dp, 3 dp dashes and gaps). The discs lie under the
+grid, like a captured area's wash; the rings lie with the rings. The pieces stay on top: the
+player's own in full ink, the opponent's dots the bomb would take in their pale colour.
+
+**Contrast.** Pencil is the strongest colour on the board. Against paper it is 12.80 light and
+14.10 dark; against either wash at least 10.43 and 11.83; where it crosses a hatch line (Red pale
+or Blue pale) at least 8.15 and 8.22.
 
 How the guides appear and follow the finger is on the [motion page](motion.md#placing-by-drag).
 

@@ -125,6 +125,7 @@ These moments have no sound on purpose:
 | Moment | Why silent |
 | --- | --- |
 | The preview ring, and drag's row and column guides | They would play on almost every tap. |
+| Aiming Wall or Bomb by drag: the mark and guides following the finger, and lifting to choose the point | The booster's own sound plays on Confirm; choosing a point is not using it. |
 | Chain lines growing | They grow with every dot; the dot's sound covers them. |
 | The computer's ripples and edge marks | The blue dot's own sound announces the move. |
 | The pen stroke under the name of the side to move | It moves every turn. |
@@ -152,6 +153,7 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 | Motion moment | Sound |
 | --- | --- |
 | Drag's guides | silence |
+| Aiming Wall or Bomb by drag | silence; the booster's sound on Confirm |
 | Placing a dot | `sfx_place_*` at 0 ms; the preview silent |
 | Chain lines | silence |
 | The computer's move | `sfx_place_*` at 85% speed at 0 ms; ripples and edge marks silent |
