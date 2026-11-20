@@ -89,16 +89,12 @@ Google Play.
 gh workflow run release.yml -f version=0.0.1
 ```
 
-Wait ten seconds, then follow the run. `gh` asks which run to watch; pick "store release" with the
-arrow keys and press Enter. It takes about six minutes.
+It prints a link to the run (`https://github.com/Pavelya/dots/actions/runs/...`). Open it: hold
+Cmd and click it. The page follows the run by itself; it takes about six minutes.
 
-```sh
-gh run watch
-```
-
-*Worked when:* it ends with a green tick. Then open the run in the browser (`gh run view --web`,
-pick the same run), open the job and the step **Signing certificate**: it shows
-`Owner: CN=Pinfold upload` and a `SHA256:` line. Keep that page open; step 11 compares it.
+*Worked when:* the run shows a green tick. Click the job **release**, then the step **Signing
+certificate**: it shows `Owner: CN=Pinfold upload` and a `SHA256:` line. Copy that line's
+fingerprint into the password manager entry; step 11 compares it.
 
 ### Part 2: the app in Play Console
 
@@ -141,7 +137,9 @@ git tag v0.1.0 origin/main
 git push origin v0.1.0
 ```
 
-Wait ten seconds, then `gh run watch` and pick the "store release" run, as in step 5.
+A tag prints no link, so open the workflow's page instead:
+[github.com/Pavelya/dots/actions/workflows/release.yml](https://github.com/Pavelya/dots/actions/workflows/release.yml).
+The newest run is at the top, with the tag `v0.1.0` beside it. Click it; the page follows the run by itself.
 
 *Worked when:* the run is green and ends with a yellow warning, "No PLAY_SERVICE_ACCOUNT_JSON
 secret: nothing was uploaded". That is expected: part 5 sets it up.
@@ -167,7 +165,7 @@ If Play instead lists tasks that must be finished first, note which, and stop he
 questions belong to the release cards R-03 and R-04.
 
 **11. Check the key Google Play saw.** Left menu: Test and release > **App integrity** > App
-signing. The **Upload key certificate** SHA-256 must be the same as the `SHA256:` line from step 5.
+signing. The **Upload key certificate** SHA-256 must be the same as the fingerprint you saved in step 5.
 
 *Worked when:* the two match.
 
@@ -264,7 +262,9 @@ The setup is finished.
    git push origin v0.1.2
    ```
 
-3. Wait ten seconds, then `gh run watch` and pick the "store release" run. When it is green,
+3. Open
+   [github.com/Pavelya/dots/actions/workflows/release.yml](https://github.com/Pavelya/dots/actions/workflows/release.yml)
+   and click the newest run, the one with your tag beside it. When it is green,
    testers get the update from Google Play.
 
 The run keeps the signed build and R8's mapping file as an artifact, `pinfold-<version>-bundle`.
