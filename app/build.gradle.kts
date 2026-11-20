@@ -1,7 +1,13 @@
+import com.google.firebase.crashlytics.buildtools.gradle.CrashlyticsExtension
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.roborazzi)
+    // Crash reports (decision 0032). google-services reads google-services.json, the Firebase
+    // project's public settings; the Crashlytics plugin sends R8's mapping file to Firebase.
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.firebase.crashlytics)
 }
 
 android {
@@ -66,6 +72,12 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             signingConfigs.findByName("upload")?.let { signingConfig = it }
+            // Crashlytics needs the same mapping file. Only the release workflow sends it, for a
+            // tagged build (CRASHLYTICS_MAPPING_UPLOAD=true); pull requests and dry runs don't.
+            configure<CrashlyticsExtension> {
+                mappingFileUploadEnabled =
+                    providers.environmentVariable("CRASHLYTICS_MAPPING_UPLOAD").orNull == "true"
+            }
         }
     }
 
@@ -107,6 +119,10 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.datastore.preferences)
     implementation(libs.play.review) // Google Play's in-app review prompt
+    // Crash reports from store builds only (decision 0032). Debug builds, which testers of GitHub
+    // builds and the tests use, don't contain Crashlytics and send nothing.
+    releaseImplementation(platform(libs.firebase.bom))
+    releaseImplementation(libs.firebase.crashlytics)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
