@@ -161,10 +161,10 @@ Decision 0032.
 
 | What | How it is set |
 | --- | --- |
-| Project | `pinfold`, Spark plan (free). Google Analytics off. Firebase made a Google Cloud project of the same name for it, with an API key named "Android key (auto created by Firebase)". |
+| Project | `pinfold`, ID `pinfold-1bc9f`, Spark plan (free). Google Analytics off, Gemini in Firebase off. Firebase made a Google Cloud project of the same name for it, with an API key named "Android key (auto created by Firebase)". |
 | Android app | `io.github.pavelya.pinfold`, nickname Pinfold. Its settings file is `app/google-services.json` in the repository: public settings, not secrets. |
 | Crashlytics | On. Store builds report crashes; the release workflow sends the mapping file for tagged builds. |
-| Google Play link | Project settings > Integrations > Google Play: linked to Pinfold, so Crashlytics can filter crashes by Play track (internal, closed). |
+| Google Play link | Project settings > Integration > Google Play: linked to Pinfold. Switches: Crashlytics on (crashes can be filtered by Play track, internal or closed); App Distribution and Google Analytics off. |
 
 Analytics (Q-06) and online play (O-01) use this project too, and add rows here.
 
@@ -535,14 +535,14 @@ that owns Play Console can link.
 
 **21. Open Crashlytics once.**
 
-1. In the left menu, find **Crashlytics**. It is inside a group (named something like **Run** or
-   **DevOps & Engagement**); click the group to open it. Or type `Crashlytics` in the search box at
-   the top of the page.
+1. In the left menu, open **DevOps and engagement** and click **Crashlytics**. Or type
+   `Crashlytics` in **Search for products** at the top of the menu.
 2. If a list of apps appears at the top, choose **Pinfold** (Android).
-3. If there is a button **Enable Crashlytics**, click it. If the page instead says it is waiting
-   for the app or for the first crash, there is nothing to click.
+3. If there is a button **Enable Crashlytics**, click it. If the page instead shows a big dark
+   card with an **Add SDK** button, don't click it: adding the SDK is the code change, already in
+   the repository. There is nothing to click.
 
-*Worked when:* Crashlytics shows a page that waits for data. It stays like that until a store
+*Worked when:* Crashlytics shows that card (or a page that waits for data). It stays like that until a store
 build with Crashlytics reaches a phone.
 
 **22. Tell Claude.** Say "Firebase done", with the file name from step 19, and anything that
