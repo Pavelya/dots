@@ -444,44 +444,108 @@ workflow handles it each time.
 
 ### Part 6: crash reports
 
-Firebase Crashlytics (decision 0032). The app can't be built without the Firebase settings file,
-so these steps come before the code that uses it.
+Firebase is Google's set of services for apps. Pinfold uses one of them, **Crashlytics**: when
+the game crashes on a player's phone, it sends a report to Firebase, and you see it in the
+Firebase console within minutes (decision 0032). This part creates the Firebase project and
+registers the game in it. It takes about 15 minutes and costs nothing.
 
-**17. Create the Firebase project.** Go to
-[console.firebase.google.com](https://console.firebase.google.com/), signed in with the game's
-Google account.
+**You need:** the Mac's browser and the game's Google account (the one that owns Play Console).
 
-1. **Create a new Firebase project** (or **Get started**). Name: `pinfold`. Accept the terms,
+**You don't need:** a credit card, a paid plan, a password or a GitHub secret. If Firebase offers
+to upgrade to the **Blaze** plan, say no: the free **Spark** plan covers Crashlytics.
+
+Firebase's pages change their look from time to time. If a button has a slightly different name,
+pick the one that means the same thing. If a page asks something these steps don't mention, stop
+and note what it says.
+
+**17. Sign in to Firebase.**
+
+1. Open [console.firebase.google.com](https://console.firebase.google.com/).
+2. Look at the round picture in the top right corner. It must be the game's Google account. If it
+   isn't, click it and choose (or add) the game's account.
+3. If Firebase shows a welcome page or asks you to accept its terms, accept them.
+
+*Worked when:* you see a page with "Welcome to Firebase" or a list of projects (empty is fine).
+
+**18. Create the project.**
+
+1. Click **Create a new Firebase project** (it may say **Create a project**, **Add project** or
+   **Get started with a Firebase project**).
+2. **Project name:** type `pinfold`. Below the name, Firebase shows a project ID such as
+   `pinfold-1a2b3`; leave it as it is.
+3. Tick the box that accepts the Firebase terms. If there is a second box about using Firebase for
+   your trade or business, tick it too: Pinfold is a business. Click **Continue**.
+4. A page about **AI assistance** (Gemini in Firebase) may appear. Switch it **off** and click
    **Continue**.
-2. If it offers Gemini in Firebase, turn it off. **Continue**.
-3. **Google Analytics: turn it off.** **Create project**, then **Continue** when it is ready.
+5. A page about **Google Analytics** appears. Switch **Enable Google Analytics for this project**
+   **off**. The button below it changes to **Create project**. Click it.
+6. Wait about half a minute. When it says the project is ready, click **Continue**.
 
-*Worked when:* the `pinfold` project overview opens.
+*Worked when:* the page shows `pinfold` in the top left corner, with **Spark plan** (or
+"no-cost") next to it.
 
-**18. Add the Android app.** On the project overview: **Add app** > the Android icon.
+**19. Register the game and download its settings file.**
 
-- Android package name: `io.github.pavelya.pinfold`, exactly.
-- App nickname: `Pinfold`. Leave the SHA-1 empty.
-- **Register app**, then **Download google-services.json**. Skip the remaining steps (**Next**,
-  **Next**, **Continue to console**); the code is in the repository.
+1. On the project's start page, find the row of round icons under "Get started by adding Firebase
+   to your app". Click the **Android** icon (the green robot). If you don't see the icons: gear
+   icon next to **Project Overview** (top of the left menu) > **Project settings** > tab
+   **General** > section **Your apps** > **Add app** > Android.
+2. **Android package name:** type `io.github.pavelya.pinfold`, exactly: all lower case, with the
+   dots. This must match the game, or nothing works.
+3. **App nickname:** `Pinfold`.
+4. **Debug signing certificate SHA-1:** leave it empty.
+5. Click **Register app**.
+6. Click **Download google-services.json**. The browser saves the file in Downloads. Don't open
+   or change it.
+7. The page goes on with "Add Firebase SDK" and other steps. Those are code changes, already in
+   the repository: click **Next**, **Next**, then **Continue to console**.
 
-*Worked when:* `ls ~/Downloads/google-services*.json` prints the file. It goes to
-`app/google-services.json` in the repository.
+*Worked when:* this command, in the terminal, prints the file's name:
 
-**19. Link Google Play.** Gear icon next to Project overview > **Project settings** > tab
-**Integrations** > Google Play > **Link**. Choose Pinfold, then **Link**. It needs you to be the
-Play Console account owner, which you are.
+```sh
+ls ~/Downloads/google-services*.json
+```
 
-*Worked when:* the Google Play card says Linked, with Pinfold.
+If it prints a name like `google-services (1).json`, that is fine; tell Claude the exact name.
 
-**20. Open Crashlytics.** Left menu: Run > **Crashlytics** (or search "Crashlytics"). Pick the
-Pinfold app. If it shows **Enable Crashlytics**, click it. It then waits for the first report.
+The file holds the project's public settings, not secrets, and goes into the public repository
+as `app/google-services.json`. The game can't be built without it.
 
-*Worked when:* the page says it is waiting for the app, or shows a dashboard.
+**20. Link Firebase to Google Play.** This lets Crashlytics tell crashes from internal testers
+apart from crashes in the closed test.
 
-**21. Check it with a test crash.** After the next release, follow [A test
-crash](#crash-reports).
+1. Click the gear icon next to **Project Overview** > **Project settings**.
+2. Click the tab **Integrations**.
+3. On the **Google Play** card, click **Link**.
+4. Firebase lists the apps of your Play Console account. Choose **Pinfold**
+   (`io.github.pavelya.pinfold`) and confirm (**Link**, or **Next** and then **Link**). If Firebase
+   asks to allow access to Play Console, allow it.
 
-*Worked when:* the crash is listed in Crashlytics for that version.
+*Worked when:* the Google Play card says **Linked** (or shows **Manage** instead of **Link**).
+
+If the card says you lack permission, check the picture in the top right again: only the account
+that owns Play Console can link.
+
+**21. Open Crashlytics once.**
+
+1. In the left menu, find **Crashlytics**. It is inside a group (named something like **Run** or
+   **DevOps & Engagement**); click the group to open it. Or type `Crashlytics` in the search box at
+   the top of the page.
+2. If a list of apps appears at the top, choose **Pinfold** (Android).
+3. If there is a button **Enable Crashlytics**, click it. If the page instead says it is waiting
+   for the app or for the first crash, there is nothing to click.
+
+*Worked when:* Crashlytics shows a page that waits for data. It stays like that until a store
+build with Crashlytics reaches a phone.
+
+**22. Tell Claude.** Say "Firebase done", with the file name from step 19, and anything that
+looked different from these steps. Claude puts the file in the repository, and CI builds the game
+with Crashlytics.
+
+**23. Later, after the next release: a test crash.** Once a release with Crashlytics is on your
+phone from Google Play, crash it on purpose, as [A test crash](#crash-reports) explains. You need
+the phone, a USB cable and `adb` on the Mac (one Homebrew command, in that section).
+
+*Worked when:* Crashlytics lists the crash for that version.
 
 The setup is finished; from now on, [Make a release](#make-a-release).
