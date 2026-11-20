@@ -221,10 +221,19 @@ def board(t, st, uid):
     if st.get("guides"):  # drag's guides, under the rings and pieces (theme page, drawing order)
         p, side, q = st["guides"]
         drag.append(cd.guides(t, side, *c(p), SP, 360, q))
+    # A booster aimed by drag (D-18): its targets and mark, and the guides in Pencil from the mark.
+    aim = aim_pos(st)
+    under = cd.aim_under(t, aim, c, SP) if aim else ""
+    if aim and st["aim"].get("guides") is not None and aim["aim"]["point"]:
+        drag.append(cd.guides(t, "pencil", *c(aim["aim"]["point"]), SP, 360, st["aim"]["guides"],
+                              reach=cd.aim_reach(aim, SP)))
+    hits = cd.aim_hits(aim) if aim and aim["aim"]["booster"] == "bomb" else []
     marks = []
     for p, k, w, col in st.get("threats", []):
         x, y = c(p)
         marks.append(el("circle", cx=f(x), cy=f(y), r=f(0.42 * SP * k), fill="none", stroke=col, stroke_width=f(w)))
+    if aim:
+        marks.append(cd.aim_over(t, aim, c, SP))
     for p, r, w in st.get("ripples", []):
         x, y = c(p)
         marks.append(el("circle", cx=f(x), cy=f(y), r=f(r), fill="none", stroke=t[st.get("ripple_side", "blue")],
@@ -241,7 +250,7 @@ def board(t, st, uid):
             else:
                 h = DOT * 7 / 12 * s
                 pieces.append(el("path", d=f"M{f(x)} {f(y - h)}L{f(x + h)} {f(y)}L{f(x)} {f(y + h)}L{f(x - h)} {f(y)}Z",
-                                 fill=t["blue"]))
+                                 fill=t["blue_pale"] if p in hits else t["blue"]))
             if p in captured:
                 q = captured[p]["cuts"].get(p, 1.0)
                 if q > 0:
@@ -252,7 +261,7 @@ def board(t, st, uid):
                         (ax, ay), (bx, by), col = (x - L, y + L), (x + L, y - L), t["red_wash"]
                     pieces.append(el("path", d=f"M{f(ax)} {f(ay)}L{f(ax + (bx - ax) * q)} {f(ay + (by - ay) * q)}",
                                      stroke=col, stroke_width=f(DOT / 6), fill="none"))
-            if p == st.get("last") and s >= 0.999:
+            if p == st.get("last") and s >= 0.999 and p not in hits:
                 pieces.append(el("circle", cx=f(x), cy=f(y), r=f(DOT * 0.15), fill=t["paper"]))
     for p, side, s in st.get("ghosts", []):
         # Undo's preview: the piece in its pale colour inside a dashed Graphite ring; the rub-out shrinks both.
@@ -317,9 +326,18 @@ def board(t, st, uid):
         extra.append(piece + el("circle", cx=f(x), cy=f(y), r=f(0.45 * SP), fill="none", stroke=t[side], stroke_width=2))
     dx = st.get("shake", 0.0)
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=360, height=360, fill=t["paper"]) +
-            f'<g transform="translate({f(dx)} 0)">' + "".join(washes) + "".join(grid) + "".join(links) +
+            f'<g transform="translate({f(dx)} 0)">' + "".join(washes) + "".join(grid) + under + "".join(links) +
             "".join(drag) + "".join(rings) + "".join(marks) + "".join(pieces) + "".join(extra) + "</g>")
     return svg(360, 360, body, label="The board, 15 by 15 points")
+
+
+def aim_pos(st):
+    """The canvas position of a booster aimed on the threat board (st["aim"]: booster and the point shown),
+    for the canvas's marks; None when no booster is aimed."""
+    a = st.get("aim")
+    if not a:
+        return None
+    return dict(cd.POSITIONS[a["booster"] + "-aim"], aim=dict(booster=a["booster"], point=a["point"]))
 
 
 def burst(t, st):
@@ -860,6 +878,71 @@ def scene_drag(theme, T, uid):
     ui = base_threat_ui()
     ui.update(board=st, left=13 if T < lift else 12, over=over)
     ui["turn"] = ("you", 1.0) if T < lift else ("opp", prog(T - lift, 0, 200))
+    return screen(t, ui, uid), cap
+
+
+# Aiming a booster by drag (D-18), from the threat, with the booster preview open. Wall: the finger goes
+# down on (11, 12), slides past the taken (10, 10) to (9, 9) and lifts there: the wall is chosen. Bomb:
+# the finger goes down on (8, 7) and lifts, which chooses it; then it goes down on (8, 10), which is not a
+# target, slides to the target (8, 9), back to (8, 10), and lifts there: (8, 7) stays chosen.
+AIM_PARTS = [  # booster, length (ms), finger paths (T from the part's start, point in board steps)
+    ("wall", 2900, [[(500, (11, 12)), (800, (11, 12)), (1100, (10, 10)), (1300, (10, 10)), (1600, (9, 9)),
+                     (2000, (9, 9))]]),
+    ("bomb", 4000, [[(400, (8, 7)), (900, (8, 7))],
+                    [(1500, (8, 10)), (1800, (8, 10)), (2100, (8, 9)), (2500, (8, 9)), (2800, (8, 10)),
+                     (3200, (8, 10))]]),
+]
+
+
+def scene_aim(theme, T, uid):
+    t = LOOKS[theme]
+    start = 0
+    for booster, length, paths in AIM_PARTS:
+        if T < start + length or booster == AIM_PARTS[-1][0]:
+            break
+        start += length
+    u = T - start
+    st = position(TR, TB, [area_state(R1), area_state(B1)], last=(7, 7))
+    st["scale"], st["grow"] = {}, {}
+    st["edges"] = [((7, 7), "blue", 1.0)]
+    st["threats"] = [(p, 1.0, 2, t["hi"]) for p in PAIR + CLUSTER]
+    st["closing"] = [((9, 9), "blue", 1.0), ((5, 7), "red", 1.0)]
+    targets = set(cd.aim_targets(cd.POSITIONS[booster + "-aim"]))
+    name = booster.capitalize()
+    # The point chosen so far: where a finger last lifted on a target.
+    chosen = None
+    for path in paths:
+        lift, end = path[-1][0], path[-1][1]
+        if u >= lift and end in targets:
+            chosen = end
+    shown, guides, over = chosen, None, []
+    cap = (f"{name}'s preview: no point yet", "")
+    for path in paths:
+        at = finger_at([(a, p) for a, p in path], u)
+        if at is None:
+            continue
+        down = path[0][0]
+        p = point_under(at, set())
+        x, y = fc(at)
+        over.append(cd.thumb(x, y, opacity=0.6))  # lighter here: the booster's mark lies mostly under it
+        if p in targets:
+            shown, guides = p, prog(u, down, down + DRAW_IN)
+            if u < down + DRAW_IN:
+                cap = ("Finger down on a target: the guides drawn out", f"+{u - down} ms")
+            else:
+                cap = ("On a target: the mark and guides follow", "")
+        elif chosen:
+            cap = ("Not a target: no guides, the chosen point stays", "")
+        else:
+            cap = ("Not a target: no guides, no mark", "")
+    if over == [] and chosen:
+        cap = (f"Lifted: {name} aimed, Confirm to use it", "")
+        if booster == "bomb" and u >= paths[-1][-1][0]:
+            cap = ("Lifted off a target: the chosen point stays", "")
+    st["aim"] = dict(booster=booster, point=shown, guides=guides)
+    note = f'<div style="position: absolute; inset: 0">{cd.undo_note(t, key=booster + "-aim", ready=shown is not None)}</div>'
+    ui = base_threat_ui()
+    ui.update(board=st, over=[note] + over)
     return screen(t, ui, uid), cap
 
 
@@ -1539,6 +1622,7 @@ FULL = (0, 0, W, H)
 SCENES = {  # name: (drawer, length in ms, crop x, y, w, h)
     "turn": (scene_turn, 2800, (0, 296, W, 420)),
     "drag": (scene_drag, 4160, (0, 296, W, 420)),
+    "drag-boosters": (scene_aim, sum(n for _, n, _ in AIM_PARTS), (0, 296, W, 494)),
     "capture": (scene_capture, 2600, FULL),
     "big-capture": (scene_big, 4800, FULL),
     "threat": (scene_threat, 6600, (0, 296, W, 380)),
@@ -1597,6 +1681,14 @@ THEME_STRIPS = {  # name: (scene, theme, crop, scale, [(T, label)])
     "big-capture-neon-arcade": ("big-capture", "neon-arcade", sq((4.5, 5), 190), 1.5, [
         (CAPTURE_AT + u, f"{u} ms" if u == 0 else str(u)) for u in (0, 400, 660, 700, 740, 820, 1400)]),
 }
+
+
+AIM_STRIP = [  # Wall, then Bomb (from 2900 ms): (T, label)
+    [(250, "Wall, no point"), (500, "down, 0 ms"), (550, "50"), (600, "100"), (1150, "taken point"),
+     (1800, "on (9, 9)"), (2400, "lifted")],
+    [(3300, "Bomb, down on (8, 7)"), (3400, "100"), (4000, "lifted"), (4500, "not a target"),
+     (5300, "on (8, 9)"), (5900, "back off"), (6400, "lifted there")],
+]
 
 
 def booster_strip():
@@ -1713,6 +1805,8 @@ def main():
                 make_strip(name, [times], scene, crop, scale)
         if not only or "boosters" in only:
             make_strip("boosters", booster_strip(), "boosters", sq((9, 8), 120), 2)
+        if not only or "drag-boosters" in only:
+            make_strip("drag-boosters", AIM_STRIP, "drag-boosters", sq((9, 9.5), 192), 1.5)
         for name in SCENES:
             if not only or name in only:
                 for theme in THEMES:

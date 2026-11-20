@@ -142,22 +142,117 @@ POSITIONS = {
     "drag": dict(red=OPENING_RED, blue=OPENING_BLUE, areas=[], last=None, drag=((10, 7), "red")),
 }
 
+# Aiming a booster by drag (D-18), from the threat. The booster preview is open and the finger is down on
+# a target; the guides run in Pencil from the booster's mark. Wall: on (9, 9), the point that would close
+# blue's ring round your pair. Bomb: on (8, 7), where its plus takes four blue dots (motion.md, Boosters).
+THREAT_MARKS = dict(near=PAIR + CLUSTER, closing=[((9, 9), "blue"), ((5, 7), "red")])
+for _key, _aim in (("wall-aim", dict(booster="wall", point=(9, 9))), ("bomb-aim", dict(booster="bomb", point=(8, 7)))):
+    POSITIONS[_key] = dict(red=THREAT_RED, blue=THREAT_BLUE, areas=[R1, B1], last=(7, 7), aim=_aim, **THREAT_MARKS)
+
+
+def plus_of(p):
+    """The bomb's plus: the point and its four neighbours on the board, centre first."""
+    x, y = p
+    return [q for q in ((x, y), (x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)) if 0 <= q[0] < 15 and 0 <= q[1] < 15]
+
+
+def aim_targets(pos):
+    """The points the open booster may be aimed at (the engine's rules): for a wall every empty point,
+    for a bomb every point whose plus holds a live blue dot."""
+    taken = set(pos["red"]) | set(pos["blue"])
+    captured = {p for a in pos["areas"] for p in a["inside"]}
+    live_blue = set(pos["blue"]) - captured
+    points = [(x, y) for y in range(15) for x in range(15)]
+    if pos["aim"]["booster"] == "wall":
+        return [p for p in points if p not in taken and p not in captured]
+    return [p for p in points if any(q in live_blue for q in plus_of(p))]
+
+
+def aim_hits(pos):
+    """The blue dots the bomb would take: the live ones in its plus."""
+    if not pos["aim"]["point"]:
+        return []
+    captured = {p for a in pos["areas"] for p in a["inside"]}
+    return [q for q in plus_of(pos["aim"]["point"]) if q in pos["blue"] and q not in captured]
+
+
+def aim_reach(pos, sp):
+    """How far from the aimed point each guide starts (left, right, up, down): at the wall's square,
+    0.35 of the spacing out, or past the bomb's plus, at the outer edge of its last ring."""
+    if pos["aim"]["booster"] == "wall":
+        return (0.35 * sp,) * 4
+    plus = set(plus_of(pos["aim"]["point"]))
+    x, y = pos["aim"]["point"]
+    return tuple((1.46 if q in plus else 0.46) * sp for q in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)))
+
+
+def aim_under(t, pos, c, sp):
+    """The marks of a booster preview that lie under the links and guides: the bomb's plus on its wash,
+    the targets (small dots in the pale ink of the side to move) and the wall's dashed square."""
+    out = []
+    aim = pos["aim"]
+    if aim["booster"] == "bomb" and aim["point"]:
+        for q in plus_of(aim["point"]):
+            x, y = c(q)
+            out.append(el("circle", cx=f(x), cy=f(y), r=f(0.46 * sp), fill=t["red_wash"]))
+    for q in aim_targets(pos):
+        if aim["booster"] == "wall" and q == aim["point"]:
+            continue
+        x, y = c(q)
+        out.append(el("circle", cx=f(x), cy=f(y), r=f(0.1 * sp), fill=t["red_pale"]))
+    if aim["booster"] == "wall" and aim["point"]:
+        out.append(wall_mark(t, *c(aim["point"]), sp, dashed=True))
+    return "".join(out)
+
+
+def aim_over(t, pos, c, sp):
+    """The bomb's plus rings, dashed in the ink of the side to move, over the threat rings."""
+    if pos["aim"]["booster"] != "bomb" or not pos["aim"]["point"]:
+        return ""
+    out = []
+    for q in plus_of(pos["aim"]["point"]):
+        x, y = c(q)
+        out.append(el("circle", cx=f(x), cy=f(y), r=f(0.46 * sp), fill="none", stroke=t["red"], stroke_width=1.5,
+                      stroke_dasharray="3 3"))
+    return "".join(out)
+
+
+def wall_mark(t, x, y, sp, dashed=False):
+    """The wall's mark: a square, 0.7 of the spacing, in Pencil, hatched with five Graphite lines; in the
+    booster preview its outline is dashed (motion.md, Boosters: Wall)."""
+    h = 0.35 * sp
+    w = max(0.075 * sp, 1.5)
+    out = []
+    for k in range(1, 6):  # rising lines, evenly across the square's diagonal
+        d = 4 * h * k / 6
+        x1, y1 = x - h + max(0, d - 2 * h), y - h + min(d, 2 * h)
+        x2, y2 = x - h + min(d, 2 * h), y - h + max(0, d - 2 * h)
+        out.append(el("line", x1=f(x1), y1=f(y1), x2=f(x2), y2=f(y2), stroke=t["graphite"], stroke_width=f(w * 0.6)))
+    out.append(el("rect", x=f(x - h), y=f(y - h), width=f(2 * h), height=f(2 * h), fill="none", stroke=t["pencil"],
+                  stroke_width=f(w), stroke_dasharray="3 2" if dashed else None))
+    return "".join(out)
+
 DRAG_DASH = (4, 3)  # drag's guides: dashes and gaps along each arm, dp
 
 
-def guide_arms(x, y, sp, size, q=1.0):
+def guide_arms(x, y, sp, size, q=1.0, reach=None):
     """Drag's guides: four arms from the preview ring (0.45 of the spacing from the point) out to the
-    board's outermost grid lines. q (0 to 1) is how far they have been drawn out from the ring."""
-    r, lo, hi = 0.45 * sp, sp / 2, size - sp / 2
-    return [(x - r, y, x - r - (x - r - lo) * q, y), (x + r, y, x + r + (hi - x - r) * q, y),
-            (x, y - r, x, y - r - (y - r - lo) * q), (x, y + r, x, y + r + (hi - y - r) * q)]
+    board's outermost grid lines. q (0 to 1) is how far they have been drawn out from the ring. While a
+    booster is aimed, reach gives where each arm starts instead (left, right, up, down); an arm whose
+    start lies past the board's edge is not drawn."""
+    lo, hi = sp / 2, size - sp / 2
+    rl, rr, ru, rd = reach or (0.45 * sp,) * 4
+    arms = [(x - rl, y, lo, y), (x + rr, y, hi, y), (x, y - ru, x, lo), (x, y + rd, x, hi)]
+    return [(a, b, a + (c - a) * q, b + (d - b) * q) for a, b, c, d in arms
+            if (c - a) * (c - x) + (d - b) * (d - y) > 0]
 
 
-def guides(t, side, x, y, sp, size, q=1.0):
-    """Drag's guides in the ink of the side to move: 1.5 dp, dashed, each arm's dashes starting at the ring."""
+def guides(t, side, x, y, sp, size, q=1.0, reach=None):
+    """Drag's guides in the ink of the side to move (or in Pencil while a booster is aimed: side "pencil"):
+    1.5 dp, dashed, each arm's dashes starting at the ring, or at the booster's mark."""
     return "".join(el("line", x1=f(a), y1=f(b), x2=f(c), y2=f(d), stroke=t[side], stroke_width=1.5,
                       stroke_dasharray=f"{DRAG_DASH[0]} {DRAG_DASH[1]}")
-                   for a, b, c, d in guide_arms(x, y, sp, size, q) if abs(c - a) + abs(d - b) > 0.1)
+                   for a, b, c, d in guide_arms(x, y, sp, size, q, reach) if abs(c - a) + abs(d - b) > 0.1)
 
 
 def preview(t, side, x, y, sp, dot):
@@ -238,10 +333,17 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False, links=False):
     if pos.get("drag"):
         p, side = pos["drag"]
         drag.append(guides(t, side, *c(p), sp, size))
+    aim = pos.get("aim")
+    under = aim_under(t, pos, c, sp) if aim else ""
+    if aim:
+        drag.append(guides(t, "pencil", *c(aim["point"]), sp, size, reach=aim_reach(pos, sp)))
     marks = []
     for p in pos.get("near", []):
         x, y = c(p)
         marks.append(el("circle", cx=f(x), cy=f(y), r=f(0.42 * sp), fill="none", stroke=t["hi"], stroke_width=2))
+    if aim:
+        marks.append(aim_over(t, pos, c, sp))
+    hits = aim_hits(pos) if aim and aim["booster"] == "bomb" else []
     pieces = []
     for side in ("red", "blue"):
         for p in pos[side]:
@@ -249,9 +351,10 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False, links=False):
             if side == "red":
                 pieces.append(el("circle", cx=f(x), cy=f(y), r=f(dot / 2), fill=t["red"]))
             else:
+                # The bomb's hits show in Blue pale: its plus rings already mark them.
                 h = dot * 7 / 12
                 pieces.append(el("path", d=f"M{f(x)} {f(y - h)}L{f(x + h)} {f(y)}L{f(x)} {f(y + h)}L{f(x - h)} {f(y)}Z",
-                                 fill=t["blue"]))
+                                 fill=t["blue_pale"] if p in hits else t["blue"]))
             if p in captured and not mini:
                 L = dot * 0.75 / math.sqrt(2)
                 if side == "red":  # captured by blue: the cut falls to the right
@@ -259,7 +362,7 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False, links=False):
                 else:
                     d, col = f"M{f(x - L)} {f(y + L)}L{f(x + L)} {f(y - L)}", t["red_wash"]
                 pieces.append(el("path", d=d, stroke=col, stroke_width=f(dot / 6), fill="none"))
-            if p == pos["last"] and not mini:
+            if p == pos["last"] and not mini and p not in hits:
                 pieces.append(el("circle", cx=f(x), cy=f(y), r=f(dot * 0.15), fill=t["paper"]))
     for p, side in pos.get("ghosts", []):
         # Undo's preview: the piece in its pale colour inside a dashed Graphite ring (nothing see-through).
@@ -281,7 +384,8 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False, links=False):
     if pos.get("burst") and not mini:
         pieces.extend(burst(t, pos, c))
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=size, height=size, fill=t["paper"]) +
-            "".join(washes) + "".join(grid) + "".join(link_lines) + "".join(drag) + "".join(rings) + "".join(marks) + "".join(pieces))
+            "".join(washes) + "".join(grid) + under + "".join(link_lines) + "".join(drag) + "".join(rings) + "".join(marks) +
+            "".join(pieces))
     return svg(size, size, body, label=None if mini else "The board, 15 by 15 points")
 
 
@@ -819,6 +923,13 @@ MOMENTS = {
     "win": dict(mood="sulky", bubble="Well played.", you=8, opp=1, left=12, mission=8),
     "undo": dict(mood="smug", bubble="Take it back?", you=2, opp=1, left=13, mission=2),
     "drag": dict(mood="happy", bubble="Good luck!", you=0, opp=0, left=30, mission=0),
+    "wall-aim": dict(mood="smug", bubble="Your move…", you=2, opp=1, left=13, mission=2),
+    "bomb-aim": dict(mood="smug", bubble="Your move…", you=2, opp=1, left=13, mission=2),
+}
+NOTES = {  # a booster preview's note: icon, name, its one line, the main button
+    "undo": ("undo", "Undo", "takes back the pale dots.", "Take back"),
+    "wall-aim": ("wall", "Wall", "blocks one empty point.", "Block it"),
+    "bomb-aim": ("bomb", "Bomb", "removes the computer’s dots in a +.", "Bomb it"),
 }
 BOARD_TOP = 308
 
@@ -897,19 +1008,25 @@ def toolbar(t, top=730, side=12, gap=10, undo_ready=True):
             f'{"".join(out)}</div>')
 
 
-def undo_note(t, side=10, bottom=12, pad=10, angle=-0.6):
-    """Undo's booster preview. Undo has no point to aim at: the board shows the turn it takes back, pale in
-    dashed rings, and the note says so in one line. It lies over the player's line and the tool bar."""
+def undo_note(t, side=10, bottom=12, pad=10, angle=-0.6, key="undo", ready=True):
+    """A booster preview's note, Undo's by default. Undo has no point to aim at: the board shows the turn it
+    takes back, pale in dashed rings, and the note says so in one line. Wall and Bomb show their mark at
+    the point aimed at; until one is chosen (not ready) the main button says how, pale, and cannot be
+    pressed. The note lies over the player's line and the tool bar."""
+    ic, name, line, go = NOTES[key]
+    # The line keeps to one line; the app shrinks a long one to fit (11 to 16 sp).
+    fit = "; font-size: 14px" if len(name + line) > 34 else ""
+    button = main_button(t, go) if ready else main_button(t, "Drag to a point", f"background: {t['blue_pale']}; color: {t['blue']}")
     cancel = (f'<button type="button" style="height: 56px; box-sizing: border-box; border: 2px solid {t["blue"]}; '
               f'{BUTTON_SHAPE}; background: {t["card"]}; color: {t["blue"]}; font-family: inherit; {LABEL}; '
               f'padding: 0">Cancel</button>')
-    return (f'<div role="dialog" aria-label="Undo" style="position: absolute; left: {side}px; right: {side}px; '
+    return (f'<div role="dialog" aria-label="{name}" style="position: absolute; left: {side}px; right: {side}px; '
             f'bottom: {bottom}px; box-sizing: border-box; padding: {pad}px {pad + 2}px; display: flex; '
             f'flex-direction: column; gap: {pad - 2}px; {note_style(t, angle)}">{tape(t, 20, -8, 44, -3)}'
-            f'<div style="display: flex; align-items: center; gap: 8px">{named_icon("undo", t["blue"], 28)}'
-            f'<span style="{BODY}; white-space: nowrap"><b style="color: {t["blue"]}">Undo</b> takes back the pale dots.</span></div>'
+            f'<div style="display: flex; align-items: center; gap: 8px">{named_icon(ic, t["blue"], 28)}'
+            f'<span style="{BODY}; white-space: nowrap{fit}"><b style="color: {t["blue"]}">{name}</b> {line}</span></div>'
             f'<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px">{cancel}'
-            f'{main_button(t, "Take back")}</div></div>')
+            f'{button}</div></div>')
 
 
 def thumb(x, y, opacity=0.93):
@@ -922,11 +1039,17 @@ def thumb(x, y, opacity=0.93):
             f'width: 30px; height: 34px; border-radius: 15px 15px 9px 9px; background: #EBD0BF"></div></div>')
 
 
-def drag_thumb(board_top, sp):
+def drag_thumb(board_top, sp, key="drag"):
     """The thumb of a drag frame, its tip on the dragged point (the canvas shows it a little see-through,
     so the preview under it can be checked)."""
-    p, _ = POSITIONS["drag"]["drag"]
-    return thumb(sp / 2 + p[0] * sp, board_top + sp / 2 + p[1] * sp, opacity=0.8)
+    pos = POSITIONS[key]
+    p = pos["aim"]["point"] if pos.get("aim") else pos["drag"][0]
+    # Lighter while a booster is aimed: its mark is larger than a preview and lies mostly under the thumb.
+    return thumb(sp / 2 + p[0] * sp, board_top + sp / 2 + p[1] * sp, opacity=0.6 if pos.get("aim") else 0.8)
+
+
+DRAGGED = ("drag", "wall-aim", "bomb-aim")  # frames with a finger on the board
+NOTED = ("undo", "wall-aim", "bomb-aim")  # frames with a booster preview's note over the tool bar
 
 
 def petals(cx, cy, n=5, r=6, size=3):
@@ -992,19 +1115,19 @@ def game_frame(t, key, uid, links=False, world=1, contrast=False):
                  f'{side_row(t, "blue", "Computer", m["opp"], False, "center")}</div>')
     parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">{any_board_svg(t, key, uid, links=links, contrast=contrast)}</div>')
     # The player, below the board.
-    you_turn = key in ("opening", "threat", "undo", "drag")
+    you_turn = key in ("opening", "threat", "drag") + NOTED
     row_top = 682 if key != "win" else -200
     parts.append(f'<div style="position: absolute; left: 16px; right: 16px; top: {row_top}px; display: flex; '
                  f'align-items: center; justify-content: space-between">'
                  f'{side_row(t, "red", "You", m["you"], you_turn, "flex-start")}'
                  f'<div style="display: flex; align-items: baseline; gap: 6px"><span style="{SCORE}">{m["left"]}</span>'
                  f'<span style="{LABEL}; color: {t["graphite"]}">dots left</span></div></div>')
-    if key not in ("win", "undo"):
+    if key != "win" and key not in NOTED:
         parts.append(toolbar(t, undo_ready=key not in ("opening", "drag")))
-    if key == "undo":
-        parts.append(undo_note(t))
-    if key == "drag":
-        parts.append(drag_thumb(BOARD_TOP, 24))
+    if key in NOTED:
+        parts.append(undo_note(t, key=key))
+    if key in DRAGGED:
+        parts.append(drag_thumb(BOARD_TOP, 24, key))
     if key == "opening":
         parts.append(f'<div style="position: absolute; left: 36px; right: 36px; top: 222px; box-sizing: border-box; '
                      f'padding: 16px 18px 12px; text-align: center; {note_style(t, -1.5)}">{tape(t, 118, -9, 60, 3)}'
@@ -1058,12 +1181,12 @@ def small_game_frame(t, key, uid):
              f'justify-content: space-between">{side_row(t, "red", "You", m["you"], True, "flex-start")}'
              f'<div style="display: flex; align-items: baseline; gap: 6px"><span style="{SCORE}">{m["left"]}</span>'
              f'<span style="{LABEL}; color: {t["graphite"]}">dots left</span></div></div>']
-    if key == "undo":
-        parts.append(undo_note(t, side=6, bottom=12, pad=6, angle=0))
+    if key in NOTED:
+        parts.append(undo_note(t, side=6, bottom=12, pad=6, angle=0, key=key))
     else:
         parts.append(toolbar(t, top=500, side=10, gap=8, undo_ready=key != "drag"))
-    if key == "drag":
-        parts.append(drag_thumb(top, 21))
+    if key in DRAGGED:
+        parts.append(drag_thumb(top, 21, key))
     return root(t, "".join(parts), w=sw, h=sh)
 
 
@@ -1532,6 +1655,10 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
     ("game-drag", "GameDrag", "Game: placing by drag", lambda t, u: game_frame(t, "drag", u), (W, H)),
     ("small-game-drag", "SmallGameDrag", "Small phone: placing by drag", lambda t, u: small_game_frame(t, "drag", u),
      SMALL_PHONE),
+    ("game-wall-drag", "GameWallDrag", "Game: Wall aimed by drag", lambda t, u: game_frame(t, "wall-aim", u), (W, H)),
+    ("small-game-wall-drag", "SmallGameWallDrag", "Small phone: Wall aimed by drag",
+     lambda t, u: small_game_frame(t, "wall-aim", u), SMALL_PHONE),
+    ("game-bomb-drag", "GameBombDrag", "Game: Bomb aimed by drag", lambda t, u: game_frame(t, "bomb-aim", u), (W, H)),
     ("game-threat-links", "GameThreatLinks", "Game: a threat, links on",
      lambda t, u: game_frame(t, "threat", u, links=True), (W, H)),
 ] + [

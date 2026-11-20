@@ -57,6 +57,7 @@ does while the animation runs.
 | Moment | Starts when | Length | Next tap waits | A tap | With animations removed |
 | --- | --- | --- | --- | --- | --- |
 | [Drag's guides](#placing-by-drag) | the finger goes down, placing by drag | 100 ms, then they follow the finger at once | 0 | – (the finger is down) | the guides at once |
+| [Aiming Wall or Bomb by drag](#aiming-wall-or-bomb-by-drag) | the finger goes down on a target in the booster preview | 100 ms, then they follow the finger at once | 0 | – (the finger is down) | the guides at once |
 | [Placing a dot](#placing-a-dot-and-chain-lines) | a dot is confirmed | 200 ms | 0 | counts as usual | the dot at once |
 | [Chain lines](#placing-a-dot-and-chain-lines) | with placing | 80 to 230 ms | 0 | counts as usual | the links at once |
 | [The computer's move](#the-computers-move) | 500 ms or more after the player's dot | 900 ms; the edge marks stay | 0 | counts as usual | dot and edge marks at once, no ripple |
@@ -109,6 +110,37 @@ preview under it shows.
 - **With animations removed,** the guides appear at full length at once. Everything else here
   already happens at once.
 - During the computer's turn a finger on the board shows no preview and no guides.
+
+### Aiming Wall or Bomb by drag
+
+In a booster preview, Wall and Bomb are aimed by drag the way a dot is placed (decision 0026), and
+the guides show here too. They are in Pencil and start at the booster's mark: the wall's square,
+or past the bomb's plus (theme page,
+[Aiming Wall or Bomb by drag](theme-notebook.md#aiming-wall-or-bomb-by-drag)). 0 ms is the moment
+the finger goes down. Lifting chooses the point; the booster is used only on Confirm, so its
+moment under [Boosters](#boosters) starts there.
+
+<img src="motion/strip-drag-boosters.png" width="720" alt="Key frames. Wall: a thumb goes down and the dashed square appears under it, with dashed pencil guides drawn out; over a taken point there is no square and no guides; on (9, 9) both are back; lifted, the dashed square stays. Bomb: the plus and its guides under the thumb on (8, 7); lifted, the plus stays; the thumb goes down on a point that is not a target and the plus stays at (8, 7) without guides; on (8, 9) the plus and guides follow; back off it and lifted, the plus is at (8, 7) again">
+
+<img src="motion/drag-boosters-light.gif" width="360" alt="Animation: in the Wall preview the thumb slides past a taken point and lifts on the closing point, and the dashed square stays; in the Bomb preview it lifts on (8, 7), then goes down off the targets, slides onto one and back off, and lifts, and the plus stays at (8, 7)">
+
+[Same in the dark version](motion/drag-boosters-dark.gif). The thumb is drawn lighter here, so
+the mark under it shows.
+
+| Time | What moves | Easing |
+| --- | --- | --- |
+| 0 | On a target: the booster's mark (the dashed square, or the plus) jumps to the point under the finger. | |
+| 0 to 100 | On a target: the four guides are drawn out from the mark to the edges, in Pencil. | ease out |
+| The finger moves onto another target | The mark and the guides jump to it at once. | |
+| The finger is over a point that is not a target, or off the board | The guides go at once, and the mark jumps back to the point chosen before; with none chosen yet it goes too. Back on a target, the guides come back at once, without being drawn out again. | |
+| The finger lifts on a target | The guides go at once. The mark stays: the point is chosen, and Confirm (Block it or Bomb it) uses the booster there. | |
+| The finger lifts anywhere else | The guides go at once. The point chosen before stays chosen; with none, the main button reads "Drag to a point" and cannot be pressed. | |
+
+- **Nothing vibrates and nothing sounds while aiming,** and lifting is silent too. The booster's
+  sound and vibration come on Confirm.
+- **With animations removed,** the guides appear at full length at once. Everything else here
+  already happens at once.
+- **With two taps** there are no guides: a tap on a target chooses it at once.
 
 ## Placing a dot and chain lines
 
@@ -565,6 +597,8 @@ These looks are new here. They are proposals for the owner to accept or change:
 
 - The computer's move: two ripples and the edge marks on the top and left edges.
 - Placing by drag: the guides drawn out from the ring in 100 ms, then jumping with the finger.
+- Aiming Wall or Bomb by drag: the guides in Pencil, from the wall's square or past the bomb's
+  plus, only over a target.
 - Dots running out: the Highlighter count, the row of small pieces, the mission-note nudge and
   "Last dot!".
 - The wall: a square in pencil, hatched.
