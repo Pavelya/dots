@@ -72,6 +72,9 @@ jobs:
       - name: Test and build
         env:
           UPLOAD_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          # A tagged build sends R8's mapping file to Firebase Crashlytics, so its crash reports
+          # show the real code names (decision 0032). A dry run sends nothing.
+          CRASHLYTICS_MAPPING_UPLOAD: ${{ env.DRY_RUN != 'true' }}
         run: ./gradlew --continue :engine:test :cli:test :app:verifyRoborazziDebug :app:lintDebug :app:bundleRelease
       - name: Signing certificate
         # Fails on an unsigned bundle, the standard debug key and the old test key, which was public

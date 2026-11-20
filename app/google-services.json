@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "318971399497",
+    "project_id": "pinfold-1bc9f",
+    "storage_bucket": "pinfold-1bc9f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:318971399497:android:6e7663b3dd6ee16f111e98",
+        "android_client_info": {
+          "package_name": "io.github.pavelya.pinfold"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB1p-MjjpcD023q58ZLAbCTAIbcyua0ruk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

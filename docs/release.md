@@ -9,6 +9,7 @@ and keys are in decision 0031.
 This page has:
 
 - [Make a release](#make-a-release): the three commands, when to release, which number to use.
+- [Crash reports](#crash-reports): where crashes show up, what a report holds, a test crash.
 - [What is set up](#what-is-set-up): what exists in Play Console, Google Cloud and GitHub, and
   which rights each account has. Tasks that work in those consoles build on it.
 - [If something goes wrong](#if-something-goes-wrong) and [Keys and secrets](#keys-and-secrets).
@@ -46,8 +47,8 @@ wherever the repository is).
 Nothing else is needed: no step in Play Console, no upload by hand.
 
 The run keeps the signed build and R8's mapping file as an artifact, `pinfold-<version>-bundle`.
-Google Play also gets the mapping file inside the build, so its crash reports show the real code
-names.
+Google Play also gets the mapping file inside the build, and the run sends it to Firebase
+Crashlytics, so both show crash reports with the real code names.
 
 **Dry run.** `gh workflow run release.yml -f version=0.0.1`, or Actions > "store release" > Run
 workflow on any branch. It builds and signs the game and uploads nothing. Use it after changing the
@@ -75,6 +76,45 @@ A number is used once and must be higher than every one before. A broken build i
 and released with the next patch number, never by moving a tag. The one exception is a run that
 failed for a reason outside the code (see the first row of [If something goes
 wrong](#if-something-goes-wrong)): re-run it, same tag.
+
+## Crash reports
+
+Crashes of store builds show up in two places (decision 0032). Debug builds from GitHub send
+nothing.
+
+| Where | What it shows |
+| --- | --- |
+| **Firebase Crashlytics**: [console.firebase.google.com](https://console.firebase.google.com/) > `pinfold` > Crashlytics | Every crash of every player within minutes, grouped by cause, with the stack trace and the phone. The top of the page shows **crash-free sessions** and crash-free users, per version. The closed test (R-06) needs crash-free sessions at least 99.5%. |
+| **Android vitals**: Play Console > Pinfold > Monitor and improve > Android vitals | Crashes and ANRs (the app froze for 5 seconds), but only from players who share usage and diagnostics with Google, about a day late. Google Play ranks apps by these numbers, so check them before each move to closed testing or production. |
+
+**After each release,** look at Crashlytics the next day: any new issue in the new version gets a
+task card (`Q-` letter) with its stack trace.
+
+**What a report holds.** Only what Crashlytics collects by itself: the stack trace, the app's
+state and the phone's model and Android version at the moment of the crash, and a random ID for the
+installation. The app adds no names, levels or IDs of its own. For the Data safety form (R-03):
+crash logs, diagnostics, and device or other IDs; collected, not shared, encrypted in transit,
+used for crash reporting.
+
+**A test crash.** To check that reports arrive, crash a store build on purpose. This needs the
+phone connected to the Mac by USB with USB debugging on (Settings > About phone > tap Build number
+seven times, then Settings > System > Developer options > USB debugging), and `adb`, which Homebrew
+installs:
+
+```sh
+brew install --cask android-platform-tools
+```
+
+With Pinfold from Google Play open on the phone:
+
+```sh
+adb shell am crash io.github.pavelya.pinfold
+```
+
+The game closes. Open it again: Crashlytics sends the report when the game starts. Within about
+five minutes Crashlytics lists a new issue, `CrashedByAdbException` (on Android 11 and older,
+`RemoteServiceException`), for that version. Close the issue in Crashlytics afterwards, so it
+doesn't count against the next releases' numbers.
 
 ## What is set up
 
@@ -110,9 +150,23 @@ which then adds a row here.
 | Enabled APIs | Google Play Android Developer API. |
 | Service account | `play-release` (email on its Details tab). No Google Cloud roles: its only rights are the Play Console permission above. One JSON key, stored in the Actions secret `PLAY_SERVICE_ACCOUNT_JSON`. |
 
-This project exists for release uploads. Firebase (Q-05, Q-06, O-01) makes Google Cloud projects of
-its own; whether it uses this one is for those tasks to choose. A task that needs the service
-account to do more adds only the Play Console permission it needs, and notes it in the table above.
+This project exists for release uploads; Firebase has its own (below). A task that needs the
+service account to do more adds only the Play Console permission it needs, and notes it in the
+table above.
+
+### Firebase
+
+[console.firebase.google.com](https://console.firebase.google.com/), the same Google account.
+Decision 0032.
+
+| What | How it is set |
+| --- | --- |
+| Project | `pinfold`, ID `pinfold-1bc9f`, Spark plan (free). Google Analytics off, Gemini in Firebase off. Firebase made a Google Cloud project of the same name for it, with an API key named "Android key (auto created by Firebase)". |
+| Android app | `io.github.pavelya.pinfold`, nickname Pinfold. Its settings file is `app/google-services.json` in the repository: public settings, not secrets. |
+| Crashlytics | On. Store builds report crashes; the release workflow sends the mapping file for tagged builds. |
+| Google Play link | Project settings > Integration > Google Play: linked to Pinfold. Switches: Crashlytics on (crashes can be filtered by Play track, internal or closed); App Distribution and Google Analytics off. |
+
+Analytics (Q-06) and online play (O-01) use this project too, and add rows here.
 
 ### GitHub
 
@@ -127,6 +181,7 @@ account to do more adds only the Play Console permission it needs, and notes it 
 | The run says | What to do |
 | --- | --- |
 | Many app tests fail with `MavenArtifactFetcher` and `FileNotFoundException` | Maven Central, where the tests download Android from, had an outage. Open the run and click **Re-run jobs** > **Re-run failed jobs**. Same tag, same version. |
+| `uploadCrashlyticsMappingFileRelease` failed | Firebase didn't answer; nothing reached Google Play yet. **Re-run failed jobs**, same tag. |
 | `UPLOAD_KEYSTORE_BASE64 is missing` | Step 3. |
 | `Keystore was tampered with, or password was incorrect` | The two secrets don't match. Redo step 3 with the key file from a backup. |
 | `Commit ... is not on main` | Delete the tag (`git push origin :v0.1.2`, `git tag -d v0.1.2`) and tag a commit of `main`. |
@@ -386,5 +441,118 @@ rm ~/Downloads/pinfold-release-1a2b3c4d5e6f.json
 0.1.1 without any step there. If the run's warning says the release is a **draft**, open Internal
 testing, open the draft and roll it out; Google Play does this until the app is published, and the
 workflow handles it each time.
+
+### Part 6: crash reports
+
+Firebase is Google's set of services for apps. Pinfold uses one of them, **Crashlytics**: when
+the game crashes on a player's phone, it sends a report to Firebase, and you see it in the
+Firebase console within minutes (decision 0032). This part creates the Firebase project and
+registers the game in it. It takes about 15 minutes and costs nothing.
+
+**You need:** the Mac's browser and the game's Google account (the one that owns Play Console).
+
+**You don't need:** a credit card, a paid plan, a password or a GitHub secret. If Firebase offers
+to upgrade to the **Blaze** plan, say no: the free **Spark** plan covers Crashlytics.
+
+Firebase's pages change their look from time to time. If a button has a slightly different name,
+pick the one that means the same thing. If a page asks something these steps don't mention, stop
+and note what it says.
+
+**17. Sign in to Firebase.**
+
+1. Open [console.firebase.google.com](https://console.firebase.google.com/).
+2. Look at the round picture in the top right corner. It must be the game's Google account. If it
+   isn't, click it and choose (or add) the game's account.
+3. If Firebase shows a welcome page or asks you to accept its terms, accept them.
+
+*Worked when:* you see a page with "Welcome to Firebase" or a list of projects (empty is fine).
+
+**18. Create the project.**
+
+1. Click **Create a new Firebase project** (it may say **Create a project**, **Add project** or
+   **Get started with a Firebase project**).
+2. **Project name:** type `pinfold`. Below the name, Firebase shows a project ID such as
+   `pinfold-1a2b3`; leave it as it is.
+3. Tick the box that accepts the Firebase terms. If there is a second box about using Firebase for
+   your trade or business, tick it too: Pinfold is a business. Click **Continue**.
+4. A page about **AI assistance** (Gemini in Firebase) may appear. Switch it **off** and click
+   **Continue**.
+5. A page about **Google Analytics** appears. Switch **Enable Google Analytics for this project**
+   **off**. The button below it changes to **Create project**. Click it.
+6. Wait about half a minute. When it says the project is ready, click **Continue**.
+
+*Worked when:* the page shows `pinfold` in the top left corner, with **Spark plan** (or
+"no-cost") next to it.
+
+**19. Register the game and download its settings file.**
+
+1. On the project's start page, find the row of round icons under "Get started by adding Firebase
+   to your app". Click the **Android** icon (the green robot). If you don't see the icons: gear
+   icon next to **Project Overview** (top of the left menu) > **Project settings** > tab
+   **General** > section **Your apps** > **Add app** > Android.
+2. **Android package name:** type `io.github.pavelya.pinfold`, exactly: all lower case, with the
+   dots. This must match the game, or nothing works.
+3. **App nickname:** `Pinfold`.
+4. **Debug signing certificate SHA-1:** leave it empty.
+5. Click **Register app**.
+6. Click **Download google-services.json**. The browser saves the file in Downloads. Don't open
+   or change it.
+7. The page goes on with "Add Firebase SDK" and other steps. Those are code changes, already in
+   the repository: click **Next**, **Next**, then **Continue to console**.
+
+*Worked when:* this command, in the terminal, prints the file's name:
+
+```sh
+ls ~/Downloads/google-services*.json
+```
+
+If it prints a name like `google-services (1).json`, that is fine; tell Claude the exact name.
+
+The file holds the project's public settings, not secrets, and goes into the public repository
+as `app/google-services.json`. The game can't be built without it.
+
+**20. Link Firebase to Google Play.** This lets Crashlytics tell crashes from internal testers
+apart from crashes in the closed test.
+
+1. Click the gear icon next to **Project Overview** > **Project settings**.
+2. Click the tab **Integration** (or **Integrations**).
+3. On the **Google Play** card, click **Link**. A page "Google Play" opens, with the steps "Link
+   Firebase to Google Play" and "Configure integration".
+4. Under **Configure integration**, set the switches:
+   - **Crashlytics: Share app and crash data**: **on**. This is the one we need.
+   - **App Distribution**: off. It is another way to hand out test builds; Pinfold uses Google
+     Play's testing tracks.
+   - **Google Analytics: share in-app purchase and subscription revenue data**: off. The project
+     has no Analytics.
+5. Scroll down. If Firebase lists the apps of your Play Console account, choose **Pinfold**
+   (`io.github.pavelya.pinfold`). Click the button at the bottom (**Link** or **Finish**). If
+   Firebase asks to allow access to Play Console, allow it.
+
+*Worked when:* the Google Play card says **Linked** (or shows **Manage** instead of **Link**).
+
+If the card says you lack permission, check the picture in the top right again: only the account
+that owns Play Console can link.
+
+**21. Open Crashlytics once.**
+
+1. In the left menu, open **DevOps and engagement** and click **Crashlytics**. Or type
+   `Crashlytics` in **Search for products** at the top of the menu.
+2. If a list of apps appears at the top, choose **Pinfold** (Android).
+3. If there is a button **Enable Crashlytics**, click it. If the page instead shows a big dark
+   card with an **Add SDK** button, don't click it: adding the SDK is the code change, already in
+   the repository. There is nothing to click.
+
+*Worked when:* Crashlytics shows that card (or a page that waits for data). It stays like that until a store
+build with Crashlytics reaches a phone.
+
+**22. Tell Claude.** Say "Firebase done", with the file name from step 19, and anything that
+looked different from these steps. Claude puts the file in the repository, and CI builds the game
+with Crashlytics.
+
+**23. Later, after the next release: a test crash.** Once a release with Crashlytics is on your
+phone from Google Play, crash it on purpose, as [A test crash](#crash-reports) explains. You need
+the phone, a USB cable and `adb` on the Mac (one Homebrew command, in that section).
+
+*Worked when:* Crashlytics lists the crash for that version.
 
 The setup is finished; from now on, [Make a release](#make-a-release).
