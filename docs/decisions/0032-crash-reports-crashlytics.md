@@ -35,7 +35,8 @@ version 18.6 it needs no Google Analytics to count them.
 
 ## Consequences
 
-- The store app now asks for internet access (Crashlytics adds the permission); debug builds don't.
+- The store app has the internet permission (Crashlytics adds it). Android grants it at install
+  without asking the player; it only shows in the store listing's permission details.
 - The Data safety form (R-03) declares crash logs, diagnostics and device or other IDs: collected,
   not shared, encrypted in transit, for crash reporting. The privacy policy names Crashlytics.
 - Every store release can be checked in the Crashlytics dashboard within minutes of reaching
