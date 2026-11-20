@@ -27,6 +27,8 @@ import dots.engine.Pos
 import dots.engine.areas
 import dots.log.GameLogEntry
 import dots.log.Outcome
+import io.github.pavelya.dots.analytics.Analytics
+import io.github.pavelya.dots.analytics.Events
 import io.github.pavelya.dots.data.CampaignJournal
 import io.github.pavelya.dots.data.DailyEnd
 import io.github.pavelya.dots.data.DailyJournal
@@ -182,6 +184,9 @@ data class BoosterAim(
  * @param ownedFor the player's own boosters a new game of a level takes (decision 0027); a game
  *   reports the ones it uses to [campaign]
  * @param daily where a daily attempt's end is saved
+ * @param analytics where the game reports a level's end, each booster used and a daily attempt's
+ *   end, as they happen (decision 0033); a finished game opened again (View result) reports
+ *   nothing. Level starts are reported by the [journal].
  * @param holdFor how long the screen plays the player's move, in ms: the computer answers no sooner
  */
 class GameViewModel(
@@ -197,6 +202,7 @@ class GameViewModel(
     private val hintFor: (GameState, Level?) -> Action.Hint? = { state, level -> if (level != null) level.hint(state) else Hints.hint(state) },
     private val ownedFor: (Level) -> Map<Booster, Int> = { emptyMap() },
     private val daily: DailyJournal? = null,
+    private val analytics: Analytics = Analytics.NONE,
     private val holdFor: (MoveResult) -> Long = { 0L },
 ) : ViewModel() {
     val human: Player = Player.RED
@@ -461,6 +467,7 @@ class GameViewModel(
         val record = game.record
         val opponentBefore = _ui.value.opponent
         val result = game.apply(action)
+        level?.takeIf { !entry.practice }?.let { analytics.log(Events.boosterUsed(it, action.booster)) }
         still()
         boosterMoment = BoosterMoment(
             id = ++moments,
@@ -635,10 +642,18 @@ class GameViewModel(
         reportOwned()
         if (over) {
             journal?.finish(entry)
+            reportEnd()
             levelOver()
         } else {
             journal?.save(entry)
         }
+    }
+
+    /** Reports the end of a level or a daily attempt that has just been played to its end. */
+    private fun reportEnd() {
+        val state = game.state
+        level?.takeIf { !entry.practice }?.let { analytics.log(Events.levelEnd(it, it.result(state))) }
+        puzzle?.let { analytics.log(Events.dailyPuzzleDone(it, it.isPassed(state))) }
     }
 
     /**
