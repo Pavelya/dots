@@ -35,8 +35,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -57,6 +57,10 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.BoosterAim
 import io.github.pavelya.dots.game.GameUiState
+import io.github.pavelya.dots.ui.motion.NoteMotion
+import io.github.pavelya.dots.ui.motion.dim
+import io.github.pavelya.dots.ui.motion.rememberNoteMotion
+import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.Palette
 
 /**
@@ -148,7 +152,9 @@ private fun BoosterPicture(booster: Booster, ink: Color, style: Palette, active:
  * taped over the player's line and the tool bar, so the board does not move. One line on what the
  * booster does, then Cancel and the main button, which applies it. Wall and Bomb first need a point,
  * chosen on the board the way the player places a dot ([method]): until then the main button says
- * how, and cannot be pressed.
+ * how, and cannot be pressed. The screen slides it up from below and down as it leaves
+ * ([slideUp], with its [motion]); the board stays undimmed, for the point to be chosen on it. While
+ * it leaves, the tool bar under it takes taps again.
  */
 @Composable
 internal fun BoosterNote(
@@ -158,6 +164,7 @@ internal fun BoosterNote(
     onCancel: () -> Unit,
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
+    motion: NoteMotion = rememberNoteMotion(),
 ) {
     val name = boosterName(aim.booster)
     val rest = stringResource(
@@ -183,7 +190,7 @@ internal fun BoosterNote(
     Box(
         modifier
             .rotate(-0.6f)
-            .pointerInput(Unit) { detectTapGestures { } } // the tool bar under it takes no taps
+            .then(if (motion.open) Modifier.pointerInput(Unit) { detectTapGestures { } } else Modifier) // the tool bar under it takes no taps
             .semantics { paneTitle = name },
     ) {
         Column(
@@ -227,21 +234,22 @@ internal fun BoosterNote(
  * The Boosters screen (canvas frame `boosters`), from a booster on the Level card: a note over the
  * map with each of the five boosters, what it does and how many the player has in this level
  * ([left]), and how more are earned. Close, Back or a tap around the note returns to the card.
+ * It slides up as the map behind it dims, and down as it leaves ([motion]).
  */
 @Composable
-fun BoostersNote(left: Map<Booster, Int>, onClose: () -> Unit) {
+fun BoostersNote(left: Map<Booster, Int>, onClose: () -> Unit, motion: NoteMotion = rememberNoteMotion()) {
     val style = Palette.current
     val title = stringResource(R.string.screen_boosters)
     BoxWithConstraints(
         contentAlignment = Alignment.BottomCenter,
         modifier = Modifier
             .fillMaxSize()
-            .background(style.scrim)
+            .dim(style.scrim) { motion.up }
             .semantics { paneTitle = title },
     ) {
         val tallest = maxHeight - 40.dp
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
-        Box(Modifier.padding(start = 12.dp, end = 12.dp, bottom = 16.dp, top = 24.dp).rotate(0.8f)) {
+        Box(Modifier.slideUp { motion.up }.padding(start = 12.dp, end = 12.dp, bottom = 16.dp, top = 24.dp).rotate(0.8f)) {
             Column(
                 modifier = Modifier
                     .heightIn(max = tallest)

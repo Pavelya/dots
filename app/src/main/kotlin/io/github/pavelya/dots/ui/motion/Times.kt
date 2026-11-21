@@ -544,3 +544,36 @@ class Unlocking(val worldOpens: Boolean) {
         fun starsOnly(stars: Int): Float = max(0, stars - 1) * STAR_GAP + STAR + 300f
     }
 }
+
+/**
+ * The level opening (motion.md, "Level opening, notes and cards"): 0 ms is the moment the board
+ * shows. The mission note sits big over the board until [HOLD], then shrinks into its corner by
+ * [LENGTH]. A tap ends it at once.
+ */
+object OpeningNote {
+    const val HOLD = 1200f
+    const val SHRINK = 300f
+    const val LENGTH = HOLD + SHRINK
+
+    /** How far the big note has shrunk into the corner, from 0 (big) to 1 (the corner note's size and place). */
+    fun shrink(t: Float): Float = phase(t, HOLD, LENGTH, Ease.IN_OUT)
+
+    /** In the last half of the shrink the corner note shows through the big one: from 0 to 1. */
+    fun handOver(t: Float): Float = phase(t, HOLD + SHRINK / 2, LENGTH, Ease.LINEAR)
+}
+
+/**
+ * Notes and cards over the map or the board (motion.md, "Level opening, notes and cards"): they
+ * slide up from below in [IN] ms while the background dims, and leave by sliding down in [OUT] ms.
+ * 0 ms is the moment the note is opened, or closed.
+ */
+object NoteSlide {
+    const val IN = 300f
+    const val OUT = 200f
+
+    /** A note coming up: from 0 (below the screen, the background clear) to 1 (in place, dimmed). */
+    fun coming(t: Float): Float = phase(t, 0f, IN, Ease.OUT)
+
+    /** A note leaving: from 1 (in place) to 0 (below the screen). */
+    fun leaving(t: Float): Float = 1f - phase(t, 0f, OUT, Ease.IN)
+}

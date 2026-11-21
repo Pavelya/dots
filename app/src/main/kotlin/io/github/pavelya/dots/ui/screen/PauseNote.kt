@@ -51,6 +51,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.motion.NoteMotion
+import io.github.pavelya.dots.ui.motion.dim
+import io.github.pavelya.dots.ui.motion.rememberNoteMotion
+import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.Palette
 
 /** The canvas's hand-cut shape of a big button. */
@@ -62,6 +66,9 @@ private val BIG_BUTTON_SHAPE = RoundedCornerShape(topStart = 16.dp, topEnd = 20.
  * Restart asks first, on the same note. Back resumes the game (handled by the screen), or, while
  * Restart asks, returns to Pause. With no [onRestart] (the daily puzzle) only To the map is under
  * Resume.
+ *
+ * It slides up as the board behind it dims, and down as it leaves ([motion]); while it leaves, the
+ * board takes taps again.
  */
 @Composable
 internal fun PauseNote(
@@ -71,6 +78,7 @@ internal fun PauseNote(
     onRestart: (() -> Unit)?,
     onToMap: () -> Unit,
     onRules: () -> Unit,
+    motion: NoteMotion = rememberNoteMotion(),
 ) {
     val style = Palette.current
     var asking by rememberSaveable { mutableStateOf(false) }
@@ -80,11 +88,11 @@ internal fun PauseNote(
         contentAlignment = Alignment.BottomCenter,
         modifier = Modifier
             .fillMaxSize()
-            .background(style.scrim)
-            .pointerInput(Unit) { detectTapGestures { } } // the board under it takes no taps
+            .dim(style.scrim) { motion.up }
+            .then(if (motion.open) Modifier.pointerInput(Unit) { detectTapGestures { } } else Modifier) // the board under it takes no taps
             .semantics { paneTitle = title },
     ) {
-        TapedNote(style, Modifier.padding(start = 30.dp, end = 30.dp, bottom = 40.dp)) {
+        TapedNote(style, Modifier.slideUp { motion.up }.padding(start = 30.dp, end = 30.dp, bottom = 40.dp)) {
             if (asking && onRestart != null) {
                 Text(
                     stringResource(R.string.restart_question),

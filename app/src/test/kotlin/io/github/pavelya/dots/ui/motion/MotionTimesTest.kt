@@ -337,4 +337,31 @@ class MotionTimesTest {
         }
         assertEquals(10, NeonLight.SPARK_COUNT)
     }
+
+    @Test
+    fun `the level opening holds the mission big for 1200 ms, then shrinks it into its corner in 300 ms`() {
+        assertEquals(0f, OpeningNote.shrink(OpeningNote.HOLD))
+        near(1200f, starts { OpeningNote.shrink(it) })
+        near(1500f, ends { OpeningNote.shrink(it) })
+        near(1500f, OpeningNote.LENGTH)
+        near(1500f, ends { OpeningNote.handOver(it) })
+        assertTrue(starts { OpeningNote.handOver(it) } > OpeningNote.HOLD)
+    }
+
+    @Test
+    fun `a note slides up in 300 ms and down in 200 ms`() {
+        assertEquals(0f, NoteSlide.coming(0f))
+        near(300f, ends { NoteSlide.coming(it) })
+        assertEquals(1f, NoteSlide.leaving(0f))
+        near(200f, ends { 1f - NoteSlide.leaving(it) })
+        // Ease out coming up, ease in leaving: past halfway at half time, and not yet halfway down.
+        assertTrue(NoteSlide.coming(150f) > 0.5f)
+        assertTrue(NoteSlide.leaving(100f) > 0.5f)
+    }
+
+    @Test
+    fun `the Level card after an unlock comes up from 1800 to 2100 ms`() {
+        near(1800f, Unlocking(worldOpens = false).card)
+        near(2100f, Unlocking(worldOpens = false).card + NoteSlide.IN)
+    }
 }

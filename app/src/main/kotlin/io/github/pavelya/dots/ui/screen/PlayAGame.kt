@@ -65,6 +65,10 @@ import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.GameLength
 import io.github.pavelya.dots.data.GameMode
+import io.github.pavelya.dots.ui.motion.NoteMotion
+import io.github.pavelya.dots.ui.motion.dim
+import io.github.pavelya.dots.ui.motion.rememberNoteMotion
+import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.Palette
 
 /** The hand-cut shape of the big cards (the wireframe's border-radius). */
@@ -84,7 +88,7 @@ private val CHOICE_SHAPE = RoundedCornerShape(14.dp)
  *
  * [onPlay] gets the mode and whether to start a new game even though one is [saved]. Close, Back
  * or a tap on the map around the note closes it ([onClose]); while the note asks, Back returns to
- * the cards.
+ * the cards. It slides up as the map behind it dims, and down as it leaves ([motion]).
  */
 @Composable
 fun PlayAGameNote(
@@ -93,6 +97,7 @@ fun PlayAGameNote(
     onSettings: (change: (AppSettings) -> AppSettings) -> Unit,
     onPlay: (mode: GameMode, replace: Boolean) -> Unit,
     onClose: () -> Unit,
+    motion: NoteMotion = rememberNoteMotion(),
 ) {
     val style = Palette.current
     var setup by rememberSaveable { mutableStateOf(false) }
@@ -109,13 +114,13 @@ fun PlayAGameNote(
     }
     BoxWithConstraints(
         contentAlignment = Alignment.BottomCenter,
-        modifier = Modifier.fillMaxSize().semantics { paneTitle = title },
+        modifier = Modifier.fillMaxSize().dim(style.scrim) { motion.up }.semantics { paneTitle = title },
     ) {
         val cardHeight = if (maxHeight >= 700.dp) 88.dp else 72.dp
         val tallest = maxHeight - 40.dp
         // A tap on the map around the note closes it; the note takes its own taps.
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
-        Box(Modifier.padding(start = 10.dp, end = 10.dp, bottom = 14.dp, top = 24.dp).rotate(0.6f)) {
+        Box(Modifier.slideUp { motion.up }.padding(start = 10.dp, end = 10.dp, bottom = 14.dp, top = 24.dp).rotate(0.6f)) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier

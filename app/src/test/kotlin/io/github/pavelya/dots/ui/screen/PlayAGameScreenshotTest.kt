@@ -1,12 +1,10 @@
 package io.github.pavelya.dots.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -46,7 +44,6 @@ class PlayAGameScreenshotTest {
                 Surface {
                     Box(Modifier.fillMaxSize().padding(top = 24.dp, bottom = 12.dp)) {
                         MapScreen(map, actions)
-                        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
                         PlayAGameNote(saved = saved, settings = AppSettings(), onSettings = {}, onPlay = { _, _ -> }, onClose = {})
                     }
                 }

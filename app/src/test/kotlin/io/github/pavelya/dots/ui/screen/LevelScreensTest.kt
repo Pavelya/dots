@@ -34,6 +34,7 @@ import io.github.pavelya.dots.data.ReviewRule
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
+import io.github.pavelya.dots.ui.motion.OpeningNote
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
@@ -121,7 +122,7 @@ class LevelScreensTest {
         val note = "Mission. Capture 1 dot in 3 moves. Captured 0 of 1. 3 moves left"
         compose.onNodeWithContentDescription(note).assertDoesNotExist()
 
-        compose.mainClock.advanceTimeBy(OPENING_MILLIS + 100)
+        compose.mainClock.advanceTimeBy(OpeningNote.LENGTH.toLong() + 100)
         compose.onNodeWithText("World 1 · Level 7").assertDoesNotExist()
         compose.onNodeWithContentDescription(note).assertIsDisplayed()
     }
