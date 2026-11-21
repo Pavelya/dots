@@ -1230,7 +1230,7 @@ STOPS = [  # (level, x, y, state, stars)
 STOPS_LATE = [(lv if isinstance(lv, str) else lv + 5, x, y, st, n) for lv, x, y, st, n in STOPS]
 
 WORLDS = {  # number: (name, the player's title, the world's stars)
-    1: ("Notebook", "Apprentice", "14 of 45"),
+    1: ("Countryside", "Apprentice", "14 of 45"),
     2: ("Garden", "Apprentice", "21 of 60"),
     3: ("Night sky", "Strategist", "18 of 60"),
     4: ("Sea", "Master", "9 of 60"),

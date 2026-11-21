@@ -65,7 +65,7 @@ class MapScreenTest {
         show(Progress.NONE)
 
         compose.onNodeWithContentDescription("Level 1-1, next").assertIsDisplayed()
-        compose.onNodeWithContentDescription("World 1, Notebook, Novice, 0 of 45 stars").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 1, Countryside, Novice, 0 of 45 stars").assertIsDisplayed()
         capture("map_new_player")
     }
 
@@ -174,7 +174,7 @@ class MapScreenTest {
         show(SampleProgress.worldNeedsStars)
 
         compose.onNodeWithText("Stars needed: 20. You have 15.").assertIsDisplayed()
-        compose.onNodeWithContentDescription("World 1, Notebook, Apprentice, 15 of 45 stars").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 1, Countryside, Apprentice, 15 of 45 stars").assertIsDisplayed()
         capture("map_world_needs_stars")
 
         compose.onNodeWithText("Garden").performClick()
@@ -186,7 +186,7 @@ class MapScreenTest {
     fun `the title shows beside the stars, and the chest after level 10 is ready once it is passed`() {
         show(Progress(Campaign.levels.take(10).associate { it.code to 2 }))
 
-        compose.onNodeWithContentDescription("World 1, Notebook, Apprentice, 20 of 45 stars").assertIsDisplayed()
+        compose.onNodeWithContentDescription("World 1, Countryside, Apprentice, 20 of 45 stars").assertIsDisplayed()
         compose.onNodeWithContentDescription("Chest after level 1-10, ready to open").assertIsDisplayed()
         capture("map_chest_ready")
 
