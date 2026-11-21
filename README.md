@@ -126,10 +126,12 @@ Implemented from the Wikipedia article
    playable. An enemy dot dropped into such an area is not lost on the spot: it lives until the
    owner closes a *new* chain around it with a newly placed dot. Meanwhile it can be used to
    complete the intruder's own chain.
-4. **Grounding.** A group of dots touching the border can never be surrounded. On their turn, a
-   player may **stop**, saying "all the dots I want to keep are grounded". Their opponent then
-   moves as often as they like to capture what is left, and ends the game with **done**. Whoever
-   has captured more dots wins.
+4. **Grounding.** A dot joined to the border by its side's dots, stepping only up, down, left or
+   right, can never be surrounded: it is *safe* (see [Missions](#missions)). Touching the border
+   across a diagonal step is not enough, since the enemy can close its own diagonal step through
+   the same spot. On their turn, a player may **stop**, saying "all the dots I want to keep are
+   grounded". Their opponent then moves as often as they like to capture what is left, and ends
+   the game with **done**. Whoever has captured more dots wins.
 5. **Openings.** Because a player who only plays on the border can never be captured, games
    normally start from a few dots in the middle: a *cross* (a 2×2 block, colours alternating),
    a *double cross*, or four crosses placed randomly (`Openings`).
@@ -621,11 +623,12 @@ Endgame behaviour follows the grounding rule:
 
 - **Stopping.** In a game without a dot budget the computer declares its dots grounded only when
   the game is already decided: its lead exceeds the opponent's score plus every dot of its own
-  that is still exposed.
-- **Collecting** (after the human stops). It builds the cheapest wall around each exposed enemy
-  group, using the same cut computed exactly by `Cleanup`, until nothing is left to take. Known
-  gap: a group already inside the computer's own closed chain would need a dividing wall, which
-  the planner doesn't try.
+  that is still exposed: not safe, so the opponent could capture it after a stop
+  (`Grounding.exposed`).
+- **Collecting** (after the human stops). It builds the cheapest wall around each group of
+  exposed enemy dots, even dots joined to the border only diagonally, using the same cut computed
+  exactly by `Cleanup`, until nothing is left to take. Known gap: a group already inside the
+  computer's own closed chain would need a dividing wall, which the planner doesn't try.
 
 ### Strength steps
 

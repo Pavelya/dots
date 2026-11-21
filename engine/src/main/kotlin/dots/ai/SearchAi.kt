@@ -64,13 +64,14 @@ class SearchAi(
 
     /**
      * Declares the dots grounded once the game is already won: even if the opponent captured every
-     * dot of mine that is still exposed, they would not catch up. Not used with a dot budget,
-     * which ends the game by itself.
+     * dot of mine that is still exposed ([Grounding.exposed]), they would not catch up. That is
+     * the exact test: after a stop the opponent plays unanswered and can capture every exposed dot
+     * but no other. Not used with a dot budget, which ends the game by itself.
      */
     private fun shouldStop(state: GameState): Boolean {
         val me = state.toMove
         if (state.dotsLeft(me) != null) return false
-        val exposed = Grounding.ungrounded(state, me).sumOf { group -> group.sumOf { state.worth(it) } }
+        val exposed = Grounding.exposed(state, me).sumOf { group -> group.sumOf { state.worth(it) } }
         return state.score(me) > state.score(me.opponent) + exposed
     }
 
