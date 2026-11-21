@@ -79,7 +79,7 @@ enum class Track(val file: String) {
     val asset: String get() = "audio/$file.ogg"
 
     companion object {
-        /** The boards' track of [world]: World 1 has the notebook, World 4 the sea; a world after those has the notebook. */
+        /** The boards' track of [world]: World 1 has the notebook track, World 4 the sea; a world after those has the notebook track. */
         fun ofWorld(world: Int): Track = when (world) {
             2 -> GARDEN
             3 -> NIGHT_SKY

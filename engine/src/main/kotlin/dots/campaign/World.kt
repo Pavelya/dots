@@ -22,7 +22,7 @@ data class World(val number: Int, val name: String, val starsToOpen: Int, val le
          * few for more stars is.
          */
         internal val NAMES_AND_STARS = listOf(
-            "Notebook" to 0,
+            "Countryside" to 0,
             "Garden" to 20,
             "Night sky" to 45,
             "Sea" to 75,
