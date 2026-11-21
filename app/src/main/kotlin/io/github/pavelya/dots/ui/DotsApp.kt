@@ -33,6 +33,7 @@ import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -441,7 +442,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         val mode = GameMode.of(entry.arguments?.getString("mode")) ?: GameMode.CAMPAIGN
                         val loaded by app.games.loaded.collectAsStateWithLifecycle()
                         if (loaded) {
-                            val start = remember { app.games.saved(mode) ?: if (mode == GameMode.DAILY) solvedDaily(app) else null }
+                            // Kept by the screen, not the composition: once the game ends the store holds none, and
+                            // a recreated screen (the phone turned) must find the same game, with its Result.
+                            val start = viewModel { OpenedGame(app.games.saved(mode) ?: if (mode == GameMode.DAILY) solvedDaily(app) else null) }.start
                             if (start == null) {
                                 // Nothing to resume (the app was restarted after the game ended).
                                 LaunchedEffect(Unit) { toMap() }
@@ -639,6 +642,13 @@ private val GameLogEntry.levelCode: String? get() = (record as? LevelRecord)?.le
 
 /** The level of a saved campaign game, as its code, a practice game's included; null for any other game. */
 private val GameLogEntry.levelOrPractice: String? get() = (record as? LevelRecord)?.level?.code
+
+/**
+ * The game a game screen opened with, or null when there was nothing to play. It lives as long as
+ * the screen on the back stack, so turning the phone keeps it, also after the game has ended; it
+ * goes when the app is closed.
+ */
+private class OpenedGame(val start: GameLogEntry?) : ViewModel()
 
 /**
  * Today's solved puzzle as a finished game, for View result: the attempt that solved it, replayed
