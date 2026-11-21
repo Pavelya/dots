@@ -252,7 +252,7 @@
     <string name="rules_border_text">Dots on the edge of the board can never be captured, because no ring can go round them.</string>
     <string name="rules_border_picture">A blue dot on the edge, with red dots around it, is safe.</string>
     <string name="rules_end">How a game ends</string>
-    <string name="rules_end_text">Both sides have the same number of dots to place. When all are placed, whoever captured more dots wins.</string>
+    <string name="rules_end_text">Both sides have the same number of dots to place, and the game ends when all are placed. In an open-ended game there is no limit: a player taps Stop when the dots they keep are safe, and the other side captures what is left, then taps Done. Either way, whoever captured more dots wins.</string>
     <string name="rules_end_picture">Two red dots and two blue dots.</string>
     <string name="play_tutorial">Play the tutorial</string>
 
