@@ -1,54 +1,53 @@
 package dots.engine
 
 /**
- * Groups of a player's live dots, joined orthogonally or diagonally. A group that touches the
- * border ([GameState.isBorder]) is "grounded": it can never be enclosed, so it can never be
+ * Which of a player's dots can still be captured.
+ *
+ * A live dot is **safe** ([safe]) when a chain joins it to the border ([GameState.isBorder]),
+ * stepping only up, down, left or right, through the player's live dots and points out of play.
+ * Nobody can ever place a dot on such a chain, so no ring can cross it: a safe dot can never be
  * captured.
+ *
+ * Every other live dot is **exposed** ([exposed]). An opponent who may place as many dots as they
+ * like unanswered, as after a stop, can capture every exposed dot: once every empty point is
+ * filled, nothing joins it to the border. While both players still move, the owner may defend it.
+ *
+ * Touching the border is not enough. A group joined to the border only by a diagonal step can be
+ * cut off: the enemy closes its own diagonal step through the same spot. Here a2 and b3 form one
+ * group ([groups]) touching the border, and blue captures b3 by playing b2:
+ * ```
+ * .....
+ * R.B..
+ * BRB..
+ * .B...
+ * ```
  */
 object Grounding {
-    fun groups(state: GameState, player: Player): List<List<Pos>> {
-        val width = state.width
-        val height = state.height
-        val seen = BooleanArray(width * height)
-        val groups = ArrayList<List<Pos>>()
-        for (start in 0 until width * height) {
-            if (seen[start] || !isLive(state, player, start % width, start / width)) continue
-            val group = ArrayList<Pos>()
-            val stack = ArrayDeque<Int>()
-            stack.addLast(start)
-            seen[start] = true
-            while (stack.isNotEmpty()) {
-                val i = stack.removeLast()
-                val x = i % width
-                val y = i / width
-                group += Pos(x, y)
-                for (dy in -1..1) {
-                    for (dx in -1..1) {
-                        val nx = x + dx
-                        val ny = y + dy
-                        if (!state.inBounds(nx, ny) || seen[ny * width + nx]) continue
-                        if (isLive(state, player, nx, ny)) {
-                            seen[ny * width + nx] = true
-                            stack.addLast(ny * width + nx)
-                        }
-                    }
-                }
-            }
-            groups += group
-        }
-        return groups
-    }
-
-    /** The groups that can still be captured: those not touching the border. */
-    fun ungrounded(state: GameState, player: Player): List<List<Pos>> =
-        groups(state, player).filter { group -> group.none { onBorder(state, it) } }
+    /** [player]'s live dots in groups, joined orthogonally or diagonally as the links of a ring are. */
+    fun groups(state: GameState, player: Player): List<List<Pos>> =
+        groupsOf(state) { x, y -> isLive(state, player, x, y) }
 
     /**
-     * [player]'s live dots that can certainly never be captured: those joined to the border by a
-     * chain that steps only up, down, left or right, through the player's live dots and points
-     * out of play (holes, blocked points, the inside of earlier captures). An enemy ring cannot
-     * cross such a chain: nobody can ever place a dot on its points. A ring can cross a diagonal
-     * step, so a group that is only joined to the border diagonally may not be safe.
+     * The groups ([groups]) that touch no border point. This is a quick guess at what can be
+     * captured, not a guarantee: a group touching the border can still lose the dots it reaches
+     * only by a diagonal step (see [Grounding]). [exposed] gives the exact answer.
+     */
+    fun ungrounded(state: GameState, player: Player): List<List<Pos>> =
+        groups(state, player).filter { group -> group.none { state.isBorder(it.x, it.y) } }
+
+    /**
+     * [player]'s live dots that are not [safe], in groups joined orthogonally or diagonally. These
+     * are exactly the dots an opponent playing unanswered can capture.
+     */
+    fun exposed(state: GameState, player: Player): List<List<Pos>> {
+        val safe = safe(state, player)
+        return groupsOf(state) { x, y -> isLive(state, player, x, y) && Pos(x, y) !in safe }
+    }
+
+    /**
+     * [player]'s live dots that can never be captured: those joined to the border by a chain that
+     * steps only up, down, left or right, through the player's live dots and points out of play
+     * (holes, blocked points, the inside of earlier captures). See [Grounding].
      */
     fun safe(state: GameState, player: Player): Set<Pos> {
         val width = state.width
@@ -84,12 +83,44 @@ object Grounding {
 
     private val STRAIGHT = listOf(-1 to 0, 1 to 0, 0 to -1, 0 to 1)
 
+    /** The points where [member] holds, in groups joined orthogonally or diagonally. */
+    private fun groupsOf(state: GameState, member: (Int, Int) -> Boolean): List<List<Pos>> {
+        val width = state.width
+        val height = state.height
+        val seen = BooleanArray(width * height)
+        val groups = ArrayList<List<Pos>>()
+        for (start in 0 until width * height) {
+            if (seen[start] || !member(start % width, start / width)) continue
+            val group = ArrayList<Pos>()
+            val stack = ArrayDeque<Int>()
+            stack.addLast(start)
+            seen[start] = true
+            while (stack.isNotEmpty()) {
+                val i = stack.removeLast()
+                val x = i % width
+                val y = i / width
+                group += Pos(x, y)
+                for (dy in -1..1) {
+                    for (dx in -1..1) {
+                        val nx = x + dx
+                        val ny = y + dy
+                        if (!state.inBounds(nx, ny) || seen[ny * width + nx]) continue
+                        if (member(nx, ny)) {
+                            seen[ny * width + nx] = true
+                            stack.addLast(ny * width + nx)
+                        }
+                    }
+                }
+            }
+            groups += group
+        }
+        return groups
+    }
+
     private fun isLive(state: GameState, player: Player, x: Int, y: Int) =
         state.ownerAt(x, y) == player && !state.isCaptured(x, y)
 
     /** A point a safe chain may run through: one of [player]'s live dots, or a point out of play. */
     private fun isLink(state: GameState, player: Player, x: Int, y: Int) =
         isLive(state, player, x, y) || state.isDead(x, y)
-
-    private fun onBorder(state: GameState, pos: Pos) = state.isBorder(pos.x, pos.y)
 }

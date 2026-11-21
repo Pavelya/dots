@@ -378,28 +378,6 @@ class GameStateTest {
     }
 
     @Test
-    fun `groups touching the border are grounded and the rest are exposed`() {
-        val state = GameState.fromAscii(
-            """
-            R.......
-            .R......
-            ........
-            ....R...
-            ....RR..
-            ........
-            ......B.
-            ........
-            """,
-        )
-
-        val exposed = Grounding.ungrounded(state, Player.RED)
-
-        assertEquals(1, exposed.size)
-        assertEquals(setOf(Pos(4, 3), Pos(4, 4), Pos(5, 4)), exposed[0].toSet())
-        assertEquals(1, Grounding.ungrounded(state, Player.BLUE).size)
-    }
-
-    @Test
     fun `a cross is a 2x2 block of alternating colours in the middle`() {
         val state = GameState.start(8, 8, dots = Openings.cross(8, 8))
 

@@ -124,7 +124,7 @@ class CampaignTest {
     fun `every level gives the human dots that can be captured`() {
         // Otherwise playing only on the border would be a safe way to never lose.
         for (level in Campaign.levels) {
-            assertTrue(Grounding.ungrounded(level.newGame(), level.human).isNotEmpty(), level.name)
+            assertTrue(Grounding.exposed(level.newGame(), level.human).isNotEmpty(), level.name)
         }
     }
 
