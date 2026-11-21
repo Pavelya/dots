@@ -2,6 +2,7 @@ package io.github.pavelya.dots.ui.motion
 
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -34,9 +35,13 @@ class NoteMotionTest {
 
     private fun step(ms: Long) = compose.mainClock.advanceTimeBy(ms, ignoreFrameDuration = true)
 
+    /** Closes the note: the change reaches the screen on the next frame, and the note starts down on the one after. */
     private fun close() {
-        compose.runOnUiThread { open.value = false }
-        compose.mainClock.advanceTimeByFrame()
+        compose.runOnUiThread {
+            open.value = false
+            Snapshot.sendApplyNotifications()
+        }
+        repeat(2) { compose.mainClock.advanceTimeByFrame() }
     }
 
     @Test
@@ -63,7 +68,11 @@ class NoteMotionTest {
         step(100)
         val got = motion.up
         close()
-        assertTrue("${motion.up} after $got", motion.up <= got && motion.up > 0f)
+        val leaving = motion.up
+        // No jump up to its place, nor down out of sight: it starts down from about where it was.
+        assertTrue("$leaving after $got", leaving > got - 0.2f && leaving < got + 0.2f && leaving < 1f)
+        step(50)
+        assertTrue("${motion.up} after $leaving", motion.up < leaving)
         step(250)
         assertTrue(motion.gone)
     }
