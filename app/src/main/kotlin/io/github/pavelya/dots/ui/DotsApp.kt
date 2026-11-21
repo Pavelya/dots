@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -28,9 +30,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.content.FileProvider
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
@@ -46,7 +51,6 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import androidx.compose.ui.window.DialogProperties
 import dots.campaign.Campaign
 import dots.campaign.Level
 import dots.campaign.LevelRecord
@@ -55,8 +59,8 @@ import dots.campaign.Tutorial
 import dots.daily.Daily
 import dots.daily.DailyRecord
 import dots.engine.Player
-import dots.log.Outcome
 import dots.log.GameLogEntry
+import dots.log.Outcome
 import io.github.pavelya.dots.BuildConfig
 import io.github.pavelya.dots.DotsApplication
 import io.github.pavelya.dots.R
@@ -76,6 +80,11 @@ import io.github.pavelya.dots.game.freeGame
 import io.github.pavelya.dots.game.freeGameLike
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.haptics.LocalHaptics
+import io.github.pavelya.dots.ui.motion.Capturing
+import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import io.github.pavelya.dots.ui.motion.NoteMotion
+import io.github.pavelya.dots.ui.motion.animationsRemoved
+import io.github.pavelya.dots.ui.motion.rememberNoteMotion
 import io.github.pavelya.dots.ui.screen.BoostersNote
 import io.github.pavelya.dots.ui.screen.ChestNote
 import io.github.pavelya.dots.ui.screen.DailyAction
@@ -95,9 +104,6 @@ import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.screen.StatsScreen
 import io.github.pavelya.dots.ui.screen.ThemeScreen
 import io.github.pavelya.dots.ui.screen.Unlock
-import io.github.pavelya.dots.ui.motion.Capturing
-import io.github.pavelya.dots.ui.motion.LocalReduceMotion
-import io.github.pavelya.dots.ui.motion.animationsRemoved
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.GameTheme
 import kotlinx.coroutines.Dispatchers
@@ -285,6 +291,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             streak = daily?.streak(app.clock.today())?.days ?: 0,
                             unlock = unlock,
                             onUnlocked = { unlock = null },
+                            covered = top?.destination?.route != Routes.MAP,
                         )
                     }
                     dialog(
@@ -300,7 +307,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         val scope = rememberCoroutineScope()
                         if (level == null) {
                             LaunchedEffect(Unit) { back() }
-                        } else {
+                        } else NoteWindow(back) { motion, close ->
                             val campaignGame = saved[GameMode.CAMPAIGN]
                             LevelCard(
                                 level = level,
@@ -322,7 +329,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                     }
                                 },
                                 onBooster = { navController.navigate(Routes.boosters(level.world, level.number)) },
-                                onClose = back,
+                                onClose = close,
+                                motion = motion,
                             )
                         }
                     }
@@ -337,7 +345,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         val progress by app.progress.saved.collectAsStateWithLifecycle()
                         val owned = level?.let { progress?.owned(it) }.orEmpty()
                         val left = level?.boosters.orEmpty().let { own -> (own.keys + owned.keys).associateWith { (own[it] ?: 0) + (owned[it] ?: 0) } }
-                        BoostersNote(left = left, onClose = back)
+                        NoteWindow(back) { motion, close -> BoostersNote(left = left, onClose = close, motion = motion) }
                     }
                     dialog(
                         Routes.CHEST,
@@ -353,24 +361,28 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             chest == null -> LaunchedEffect(Unit) { back() }
                             // Opened already (or not yet ready): nothing to pick.
                             !picked && progress?.isReady(chest) == false -> LaunchedEffect(Unit) { back() }
-                            else -> ChestNote(
-                                chest,
-                                // Saved in the app's scope; then the next level's card opens over the map
-                                // (flows.md, "Around the board").
-                                onPick = { reward ->
-                                    if (!picked) {
-                                        picked = true
-                                        audio.play(Effect.REWARD) // the chest opens
-                                        appScope.launch {
-                                            app.progress.open(chest, reward)
-                                            val next = Campaign.map(app.progress.progress.first()).next
-                                            toMap()
-                                            if (next != null) navController.navigate(Routes.level(next.world, next.number))
+                            else -> NoteWindow(back) { motion, close ->
+                                ChestNote(
+                                    chest,
+                                    // Saved in the app's scope; then the next level's card opens over the map
+                                    // (flows.md, "Around the board"). When the level's unlock plays behind
+                                    // the chest, the map opens the card once the unlock is over.
+                                    onPick = { reward ->
+                                        if (!picked) {
+                                            picked = true
+                                            audio.play(Effect.REWARD) // the chest opens
+                                            appScope.launch {
+                                                app.progress.open(chest, reward)
+                                                val next = Campaign.map(app.progress.progress.first()).next
+                                                toMap()
+                                                if (next != null && unlock == null) navController.navigate(Routes.level(next.world, next.number))
+                                            }
                                         }
-                                    }
-                                },
-                                onClose = back,
-                            )
+                                    },
+                                    onClose = close,
+                                    motion = motion,
+                                )
+                            }
                         }
                     }
                     dialog(Routes.DAILY, dialogProperties = DialogProperties(usePlatformDefaultWidth = false)) {
@@ -379,7 +391,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         val loaded by app.games.loaded.collectAsStateWithLifecycle()
                         val progress by app.daily.saved.collectAsStateWithLifecycle()
                         val daily = progress
-                        if (loaded && daily != null) {
+                        if (loaded && daily != null) NoteWindow(back) { motion, close ->
                             val today = app.clock.today()
                             // An unfinished attempt is shown until it ends, even after midnight; then today's puzzle.
                             val unfinished = (saved[GameMode.DAILY]?.record as? DailyRecord)?.puzzle
@@ -406,7 +418,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         navController.navigate(Routes.game(GameMode.DAILY)) { popUpTo(Routes.MAP) }
                                     }
                                 },
-                                onClose = back,
+                                onClose = close,
+                                motion = motion,
                             )
                         }
                     }
@@ -429,13 +442,16 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             }
                         }
                         settings?.let { chosen ->
-                            PlayAGameNote(
-                                saved = saved.keys,
-                                settings = chosen,
-                                onSettings = { change -> scope.launch { app.settings.update(change) } },
-                                onPlay = ::play,
-                                onClose = back,
-                            )
+                            NoteWindow(back) { motion, close ->
+                                PlayAGameNote(
+                                    saved = saved.keys,
+                                    settings = chosen,
+                                    onSettings = { change -> scope.launch { app.settings.update(change) } },
+                                    onPlay = ::play,
+                                    onClose = close,
+                                    motion = motion,
+                                )
+                            }
                         }
                     }
                     composable(Routes.GAME, arguments = listOf(navArgument("mode") { type = NavType.StringType })) { entry ->
@@ -504,9 +520,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         onLevelResult = { level, end, practice ->
                                             activity?.let { over -> appScope.launch { askForReview(app, over, level, end, practice, System.currentTimeMillis()) } }
                                         },
-                                        // Next goes back to the map, which opens the chest the level made
-                                        // ready, if any, and otherwise plays the level's unlock and opens the
-                                        // next level's card.
+                                        // Next goes back to the map, which plays the level's unlock and opens the
+                                        // next level's card. A chest the level made ready opens at once, and the
+                                        // unlock plays behind it; the card then waits until the chest closes.
                                         onNext = { end ->
                                             toMap()
                                             val next = end?.next
@@ -516,9 +532,10 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                             } else {
                                                 null
                                             }
+                                            if (played != null && played.plays) unlock = played
                                             when {
                                                 end?.chest != null -> navController.navigate(Routes.chest(end.chest.after))
-                                                played != null && played.plays -> unlock = played
+                                                played != null && played.plays -> Unit
                                                 next != null -> navController.navigate(Routes.level(next.world, next.number))
                                             }
                                         },
@@ -715,4 +732,28 @@ private suspend fun shareLog(context: Context, app: DotsApplication) {
         .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     send.clipData = ClipData.newRawUri(null, uri)
     context.startActivity(Intent.createChooser(send, context.getString(R.string.log_share)))
+}
+
+/**
+ * A note over the map in its own window (a dialog route): it slides up as it opens, and [content]'s
+ * close, Back or a tap around it slides it down before the window goes ([back]). The note dims the
+ * map itself as it moves, so the window neither dims nor animates (motion.md, "Level opening,
+ * notes and cards"). A button that opens another screen leaves at once.
+ */
+@Composable
+private fun NoteWindow(back: () -> Unit, content: @Composable (motion: NoteMotion, close: () -> Unit) -> Unit) {
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+    SideEffect {
+        window?.setDimAmount(0f)
+        window?.setWindowAnimations(0)
+    }
+    var open by remember { mutableStateOf(true) }
+    val motion = rememberNoteMotion(open)
+    val close = { open = false }
+    BackHandler(enabled = open, onBack = close)
+    LaunchedEffect(motion) {
+        snapshotFlow { motion.gone }.first { it }
+        back()
+    }
+    content(motion, close)
 }

@@ -1,13 +1,11 @@
 package io.github.pavelya.dots.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -106,7 +104,6 @@ class DailyScreenshotTest(private val case: ThemeCase) {
         show(dark) {
             Box {
                 MapScreen(map, actions, streak = streak.days)
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
                 DailyPuzzleNote(
                     puzzle = shown,
                     today = today,

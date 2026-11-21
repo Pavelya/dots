@@ -1,6 +1,5 @@
 package io.github.pavelya.dots.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -8,7 +7,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
@@ -129,7 +127,6 @@ class ProgressScreensTest {
         show {
             Box {
                 MapScreen(Campaign.map(Progress(Campaign.worlds.first().levels.associate { it.code to 3 })), noActions)
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
                 LevelCard(
                     level, saved = false, onStart = { started++ }, onBooster = {}, onClose = {},
                     owned = mapOf(Booster.WALL to 2), replaces = "1-7",

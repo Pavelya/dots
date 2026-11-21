@@ -21,6 +21,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
+import dots.ai.Ai
 import dots.ai.Hints
 import dots.campaign.Campaign
 import dots.campaign.CampaignMap
@@ -28,6 +29,7 @@ import dots.campaign.Level
 import dots.campaign.Progress
 import dots.engine.Action
 import dots.engine.Booster
+import dots.engine.GameState
 import dots.engine.MoveResult
 import dots.engine.Player
 import dots.engine.Pos
@@ -40,11 +42,13 @@ import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.CapturedArea
 import io.github.pavelya.dots.game.Ending
 import io.github.pavelya.dots.game.GameUiState
+import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.LastCapture
 import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.game.OpponentLook
 import io.github.pavelya.dots.game.ThreatMark
 import io.github.pavelya.dots.game.UndoneTurn
+import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.motion.EndOfGame
@@ -57,6 +61,7 @@ import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.Palette
 import io.github.pavelya.dots.ui.theme.ThemeCase
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -381,6 +386,70 @@ class MotionScreenshotTest(private val case: ThemeCase) {
         frames("unlock", 300, 650, 1000, 1400)
         compose.mainClock.advanceTimeBy(500)
         assertEquals(listOf(level8), opened)
+    }
+
+    /** A new game of the canvas's Level 7, Siege, on the game screen; the player moves first, so the computer never answers here. */
+    private fun siege() = GameViewModel(
+        start = levelGame(CanvasGame.level, threatHighlight = false, now = 0),
+        nextGame = { levelGame(CanvasGame.level, threatHighlight = false, now = 0) },
+        computerFor = {
+            object : Ai {
+                override fun choose(state: GameState): Action = Action.Place(state.legalMoves().first())
+            }
+        },
+        computerDispatcher = Dispatchers.Unconfined,
+        replyDelayMillis = 0,
+        clock = { 0L },
+    )
+
+    /**
+     * The level opening (motion.md, "Level opening, notes and cards"; canvas frame `game-start`):
+     * the mission sits big over the board until 1200 ms, shrinks into its corner by 1500 ms, and the
+     * corner note shows through it in the last 150 ms.
+     */
+    @Test
+    fun levelOpening() {
+        notebookOnly()
+        show { GameScreen(siege(), onToMap = {}, onRules = {}) }
+        frames("opening", 600, 1300, 1400, 1500)
+    }
+
+    /** With animations removed the level opens on the corner note at once (motion.md, timing table). */
+    @Test
+    fun levelOpeningWithAnimationsRemoved() {
+        notebookOnly()
+        show(reduce = true) { GameScreen(siege(), onToMap = {}, onRules = {}) }
+        frames("opening_still", 0)
+    }
+
+    @Composable
+    private fun CardOverTheMap() {
+        val level8 = Campaign.level(1, 8)
+        val map = Campaign.map(Progress(Campaign.levels.takeWhile { it != level8 }.associate { it.code to 3 }))
+        val actions = MapActions(onLevel = {}, onDaily = {}, onPlay = {}, onRules = {}, onStats = {}, onShop = {}, onSettings = {})
+        Box {
+            MapScreen(map, actions)
+            LevelCard(level8, saved = false, onStart = {}, onBooster = {}, onClose = {})
+        }
+    }
+
+    /**
+     * A note sliding in (motion.md, "Level opening, notes and cards"): Level 8's card comes up from
+     * below in 300 ms, ease out, while the map dims behind it, as after the unlock of Level 7.
+     */
+    @Test
+    fun levelCardComesUp() {
+        notebookOnly()
+        show { CardOverTheMap() }
+        frames("card_in", 0, 100, 200, 300)
+    }
+
+    /** With animations removed the card is up, and the map dimmed, at once. */
+    @Test
+    fun levelCardWithAnimationsRemoved() {
+        notebookOnly()
+        show(reduce = true) { CardOverTheMap() }
+        frames("card_in_still", 0)
     }
 
     /** Drag's guides (strip-drag): drawn out from the ring in 100 ms as the finger goes down. */

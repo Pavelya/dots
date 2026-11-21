@@ -48,29 +48,34 @@ import androidx.compose.ui.unit.sp
 import dots.campaign.Chest
 import dots.campaign.Reward
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.motion.NoteMotion
+import io.github.pavelya.dots.ui.motion.dim
+import io.github.pavelya.dots.ui.motion.rememberNoteMotion
+import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.GameTheme
 import io.github.pavelya.dots.ui.theme.Palette
 
 /**
  * The Chest (the wireframes' Chest), over the map after every 10th level: the chest, "Ten levels
  * done!", and its two rewards side by side. Tapping one keeps it ([onPick]). Back, or a tap on the
- * map around the note, closes it unopened ([onClose]); the chest then waits on the map.
+ * map around the note, closes it unopened ([onClose]); the chest then waits on the map. It slides
+ * up as the map behind it dims, and down as it leaves ([motion]).
  */
 @Composable
-fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit) {
+fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit, motion: NoteMotion = rememberNoteMotion()) {
     val style = Palette.current
     val title = stringResource(R.string.screen_chest)
     BoxWithConstraints(
         contentAlignment = Alignment.BottomCenter,
         modifier = Modifier
             .fillMaxSize()
-            .background(style.scrim)
+            .dim(style.scrim) { motion.up }
             .semantics { paneTitle = title },
     ) {
         val tall = maxHeight >= 700.dp
         val tallest = maxHeight - 48.dp
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
-        Box(Modifier.padding(start = 14.dp, end = 14.dp, bottom = 24.dp, top = 24.dp).rotate(1f)) {
+        Box(Modifier.slideUp { motion.up }.padding(start = 14.dp, end = 14.dp, bottom = 24.dp, top = 24.dp).rotate(1f)) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(12.dp),

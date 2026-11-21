@@ -24,7 +24,9 @@ import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.board.LinksShown
+import io.github.pavelya.dots.ui.motion.OpeningNote
 import io.github.pavelya.dots.ui.theme.DotsTheme
+import kotlin.random.Random
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -35,7 +37,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import kotlin.random.Random
 
 /**
  * The tutorial (A-06) on the game screen, by finger, with both placing methods (decision 0024):
@@ -182,7 +183,7 @@ class TutorialScreenTest {
         val vm = practice()
         compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}, guidesSkipped = true) } }
         compose.waitUntil(timeoutMillis = 5_000) { vm.ui.value.guide != null }
-        compose.mainClock.advanceTimeBy(OPENING_MILLIS + 100)
+        compose.mainClock.advanceTimeBy(OpeningNote.LENGTH.toLong() + 100)
         compose.onNodeWithText("Tap the circled point.").assertDoesNotExist()
         compose.onNodeWithText("Skip").assertDoesNotExist()
     }

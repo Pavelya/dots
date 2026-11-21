@@ -1,13 +1,11 @@
 package io.github.pavelya.dots.ui.screen
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -63,7 +61,7 @@ class LevelScreenshotTest {
 
     private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
 
-    /** The card of [level] over the map, with every level before it passed, the map dimmed behind it. */
+    /** The card of [level] over the map, with every level before it passed, the map dimmed behind it by the card. */
     private fun card(level: Level, saved: Boolean = false, dark: Boolean = false) {
         val before = Campaign.levels.takeWhile { it != level }
         val map = Campaign.map(Progress(before.withIndex().associate { (i, it) -> it.code to listOf(3, 2, 1)[i % 3] }))
@@ -71,7 +69,6 @@ class LevelScreenshotTest {
         show(dark = dark) {
             Box {
                 MapScreen(map, actions)
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
                 LevelCard(level, saved, onStart = {}, onBooster = {}, onClose = {})
             }
         }

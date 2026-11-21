@@ -388,6 +388,7 @@ internal fun GameBoard(
         }
         if (guide == null) {
             // The note ticks its boxes when the capture's points land, then swells; at 3 dots left it swings once.
+            // As the level opening shrinks into it, it shows through.
             val content = if (pointsIn) campaign?.mission else campaign?.missionBefore ?: campaign?.mission
             content?.let {
                 val swing = Modifier.graphicsLayer {
@@ -395,6 +396,7 @@ internal fun GameBoard(
                     scaleX = size
                     scaleY = size
                     rotationZ = RunningOut.nudge(nudge.now)
+                    alpha = campaign?.missionShown?.invoke() ?: 1f
                 }
                 MissionNote(style, Modifier.align(Alignment.TopEnd).then(swing), if (compact) 120.dp else 136.dp, it)
             }

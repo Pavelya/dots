@@ -159,9 +159,18 @@ data class Unlock(val level: Level, val starsBefore: Int, val stars: Int, val ne
  *
  * After Next, the map plays the [unlock] of the level just passed (motion.md, "Level unlock"),
  * then opens the next level's card and calls [onUnlocked]. A tap shows the end at once, with the card up.
+ * While a note is over the map ([covered]: the Chest the level made ready), the unlock plays behind
+ * it, and the card waits until the note has closed.
  */
 @Composable
-fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0, unlock: Unlock? = null, onUnlocked: () -> Unit = {}) {
+fun MapScreen(
+    map: CampaignMap?,
+    actions: MapActions,
+    streak: Int = 0,
+    unlock: Unlock? = null,
+    onUnlocked: () -> Unit = {},
+    covered: Boolean = false,
+) {
     val style = MapStyle.current
     var lock by remember { mutableStateOf<CampaignMap.Lock?>(null) }
     var lockedChest by remember { mutableStateOf<Chest?>(null) }
@@ -171,9 +180,10 @@ fun MapScreen(map: CampaignMap?, actions: MapActions, streak: Int = 0, unlock: U
     PlayCues(shown, clock) { Cues.unlock(shown?.let { it.firstPass && it.worldOpens } == true, still) }
     val done by rememberUpdatedState(onUnlocked)
     val openLevel by rememberUpdatedState(actions.onLevel)
+    val under by rememberUpdatedState(covered)
     LaunchedEffect(shown) {
         if (shown == null) return@LaunchedEffect
-        snapshotFlow { clock.running }.first { !it }
+        snapshotFlow { clock.running || under }.first { !it }
         shown.next?.let(openLevel)
         done()
     }

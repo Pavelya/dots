@@ -60,6 +60,10 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.ui.board.BoardStyle
 import io.github.pavelya.dots.ui.board.BoardView
+import io.github.pavelya.dots.ui.motion.NoteMotion
+import io.github.pavelya.dots.ui.motion.dim
+import io.github.pavelya.dots.ui.motion.rememberNoteMotion
+import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.FaceInks
 import io.github.pavelya.dots.ui.theme.Palette
 
@@ -78,6 +82,7 @@ private val CHIP_SHAPE = RoundedCornerShape(24.dp)
  * Back, returns to the card. Close, or a tap on the map around the card, closes it.
  *
  * The card is drawn over the whole screen, anchored at the bottom; on a small phone it scrolls.
+ * It slides up as the map behind it dims, and down as it leaves ([motion]).
  */
 @Composable
 fun LevelCard(
@@ -89,6 +94,7 @@ fun LevelCard(
     modifier: Modifier = Modifier,
     owned: Map<Booster, Int> = emptyMap(),
     replaces: String? = null,
+    motion: NoteMotion = rememberNoteMotion(),
 ) {
     val style = Palette.current
     var asking by rememberSaveable { mutableStateOf(false) }
@@ -100,6 +106,7 @@ fun LevelCard(
         contentAlignment = Alignment.BottomCenter,
         modifier = modifier
             .fillMaxSize()
+            .dim(style.scrim) { motion.up }
             .semantics { paneTitle = "$title, ${level.name}" },
     ) {
         val picture = if (maxHeight < 700.dp) 96.dp else 120.dp
@@ -108,6 +115,7 @@ fun LevelCard(
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
+                .slideUp { motion.up }
                 .padding(start = 10.dp, end = 10.dp, bottom = 16.dp, top = 24.dp)
                 .rotate(-0.8f)
                 .heightIn(max = maxHeight - 40.dp)

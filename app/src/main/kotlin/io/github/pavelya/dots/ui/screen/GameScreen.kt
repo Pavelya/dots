@@ -18,11 +18,15 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.TransformOrigin
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.changedToDown
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -38,6 +42,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.audio.Effect
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PlacingMethod
+import io.github.pavelya.dots.game.BoosterAim
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.ui.board.BoardInput
@@ -45,11 +50,15 @@ import io.github.pavelya.dots.ui.motion.Beats
 import io.github.pavelya.dots.ui.motion.Cues
 import io.github.pavelya.dots.ui.motion.EndOfGame
 import io.github.pavelya.dots.ui.motion.LocalReduceMotion
+import io.github.pavelya.dots.ui.motion.OpeningNote
 import io.github.pavelya.dots.ui.motion.PlayCues
 import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.playOut
 import io.github.pavelya.dots.ui.motion.rememberBoosterTimeline
 import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
+import io.github.pavelya.dots.ui.motion.rememberNoteMotion
+import io.github.pavelya.dots.ui.motion.rememberTimeline
+import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.Palette
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
@@ -61,7 +70,8 @@ import kotlinx.coroutines.flow.first
  * 0023). The daily puzzle has no tool bar ([boosters] null). Free play and two players leave it out.
  * While a capture plays, the note shows the mission as it was before it ([missionBefore]) until the
  * points land. A level's [world] adds its board touches beside the opponent ([BoardTouches]); the
- * daily puzzle belongs to no world.
+ * daily puzzle belongs to no world. While the level opening hands over to the mission note, the
+ * note shows through it as far as [missionShown] says, from 0 to 1.
  */
 class CampaignParts(
     val title: String,
@@ -69,10 +79,8 @@ class CampaignParts(
     val boosters: (@Composable RowScope.() -> Unit)?,
     val missionBefore: (@Composable () -> Unit)? = null,
     val world: Int? = null,
+    val missionShown: () -> Float = { 1f },
 )
-
-/** How long the level opening shows the mission big over the board (motion.md, Level opening: 1200 ms, then 300 ms to shrink). */
-internal const val OPENING_MILLIS = 1_500L
 
 /**
  * How long after Result opens its note has settled and stamped the stars (motion.md: the note
@@ -109,11 +117,13 @@ private fun rememberEndTimeline(ui: GameUiState, moment: Timeline): Timeline {
 
 /**
  * The game board, laid out as the canvas game frames (docs/design/canvas): see [GameBoard]. A
- * campaign level opens with its mission big over the board for a moment, then the mission sits in
- * the corner note. The pause icon, or Back, opens Pause over the board; when the game ends, Result
- * opens over the final board (docs/design/flows.md, "Around the board"). [sound] is the setting the
- * sound icon in Pause turns on or off through [onSound]. Dots are placed by the [placing] method,
- * and the board draws links between touching dots of one side when [links] is on.
+ * campaign level opens with its mission big over the board for a moment, then the mission shrinks
+ * into the corner note (motion.md, "Level opening, notes and cards"); a touch anywhere ends the
+ * opening at once and still reaches what it touched. The pause icon, or Back, opens Pause over the
+ * board; when the game ends, Result opens over the final board (docs/design/flows.md, "Around the
+ * board"). Pause and the booster preview slide up as they open and down as they close. [sound] is
+ * the setting the sound icon in Pause turns on or off through [onSound]. Dots are placed by the
+ * [placing] method, and the board draws links between touching dots of one side when [links] is on.
  *
  * Result's buttons: Retry and Play again start the next game here; Map goes to [onToMap]; Next, in
  * the campaign, goes to [onNext] with the level's end: the chest it made ready, which opens first,
@@ -159,32 +169,36 @@ fun GameScreen(
     val style = Palette.current
     val level = ui.level
     val daily = ui.daily
-    // Each new game of a level, and each daily attempt, opens with its mission; the first move, or a moment, ends it.
+    // Each new game of a level, and each daily attempt, opens with its mission; a touch, the first move, or a moment, ends it.
     var opening by rememberSaveable(ui.round) { mutableStateOf((level != null || daily != null) && ui.fresh) }
-    LaunchedEffect(ui.round, ui.fresh) {
-        if (!ui.fresh) {
-            opening = false
-        } else if (opening) {
-            delay(OPENING_MILLIS)
-            opening = false
-        }
+    val opens = rememberTimeline(ui.round.takeIf { opening }, OpeningNote.LENGTH)
+    LaunchedEffect(ui.round, ui.fresh) { if (!ui.fresh) opening = false }
+    LaunchedEffect(opens) {
+        snapshotFlow { opens.running }.first { !it }
+        opening = false
     }
+    // The big note shows until the clock ends; the corner note from the start of the shrink.
+    val openingShown by remember(opens, ui.round) { derivedStateOf { opening && opens.running } }
+    val holding by remember(opens, ui.round) { derivedStateOf { opening && opens.now < OpeningNote.HOLD } }
+    val missionShown = { if (openingShown) OpeningNote.handOver(opens.now) else 1f }
     val guided = ui.guided && !guidesSkipped
     val guide = ui.guide?.takeIf { guided && !opening }
     val mission = ui.mission
     val campaign = when {
         level != null -> CampaignParts(
             title = stringResource(R.string.level_number, level.number),
-            mission = if (opening || mission == null) null else missionNote(level, mission),
+            mission = if (holding || mission == null) null else missionNote(level, mission),
             boosters = { BoosterBar(boosterTools(ui, viewModel.human), style, viewModel::chooseBooster) },
-            missionBefore = ui.moment?.missionBefore?.takeIf { !opening }?.let { missionNote(level, it) },
+            missionBefore = ui.moment?.missionBefore?.takeIf { !holding }?.let { missionNote(level, it) },
             world = level.world,
+            missionShown = missionShown,
         )
         daily != null -> CampaignParts(
             title = stringResource(R.string.daily_number, daily.number),
-            mission = if (opening || mission == null) null else missionNote(daily.level, mission),
+            mission = if (holding || mission == null) null else missionNote(daily.level, mission),
             boosters = null,
-            missionBefore = ui.moment?.missionBefore?.takeIf { !opening }?.let { missionNote(daily.level, it) },
+            missionBefore = ui.moment?.missionBefore?.takeIf { !holding }?.let { missionNote(daily.level, it) },
+            missionShown = missionShown,
         )
         else -> null
     }
@@ -196,7 +210,23 @@ fun GameScreen(
     // The end and Result play their sounds only for a game that ended on this screen, not one opened over.
     val endedHere = remember(ui.round) { !ui.isOver }
     GameSounds(ui, viewModel, moment, boosting, ending, endedHere)
-    BoxWithConstraints {
+    // The notes over the board: each stays drawn while it slides down, the booster preview with its last aim.
+    val pauseOpen = paused && !ui.isOver
+    val pausing = rememberNoteMotion(pauseOpen)
+    val aimOpen = ui.aim?.takeIf { !ui.isOver }
+    val aiming = rememberNoteMotion(aimOpen != null)
+    val lastAim = remember { arrayOfNulls<BoosterAim>(1) }
+    if (aimOpen != null) lastAim[0] = aimOpen
+    // A touch anywhere ends the opening at once; the touch still reaches what it touched.
+    val endOpening = Modifier.pointerInput(ui.round) {
+        awaitPointerEventScope {
+            while (true) {
+                val event = awaitPointerEvent(PointerEventPass.Initial)
+                if (event.changes.any { it.changedToDown() }) opening = false
+            }
+        }
+    }
+    BoxWithConstraints(endOpening) {
         GameBoard(
             ui = ui,
             human = viewModel.human,
@@ -222,22 +252,38 @@ fun GameScreen(
         if (ui.isOver && !ended) {
             Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { ending.finish() } })
         }
-        if (opening) {
-            val place = Modifier.align(Alignment.TopCenter).padding(top = maxHeight * 0.26f, start = 36.dp, end = 36.dp)
+        if (openingShown) {
+            val top = maxHeight * 0.26f
+            // It shrinks into the corner note's place: their top right corners meet, at the corner note's width and slant.
+            val shrinking = Modifier.graphicsLayer {
+                val p = OpeningNote.shrink(opens.now)
+                if (p > 0f) {
+                    val scale = 1f + (OPENING_CORNER_WIDTH.toPx() / size.width - 1f) * p
+                    transformOrigin = TransformOrigin(1f, 0f)
+                    scaleX = scale
+                    scaleY = scale
+                    translationX = (OPENING_SIDE - OPENING_CORNER_END).toPx() * p
+                    translationY = (OPENING_CORNER_TOP - top).toPx() * p
+                    rotationZ = OPENING_TURN * p
+                    alpha = 1f - OpeningNote.handOver(opens.now)
+                }
+            }
+            val place = Modifier.align(Alignment.TopCenter).padding(top = top, start = OPENING_SIDE, end = OPENING_SIDE).then(shrinking)
             if (level != null) LevelOpening(level, place) else if (daily != null) DailyOpening(daily, place)
         }
-        val aim = ui.aim
-        if (aim != null && !ui.isOver) {
+        val aim = aimOpen ?: lastAim[0]
+        if (aim != null && !aiming.gone) {
             BoosterNote(
                 aim = aim,
                 method = placing,
                 style = style,
                 onCancel = viewModel::cancelBooster,
                 onConfirm = viewModel::confirmBooster,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+                modifier = Modifier.align(Alignment.BottomCenter).slideUp { aiming.up }.padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
+                motion = aiming,
             )
         }
-        if (paused && !ui.isOver) {
+        if (pauseOpen || !pausing.gone) {
             PauseNote(
                 sound = sound,
                 onSound = onSound,
@@ -245,6 +291,7 @@ fun GameScreen(
                 onRestart = if (daily != null) null else ({ paused = false; viewModel.playAgain() }),
                 onToMap = onToMap,
                 onRules = onRules,
+                motion = pausing,
             )
         }
         val end = ui.levelEnd
@@ -304,6 +351,15 @@ private fun GameSounds(ui: GameUiState, viewModel: GameViewModel, moment: Timeli
     val endStarted by remember(ending) { derivedStateOf { ending.now > 0f } }
     PlayCues(ui.round.takeIf { ui.isOver && endedHere && !reduce && endStarted }, ending) { Cues.ending(EndOfGame(ui.captureOrder.size)) }
 }
+
+/** The level opening's note: 36 dp from each side of the screen, turned −1.5° ([LevelOpening]). */
+private val OPENING_SIDE = 36.dp
+
+/** Where it shrinks to: the corner note's top right corner and width, and its turn beyond the opening's (GameBoard's MissionNote). */
+private val OPENING_CORNER_TOP = 6.dp
+private val OPENING_CORNER_END = 12.dp
+private val OPENING_CORNER_WIDTH = 136.dp
+private const val OPENING_TURN = 3.5f
 
 /** The mission note's content for [level] where its mission stands at [status]. */
 internal fun missionNote(level: Level, status: MissionStatus): @Composable () -> Unit = { MissionNoteContent(level, status) }

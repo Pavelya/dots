@@ -49,15 +49,19 @@ import dots.daily.DailyPuzzle
 import dots.daily.Day
 import dots.daily.Streak
 import io.github.pavelya.dots.R
+import io.github.pavelya.dots.ui.motion.NoteMotion
+import io.github.pavelya.dots.ui.motion.dim
+import io.github.pavelya.dots.ui.motion.rememberNoteMotion
+import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.Palette
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 
 /** What the big button of Today's puzzle does. */
 enum class DailyAction {
@@ -76,7 +80,8 @@ enum class DailyAction {
  * taped note opens it): "Today's puzzle", the puzzle's number and date, a small picture of the
  * board, the mission, the [streak] and whether this week's freeze is left, and the time to the next
  * puzzle ([toNextPuzzle], kept up to date). One big button: Play, Resume or View result
- * ([action]). Close, Back or a tap on the map around it closes it.
+ * ([action]). Close, Back or a tap on the map around it closes it. It slides up as the map behind
+ * it dims, and down as it leaves ([motion]).
  *
  * Before the first puzzle, or after the last one the app has, [puzzle] is null: the note says
  * when the puzzles start, or that new ones come with an update, and has no button.
@@ -91,12 +96,13 @@ fun DailyPuzzleNote(
     onAction: () -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
+    motion: NoteMotion = rememberNoteMotion(),
 ) {
     val style = Palette.current
     val title = stringResource(R.string.daily_title)
     BoxWithConstraints(
         contentAlignment = Alignment.BottomCenter,
-        modifier = modifier.fillMaxSize().semantics { paneTitle = title },
+        modifier = modifier.fillMaxSize().dim(style.scrim) { motion.up }.semantics { paneTitle = title },
     ) {
         val picture = if (maxHeight < 700.dp) 88.dp else 112.dp
         // Read here: inside the Box below, the Box's own scope hides maxHeight.
@@ -105,6 +111,7 @@ fun DailyPuzzleNote(
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
         Box(
             Modifier
+                .slideUp { motion.up }
                 .padding(start = 12.dp, end = 12.dp, bottom = 14.dp, top = 24.dp)
                 .rotate(-1f),
         ) {
