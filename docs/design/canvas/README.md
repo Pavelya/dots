@@ -8,7 +8,8 @@ wireframes, and use every colour and size from the [Notebook theme](../theme-not
 
 The frames live on [Pinfold canvas](https://claude.ai/artifact/GpJSNGSjeJGhZQCCojXNNj), a Claude
 design canvas: light on the top row, dark below. The canvas opens only for people the owner has
-shared it with. The PNGs on this page are exported from the same drawing. Below the two Notebook
+shared it with. The PNGs on this page are exported from the same drawing. The free play frames
+sit at the end of the two Notebook rows. Below the two Notebook
 rows, Star chart and then Neon arcade each have a light row and a dark row, and below them the
 piece styles, ring effects and Shop.
 
@@ -44,6 +45,24 @@ one frame shows them turned on in Settings.
 | **Game: World 2's board touches.** The threat, with Garden's pencil doodles beside the opponent: a flower, a leaf, a butterfly and a tulip. The board itself is the same in every world. | <img src="game-world-2-light.png" width="180" alt="Light: a game in World 2"> | <img src="game-world-2-dark.png" width="180" alt="Dark: a game in World 2"> |
 | **Game: World 3's board touches.** The threat, with Night sky's pencil doodles beside the opponent: a crescent moon, a star, a comet and a twinkle. The board itself is the same in every world. | <img src="game-world-3-light.png" width="180" alt="Light: a game in World 3"> | <img src="game-world-3-dark.png" width="180" alt="Dark: a game in World 3"> |
 | **Game: World 4's board touches.** The threat, with Sea's pencil doodles beside the opponent: a fish, a shell, a boat and a wave. The board itself is the same in every world. | <img src="game-world-4-light.png" width="180" alt="Light: a game in World 4"> | <img src="game-world-4-dark.png" width="180" alt="Dark: a game in World 4"> |
+
+## Free play and two players
+
+An open-ended game, as on paper (decision 0025): there is no dot limit, a side stops when its dots
+are safe, and the other side captures what is left and ends the game with Done. The board frames
+are one position on a 15 x 15 board. Red leads 4 to 1: its rings run to the top and right edges,
+a chain runs in from the left edge, and a group of three in the lower middle is not joined to any
+edge. After a stop, only dots in groups like that can still be captured.
+
+| Frame | Light | Dark |
+| --- | --- | --- |
+| **Play a game: the setup.** The small link on Play a game opens the setup in the same note: Board, 12 x 12, 15 x 15 or 20 x 20, each with a small square of paper, denser for a bigger board; Game length, Short and Long with each side's dots, or Open-ended, "no limit". One line explains the length chosen. The two cards stay at the bottom, near the thumb, and start a new game with these choices. | <img src="play-setup-light.png" width="180" alt="Light: the setup open on Play a game"> | <img src="play-setup-dark.png" width="180" alt="Dark: the setup open on Play a game"> |
+| **Play a game: replace the saved game?** With the setup open, a card starts a new game. When a game of that kind is saved, a second note is taped over the cards and asks first. It shows the saved game on a small board, with its setup, dots left and score, and says what starts instead. Keep it, or New game. | <img src="play-replace-light.png" width="180" alt="Light: the note asking to replace the saved game"> | <img src="play-replace-dark.png" width="180" alt="Dark: the note asking to replace the saved game"> |
+| **Free play: an open-ended game.** The tool bar holds Stop at the left and Undo at the right, where the campaign keeps its Undo. Each has its icon and its name. Where the dots left would be, the player's line says "no limit". | <img src="game-free-open-light.png" width="180" alt="Light: free play, open-ended, with Stop and Undo"> | <img src="game-free-open-dark.png" width="180" alt="Dark: free play, open-ended, with Stop and Undo"> |
+| **Free play: Stop's note.** Stop does not stop at once: it opens a note over the player's line and the tool bar, as a booster preview does, and the board stays where it is. "Stop? The computer takes what is left." The player's dots that are not joined to the edge get a dashed Highlighter ring, and the note counts them. Cancel, or Stop here. | <img src="game-free-stop-light.png" width="180" alt="Light: Stop's note, three red dots circled"> | <img src="game-free-stop-dark.png" width="180" alt="Dark: Stop's note, three red dots circled"> |
+| **Free play: the computer stopped.** It leads 4 to 1 with two dots not joined to the edge, so it cannot lose and stops. Its face turns smug, it says "I'll stop here.", and a "stopped" chip with a flag sits beside its name until the game ends. Its two open dots are circled. In place of the tool bar: Undo, "Capture what is left, then tap Done." and Done, the one big button. | <img src="game-computer-stops-light.png" width="180" alt="Light: the computer stopped, the player collects"> | <img src="game-computer-stops-dark.png" width="180" alt="Dark: the computer stopped, the player collects"> |
+| **Two players: Red stopped, Blue collects.** The same position after Red stopped. The chip sits beside Red, the pen stroke under Blue, and Red's three open dots are circled. "Blue, capture what is left, then tap Done." No Undo between two people. | <img src="game-two-done-light.png" width="180" alt="Light: two players, Red stopped, Blue collects"> | <img src="game-two-done-dark.png" width="180" alt="Dark: two players, Red stopped, Blue collects"> |
+| **Small phone: the setup.** At 320 x 568 the note keeps every choice and both cards, with smaller choices and cards. The map's top shows behind it. | <img src="small-play-setup-light.png" width="160" alt="Light: the setup on a small phone"> | <img src="small-play-setup-dark.png" width="160" alt="Dark: the setup on a small phone"> |
 
 ## Star chart
 
@@ -154,6 +173,16 @@ These choices are new here. They are proposals for the owner to accept or change
   rules. The thumb on those frames is drawn lighter, since the mark under it is larger.
 - **A booster preview's note** keeps its line to one line; a long one, as Bomb's, is set smaller,
   as the app shrinks it.
+- **The setup** opens inside Play a game: two rows of three choices, chosen in blue ink like a
+  pressed button, and one line on the length chosen. The cards stay the big buttons.
+- **Stop asks in a note,** like a booster preview, not by a second tap on the same button. A
+  double tap can't stop by mistake, and the note has room to say what Stop risks.
+- **Open dots,** the stopper's dots not joined to the edge, get a dashed Highlighter ring: dashed,
+  because nothing threatens them yet. They show on Stop's note and, after a stop, to the side that
+  collects.
+- **The "stopped" chip,** a flag and the word in Graphite, stays beside the stopper's name, so
+  anyone picking up the phone sees who stopped.
+- **Stop's icon** is a flag on its pole. Free play's tools have their names under the icon.
 
 ## Art
 
