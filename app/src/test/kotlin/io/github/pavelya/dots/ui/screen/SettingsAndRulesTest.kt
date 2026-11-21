@@ -206,6 +206,10 @@ class SettingsAndRulesTest {
         for (title in listOf("Placing", "Capturing", "Empty rings", "The border", "How a game ends")) {
             compose.onNodeWithText(title).assertExists()
         }
+        // How a game ends covers both endings: the dot budget and an open-ended game (A-19).
+        compose.onNodeWithText("the game ends when all are placed", substring = true).assertExists()
+        compose.onNodeWithText("In an open-ended game", substring = true).assertExists()
+        compose.onNodeWithText("taps Done", substring = true).assertExists()
         compose.onNodeWithContentDescription("A red ring of four dots has captured a blue dot.").assertExists()
         compose.onNodeWithContentDescription("A red ring of four dots around an empty point.").assertExists()
         compose.onNodeWithContentDescription("A blue dot on the edge, with red dots around it, is safe.").assertExists()
