@@ -70,6 +70,7 @@ does while the animation runs.
 | [Bomb](#boosters) | Confirm | 450 ms | 0 | finishes it | the dots gone at once |
 | [Double dot](#boosters) | Confirm | 300 ms, then 250 ms per dot | 0 | counts as usual | the chip at once |
 | [Undo](#boosters) | Confirm | 600 ms | 0 | finishes it | the turn gone at once |
+| [Stop](#stop-and-done) | the second tap, Stop here, or the computer stops | 550 ms | 0 | counts as usual | chip, circles and Done at once |
 | [End of game](#end-of-game) | the game is over and the last move has played out | 1400 ms to the result note | the game is over | jumps to the note | the note at once |
 | [Star reveal](#star-reveal) | the result note has settled | 1100 ms | 0: the buttons work at once | finishes it | the stars at once |
 | [Level unlock](#level-unlock) | the map shows after Next | 2100 ms | 0 | jumps to the Level card | the new state and the card at once |
@@ -348,6 +349,35 @@ its icon in Graphite on paper, with its count still red, as on the canvas frame 
 opens". A tap on it then does nothing. Each level allows one Undo, so after it the button turns
 dashed and grey with 0, like any booster.
 
+## Stop and Done
+
+An open-ended game (decision 0025) ends with a stop: one side says its dots are safe, the other
+captures what is left and taps Done. The canvas frames
+([Free play and two players](canvas/README.md#free-play-and-two-players)) show the still states.
+These have no GIF.
+
+**Stop's note.** Stop opens its note as every note does (300 ms in, 200 ms out). As it slides in,
+the dashed Highlighter rings round the player's open dots grow from nothing to full size in 150 ms
+(ease out). Cancel shrinks them away in 150 ms (ease in) as the note leaves.
+
+**The stop.** 0 ms is the moment Stop here is tapped, or the computer stops. The computer's stop
+comes at least 500 ms after the player's dot, as its move would (rule 2).
+
+| Time | What moves | Easing |
+| --- | --- | --- |
+| 0 | A light vibration, as a dot. The computer's face turns smug and its bubble says "I'll stop here." | |
+| 0 to 200 | Stop's note slides down and away. When the computer stopped, the player's tool bar slides down instead. | ease in |
+| 0 to 300 | The "stopped" chip grows in beside the stopper's name, from 60% to 100%, as Double dot's chip does. | ease out |
+| 0 to 150 | The stopper's open dots get their dashed rings, if they don't have them yet. | ease out |
+| 250 to 550 | The collector's row slides up in place of the tool bar: the line and Done (and Undo in free play). Between two people the turn banner "Blue collects" shows meanwhile, as at any change of turn. When the player stopped against the computer, only the line "The computer captures what is left." slides up. | ease out |
+
+The pen stroke moves under the collector's name with the banner, as at a change of turn. While the
+side collects, each dot lands as usual and the stroke stays. A captured open dot loses its ring
+with its cut. **Done** starts [End of game](#end-of-game) at once.
+
+When the player stops, the computer collects with the same timing as its moves: each dot at
+least 500 ms after the last one has played out, then End of game.
+
 ## End of game
 
 0 ms is the moment the game is over and the last move has played out. In a mission level that is
@@ -601,6 +631,8 @@ These looks are new here. They are proposals for the owner to accept or change:
   plus, only over a target.
 - Dots running out: the Highlighter count, the row of small pieces, the mission-note nudge and
   "Last dot!".
+- Stop and Done: Stop asks in a note, the stopper's open dots in dashed Highlighter rings, the
+  "stopped" chip, and the collector's row with Done sliding up in place of the tool bar.
 - The wall: a square in pencil, hatched.
 - The hint: the point circled twice, like the next level on the map.
 - The double dot: the "×2" chip beside the player's name.

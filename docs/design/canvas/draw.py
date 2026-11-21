@@ -150,6 +150,66 @@ for _key, _aim in (("wall-aim", dict(booster="wall", point=(9, 9))), ("bomb-aim"
     POSITIONS[_key] = dict(red=THREAT_RED, blue=THREAT_BLUE, areas=[R1, B1], last=(7, 7), aim=_aim, **THREAT_MARKS)
 
 
+# Free play and two players in an open-ended game (decision 0025, D-16): one position on a 15 x 15 board.
+# Red leads 4 to 1. Its two rings run to the top and right edges, a chain runs in from the left edge, and
+# one group of three in the lower middle is not joined to the edge. After a stop, only such groups can
+# still be captured (the engine's Grounding.ungrounded).
+FREE_R1 = area("red", [(6, 3), (7, 4), (6, 5), (5, 4)], [(6, 4)])
+FREE_R2 = area("red", [(9, 9), (10, 8), (11, 8), (12, 9), (11, 10), (10, 11), (9, 10)], [(10, 9), (11, 9), (10, 10)])
+FREE_B1 = area("blue", [(2, 3), (3, 4), (2, 5), (1, 4)], [(2, 4)])
+FREE_RED = (FREE_R1["ring"] + [(6, 2), (7, 1), (7, 0)] + FREE_R2["ring"] + [(13, 10), (14, 10)] +
+            [(0, 8), (1, 8), (2, 7), (3, 7)] + [(5, 11), (6, 11), (6, 12)] + [(2, 4)])
+FREE_BLUE = (FREE_B1["ring"] + [(0, 4)] + [(6, 4), (10, 9), (11, 9), (10, 10)] + [(4, 11), (7, 11), (6, 13)] +
+             [(8, 14), (8, 13), (9, 12)] + [(9, 5), (10, 4), (11, 3), (12, 3), (13, 2), (14, 2)] +
+             [(3, 9), (4, 6), (8, 7), (7, 8)])
+FREE = dict(red=FREE_RED, blue=FREE_BLUE, areas=[FREE_R1, FREE_R2, FREE_B1], last=(7, 11))
+
+
+def open_dots(pos, side):
+    """side's live dots in groups that touch no edge, joined across or diagonally: the dots that can
+    still be captured after a stop (Grounding.ungrounded)."""
+    captured = {p for a in pos["areas"] for p in a["inside"]}
+    live = set(pos[side]) - captured
+    out, seen = [], set()
+    for start in sorted(live):
+        if start in seen:
+            continue
+        group, stack = [], [start]
+        seen.add(start)
+        while stack:
+            x, y = stack.pop()
+            group.append((x, y))
+            for dx in (-1, 0, 1):
+                for dy in (-1, 0, 1):
+                    q = (x + dx, y + dy)
+                    if q in live and q not in seen:
+                        seen.add(q)
+                        stack.append(q)
+        if not any(x in (0, 14) or y in (0, 14) for x, y in group):
+            out += group
+    return sorted(out)
+
+
+def swapped(pos, drop=()):
+    """The same position with the sides swapped and mirrored left to right; drop leaves out some of the
+    dots that were red."""
+    m = lambda p: (14 - p[0], p[1])  # noqa: E731
+    return dict(red=[m(p) for p in pos["blue"]], blue=[m(p) for p in pos["red"] if p not in drop],
+                areas=[area("blue" if a["captor"] == "red" else "red", [m(p) for p in a["ring"]],
+                            [m(p) for p in a["inside"]]) for a in pos["areas"]],
+                last=m(pos["last"]))
+
+
+# The computer leads 4 to 1 and has only two dots not joined to the edge, so it stops: even if the player
+# captured both, it would still win (SearchAi.shouldStop).
+FREE_COMPUTER = swapped(FREE, drop=[(6, 12)])
+POSITIONS["free"] = FREE
+POSITIONS["free-stop"] = dict(FREE, open=open_dots(FREE, "red"))
+POSITIONS["free-computer-stops"] = dict(FREE_COMPUTER, open=open_dots(FREE_COMPUTER, "blue"))
+POSITIONS["two-done"] = dict(FREE, open=open_dots(FREE, "red"), last=(8, 7))
+assert len(POSITIONS["free-stop"]["open"]) == 3 and len(POSITIONS["free-computer-stops"]["open"]) == 2
+
+
 def plus_of(p):
     """The bomb's plus: the point and its four neighbours on the board, centre first."""
     x, y = p
@@ -341,6 +401,11 @@ def board_svg(t, key, uid, size=360, sp=24.0, mini=False, links=False):
     for p in pos.get("near", []):
         x, y = c(p)
         marks.append(el("circle", cx=f(x), cy=f(y), r=f(0.42 * sp), fill="none", stroke=t["hi"], stroke_width=2))
+    for p in pos.get("open", []):
+        # After a stop (or on Stop's note): the stopper's dots not joined to the edge, in a dashed Highlighter ring.
+        x, y = c(p)
+        marks.append(el("circle", cx=f(x), cy=f(y), r=f(0.42 * sp), fill="none", stroke=t["hi"], stroke_width=1.5,
+                        stroke_dasharray="3 2.5"))
     if aim:
         marks.append(aim_over(t, pos, c, sp))
     hits = aim_hits(pos) if aim and aim["booster"] == "bomb" else []
@@ -807,6 +872,11 @@ ICONS = {
     "next": "M3 12h16M13 6l6 6-6 6",
     "target": "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 16.5a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9z M12 12.5v-1",
     "calendar": "M3.5 5h17v15h-17z M3.5 10h17M8 3v4M16 3v4",
+    # Stop: a flag on its pole, waving, as a player plants it to say "my dots stay where they are".
+    "flag": "M6 21.5V3 M6 4.5q3 -1.8 6 0t6.5 0v8.5q-3.5 1.8 -6.5 0t-6 0",
+    "tick": "M4.5 12.5l4.5 4.5 10.5-10.5",
+    # Free play's plain Undo: the arrow alone.
+    "back": "M9 14 L4 9 L9 4 M4 9 h10.5 a5.5 5.5 0 0 1 0 11 H11",
     # Undo: a dot at the bottom left, and a pen stroke from it that loops up and back to an arrowhead
     # pointing left: the dot goes back. Free play's plain Undo button is the arrow alone.
     "undo": "M10.6 19.6 q2.4 -.2 4.5 -.1 q5.3 .1 5.4 -5.5 q-.1 -5.4 -5.5 -5.5 q-4.7 .1 -9.4 0 "
@@ -1215,6 +1285,243 @@ def boosters_frame(t, uid):
             f'streak. Never sold. One booster a turn, and Undo on top. Every level can be won without them.</div></div>')
     scrim = f'<div aria-hidden="true" style="position: absolute; inset: 0; background: {t["scrim"]}"></div>'
     return map_frame(t, uid, scrim + card)
+
+
+# ------------------------------------------------- free play and two players ----
+# An open-ended game (decision 0025, D-16): no dot limit. The side to move may stop; the other side then
+# places as many dots as it likes to capture what is left, and ends the game with Done.
+
+FREE_MOMENTS = {  # mode, the computer's mood and bubble, who stopped, who moves, scores (you, them)
+    "free-open": dict(mode="free", mood="determined", bubble="Your move…", stopper=None, turn="red", score=(4, 1)),
+    "free-stop": dict(mode="free", mood="determined", bubble="Your move…", stopper=None, turn="red", score=(4, 1)),
+    "free-computer-stops": dict(mode="free", mood="smug", bubble="I’ll stop here.", stopper="blue", turn="red",
+                                score=(1, 4)),
+    "two-done": dict(mode="two", stopper="red", turn="blue", score=(4, 1)),
+}
+FREE_POSITION = {"free-open": "free", "free-stop": "free-stop", "free-computer-stops": "free-computer-stops",
+                 "two-done": "two-done"}
+
+
+def stopped_chip(t):
+    """Beside the name of the side that stopped, until the game ends: a flag and "stopped"."""
+    return (f'<span style="height: 26px; box-sizing: border-box; border: 1.5px solid {t["graphite"]}; border-radius: 13px; '
+            f'display: inline-flex; align-items: center; gap: 4px; padding: 0 9px 0 6px; {SMALL}; font-weight: 700; '
+            f'color: {t["graphite"]}">{icon(ICONS["flag"], t["graphite"], 16, 2)}stopped</span>')
+
+
+def open_ring(t, size=16):
+    """The dashed Highlighter ring of a dot not joined to the edge, as a glyph in a line of text."""
+    return svg(size, size, el("circle", cx=size / 2, cy=size / 2, r=size / 2 - 1.5, fill="none", stroke=t["hi"],
+                                stroke_width=1.5, stroke_dasharray="3 2.5"))
+
+
+def free_tool(t, name, ic, col):
+    """A free-play tool: its icon and its name, in the campaign's tool shape (no count)."""
+    return (f'<button type="button" style="grid-column: {col}; height: 56px; box-sizing: border-box; '
+            f'border: 2px solid {t["blue_pale"]}; border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px; '
+            f'background: {t["card"]}; padding: 0; display: flex; flex-direction: column; align-items: center; '
+            f'justify-content: center; gap: 1px; font-family: inherit; {SMALL}; font-weight: 700; color: {t["blue"]}">'
+            f'{icon(ICONS[ic], t["blue"], 24, 1.9)}{name}</button>')
+
+
+def free_toolbar(t, mode, top=730, side=12, gap=10):
+    """Free play: Stop at the left, Undo at the right, where the campaign keeps its Undo. Two players: Stop
+    alone (no undo between two people)."""
+    tools = free_tool(t, "Stop", "flag", 1) + (free_tool(t, "Undo", "back", 5) if mode == "free" else "")
+    return (f'<div role="toolbar" aria-label="Tools" style="position: absolute; left: {side}px; right: {side}px; '
+            f'top: {top}px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: {gap}px">{tools}</div>')
+
+
+def collect_bar(t, mode, top=730, side=12):
+    """For the side that collects after the other stopped, in place of the tool bar: Undo (free play only),
+    what to do, and Done, the one big button."""
+    undo = (f'<button type="button" aria-label="Undo" style="width: 56px; height: 56px; flex-shrink: 0; '
+            f'box-sizing: border-box; border: 2px solid {t["blue_pale"]}; border-radius: 14px 18px 12px 20px / '
+            f'18px 12px 20px 14px; background: {t["card"]}; padding: 0; display: flex; align-items: center; '
+            f'justify-content: center">{icon(ICONS["back"], t["blue"], 24, 1.9)}</button>') if mode == "free" else ""
+    return (f'<div style="position: absolute; left: {side}px; right: {side}px; top: {top}px; display: flex; '
+            f'align-items: center; gap: 12px">{undo}'
+            f'<span style="flex: 1; min-width: 0; {LABEL}; color: {t["pencil"]}">{"" if mode == "free" else "Blue, "}'
+            f'{"C" if mode == "free" else "c"}apture what is left, then tap Done.</span>'
+            f'{main_button(t, "Done", "", ICONS["tick"], width="118px")}</div>')
+
+
+def stop_note(t, mode, side=10, bottom=10, pad=6, angle=-0.6):
+    """Stop's note: the second tap. Like a booster preview's note it lies over the player's line and the tool
+    bar and leaves the board where it is. The board circles the dots that can still be taken."""
+    other = "the computer" if mode == "free" else "Blue"
+    n = len(POSITIONS["free-stop"]["open"])
+    risk = (f"{n} of your dots aren’t joined to the edge." if n else "All your dots are joined to the edge.")
+    cancel = (f'<button type="button" style="height: 56px; box-sizing: border-box; border: 2px solid {t["blue"]}; '
+              f'{BUTTON_SHAPE}; background: {t["card"]}; color: {t["blue"]}; font-family: inherit; {LABEL}; '
+              f'padding: 0">Cancel</button>')
+    return (f'<div role="dialog" aria-label="Stop" style="position: absolute; left: {side}px; right: {side}px; '
+            f'bottom: {bottom}px; box-sizing: border-box; padding: {pad}px {pad + 4}px; display: flex; '
+            f'flex-direction: column; gap: 2px; {note_style(t, angle)}">{tape(t, 20, -8, 44, -3)}'
+            f'<div style="display: flex; align-items: center; gap: 8px">{icon(ICONS["flag"], t["blue"], 22, 2)}'
+            f'<span style="{BODY}; font-size: 14px; line-height: 22px; white-space: nowrap"><b style="color: {t["blue"]}">'
+            f'Stop?</b> {other[0].upper() + other[1:]} takes what is left.</span></div>'
+            f'<div style="display: flex; align-items: center; gap: 6px; padding-left: 2px; {SMALL}; font-weight: 700; '
+            f'color: {t["graphite"]}">{open_ring(t)}{risk}</div>'
+            f'<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 2px">{cancel}'
+            f'{main_button(t, "Stop here")}</div></div>')
+
+
+def two_photo(t, size):
+    """Between two people, Blue's photo holds its piece, as in the app."""
+    h = size * 0.42
+    c = size / 2
+    return svg(size, size, el("path", d=f"M{f(c)} {f(c - h)}L{f(c + h)} {f(c)}L{f(c)} {f(c + h)}L{f(c - h)} {f(c)}Z",
+                              fill=t["blue"]))
+
+
+def free_frame(t, key, uid):
+    m = FREE_MOMENTS[key]
+    mode, stopper = m["mode"], m["stopper"]
+    you, them = m["score"]
+    you_name, opp_name = ("You", "Computer") if mode == "free" else ("Red", "Blue")
+    parts = [f'<div style="position: absolute; left: 4px; top: 28px">{icon_button(t, "pause", "Pause", isize=30)}</div>',
+             f'<div style="position: absolute; left: 0; right: 0; top: 40px; text-align: center; {LABEL}; '
+             f'color: {t["graphite"]}">{"Free play" if mode == "free" else "Two players"}</div>']
+    photo = face(t, m["mood"], 108) if mode == "free" else two_photo(t, 108)
+    parts.append(f'<div style="position: absolute; left: 64px; top: 100px; width: 124px; height: 124px; '
+                 f'box-sizing: border-box; padding: 8px; {note_style(t, -3)}">{tape(t, 36, -9, 52, 4)}{photo}</div>')
+    if mode == "free":
+        parts.append(bubble(t, m["bubble"], 198, 132))
+    chip = stopped_chip(t) if stopper == "blue" else ""
+    parts.append(f'<div style="position: absolute; left: 0; right: 0; top: 242px; display: flex; justify-content: center; '
+                 f'align-items: center; gap: 12px">{side_row(t, "blue", opp_name, them, m["turn"] == "blue", "center")}'
+                 f'{chip}</div>')
+    parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">'
+                 f'{board_svg(t, FREE_POSITION[key], uid)}</div>')
+    chip = stopped_chip(t) if stopper == "red" else ""
+    noted = key == "free-stop"
+    if not noted:
+        parts.append(f'<div style="position: absolute; left: 16px; right: 16px; top: 682px; display: flex; '
+                     f'align-items: center; gap: 12px">{side_row(t, "red", you_name, you, m["turn"] == "red", "flex-start")}'
+                     f'{chip}<span style="margin-left: auto; {LABEL}; color: {t["graphite"]}">no limit</span></div>')
+    if noted:
+        parts.append(stop_note(t, mode))
+    elif stopper:
+        parts.append(collect_bar(t, mode))
+    else:
+        parts.append(free_toolbar(t, mode))
+    return root(t, "".join(parts))
+
+
+# ---------------------------------------------------- Play a game: the setup ----
+# The small link on Play a game opens the setup in the same note (D-16): board size and game length, each
+# a row of three choices, above the two cards. The choices are remembered for the next game.
+
+def size_pic(ink, lines):
+    """A board size's small picture: a square of squared paper, denser for a bigger board."""
+    d = " ".join(f"M{f(2 + 16 * k / (lines - 1))} 2V18M2 {f(2 + 16 * k / (lines - 1))}H18" for k in range(lines))
+    return svg(20, 20, el("path", d=d, fill="none", stroke=ink, stroke_width=1.1, stroke_linecap="round"))
+
+
+def choice(t, picked, main, sub=None, pic=None, height=56):
+    ink = t["paper"] if picked else t["blue"]
+    style = (f'background: {t["blue"]}; border: 2px solid {t["blue"]}' if picked else
+             f'background: {t["card"]}; border: 2px solid {t["blue_pale"]}')
+    sub_html = f'<span style="{SMALL}; font-weight: 500; color: {ink}">{sub}</span>' if sub else ""
+    return (f'<button type="button" aria-pressed="{"true" if picked else "false"}" style="height: {height}px; '
+            f'box-sizing: border-box; {style}; border-radius: 14px 18px 12px 20px / 18px 12px 20px 14px; padding: 0 4px; '
+            f'display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; '
+            f'font-family: inherit; color: {ink}"><span style="display: flex; align-items: center; gap: 6px; {LABEL}; '
+            f'font-size: {15 if pic else 14}px; white-space: nowrap">{pic(ink) if pic else ""}{main}</span>{sub_html}</button>')
+
+
+def play_card(t, ink, title, sub, pic, height, side=16):
+    play = svg(20, 20, el("path", d="M5 3 L17 10 L5 17 Z", fill=t["paper"]))
+    return (f'<button type="button" style="height: {height}px; box-sizing: border-box; border: none; {BUTTON_SHAPE}; '
+            f'background: {t[ink]}; color: {t["paper"]}; font-family: inherit; padding: 0 {side}px; display: flex; '
+            f'align-items: center; gap: {side - 4}px; text-align: left">{pic}<span style="flex: 1; display: flex; '
+            f'flex-direction: column"><span style="{HAND24}; white-space: nowrap">{title}</span>'
+            f'<span style="{SMALL}; font-weight: 700">{sub}</span></span>{play}</button>')
+
+
+def computer_pic(t, size=44):
+    return svg(size, size, el("circle", cx=24, cy=24, r=17, fill="none", stroke=t["paper"], stroke_width=2.2) +
+               el("circle", cx=18, cy=22, r=2, fill=t["paper"]) + el("circle", cx=30, cy=22, r=2, fill=t["paper"]) +
+               el("path", d="M17 30 q7 5 14 0", fill="none", stroke=t["paper"], stroke_width=2.2, stroke_linecap="round"),
+               view="0 0 48 48")
+
+
+def people_pic(t, size=44):
+    body = (el("circle", cx=9, cy=7, r=4, fill="none", stroke=t["paper"], stroke_width=1.6) +
+            el("path", d="M2 21 q7 -10 14 0", fill="none", stroke=t["paper"], stroke_width=1.6) +
+            el("circle", cx=19, cy=7, r=4, fill="none", stroke=t["paper"], stroke_width=1.6) +
+            el("path", d="M12 21 q7 -10 14 0", fill="none", stroke=t["paper"], stroke_width=1.6))
+    return svg(size, size * 22 / 28, body, view="0 0 28 22")
+
+
+LENGTHS = [("Short", "33 dots"), ("Long", "67 dots"), ("Open-ended", "no limit")]
+LENGTH_LINES = {  # the line under the lengths, for the one chosen
+    "Short": "Each side places 33 dots. More captures wins.",
+    "Long": "Each side places 67 dots. More captures wins.",
+    "Open-ended": "As on paper. Tap Stop once your dots are safe.",
+}
+
+
+def setup_note(t, small=False, length="Open-ended"):
+    """Play a game with its setup open: board size and game length above the two cards."""
+    ch, card, gap, pad = (48, 64, 8, 12) if small else (56, 80, 10, 16)
+    sizes = "".join(choice(t, n == 15, f"{n} × {n}", pic=lambda ink, k=k: size_pic(ink, k), height=ch)
+                    for n, k in ((12, 4), (15, 5), (20, 7)))
+    lengths = "".join(choice(t, name == length, name, sub, height=ch) for name, sub in LENGTHS)
+    label = f'{LABEL}; color: {t["graphite"]}; margin-bottom: -4px'
+    grid = f'display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: {gap}px'
+    return (f'<div role="dialog" aria-label="Play a game" style="position: absolute; left: 10px; right: 10px; '
+            f'bottom: {12 if small else 16}px; box-sizing: border-box; padding: {pad - 4}px {pad}px {pad}px; display: flex; '
+            f'flex-direction: column; gap: {gap}px; {note_style(t, 0.6)}">{tape(t, 40, -8, 56, -4)}'
+            f'<div style="display: flex; align-items: center"><span style="flex: 1; {DISPLAY}; color: {t["blue"]}">'
+            f'Play a game</span>{icon_button(t, "close", "Close", style="margin-right: -10px")}</div>'
+            f'<div style="{label}">Board</div><div style="{grid}">{sizes}</div>'
+            f'<div style="{label}">Game length</div><div style="{grid}">{lengths}</div>'
+            f'<div style="display: flex; align-items: center; gap: 6px; {SMALL}; font-weight: 700; color: {t["graphite"]}">'
+            f'{icon(ICONS["flag"], t["graphite"], 16, 2) if length == "Open-ended" else ""}{LENGTH_LINES[length]}</div>'
+            f'<div style="display: flex; flex-direction: column; gap: {gap}px; margin-top: {2 if small else 6}px">'
+            f'{play_card(t, "blue", "Against the computer", "new game", computer_pic(t, 34 if small else 44), card, 10 if small else 16)}'
+            f'{play_card(t, "red", "Two players", "new game", people_pic(t, 34 if small else 44), card, 10 if small else 16)}</div></div>')
+
+
+def replace_note(t, uid):
+    """With the setup open, a card starts a new game; if that kind of game is saved, this note asks first,
+    taped over the cards. It shows the saved game, so the player knows what would end."""
+    keep = (f'<button type="button" style="height: 56px; box-sizing: border-box; border: 2px solid {t["blue"]}; '
+            f'{BUTTON_SHAPE}; background: {t["card"]}; color: {t["blue"]}; font-family: inherit; {LABEL}; '
+            f'padding: 0">Keep it</button>')
+    return (f'<div role="dialog" aria-label="Replace your saved game?" style="position: absolute; left: 22px; right: 22px; '
+            f'bottom: 30px; box-sizing: border-box; padding: 14px 16px 16px; display: flex; flex-direction: column; '
+            f'gap: 10px; {note_style(t, -1.2)}">{tape(t, 130, -9, 60, 3)}'
+            f'<div style="{HEADLINE}; font-weight: 700; color: {t["blue"]}">Replace your saved game?</div>'
+            f'<div style="display: flex; gap: 12px; align-items: center">'
+            f'<div style="border: 1px solid {t["grid"]}; flex-shrink: 0">{board_svg(t, "free", uid + "m", size=96, sp=96 / 15, mini=True)}</div>'
+            f'<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">'
+            f'<span style="{LABEL}">Against the computer</span>'
+            f'<span style="{SMALL}; color: {t["graphite"]}">15 × 15 · Short · {33 - len(FREE["red"])} dots left</span>'
+            f'<span style="{SMALL}; font-weight: 700"><span style="color: {t["red"]}">You 4</span> · '
+            f'<span style="color: {t["blue"]}">Computer 1</span></span></div></div>'
+            f'<div style="{SMALL}; color: {t["graphite"]}">It ends, and a new open-ended game starts.</div>'
+            f'<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px">{keep}{main_button(t, "New game")}</div>'
+            f'</div>')
+
+
+def setup_frame(t, uid, replace=False):
+    scrim = f'<div aria-hidden="true" style="position: absolute; inset: 0; background: {t["scrim"]}"></div>'
+    extra = scrim + setup_note(t)
+    if replace:
+        extra += replace_note(t, uid)
+    return map_frame(t, uid, extra)
+
+
+def small_setup_frame(t, uid):
+    """The setup at 320 x 568: the map's top shows behind, the note keeps every choice and both cards."""
+    scrim = f'<div aria-hidden="true" style="position: absolute; inset: 0; background: {t["scrim"]}"></div>'
+    return (f'<div style="position: relative; width: 320px; height: 568px; overflow: hidden; background: {t["paper"]}; '
+            f'font-family: Nunito, system-ui, sans-serif; color: {t["pencil"]}">'
+            f'<div style="position: absolute; left: -20px; top: 0">{map_frame(t, uid)}</div>{scrim}'
+            f'{setup_note(t, small=True)}</div>')
 
 
 # -------------------------------------------------------------------- map ----
@@ -1661,6 +1968,18 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
     ("game-bomb-drag", "GameBombDrag", "Game: Bomb aimed by drag", lambda t, u: game_frame(t, "bomb-aim", u), (W, H)),
     ("game-threat-links", "GameThreatLinks", "Game: a threat, links on",
      lambda t, u: game_frame(t, "threat", u, links=True), (W, H)),
+    # Free play and two players: the setup, Stop and Done (D-16).
+    ("play-setup", "PlaySetup", "Play a game: the setup", lambda t, u: setup_frame(t, u), (W, H)),
+    ("play-replace", "PlayReplace", "Play a game: replace the saved game?",
+     lambda t, u: setup_frame(t, u, replace=True), (W, H)),
+    ("game-free-open", "GameFreeOpen", "Free play: an open-ended game", lambda t, u: free_frame(t, "free-open", u), (W, H)),
+    ("game-free-stop", "GameFreeStop", "Free play: Stop's note", lambda t, u: free_frame(t, "free-stop", u), (W, H)),
+    ("game-computer-stops", "GameComputerStops", "Free play: the computer stopped",
+     lambda t, u: free_frame(t, "free-computer-stops", u), (W, H)),
+    ("game-two-done", "GameTwoDone", "Two players: Red stopped, Blue collects",
+     lambda t, u: free_frame(t, "two-done", u), (W, H)),
+    ("small-play-setup", "SmallPlaySetup", "Small phone: Play a game, the setup", lambda t, u: small_setup_frame(t, u),
+     SMALL_PHONE),
 ] + [
     (f"map-world-{n}", f"MapWorld{n}", f"Map page: World {n}, {WORLDS[n][0]}",
      lambda t, u, n=n: map_frame(t, u, world=n), (W, H)) for n in (2, 3, 4)

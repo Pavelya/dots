@@ -85,7 +85,7 @@ File names use only lowercase letters, digits and underscores, as Android needs.
 
 | Sound | When it plays | Length | Mood | Volume | Made from |
 | --- | --- | --- | --- | --- | --- |
-| `sfx_place_1`, `_2`, `_3` | A dot lands, at 0 ms. Red dots at normal speed; blue dots, the computer's included, at 85%, so they sound a little lower and the computer's move is heard | 100 to 150 ms | crisp, a full stop | half | `fx_pen_tap` |
+| `sfx_place_1`, `_2`, `_3` | A dot lands, at 0 ms. Red dots at normal speed; blue dots, the computer's included, at 85%, so they sound a little lower and the computer's move is heard. A stop plays take 1 at 70% speed, at full volume: the pen's full stop, lower and firmer | 100 to 150 ms | crisp, a full stop | half | `fx_pen_tap` |
 | `sfx_ring_draw` | The capture ring is drawn, 150 to 550 ms. A big capture's ring (150 to 650 ms) plays it at 80% speed, which also lowers it | 400 ms | quick, sure stroke | full | `fx_pen_circle` |
 | `sfx_ring_close` | The player's ring closes, at 550 ms (the medium vibration); any capture in a two-player game | 400 ms | bright, satisfying | full | code |
 | `sfx_captured` | Instead of `sfx_ring_close`, when the computer captures the player's dots | 500 ms | "oh no", gentle, never mocking | full | code |
@@ -137,6 +137,8 @@ These moments have no sound on purpose:
 | A tap where a dot cannot go | The tap simply does nothing; a buzz would scold. |
 | The level opening | The level's music starting is enough. |
 | The booster count dropping | The booster's own sound covers it. |
+| Stop's note, its circles, the "stopped" chip and the collector's row | The stop's own sound marks the change. |
+| Done | The areas lighting up start right after. |
 | The tool bar and pause icon leaving at the end of a game | The areas lighting up start right after. |
 | A star not earned | No sound for what was missed. |
 | On the map: stars flying, the level's stop filling, the path inking in, the next level circled, "next!" | The map's music carries it; these play after every level. |
@@ -166,6 +168,7 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 | Bomb | `sfx_bomb` |
 | Double dot | `sfx_double_dot`, then `sfx_place_*` with each dot |
 | Undo | `sfx_ring_draw` at 75% speed; a booster flying back silent |
+| Stop and Done | `sfx_place_1` at 70% speed at the stop, for either side; Stop's note, the circles, the chip, the collector's row and Done silent |
 | End of game | `sfx_area_light` for each area; the result note silent |
 | Star reveal | `sfx_win`, `sfx_lose` or `sfx_draw` at 0 ms; `sfx_star` as each earned star lands |
 | Level unlock | silent; when a world opens, `sfx_world_open` with the page turn |
