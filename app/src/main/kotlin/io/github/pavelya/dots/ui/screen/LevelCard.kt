@@ -52,6 +52,7 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
+import dots.campaign.Holes
 import dots.campaign.Level
 import dots.campaign.Mission
 import dots.campaign.Stars
@@ -74,7 +75,8 @@ private val CHIP_SHAPE = RoundedCornerShape(24.dp)
  * The Level card, over the map (canvas frame `level-card`; the wireframes' Level card and Boss
  * card): a page torn from the notebook with the level's name, its mission in one line, a small
  * picture of the board at the start, the computer's face for its strength and its head start, the
- * dots and boosters the player has (a booster opens [onBooster]: Boosters), and the star targets.
+ * dots and boosters the player has (a booster opens [onBooster]: Boosters), on a board with holes
+ * whether their edge is safe or open, and the star targets.
  * The boosters are the level's own plus the player's [owned] ones of the kinds it allows. A boss
  * level adds the boss's rule, and the boss's name and face in red. One button: Start, or Resume
  * when this level's game is [saved]. When the campaign's saved game is of another level, [replaces]
@@ -163,6 +165,7 @@ fun LevelCard(
                     BoosterChips(boosters, style, onBooster)
                 }
             }
+            HolesLine(level, style)
             StarTargets(level, style)
             if (asking && replaces != null) {
                 ReplaceQuestion(
@@ -230,6 +233,29 @@ internal fun BoardPicture(level: Level, modifier: Modifier) {
         modifier = modifier.border(1.dp, boardStyle.grid),
         showLinks = false,
         marked = marked,
+    )
+}
+
+/**
+ * On a level whose board has holes, one line saying whether their edge is safe, like the board's
+ * edge, or open, so a ring can go round them (decision 0034). The board draws both alike, so the
+ * player learns it here before the first move. A level without holes has no line.
+ */
+@Composable
+private fun HolesLine(level: Level, style: Palette) {
+    val (label, text) = when (level.holes) {
+        Holes.NONE -> return
+        Holes.BORDER -> stringResource(R.string.level_holes_border_label) to stringResource(R.string.level_holes_border)
+        Holes.OPEN -> stringResource(R.string.level_holes_open_label) to stringResource(R.string.level_holes_open)
+    }
+    Text(
+        buildAnnotatedString {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(label) }
+            append(' ')
+            append(text)
+        },
+        style = NoteText.body,
+        color = style.pencil,
     )
 }
 

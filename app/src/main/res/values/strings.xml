@@ -178,6 +178,10 @@
     <string name="level_boss_rule">Its rule:</string>
     <string name="level_boosters">Boosters:</string>
     <string name="level_board_picture">The board at the start</string>
+    <string name="level_holes_border_label">Holes are safe:</string>
+    <string name="level_holes_border">a dot next to a hole can never be captured.</string>
+    <string name="level_holes_open_label">Holes are open:</string>
+    <string name="level_holes_open">a ring can go round a hole, so a dot next to one can be captured.</string>
     <string name="level_even">starts level with you</string>
     <string name="opening_even">The computer starts level with you.</string>
     <string name="strength_beginner">is just learning</string>

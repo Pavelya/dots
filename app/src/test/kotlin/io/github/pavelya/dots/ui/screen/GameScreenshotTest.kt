@@ -228,6 +228,38 @@ class GameScreenshotTest(private val case: ThemeCase) {
         capture("game_boss_turn${if (dark) "_dark" else ""}")
     }
 
+    /**
+     * Reef (4-18) before the first move (A-15): open holes, two of them a gap inside the board,
+     * blocked points with the wall's mark and pearls on the bonus points. The dark one in Notebook.
+     */
+    private fun reef(dark: Boolean) {
+        if (dark) assumeTrue(case.isNotebook)
+        val level = Campaign.level(4, 18)
+        val state = level.newGame()
+        val ui = GameUiState(
+            state = state,
+            lastMove = null,
+            vsComputer = true,
+            opponent = OpponentLook.of(state, human, null, humanInDanger = false),
+            strength = level.strength,
+            level = level,
+        )
+        val parts = CampaignParts(
+            title = "Level 18",
+            mission = missionNote(level, level.status(state)),
+            boosters = { BoosterBar(listOf(BoosterTool(Booster.WALL, 1, usable = true), BoosterTool(Booster.UNDO, 1, usable = true)), Palette.current) {} },
+            world = level.world,
+        )
+        show(dark = dark) { Board(ui, campaign = parts) }
+        capture("game_reef${if (dark) "_dark" else ""}")
+    }
+
+    @Test
+    fun reef() = reef(dark = false)
+
+    @Test
+    fun reefDark() = reef(dark = true)
+
     @Test
     fun bossTurn() = bossTurn(dark = false)
 
