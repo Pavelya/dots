@@ -39,8 +39,8 @@ the code names them: gold and ice in Star chart, magenta and cyan in Neon arcade
 - **Defaults.** The theme's own pieces and ring are the default, called **Standard** wherever the
   player chooses. A theme, a piece style and a ring effect are chosen separately.
 - **Where they're chosen.** In the Shop, with the Cosmetic preview's Use it button, and in
-  Settings, with a Pieces row and a Rings row next to Theme, each opening a page like the Theme
-  page. Both places set the same saved choice. D-30 designs the Settings rows and pages.
+  Settings, with a Pieces row and a Rings row below Theme, each opening a page like the Theme
+  page. Both places set the same saved choice ([`flows.md`](flows.md#choosing-pieces-and-rings)).
 
 ## Where they show
 
