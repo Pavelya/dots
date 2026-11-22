@@ -24,8 +24,8 @@ data class LevelRecord(
     val owned: Map<Booster, Int> = emptyMap(),
     /**
      * The one booster a rewarded ad gave for this game, usually the level's [Level.adBooster]: a
-     * kind the level allows, never Undo. It does not join the player's own boosters, and on levels
-     * whose stars count the boosters left it costs the same as one of the level's own ([result]).
+     * kind the level allows, never Undo. It does not join the player's own boosters, and it never
+     * adds a star ([result]).
      */
     val ad: Booster? = null,
 ) : PlayRecord {
@@ -54,8 +54,10 @@ data class LevelRecord(
     }
 
     /**
-     * The result of this game, ended in [end]: [Level.result], with the [ad]'s booster counted as
-     * one of the level's own, so a game with it never earns more stars than the same game without.
+     * The result of this game, ended in [end]: [Level.result] with the [ad]'s booster, so a game
+     * with it never earns more stars than the same game without. On levels whose stars count the
+     * boosters left, it counts as one of the level's own; on the others, a game that used it earns
+     * at most 1 star ([Level.adBoosterUsed]).
      */
     fun result(end: GameState): LevelResult = level.result(end, ad)
 

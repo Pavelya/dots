@@ -114,9 +114,19 @@ data class Level(
     fun starScore(state: GameState, ad: Booster? = null): Int? = stars?.let { count(it, this, state, ad) }
 
     /**
+     * True if the game in [state] has used the booster a rewarded ad gave it, [ad]: none of its kind
+     * is left, so the game has used one more of that kind than it would have had without the ad.
+     * The ad's booster is the last of its kind to be used, and an undo that gives it back leaves it
+     * unused.
+     */
+    fun adBoosterUsed(state: GameState, ad: Booster?): Boolean = ad != null && state.boostersLeft(human, ad) == 0
+
+    /**
      * The result of a level game that ended in [end]: the mission's status and the stars. A passed
      * level earns 1 to 3 stars (1 when it has no star targets), a failed one none. [ad] is the
-     * booster the game was given by a rewarded ad, if any; [LevelRecord.result] passes it.
+     * booster the game was given by a rewarded ad, if any; [LevelRecord.result] passes it. A game
+     * that used the ad's booster earns at most 1 star, unless the level's stars count the boosters
+     * left, where using it costs the same as using one of the level's own (decision 0030).
      */
     fun result(end: GameState, ad: Booster? = null): LevelResult {
         val status = status(end)
@@ -124,7 +134,8 @@ data class Level(
         val earned = when {
             status.outcome != Outcome.PASSED -> 0
             score == null -> 1
-            else -> stars!!.earned(score)
+            stars!!.measure != StarMeasure.BOOSTERS && adBoosterUsed(end, ad) -> 1
+            else -> stars.earned(score)
         }
         return LevelResult(status, earned, score)
     }
