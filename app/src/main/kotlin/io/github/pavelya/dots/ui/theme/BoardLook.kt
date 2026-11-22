@@ -99,7 +99,30 @@ data class BoardLook(
     val ringCore: Float = 0f,
     /** How a capture draws its ring and fills its area (docs/design/motion.md). */
     val capture: CaptureMotion = CaptureMotion.PEN,
+    /**
+     * A ring effect in place of the theme's own ring (docs/design/cosmetics.md): how the ring and
+     * its fill are drawn, and how a capture moves. The theme's [capture] still decides the rest.
+     */
+    val ringEffect: RingEffect = RingEffect.THEME,
 )
+
+/** How rings are drawn and captures move on top of the theme (docs/design/cosmetics.md, "Ring effects"). */
+enum class RingEffect {
+    /** The theme's own ring and capture: Standard. */
+    THEME,
+
+    /**
+     * A rope: a cord 1.6 times the ring's width with slanted twists in the captor's pale ink,
+     * thrown loose round the area and pulled tight as the capture closes.
+     */
+    LASSO,
+
+    /**
+     * The theme's ring with a thin second line inside it, like a rubber stamp's border; the ring,
+     * the line and the area come down at once, large and pale, and shrink to their place.
+     */
+    STAMP,
+}
 
 /** How a capture plays in a theme; the times are the same in every theme (docs/design/motion.md). */
 enum class CaptureMotion {
@@ -138,7 +161,8 @@ data class Measure(
 /**
  * A side's piece: its [shape], [across] times the dot size (docs/design/pieces.md and the theme
  * pages). For a dot or a diamond [across] is its width; for a star or a triangle, the circle
- * through its points; for a comet, its round head, and the tail grows with it.
+ * through its points; for a comet, its round head, and the tail grows with it. A piece style's
+ * shapes (cosmetics.md) are drawn at [across] times the sizes of their page, which are in dot sizes.
  */
 @Immutable
 data class Piece(val shape: PieceShape, val across: Float = 1f)
@@ -158,4 +182,16 @@ enum class PieceShape {
 
     /** An equilateral triangle, one corner straight up, its centre on the point. */
     TRIANGLE,
+
+    /** Hearts and clubs, Red: a heart, point down, its centre of mass on the point (cosmetics.md). */
+    HEART,
+
+    /** Hearts and clubs, Blue: a club, three round lobes round a hub, on a foot. */
+    CLUB,
+
+    /** Flame and frost, Red: a flame, point up and leaning a little right, with a smaller tongue on its left. */
+    FLAME,
+
+    /** Flame and frost, Blue: a snowflake, six arms with round tips round a hub, each with two twigs. */
+    SNOWFLAKE,
 }

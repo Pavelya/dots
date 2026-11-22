@@ -116,6 +116,49 @@ class MotionTimesTest {
         near(1400f, big.length)
     }
 
+    /** cosmetics.md, "Lasso", How the capture moves. */
+    @Test
+    fun `Lasso throws its rope from 150 to 450 ms at 115 percent, pulls it tight by 550 ms, and keeps the theme's other times`() {
+        val capture = Capturing(big = false)
+        near(150f, starts { RingEffects.thrown(capture, it) })
+        near(450f, ends { RingEffects.thrown(capture, it) })
+        assertEquals(1.15f, RingEffects.rope(capture, 300f), 0.0001f)
+        assertEquals(1.15f, RingEffects.rope(capture, 450f), 0.0001f)
+        assertTrue(RingEffects.rope(capture, 500f) in 1f..1.15f)
+        near(450f, starts { 1.15f - RingEffects.rope(capture, it) })
+        near(550f, ends { if (RingEffects.rope(capture, it) == 1f) 1f else 0f })
+        assertEquals("exactly its place once tight", 1f, RingEffects.rope(capture, 550f))
+        near(550f, capture.ringEnd)
+        near(500f, capture.washStart)
+        val big = Capturing(big = true)
+        near(550f, ends { RingEffects.thrown(big, it) })
+        assertEquals(1f, RingEffects.rope(big, 650f))
+        assertTrue(RingEffects.rope(big, 600f) > 1f)
+    }
+
+    /** cosmetics.md, "Rubber stamp", How the capture moves. */
+    @Test
+    fun `Rubber stamp comes down from 250 to 550 ms, from 125 percent and from Paper, and its cuts start at 600 ms`() {
+        val capture = Capturing(big = false)
+        near(250f, starts { RingEffects.down(capture, it) })
+        near(550f, ends { RingEffects.down(capture, it) })
+        assertEquals(0f, RingEffects.down(capture, 250f))
+        assertEquals(1.25f, RingEffects.stamp(capture, 250f), 0.0001f)
+        assertEquals("exactly its place once down", 1f, RingEffects.stamp(capture, 550f))
+        near(600f, capture.cutStart)
+        val big = Capturing(big = true)
+        near(650f, ends { RingEffects.down(big, it) })
+        assertTrue(RingEffects.stamp(big, 600f) > 1f)
+    }
+
+    @Test
+    fun `in Star chart a ring effect twinkles only the closing star, from 100 ms before the ring closes`() {
+        val capture = Capturing(big = false)
+        assertEquals(1f, RingEffects.closingStar(capture, 449f))
+        assertTrue(RingEffects.closingStar(capture, 510f) > 1.2f)
+        assertEquals(1f, RingEffects.closingStar(capture, 571f))
+    }
+
     @Test
     fun `a threat draws in in 250 ms, pulses three times in 1600 ms each, and is still from 5050 ms`() {
         near(200f, Threat.DELAY)

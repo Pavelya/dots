@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import dots.engine.Player
 import io.github.pavelya.dots.audio.Effect
+import io.github.pavelya.dots.data.PieceStyleId
+import io.github.pavelya.dots.data.RingEffectId
 import io.github.pavelya.dots.data.ThemeId
 
 /**
@@ -87,6 +89,16 @@ data class GameTheme(
         val isDark: Boolean
             @Composable @ReadOnlyComposable
             get() = LocalDark.current
+
+        /** The piece style the screen's boards draw in the theme's inks; [DotsTheme] passes it on. */
+        val pieceStyle: PieceStyleId
+            @Composable @ReadOnlyComposable
+            get() = LocalPieceStyle.current
+
+        /** The ring effect the screen's boards draw; [DotsTheme] passes it on. */
+        val ringEffect: RingEffectId
+            @Composable @ReadOnlyComposable
+            get() = LocalRingEffect.current
     }
 }
 
@@ -205,17 +217,23 @@ private val LocalGameTheme = staticCompositionLocalOf { NotebookTheme }
 private val LocalPalette = staticCompositionLocalOf { NotebookTheme.light }
 private val LocalHighContrast = staticCompositionLocalOf { false }
 private val LocalDark = staticCompositionLocalOf { false }
+private val LocalPieceStyle = staticCompositionLocalOf { PieceStyleId.DEFAULT }
+private val LocalRingEffect = staticCompositionLocalOf { RingEffectId.DEFAULT }
 
 /**
  * Draws [content] in [theme], in its dark version when [dark] (by default, when the phone's dark
  * theme is on). The Material parts of the screens take the theme's [Palette.material] and
- * [TypeScale.material]. Every board draws high-contrast pieces when [highContrast].
+ * [TypeScale.material]. Every board draws high-contrast pieces when [highContrast], and the
+ * piece style [pieces] and the ring effect [rings] (docs/design/cosmetics.md) in the theme's inks.
+ * Only the game screen passes them: elsewhere, and in a theme's own sample, boards draw Standard.
  */
 @Composable
 fun DotsTheme(
     theme: GameTheme = GameTheme.NOTEBOOK,
     dark: Boolean = isSystemInDarkTheme(),
     highContrast: Boolean = false,
+    pieces: PieceStyleId = PieceStyleId.DEFAULT,
+    rings: RingEffectId = RingEffectId.DEFAULT,
     content: @Composable () -> Unit,
 ) {
     val palette = theme.palette(dark)
@@ -224,6 +242,8 @@ fun DotsTheme(
         LocalPalette provides palette,
         LocalHighContrast provides highContrast,
         LocalDark provides dark,
+        LocalPieceStyle provides pieces,
+        LocalRingEffect provides rings,
     ) {
         MaterialTheme(colorScheme = palette.material, typography = theme.type.material, content = content)
     }

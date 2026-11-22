@@ -3,6 +3,7 @@ package io.github.pavelya.dots.data
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dots.campaign.Campaign
+import dots.campaign.Cosmetic
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -17,7 +18,8 @@ import java.io.File
 
 /**
  * The theme in use (docs/design/flows.md, "Choosing a theme"): Notebook by default, kept across a
- * restart and a backup restore, and only ever a theme the player can choose (decision 0029).
+ * restart and a backup restore, and only ever a theme the player can choose (decision 0029). The
+ * piece style and ring effect in use (docs/design/cosmetics.md) are kept the same way, beside it.
  */
 class ThemeRepositoryTest {
     @get:Rule
@@ -31,7 +33,7 @@ class ThemeRepositoryTest {
         private val job = SupervisorJob()
         private val scope = CoroutineScope(Dispatchers.IO + job)
         val store = ProgressRepository.store(scope) { file }
-        val themes = ThemeRepository(store) { ThemeRule.beforeShop(debug) }
+        val themes = ThemeRepository(store) { CosmeticRule.beforeShop(debug) }
         val progress = ProgressRepository(store, scope)
 
         suspend fun close() = job.cancelAndJoin()
@@ -123,6 +125,88 @@ class ThemeRepositoryTest {
         val session = Session(file())
         session.store.edit { it[stringPreferencesKey("theme")] = "paper-planes" }
         assertEquals(ThemeId.NOTEBOOK, session.themes.inUse.first())
+        session.close()
+    }
+
+    @Test
+    fun `a fresh install uses the theme's own pieces and ring`() = runBlocking {
+        val session = Session(file())
+        assertEquals(PieceStyleId.STANDARD, session.themes.pieces.first())
+        assertEquals(RingEffectId.STANDARD, session.themes.rings.first())
+        session.close()
+    }
+
+    @Test
+    fun `the theme, piece style and ring effect are chosen apart and survive a restart`() = runBlocking {
+        val first = Session(file())
+        first.themes.use(ThemeId.STAR_CHART)
+        first.themes.use(PieceStyleId.HEARTS_AND_CLUBS)
+        first.themes.use(RingEffectId.RUBBER_STAMP)
+        first.themes.use(PieceStyleId.FLAME_AND_FROST)
+        first.close()
+
+        val second = Session(file())
+        assertEquals(ThemeId.STAR_CHART, second.themes.inUse.first())
+        assertEquals(PieceStyleId.FLAME_AND_FROST, second.themes.pieces.first())
+        assertEquals(RingEffectId.RUBBER_STAMP, second.themes.rings.first())
+        second.close()
+    }
+
+    @Test
+    fun `the piece style and ring effect come back with a backup restore`() = runBlocking {
+        val old = Session(file("old phone"))
+        old.themes.use(PieceStyleId.HEARTS_AND_CLUBS)
+        old.themes.use(RingEffectId.LASSO)
+        old.close()
+
+        file("old phone").copyTo(file("new phone"))
+        val restored = Session(file("new phone"))
+        assertEquals(PieceStyleId.HEARTS_AND_CLUBS, restored.themes.pieces.first())
+        assertEquals(RingEffectId.LASSO, restored.themes.rings.first())
+        restored.close()
+    }
+
+    @Test
+    fun `a debug build offers every piece style and ring effect, a release build only Standard`() = runBlocking {
+        val debug = Session(file("debug"))
+        assertEquals(listOf(PieceStyleId.STANDARD, PieceStyleId.HEARTS_AND_CLUBS, PieceStyleId.FLAME_AND_FROST), debug.themes.pieceChoices)
+        assertEquals(listOf(RingEffectId.STANDARD, RingEffectId.LASSO, RingEffectId.RUBBER_STAMP), debug.themes.ringChoices)
+        debug.themes.use(PieceStyleId.FLAME_AND_FROST)
+        debug.themes.use(RingEffectId.LASSO)
+        debug.close()
+
+        file("debug").copyTo(file("release"))
+        val release = Session(file("release"), debug = false)
+        assertEquals(listOf(PieceStyleId.STANDARD), release.themes.pieceChoices)
+        assertEquals(listOf(RingEffectId.STANDARD), release.themes.ringChoices)
+        assertEquals("a debug build's choice reads as Standard", PieceStyleId.STANDARD, release.themes.pieces.first())
+        assertEquals(RingEffectId.STANDARD, release.themes.rings.first())
+        release.themes.use(RingEffectId.RUBBER_STAMP)
+        assertEquals("nothing was saved", RingEffectId.STANDARD, release.themes.rings.first())
+        release.close()
+    }
+
+    @Test
+    fun `each piece style and ring effect but Standard is a cosmetic of its kind`() {
+        assertEquals(null, PieceStyleId.STANDARD.cosmetic)
+        assertEquals(null, RingEffectId.STANDARD.cosmetic)
+        assertEquals(null, ThemeId.NOTEBOOK.cosmetic)
+        for (style in PieceStyleId.entries - PieceStyleId.STANDARD) assertEquals(style.key, Cosmetic.Kind.PIECE_STYLE, style.cosmetic?.kind)
+        for (effect in RingEffectId.entries - RingEffectId.STANDARD) assertEquals(effect.key, Cosmetic.Kind.RING_EFFECT, effect.cosmetic?.kind)
+        for (theme in ThemeId.entries - ThemeId.NOTEBOOK) assertEquals(theme.key, Cosmetic.Kind.THEME, theme.cosmetic?.kind)
+        val named = (PieceStyleId.entries + RingEffectId.entries + ThemeId.entries).mapNotNull { it.cosmetic }.toSet()
+        assertEquals("every cosmetic can be chosen", Cosmetic.entries.toSet(), named)
+    }
+
+    @Test
+    fun `a saved piece style or ring effect this version doesn't know reads as Standard`() = runBlocking {
+        val session = Session(file())
+        session.store.edit {
+            it[stringPreferencesKey("pieces")] = "paper-planes"
+            it[stringPreferencesKey("rings")] = "ink-splash"
+        }
+        assertEquals(PieceStyleId.STANDARD, session.themes.pieces.first())
+        assertEquals(RingEffectId.STANDARD, session.themes.rings.first())
         session.close()
     }
 }

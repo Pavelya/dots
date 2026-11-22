@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import dots.campaign.Progress
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
+import io.github.pavelya.dots.data.PieceStyleId
 import io.github.pavelya.dots.data.PlacingMethod
+import io.github.pavelya.dots.data.RingEffectId
 import io.github.pavelya.dots.data.SampleProgress
 import io.github.pavelya.dots.data.ThemeId
 import io.github.pavelya.dots.ui.theme.Palette
@@ -145,9 +147,9 @@ fun SettingsScreen(
 }
 
 /**
- * The developer menu, hidden from players: sample campaign progress, the daily puzzle a year ahead
- * ([dailyAhead]) and its streak cleared, and the game log to share. Opens from the version line in
- * Settings.
+ * The developer menu, hidden from players: sample campaign progress, the piece style and ring
+ * effect in use ([looks]), the daily puzzle a year ahead ([dailyAhead]) and its streak cleared,
+ * and the game log to share. Opens from the version line in Settings.
  */
 @Composable
 fun DeveloperScreen(
@@ -156,6 +158,7 @@ fun DeveloperScreen(
     dailyAhead: Boolean = false,
     onDailyAhead: (Boolean) -> Unit = {},
     onClearDaily: () -> Unit = {},
+    looks: LookChoices = LookChoices(),
     onShareLog: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -176,6 +179,25 @@ fun DeveloperScreen(
         )) {
             OutlinedButton(onClick = { onProgress(progress()) }, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(label))
+            }
+        }
+
+        // Until D-30's Settings pages and C-02's Shop, a debug build chooses them here (decision 0029).
+        if (looks.pieceChoices.size > 1 || looks.ringChoices.size > 1) {
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Section(R.string.developer_looks)
+            Text(stringResource(R.string.developer_looks_note), style = MaterialTheme.typography.bodyMedium)
+            Section(R.string.developer_pieces)
+            Column(Modifier.selectableGroup()) {
+                for (style in looks.pieceChoices) {
+                    RadioRow(stringResource(pieceStyleName(style)), detail = null, selected = style == looks.pieces) { looks.onPieces(style) }
+                }
+            }
+            Section(R.string.developer_rings)
+            Column(Modifier.selectableGroup()) {
+                for (effect in looks.ringChoices) {
+                    RadioRow(stringResource(ringEffectName(effect)), detail = null, selected = effect == looks.rings) { looks.onRings(effect) }
+                }
             }
         }
 
@@ -200,6 +222,35 @@ fun DeveloperScreen(
             Text(stringResource(R.string.log_share))
         }
     }
+}
+
+/**
+ * The piece style and ring effect in use ([pieces], [rings]), those the player can choose, and
+ * what puts one in use: the developer menu's part of the game's look (docs/design/cosmetics.md).
+ */
+class LookChoices(
+    val pieces: PieceStyleId = PieceStyleId.DEFAULT,
+    val pieceChoices: List<PieceStyleId> = emptyList(),
+    val onPieces: (PieceStyleId) -> Unit = {},
+    val rings: RingEffectId = RingEffectId.DEFAULT,
+    val ringChoices: List<RingEffectId> = emptyList(),
+    val onRings: (RingEffectId) -> Unit = {},
+)
+
+/** A piece style's name, as the Shop and Settings call it (cosmetics.md); the theme's own is Standard. */
+@StringRes
+fun pieceStyleName(style: PieceStyleId): Int = when (style) {
+    PieceStyleId.STANDARD -> R.string.look_standard
+    PieceStyleId.HEARTS_AND_CLUBS -> R.string.pieces_hearts_and_clubs
+    PieceStyleId.FLAME_AND_FROST -> R.string.pieces_flame_and_frost
+}
+
+/** A ring effect's name, as the Shop and Settings call it (cosmetics.md); the theme's own is Standard. */
+@StringRes
+fun ringEffectName(effect: RingEffectId): Int = when (effect) {
+    RingEffectId.STANDARD -> R.string.look_standard
+    RingEffectId.LASSO -> R.string.rings_lasso
+    RingEffectId.RUBBER_STAMP -> R.string.rings_rubber_stamp
 }
 
 @Composable

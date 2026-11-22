@@ -453,21 +453,8 @@ class GameScreenshotTest(private val case: ThemeCase) {
         )
     }
 
-    /** What the screen shows against the computer after [move], with the threat highlight on, as the view model makes it. */
-    private fun ui(move: MoveResult, lastMove: Pos? = move.state.lastPlaced(move.state.toMove.opponent)): GameUiState {
-        val state = move.state
-        val dangers = Player.entries.flatMap { Hints.dangers(state, it) }
-        val capture = move.captures.takeIf { it.isNotEmpty() }?.let { LastCapture(it.first().by, it.sumOf { c -> c.points }) }
-        val inDanger = dangers.any { it.dotsNeeded <= 1 && state.ownerAt(it.group.first()) == human }
-        return GameUiState(
-            state = state,
-            lastMove = lastMove,
-            vsComputer = true,
-            dangers = dangers,
-            opponent = OpponentLook.of(state, human, capture, inDanger),
-            strength = CanvasGame.level.strength,
-        )
-    }
+    private fun ui(move: MoveResult, lastMove: Pos? = move.state.lastPlaced(move.state.toMove.opponent)): GameUiState =
+        CanvasGame.ui(move, human, lastMove)
 }
 
 /** The free point nearest to ([x], [y]). */
@@ -546,6 +533,22 @@ internal object CanvasGame {
 
     /** Red closes the big ring at (5, 7): six blue dots at once. */
     val bigCapture: MoveResult get() = threat.state.play(Pos(5, 7))
+
+    /** What the screen shows against the computer after [move], with the threat highlight on, as the view model makes it. */
+    fun ui(move: MoveResult, human: Player = Player.RED, lastMove: Pos? = move.state.lastPlaced(move.state.toMove.opponent)): GameUiState {
+        val state = move.state
+        val dangers = Player.entries.flatMap { Hints.dangers(state, it) }
+        val capture = move.captures.takeIf { it.isNotEmpty() }?.let { LastCapture(it.first().by, it.sumOf { c -> c.points }) }
+        val inDanger = dangers.any { it.dotsNeeded <= 1 && state.ownerAt(it.group.first()) == human }
+        return GameUiState(
+            state = state,
+            lastMove = lastMove,
+            vsComputer = true,
+            dangers = dangers,
+            opponent = OpponentLook.of(state, human, capture, inDanger),
+            strength = level.strength,
+        )
+    }
 
     /**
      * The [threat] position reached with one booster of each kind for Red, Red's last turn as on

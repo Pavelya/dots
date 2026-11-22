@@ -16,6 +16,7 @@ import dots.engine.GameState
 import dots.engine.MoveResult
 import dots.engine.Player
 import dots.engine.Pos
+import io.github.pavelya.dots.data.RingEffectId
 import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.ThreatMark
 import io.github.pavelya.dots.ui.board.BoardStyle
@@ -33,6 +34,8 @@ import org.robolectric.annotation.GraphicsMode
  * arcade"), on the board at the exact times of each theme's strip (`strip-capture-star-chart.png`
  * and the others): the time is handed to the board, not stepped on a clock, so a 40 ms flicker
  * shows where the strip shows it. The boards are the canvas's game of Level 7 ([CanvasGame]).
+ * The ring effects of docs/design/cosmetics.md play the same captures in every theme, at the
+ * times of their strips (`cosmetics-strip-lasso.png`, `cosmetics-strip-stamp.png`).
  * Frames are named `motion_<moment>_<theme>_<time>`. Reference images in
  * app/src/test/screenshots; they are recorded in CI (CLAUDE.md, "Recording screenshots").
  */
@@ -49,7 +52,17 @@ class ThemeMotionScreenshotTest {
      * The board after [move] in [case]'s light version, with the moment of [by]'s [dot] at each of
      * [times] ms; the board showed [before], with the pinhole on [pinholeBefore], until then.
      */
-    private fun frames(name: String, case: ThemeCase, before: GameState, move: MoveResult, dot: Pos, by: Player, pinholeBefore: Pos?, vararg times: Int) {
+    private fun frames(
+        name: String,
+        case: ThemeCase,
+        before: GameState,
+        move: MoveResult,
+        dot: Pos,
+        by: Player,
+        pinholeBefore: Pos?,
+        vararg times: Int,
+        rings: RingEffectId = RingEffectId.STANDARD,
+    ) {
         val after = dangers(move.state)
         val known = dangers(before).map(ThreatMark::of).toSet()
         val moment = BoardMoment(
@@ -65,7 +78,7 @@ class ThemeMotionScreenshotTest {
         compose.setContent {
             Box(Modifier.size(360.dp)) {
                 BoardView(
-                    move.state, BoardStyle.of(case.theme, dark = false), "board", Modifier.fillMaxSize(),
+                    move.state, BoardStyle.of(case.theme, dark = false, rings = rings), "board", Modifier.fillMaxSize(),
                     lastMove = dot, dangers = after, moment = moment, time = { now },
                     edgeMarks = dot.takeIf { by == Player.BLUE },
                 )
@@ -78,13 +91,55 @@ class ThemeMotionScreenshotTest {
         }
     }
 
-    /** Red closes its ring at (4, 9): two dots (the motion page's "Capture"). */
-    private fun capture(case: ThemeCase, vararg times: Int) =
-        frames("capture", case, CanvasGame.beforeSmallCapture, CanvasGame.smallCapture, Pos(4, 9), Player.RED, Pos(11, 2), *times)
+    /** Red closes its ring at (4, 9): two dots (the motion page's "Capture"), with the ring effect [rings]. */
+    private fun capture(case: ThemeCase, vararg times: Int, rings: RingEffectId = RingEffectId.STANDARD) =
+        frames(named("capture", rings), case, CanvasGame.beforeSmallCapture, CanvasGame.smallCapture, Pos(4, 9), Player.RED, Pos(11, 2), *times, rings = rings)
 
-    /** Red closes the big ring at (5, 7): six dots at once (the motion page's "Big capture"). */
-    private fun bigCapture(case: ThemeCase, vararg times: Int) =
-        frames("big_capture", case, CanvasGame.threat.state, CanvasGame.bigCapture, Pos(5, 7), Player.RED, Pos(7, 7), *times)
+    /** Red closes the big ring at (5, 7): six dots at once (the motion page's "Big capture"), with the ring effect [rings]. */
+    private fun bigCapture(case: ThemeCase, vararg times: Int, rings: RingEffectId = RingEffectId.STANDARD) =
+        frames(named("big_capture", rings), case, CanvasGame.threat.state, CanvasGame.bigCapture, Pos(5, 7), Player.RED, Pos(7, 7), *times, rings = rings)
+
+    /** A moment's name, with its ring effect's after it: `capture_lasso`. */
+    private fun named(moment: String, rings: RingEffectId) =
+        if (rings == RingEffectId.STANDARD) moment else "${moment}_${rings.key.replace('-', '_')}"
+
+    /**
+     * Lasso (cosmetics.md, "How the capture moves"), at the times of `cosmetics-strip-lasso.png`:
+     * thrown loose from 150 ms, round at 450, pulled tight by 550, the wash spreading, done.
+     */
+    private fun lasso(case: ThemeCase) = capture(case, 300, 450, 500, 550, 700, 1250, rings = RingEffectId.LASSO)
+
+    @Test
+    fun captureWithLasso() = lasso(ThemeCase.NOTEBOOK)
+
+    /** In Star chart only the closing star twinkles, as the rope pulls tight. */
+    @Test
+    fun captureWithLassoInStarChart() = lasso(ThemeCase.STAR_CHART)
+
+    /** In Neon arcade the rope is thrown unlit and lights at 550 ms, with the flicker and the sparks. */
+    @Test
+    fun captureWithLassoInNeonArcade() = lasso(ThemeCase.NEON_ARCADE)
+
+    /** Rubber stamp, at the times of `cosmetics-strip-stamp.png`: coming down from 250 ms, large and pale, down at 550. */
+    private fun stamp(case: ThemeCase) = capture(case, 300, 420, 500, 550, 700, 1250, rings = RingEffectId.RUBBER_STAMP)
+
+    @Test
+    fun captureWithRubberStamp() = stamp(ThemeCase.NOTEBOOK)
+
+    @Test
+    fun captureWithRubberStampInStarChart() = stamp(ThemeCase.STAR_CHART)
+
+    /** In Neon arcade the ring comes down unlit and lights at 550 ms. */
+    @Test
+    fun captureWithRubberStampInNeonArcade() = stamp(ThemeCase.NEON_ARCADE)
+
+    /** A big capture with Lasso: thrown until 550 ms, pulled tight by 650, with the burst. */
+    @Test
+    fun bigCaptureWithLasso() = bigCapture(ThemeCase.NOTEBOOK, 400, 550, 600, 650, 800, rings = RingEffectId.LASSO)
+
+    /** A big capture with Rubber stamp: down at 650 ms, with the burst. */
+    @Test
+    fun bigCaptureWithRubberStamp() = bigCapture(ThemeCase.NOTEBOOK, 400, 550, 650, 800, rings = RingEffectId.RUBBER_STAMP)
 
     /** Star chart: the line traced star to star, each star twinkling as it is reached, the haze blending in. */
     @Test

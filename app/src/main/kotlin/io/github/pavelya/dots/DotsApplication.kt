@@ -20,7 +20,7 @@ import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.data.SettingsRepository
 import io.github.pavelya.dots.data.StatsRepository
 import io.github.pavelya.dots.data.ThemeRepository
-import io.github.pavelya.dots.data.ThemeRule
+import io.github.pavelya.dots.data.CosmeticRule
 import io.github.pavelya.dots.haptics.AndroidHaptics
 import io.github.pavelya.dots.haptics.Haptics
 import kotlinx.coroutines.CoroutineScope
@@ -80,13 +80,13 @@ class DotsApplication : Application() {
     }
 
     /**
-     * Whether this is a debug build, which offers every theme (decision 0029). Tests set it to
-     * false to see what a release build shows.
+     * Whether this is a debug build, which offers every theme, piece style and ring effect
+     * (decision 0029). Tests set it to false to see what a release build shows.
      */
     var debugBuild: Boolean = BuildConfig.DEBUG
 
-    /** The theme in use and the themes the player can choose. Backed up with the progress. */
-    val themes: ThemeRepository by lazy { ThemeRepository(progressStore) { ThemeRule.beforeShop(debugBuild) } }
+    /** The theme, piece style and ring effect in use, and those the player can choose. Backed up with the progress. */
+    val themes: ThemeRepository by lazy { ThemeRepository(progressStore) { CosmeticRule.beforeShop(debugBuild) } }
 
     /** The player's totals on Stats: games played and won, captures. Backed up with the progress. */
     val stats: StatsRepository by lazy { StatsRepository(progressStore, progressScope) }
