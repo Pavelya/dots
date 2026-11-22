@@ -8,7 +8,8 @@ import dots.engine.Pos
 
 /**
  * Plays the collecting phase after the opponent has declared their dots grounded. The opponent no
- * longer moves, so any group that is not grounded can be captured by walling it in.
+ * longer moves, so every exposed dot ([Grounding.exposed]), even one in a group that touches the
+ * border, can be captured by walling it in.
  *
  * Walling a group in is a minimum vertex cut: the fewest empty cells that, once built on, leave
  * no orthogonal path from the group to the border. That is exactly how the engine decides a
@@ -24,7 +25,7 @@ internal object Cleanup {
     fun next(state: GameState): Action {
         val cleaner = state.toMove
         var best: List<Pos>? = null
-        for (group in Grounding.ungrounded(state, cleaner.opponent)) {
+        for (group in Grounding.exposed(state, cleaner.opponent)) {
             val cut = cheapestEnclosure(state, group, cleaner) ?: continue
             if (cut.isNotEmpty() && (best == null || cut.size < best.size)) best = cut
         }

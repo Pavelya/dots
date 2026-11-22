@@ -272,6 +272,47 @@ class SearchAiTest {
     }
 
     @Test
+    fun `keeps playing while a dot joined to the border only diagonally could still be lost`() {
+        // Red leads 1 to 0, but blue could capture b6 after a stop: a5 touches the border, yet
+        // blue can close its own diagonal step (a6 to b5) through the same spot.
+        val state = GameState.fromAscii(
+            """
+            ..R.....
+            .RBR....
+            ........
+            ........
+            R.......
+            .R......
+            ........
+            ........
+            """,
+        ).play(Pos(2, 2)).state.play(Pos(6, 6)).state
+
+        assertEquals(1, state.score(Player.RED))
+        assertTrue(SearchAi(AiConfig.HARD, Random(1)).choose(state) is Action.Place)
+    }
+
+    @Test
+    fun `collecting captures a dot joined to the border only diagonally`() {
+        val stopped = GameState.fromAscii(
+            """
+            .....
+            R.B..
+            BRB..
+            .B...
+            .....
+            """,
+        ).stop()
+        val ai = SearchAi(AiConfig.EASY, Random(1))
+
+        val collected = stopped.apply(ai.choose(stopped)).state
+
+        assertTrue(collected.isCaptured(1, 2), "b3")
+        assertFalse(collected.isCaptured(0, 1), "a2 is on the border")
+        assertEquals(Action.Finish, ai.choose(collected))
+    }
+
+    @Test
     fun `computers finish an open-ended game from a cross`() {
         val start = GameState.start(7, 7, dots = Openings.cross(7, 7))
         val end = Match.playOut(start, SearchAi(AiConfig.EASY, Random(1)), SearchAi(AiConfig.EASY, Random(2)))
