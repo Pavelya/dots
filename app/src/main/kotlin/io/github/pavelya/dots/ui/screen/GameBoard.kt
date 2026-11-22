@@ -93,6 +93,7 @@ import io.github.pavelya.dots.ui.motion.Ease
 import io.github.pavelya.dots.ui.motion.EndOfGame
 import io.github.pavelya.dots.ui.motion.Placing
 import io.github.pavelya.dots.ui.motion.RunningOut
+import io.github.pavelya.dots.ui.motion.StopTimes
 import io.github.pavelya.dots.ui.motion.Timeline
 import io.github.pavelya.dots.ui.motion.UndoEffect
 import io.github.pavelya.dots.ui.motion.capturing
@@ -100,6 +101,7 @@ import io.github.pavelya.dots.ui.motion.phase
 import io.github.pavelya.dots.ui.motion.rememberBoosterTimeline
 import io.github.pavelya.dots.ui.motion.rememberChangeTimeline
 import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
+import io.github.pavelya.dots.ui.motion.rememberStopTimeline
 import io.github.pavelya.dots.ui.theme.BoardLook
 import io.github.pavelya.dots.ui.theme.Palette
 import kotlin.math.ceil
@@ -121,8 +123,11 @@ import kotlinx.coroutines.delay
  *   are placed by the [input]'s method ([PlayableBoard]).
  * - **The player below the board:** piece, name, tally and score, and the dots left.
  * - **The tool bar:** the campaign's five boosters ([BoosterBar], A-05), or Undo in free play (decision 0023). Two
- *   players and the daily puzzle have none. An open-ended game (decision 0025) adds Stop, which asks for a second tap,
- *   and, for the side that collects after the other stopped, Done with a line saying what to do.
+ *   players and the daily puzzle have none. An open-ended game (decision 0025) has Stop at the left and free play's
+ *   Undo at the right, and "no limit" where the dots left would be. Stop opens Stop's note ([onStop], [StopNote]),
+ *   which circles the player's dots that can still be captured. After a stop, a "stopped" chip sits beside the
+ *   stopper's name, the stopper's open dots stay circled, and the collector's row takes the tool bar's place: Undo
+ *   in free play, what to do, and Done ([CollectRow]). When the player stopped, the computer collects by itself.
  * - **The tutorial** (the wireframes' "Tutorial level"): a [guided] level has no tool bar and
  *   keeps room just above the board for the step note ([guide], [TutorialNote]), which shows in
  *   place of the mission note; the board circles the point to tap, with a hand pointing at it.
@@ -158,6 +163,10 @@ import kotlinx.coroutines.delay
  * dots left and the face stay as they were until that part is gone, and a booster it gives back
  * flies to its button. After a Double dot the chip grows in, counts down and leaves. A touch on the
  * board finishes a bomb and an Undo.
+ *
+ * The [stopping] clock plays a stop (motion.md, "Stop and Done"): the tool bar leaves, the chip
+ * grows in, the stopper's open dots get their rings, and the collector's row slides up. The rings
+ * of Stop's note grow in as it opens and shrink away after Cancel.
  */
 @Composable
 internal fun GameBoard(
@@ -177,6 +186,7 @@ internal fun GameBoard(
     moment: Timeline = rememberMomentTimeline(ui.moment),
     ending: Timeline? = null,
     boosting: Timeline = rememberBoosterTimeline(ui.booster),
+    stopping: Timeline = rememberStopTimeline(ui.stopMoment),
 ) {
     val style = Palette.current
     val boardStyle = BoardStyle.current
@@ -242,6 +252,25 @@ internal fun GameBoard(
             held = { booster -> booster == undone?.givenBack && !givenBackLanded },
         )
     }
+    // The dashed rings round the dots that can still be captured: on Stop's note, and after a stop.
+    val noteRings = rememberChangeTimeline(ui.askingStop, StopTimes.RINGS)
+    val lastOpen = remember(ui.round) { arrayOf<List<Pos>>(emptyList()) }
+    if (ui.askingStop) lastOpen[0] = ui.openDots
+    val stop = ui.stopMoment
+    // A stop made on Stop's note keeps the note's rings; the computer's stop draws them in.
+    val ringsGrow = stop != null && ui.vsComputer && stop.by != human
+    val marks = boardMarks(ui).let { base ->
+        when {
+            state.isCleanup -> base.copy(open = ui.openDots, openSize = { if (ringsGrow) StopTimes.ringsIn(stopping.now) else 1f })
+            ui.askingStop -> base.copy(open = ui.openDots, openSize = { StopTimes.ringsIn(noteRings.now) })
+            else -> base.copy(open = lastOpen[0], openSize = { StopTimes.ringsOut(noteRings.now) })
+        }
+    }
+    val stopper = state.stopper?.takeUnless { ui.isOver }
+    val chipSize = { if (stop != null) StopTimes.chip(stopping.now) else 1f }
+    val stoppedChip = @Composable { player: Player ->
+        if (stopper == player) StoppedChip(names.of(player), style, Modifier.graphicsLayer { val size = chipSize(); scaleX = size; scaleY = size })
+    }
     BoxWithConstraints(modifier.fillMaxSize().background(style.paper).onGloballyPositioned { spots.screen = it }) {
         val bottom = PLAYER_LINE + if (toolBar) TOOL_BAR else 0.dp
         val spacing = boardSpacing(maxWidth, maxHeight - TOP_ROW - bottom, state.width, state.height)
@@ -253,7 +282,10 @@ internal fun GameBoard(
         // On a small phone the opponent's line moves into the top row, and the mission note narrows to make room.
         val compact = room < OPPONENT_LINE
         val opponentLine = @Composable { inTopRow: Boolean ->
-            SideLine(above, names.of(above), shownScore(above), toMove = isToMove(ui, above), style, inTopRow, swell = { scoreSwell(above) }, onTally = { spots.tally[above] = it })
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                SideLine(above, names.of(above), shownScore(above), toMove = isToMove(ui, above), style, inTopRow, swell = { scoreSwell(above) }, onTally = { spots.tally[above] = it })
+                stoppedChip(above)
+            }
         }
         Column(Modifier.fillMaxSize()) {
             val title = campaign?.title ?: stringResource(if (ui.vsComputer) R.string.play_free else R.string.play_two)
@@ -308,7 +340,7 @@ internal fun GameBoard(
                 dangers = ui.dangers,
                 marked = ui.level?.mission?.let(::missionDot)?.takeUnless { ui.isOver },
                 pointer = guide?.point,
-                marks = boardMarks(ui),
+                marks = marks,
                 showLinks = links || (guided && ui.level?.let(Tutorial::lesson) == Tutorial.Lesson.LINKING),
                 moment = landed,
                 time = { moment.now },
@@ -341,46 +373,42 @@ internal fun GameBoard(
                     }
                     DoubleDotChip(it, style, Modifier.padding(start = 10.dp).then(scale))
                 }
+                if (stopper == below) Spacer(Modifier.width(12.dp))
+                stoppedChip(below)
                 Spacer(Modifier.weight(1f))
-                shownState.dotsLeft(below)?.let { DotsLeft(it, below, style) }
+                val dotsLeft = shownState.dotsLeft(below)
+                when {
+                    dotsLeft != null -> DotsLeft(dotsLeft, below, style)
+                    // An open-ended game has no limit (canvas frame `game-free-open`).
+                    ui.openEnded -> Text(stringResource(R.string.length_open_detail), style = NoteText.label, color = style.graphite)
+                }
             }
             if (toolBar) {
-                // Five boosters in the campaign fit with less room around them (draw.py, `toolbar`).
-                val side = if (campaign != null) 12.dp else 18.dp
-                Row(
+                // Five boosters in the campaign, and the tools of an open-ended game, fit with less room around them
+                // (draw.py, `toolbar` and `free_toolbar`).
+                val tight = campaign != null || ui.openEnded
+                val side = if (tight) 12.dp else 18.dp
+                val gap = if (tight) 10.dp else 14.dp
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(TOOL_BAR)
                         .graphicsLayer { translationY = toolsOut() * size.height }
                         .padding(start = side, end = side, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(if (campaign != null) 10.dp else 14.dp),
                 ) {
+                    val tools = Modifier.fillMaxWidth().height(56.dp)
                     // At the end the tools slide down and leave, and Result takes their place (motion.md, End of game).
-                    // A booster preview's note covers them (canvas frame `game-undo`).
+                    // A booster preview's note, and Stop's, covers them (canvas frames `game-undo`, `game-free-stop`).
                     when {
-                        toolsGone || ui.aim != null -> Spacer(Modifier.weight(1f))
-                        campaign != null -> CompositionLocalProvider(LocalToolMotion provides toolMotion) { campaign.boosters?.invoke(this) }
-                        else -> {
-                            var slots = 4
-                            if (ui.vsComputer) {
-                                UndoTool(enabled = ui.canUndo && !ui.thinking, style = style, onClick = onUndo, modifier = Modifier.weight(1f))
-                                slots--
-                            }
-                            if (ui.collecting) {
-                                DoneTool(style, onDone, Modifier.weight(1f))
-                                val stopper = state.stopper ?: below.opponent
-                                Text(
-                                    stringResource(R.string.game_collect, names.of(stopper)),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = style.pencil,
-                                    modifier = Modifier.weight(2f).align(Alignment.CenterVertically),
-                                )
-                                slots -= 3
-                            } else if (ui.openEnded) {
-                                StopTool(enabled = ui.canStop && !ui.thinking, armedFor = state, style = style, onStop = onStop, modifier = Modifier.weight(1f))
-                                slots--
-                            }
-                            repeat(slots) { Spacer(Modifier.weight(1f)) }
+                        toolsGone || ui.aim != null || ui.askingStop -> Unit
+                        campaign != null -> Row(tools, horizontalArrangement = Arrangement.spacedBy(gap)) {
+                            CompositionLocalProvider(LocalToolMotion provides toolMotion) { campaign.boosters?.invoke(this) }
+                        }
+                        ui.openEnded && state.stopper != null -> AfterStop(ui, human, names, style, stopping, gap, onUndo, onDone, onStop, tools)
+                        ui.openEnded -> OpenEndedTools(ui, enabled = true, style, gap, onUndo, onStop, tools)
+                        else -> Row(tools, horizontalArrangement = Arrangement.spacedBy(gap)) {
+                            FreeTool(stringResource(R.string.game_undo), Doodles.UNDO, ui.canUndo && !ui.thinking, style, onUndo, Modifier.weight(1f))
+                            repeat(3) { Spacer(Modifier.weight(1f)) }
                         }
                     }
                 }
@@ -410,7 +438,7 @@ internal fun GameBoard(
             }
             TutorialNote(guide, input.method, style, onSkipGuide, place.padding(horizontal = 14.dp))
         }
-        turnBanner?.let { TurnBanner(it, style, Modifier.offset(y = maxHeight * 0.38f)) }
+        turnBanner?.let { TurnBanner(it, collects = state.isCleanup, style, Modifier.offset(y = maxHeight * 0.38f)) }
         CaptureOverlay(landed, moment, state.width, state.height, spots, style)
         GivenBackOverlay(used, boosting, state.width, state.height, spots)
     }
@@ -577,6 +605,7 @@ private fun bubbleText(bubble: Bubble): String = stringResource(
         Bubble.WELL_PLAYED -> R.string.bubble_well_played
         Bubble.AGAIN -> R.string.bubble_again
         Bubble.TAKE_IT_BACK -> R.string.bubble_take_it_back
+        Bubble.STOPPED -> R.string.bubble_stopped
     },
 )
 
@@ -746,81 +775,53 @@ private fun Tally(score: Int, ink: Color, modifier: Modifier = Modifier) {
 internal val TOOL_SHAPE = RoundedCornerShape(topStart = 14.dp, topEnd = 18.dp, bottomEnd = 12.dp, bottomStart = 20.dp)
 
 /**
- * Free play's Undo: a tool with no count (decision 0023). When it cannot be used, its outline is
- * dashed and its ink grey, as an empty booster on the canvas.
+ * An open-ended game's tool bar (canvas frame `game-free-open`; draw.py, `free_toolbar`): Stop at
+ * the left, and in free play Undo at the right, where the campaign keeps its Undo, in a row of five
+ * places. Stop opens Stop's note ([onStop]); it never stops on one tap.
  */
 @Composable
-private fun UndoTool(enabled: Boolean, style: Palette, onClick: () -> Unit, modifier: Modifier) {
-    val ink = if (enabled) style.blue else style.graphite
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = modifier
-            .height(56.dp)
-            .clip(TOOL_SHAPE)
-            .background(style.card)
-            .toolOutline(if (enabled) style.bluePale else style.graphite, dashed = !enabled, TOOL_SHAPE)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
-    ) {
-        Icon(remember(ink) { Doodles.icon(Doodles.UNDO, ink) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
-        Text(stringResource(R.string.game_undo), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = ink)
+private fun OpenEndedTools(ui: GameUiState, enabled: Boolean, style: Palette, gap: Dp, onUndo: () -> Unit, onStop: () -> Unit, modifier: Modifier) {
+    Row(modifier, horizontalArrangement = Arrangement.spacedBy(gap)) {
+        FreeTool(stringResource(R.string.game_stop), Doodles.FLAG, enabled && ui.canStop && !ui.thinking, style, onStop, Modifier.weight(1f))
+        repeat(3) { Spacer(Modifier.weight(1f)) }
+        if (ui.vsComputer) FreeTool(stringResource(R.string.game_undo), Doodles.UNDO, enabled && ui.canUndo && !ui.thinking, style, onUndo, Modifier.weight(1f)) else Spacer(Modifier.weight(1f))
     }
 }
 
 /**
- * An open-ended game's Stop (decision 0025). Stopping ends the side's play, so it takes two taps:
- * the first turns it red and asks "Stop now?", the second stops. Any change of the position
- * [armedFor] (a move, an undo) puts it back.
+ * The tool bar's place after a stop (motion.md, "Stop and Done"): the collector's row, which slides
+ * up as the [stopping] clock plays; when the computer stopped, the player's tool bar first slides
+ * down and away. When the player stopped against the computer, only the line "The computer captures
+ * what is left." comes up: the computer collects by itself.
  */
 @Composable
-private fun StopTool(enabled: Boolean, armedFor: Any, style: Palette, onStop: () -> Unit, modifier: Modifier) {
-    var armed by remember(armedFor) { mutableStateOf(false) }
-    val sure = armed && enabled
-    val ink = when {
-        !enabled -> style.graphite
-        sure -> style.red
-        else -> style.blue
+private fun AfterStop(
+    ui: GameUiState,
+    human: Player,
+    names: Names,
+    style: Palette,
+    stopping: Timeline,
+    gap: Dp,
+    onUndo: () -> Unit,
+    onDone: () -> Unit,
+    onStop: () -> Unit,
+    modifier: Modifier,
+) {
+    val stop = ui.stopMoment
+    val computerStopped = ui.vsComputer && stop != null && stop.by != human
+    val barLeaving by remember(stopping, computerStopped) { derivedStateOf { computerStopped && stopping.now < StopTimes.TOOLS_OUT } }
+    if (barLeaving) {
+        OpenEndedTools(ui, enabled = false, style, gap, onUndo, onStop, modifier.graphicsLayer { translationY = StopTimes.toolsOut(stopping.now) * size.height })
     }
-    val outline = when {
-        !enabled -> style.graphite
-        sure -> style.red
-        else -> style.bluePale
-    }
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = modifier
-            .height(56.dp)
-            .clip(TOOL_SHAPE)
-            .background(style.card)
-            .toolOutline(outline, dashed = !enabled, TOOL_SHAPE)
-            .clickable(enabled = enabled, role = Role.Button) { if (sure) onStop() else armed = true },
-    ) {
-        Icon(remember(ink) { Doodles.icon(Doodles.FLAG, ink) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
-        Text(
-            stringResource(if (sure) R.string.game_stop_sure else R.string.game_stop),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = ink,
-            maxLines = 1,
-        )
-    }
-}
-
-/** After the other side stopped: Done ends the game, in blue ink like the big buttons. */
-@Composable
-private fun DoneTool(style: Palette, onDone: () -> Unit, modifier: Modifier) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-        modifier = modifier
-            .height(56.dp)
-            .clip(TOOL_SHAPE)
-            .background(style.blue)
-            .clickable(role = Role.Button, onClick = onDone),
-    ) {
-        Icon(remember(style) { Doodles.icon(Doodles.TICK, style.paper, width = 2.2f) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
-        Text(stringResource(R.string.game_done), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = style.paper)
+    val comingUp = modifier.graphicsLayer { translationY = (1f - if (stop != null) StopTimes.row(stopping.now) else 1f) * size.height }
+    val collector = ui.state.stopper?.opponent ?: return
+    if (ui.vsComputer && collector != human) {
+        Box(comingUp, contentAlignment = Alignment.CenterStart) {
+            Text(stringResource(R.string.game_computer_collects), style = NoteText.label, color = style.pencil)
+        }
+    } else {
+        val line = if (ui.vsComputer) stringResource(R.string.game_collect) else stringResource(R.string.game_collect_named, names.of(collector))
+        CollectRow(line, onUndo.takeIf { ui.vsComputer }, undoEnabled = ui.canUndo && !ui.thinking, style, onDone, comingUp)
     }
 }
 
@@ -848,11 +849,11 @@ private fun MissionNote(style: Palette, modifier: Modifier, width: Dp, content: 
     }
 }
 
-/** Between two people, across the screen at each change of turn: the side to play now. */
+/** Between two people, across the screen at each change of turn: the side to play now, or after a stop the side that collects. */
 @Composable
-private fun TurnBanner(player: Player, style: Palette, modifier: Modifier) {
+private fun TurnBanner(player: Player, collects: Boolean, style: Palette, modifier: Modifier) {
     val ink = style.ink(player)
-    val text = stringResource(R.string.turn_banner, playerName(player))
+    val text = stringResource(if (collects) R.string.turn_banner_collects else R.string.turn_banner, playerName(player))
     Row(
         horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,

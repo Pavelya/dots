@@ -12,7 +12,7 @@ import dots.engine.TurnRule
 enum class Mood { HAPPY, SMUG, UPSET, DETERMINED, SULKY, ATTACKING }
 
 /** What the computer says in its speech bubble (the canvas and the wireframes, D-06 and D-07). */
-enum class Bubble { GOOD_LUCK, YOUR_MOVE, HEY, OUCH, WELL_PLAYED, AGAIN, TAKE_IT_BACK }
+enum class Bubble { GOOD_LUCK, YOUR_MOVE, HEY, OUCH, WELL_PLAYED, AGAIN, TAKE_IT_BACK, STOPPED }
 
 /** How a game ended for the human: won (a level passed), lost (a level failed) or a draw. */
 enum class Ending { WON, LOST, DRAW }
@@ -50,6 +50,8 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
             }
             lastCapture?.by == human && lastCapture.points >= BIG_CAPTURE -> OpponentLook(Mood.UPSET, Bubble.OUCH)
             lastCapture?.by == human -> OpponentLook(Mood.UPSET, Bubble.HEY)
+            // It stopped in an open-ended game: it cannot lose, and it says so while the player collects (D-16).
+            state.stopper == human.opponent -> OpponentLook(Mood.SMUG, Bubble.STOPPED)
             bossTurn(state, human.opponent) -> OpponentLook(Mood.ATTACKING)
             humanInDanger && state.toMove == human -> OpponentLook(Mood.SMUG, Bubble.YOUR_MOVE)
             state.dotsPlaced(human) == 0 -> OpponentLook(Mood.HAPPY, Bubble.GOOD_LUCK)

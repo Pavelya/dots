@@ -151,7 +151,8 @@ internal fun TapedNote(style: Palette, modifier: Modifier, angle: Float = -1f, c
 
 /**
  * The one big button of a note: 56 dp, in blue ink, with the Title style (canvas README). An icon
- * may come [before] or [after] the text, as path data from [Doodles].
+ * may come [before] or [after] the text, as path data from [Doodles]. A narrow one takes less
+ * [padding] at its sides.
  */
 @Composable
 internal fun BigButton(
@@ -162,10 +163,12 @@ internal fun BigButton(
     before: String? = null,
     after: String? = null,
     enabled: Boolean = true,
+    padding: PaddingValues = ButtonDefaults.ContentPadding,
 ) {
     Button(
         onClick = onClick,
         enabled = enabled,
+        contentPadding = padding,
         shape = BIG_BUTTON_SHAPE,
         colors = ButtonDefaults.buttonColors(
             containerColor = style.blue,

@@ -86,4 +86,13 @@ class OpponentLookTest {
         assertEquals(OpponentLook(Mood.SULKY, Bubble.WELL_PLAYED), look(won))
         assertEquals(OpponentLook(Mood.SMUG, Bubble.AGAIN), OpponentLook.of(won, Player.BLUE, null, false))
     }
+
+    @Test
+    fun `once it has stopped it is smug and says so while the player collects, unless the player captures`() {
+        val stopped = afterAMove.play(Pos(2, 2)).state.stop() // Blue stops; Red collects
+        assertEquals(OpponentLook(Mood.SMUG, Bubble.STOPPED), look(stopped))
+        assertEquals(OpponentLook(Mood.UPSET, Bubble.HEY), look(stopped, LastCapture(human, 1)))
+        // The player's own stop changes nothing in its look.
+        assertEquals(OpponentLook(Mood.DETERMINED), look(afterAMove.stop()))
+    }
 }

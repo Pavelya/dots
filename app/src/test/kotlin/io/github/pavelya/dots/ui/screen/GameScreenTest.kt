@@ -2,6 +2,7 @@ package io.github.pavelya.dots.ui.screen
 
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasContentDescription
@@ -18,11 +19,14 @@ import dots.engine.Action
 import dots.engine.GameSettings
 import dots.engine.GameState
 import dots.engine.Opening
+import dots.engine.Player
+import io.github.pavelya.dots.game.FreeGame
 import io.github.pavelya.dots.game.gameViewModel
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -224,5 +228,37 @@ class GameScreenTest {
         place(0, 0)
         compose.mainClock.advanceTimeBy(100)
         compose.onNodeWithText("Red’s turn").assertIsDisplayed()
+    }
+
+    @Test
+    fun `Stop never stops on one tap, its note asks, and the game goes on until Stop here`() {
+        val vm = FreeGame.viewModel(FreeGame.open)
+        compose.setContent { DotsTheme { GameScreen(vm, onToMap = {}, onRules = {}) } }
+        waitFor(side("You, score 4, to move"))
+        compose.onNodeWithText("no limit").assertIsDisplayed()
+
+        compose.onNodeWithText("Stop").performClick()
+        waitFor("Stop here")
+        compose.onNodeWithText("3 of your dots aren’t joined to the edge.").assertIsDisplayed()
+        assertFalse(vm.ui.value.state.isCleanup)
+        assertEquals(Player.RED, vm.ui.value.state.toMove)
+
+        // Cancel closes the note, and the game goes on.
+        compose.onNodeWithText("Cancel").performClick()
+        gone(hasText("Stop here"))
+        assertFalse(vm.ui.value.state.isCleanup)
+        compose.onNodeWithText("Stop").assertIsEnabled()
+
+        // So does Back.
+        compose.onNodeWithText("Stop").performClick()
+        waitFor("Stop here")
+        Espresso.pressBack()
+        gone(hasText("Stop here"))
+        assertFalse(vm.ui.value.state.isCleanup)
+
+        compose.onNodeWithText("Stop").performClick()
+        compose.onNodeWithText("Stop here").performClick()
+        // Now Red has stopped; the computer collects what is left by itself.
+        compose.waitUntil(timeoutMillis = 5_000) { vm.ui.value.state.stopper == Player.RED }
     }
 }

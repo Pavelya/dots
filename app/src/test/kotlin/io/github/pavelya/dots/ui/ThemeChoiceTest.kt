@@ -66,7 +66,7 @@ class ThemeChoiceTest {
     private class Recorder : Audio {
         val played: MutableList<Pair<Effect, String>> = Collections.synchronizedList(ArrayList())
 
-        override fun play(effect: Effect, rate: Float, file: String): Sounding {
+        override fun play(effect: Effect, rate: Float, file: String, share: Float): Sounding {
             played += effect to file
             return Sounding.NONE
         }

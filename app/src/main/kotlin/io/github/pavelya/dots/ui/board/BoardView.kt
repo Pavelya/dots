@@ -312,7 +312,9 @@ private var SemanticsPropertyReceiver.linksShown by LinksShown
  * What a booster adds to the board (A-05). In the booster preview: the [targets] it may be aimed
  * at, the [point] chosen (drag's guides follow it), a [wall] about to go up, the bomb's [plus] and the pieces it would take away ([gone]: the
  * bomb's hits, or the turn Undo takes back), pale in dashed rings. After a Hint: its [hint] point,
- * circled twice in the player's ink.
+ * circled twice in the player's ink. In an open-ended game, on Stop's note and after a stop: the
+ * [open] dots that can still be captured, each in a dashed Highlighter ring, at [openSize] of its
+ * size as the rings grow in or shrink away (read while drawing).
  */
 data class BoardMarks(
     val targets: List<Pos> = emptyList(),
@@ -321,6 +323,8 @@ data class BoardMarks(
     val plus: List<Pos> = emptyList(),
     val gone: List<Pos> = emptyList(),
     val hint: Pos? = null,
+    val open: List<Pos> = emptyList(),
+    val openSize: () -> Float = { 1f },
 ) {
     companion object {
         val NONE = BoardMarks()
@@ -468,6 +472,7 @@ private fun DrawScope.drawPosition(
         undoneAreas.forEachIndexed { i, area -> drawRingOf(area.by, undoneStrokes[i], style, drawn = 1f - frame.rubbedOut(area.by), layer = layer) }
     }
     drawThreatRings(dangers, geometry, style, frame)
+    if (marks.open.isNotEmpty()) drawOpenRings(marks.open, marks.openSize(), geometry, style)
     drawPlusRings(state, marks.plus, geometry, style)
     drawRipples(geometry, style, frame)
     drawDots(state, geometry, style, frame)
@@ -849,6 +854,17 @@ private fun DrawScope.drawGone(state: GameState, gone: List<Pos>, plus: List<Pos
         drawPiece(piece, c, dot, style.palette.pale(owner))
         if (!inPlus) drawDashedRing(c, geometry.spacing * 0.45f, style.graphite, 1.5.dp.toPx())
     }
+}
+
+/**
+ * The dots that can still be captured after a stop (motion.md, "Stop and Done"): a dashed
+ * Highlighter ring round each, 0.84 of the spacing across, at [size] of it (draw.py, `open`).
+ */
+private fun DrawScope.drawOpenRings(open: List<Pos>, size: Float, geometry: BoardGeometry, style: BoardStyle) {
+    if (size <= 0f) return
+    val dash = PathEffect.dashPathEffect(floatArrayOf(3.dp.toPx(), 2.5.dp.toPx()))
+    val radius = geometry.spacing * 0.42f * size
+    for (point in open) drawCircle(style.palette.highlighter, radius, geometry.center(point), style = Stroke(1.5.dp.toPx(), pathEffect = dash))
 }
 
 private fun DrawScope.drawDashedRing(center: Offset, radius: Float, color: Color, width: Float) {

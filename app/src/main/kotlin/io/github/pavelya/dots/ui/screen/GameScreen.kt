@@ -57,6 +57,7 @@ import io.github.pavelya.dots.ui.motion.playOut
 import io.github.pavelya.dots.ui.motion.rememberBoosterTimeline
 import io.github.pavelya.dots.ui.motion.rememberMomentTimeline
 import io.github.pavelya.dots.ui.motion.rememberNoteMotion
+import io.github.pavelya.dots.ui.motion.rememberStopTimeline
 import io.github.pavelya.dots.ui.motion.rememberTimeline
 import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.Palette
@@ -134,6 +135,9 @@ private fun rememberEndTimeline(ui: GameUiState, moment: Timeline): Timeline {
  * note over the player's line and the tool bar; on the board the player chooses the booster's
  * point by the same [placing] method as a dot. Confirm applies it, Cancel or Back closes it.
  *
+ * In an open-ended game (decision 0025) Stop opens Stop's note in the same place: Stop here stops,
+ * Cancel or Back closes it, and the game goes on.
+ *
  * In the tutorial's levels (A-06) the guided steps show once the level opening has gone, unless
  * [guidesSkipped]. Skip hides them and calls [onSkipGuides], which saves that. In a practice game
  * of the tutorial, Next plays its next level here, and after the last one goes to the map.
@@ -166,6 +170,7 @@ fun GameScreen(
     BackHandler(enabled = !ui.isOver) { paused = !paused }
     // Registered later, so it comes first: Back closes an open booster preview.
     BackHandler(enabled = ui.aim != null && !paused) { viewModel.cancelBooster() }
+    BackHandler(enabled = ui.askingStop && !paused) { viewModel.cancelStop() }
     val style = Palette.current
     val level = ui.level
     val daily = ui.daily
@@ -204,12 +209,13 @@ fun GameScreen(
     }
     val moment = rememberMomentTimeline(ui.moment)
     val boosting = rememberBoosterTimeline(ui.booster)
+    val stopping = rememberStopTimeline(ui.stopMoment)
     val ending = rememberEndTimeline(ui, moment)
     // Result comes up once the end has played; a tap meanwhile jumps to it.
     val ended by remember(ending) { derivedStateOf { !ending.running } }
     // The end and Result play their sounds only for a game that ended on this screen, not one opened over.
     val endedHere = remember(ui.round) { !ui.isOver }
-    GameSounds(ui, viewModel, moment, boosting, ending, endedHere)
+    GameSounds(ui, viewModel, moment, boosting, stopping, ending, endedHere)
     // The notes over the board: each stays drawn while it slides down, the booster preview with its last aim.
     val pauseOpen = paused && !ui.isOver
     val pausing = rememberNoteMotion(pauseOpen)
@@ -217,6 +223,15 @@ fun GameScreen(
     val aiming = rememberNoteMotion(aimOpen != null)
     val lastAim = remember { arrayOfNulls<BoosterAim>(1) }
     if (aimOpen != null) lastAim[0] = aimOpen
+    val askOpen = ui.askingStop && !ui.isOver
+    val asking = rememberNoteMotion(askOpen)
+    // Stop's note keeps what it said while it slides down: after Stop here the other side is to move.
+    val lastOpen = remember { IntArray(1) }
+    val lastOther = remember { arrayOfNulls<Player>(1) }
+    if (askOpen) {
+        lastOpen[0] = ui.openDots.size
+        lastOther[0] = ui.state.toMove.opponent
+    }
     // A touch anywhere ends the opening at once; the touch still reaches what it touched.
     val endOpening = Modifier.pointerInput(ui.round) {
         awaitPointerEventScope {
@@ -234,7 +249,7 @@ fun GameScreen(
             input = BoardInput(placing, viewModel::onTap, viewModel::aim, viewModel::release),
             onUndo = viewModel::undo,
             onPause = { paused = true },
-            onStop = viewModel::stop,
+            onStop = viewModel::askStop,
             onDone = viewModel::done,
             // Behind Pause, the board is out of reach, also for TalkBack.
             modifier = if (paused && !ui.isOver) Modifier.clearAndSetSemantics {} else Modifier,
@@ -248,6 +263,7 @@ fun GameScreen(
             moment = moment,
             ending = ending,
             boosting = boosting,
+            stopping = stopping,
         )
         if (ui.isOver && !ended) {
             Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { ending.finish() } })
@@ -281,6 +297,17 @@ fun GameScreen(
                 onConfirm = viewModel::confirmBooster,
                 modifier = Modifier.align(Alignment.BottomCenter).slideUp { aiming.up }.padding(start = 10.dp, end = 10.dp, bottom = 8.dp),
                 motion = aiming,
+            )
+        }
+        if (askOpen || !asking.gone) {
+            StopNote(
+                open = lastOpen[0],
+                other = lastOther[0]?.takeUnless { ui.vsComputer }?.let { playerName(it) },
+                style = style,
+                onCancel = viewModel::cancelStop,
+                onStop = viewModel::stop,
+                modifier = Modifier.align(Alignment.BottomCenter).slideUp { asking.up }.padding(start = 10.dp, end = 10.dp, bottom = 10.dp),
+                motion = asking,
             )
         }
         if (pauseOpen || !pausing.gone) {
@@ -326,13 +353,13 @@ fun GameScreen(
 }
 
 /**
- * The game's sounds (docs/design/sound.md) and vibrations (motion.md, rule 6): each dot's [moment]
- * and each booster's effect ([boosting]) as it plays, and at the end of a game that [endedHere] the
- * captured areas lighting up ([ending]), unless animations are removed. Each moment is heard and
+ * The game's sounds (docs/design/sound.md) and vibrations (motion.md, rule 6): each dot's [moment],
+ * each booster's effect ([boosting]) and each stop ([stopping]) as it plays, and at the end of a
+ * game that [endedHere] the captured areas lighting up ([ending]), unless animations are removed. Each moment is heard and
  * felt once, also when the screen is drawn again after Rules ([GameViewModel.heard]).
  */
 @Composable
-private fun GameSounds(ui: GameUiState, viewModel: GameViewModel, moment: Timeline, boosting: Timeline, ending: Timeline, endedHere: Boolean) {
+private fun GameSounds(ui: GameUiState, viewModel: GameViewModel, moment: Timeline, boosting: Timeline, stopping: Timeline, ending: Timeline, endedHere: Boolean) {
     val human = viewModel.human.takeIf { ui.vsComputer }
     val firstTime = { id: Int -> (id > viewModel.heard).also { if (it) viewModel.heard = id } }
     // The dots run low once a game (sound.md, sfx_dots_low).
@@ -347,6 +374,9 @@ private fun GameSounds(ui: GameUiState, viewModel: GameViewModel, moment: Timeli
     PlayCues(used?.id, boosting, play = { used != null && firstTime(used.id) }, beats = { used?.let(Beats::booster).orEmpty() }) {
         used?.let(Cues::booster).orEmpty()
     }
+    // A stop, by either side: the pen's full stop and a light vibration (sound.md, "Stop and Done").
+    val stop = ui.stopMoment
+    PlayCues(stop?.id, stopping, play = { stop != null && firstTime(stop.id) }, beats = { Beats.stop() }) { Cues.stop() }
     val reduce = LocalReduceMotion.current
     val endStarted by remember(ending) { derivedStateOf { ending.now > 0f } }
     PlayCues(ui.round.takeIf { ui.isOver && endedHere && !reduce && endStarted }, ending) { Cues.ending(EndOfGame(ui.captureOrder.size)) }

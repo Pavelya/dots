@@ -3,6 +3,7 @@ package io.github.pavelya.dots.ui.motion
 import androidx.compose.runtime.Composable
 import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.BoosterMoment
+import io.github.pavelya.dots.game.StopMoment
 import kotlin.math.max
 
 /** How a capture of this moment plays, or null when the dot captured nothing. */
@@ -34,3 +35,7 @@ fun rememberMomentTimeline(moment: BoardMoment?): Timeline = rememberTimeline(mo
 /** The clock of a booster's effect: it plays each booster used once. */
 @Composable
 fun rememberBoosterTimeline(booster: BoosterMoment?): Timeline = rememberTimeline(booster?.id, booster?.length ?: 0f)
+
+/** The clock of a stop (motion.md, "Stop and Done"): it plays each stop once. */
+@Composable
+fun rememberStopTimeline(stop: StopMoment?): Timeline = rememberTimeline(stop?.id, StopTimes.LENGTH)

@@ -23,8 +23,11 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlin.math.pow
 
-/** An [effect] to start [at] ms into a moment, played at [rate] (1 is as recorded). */
-data class Cue(val effect: Effect, val at: Float, val rate: Float = 1f)
+/**
+ * An [effect] to start [at] ms into a moment, played at [rate] (1 is as recorded) and at [share] of
+ * the effects' volume, the effect's own unless the moment says otherwise.
+ */
+data class Cue(val effect: Effect, val at: Float, val rate: Float = 1f, val share: Float = effect.share)
 
 /**
  * Which sound starts when in each moment of docs/design/motion.md: the page "Check against the
@@ -96,6 +99,12 @@ object Cues {
         Booster.UNDO -> listOf(Cue(Effect.RING_DRAW, 0f, UNDO))
     }
 
+    /** A stop, by either side: the pen's full stop, the dot's first take at [STOP] speed, at full volume. */
+    fun stop(): List<Cue> = listOf(Cue(Effect.PLACE_1, 0f, STOP, share = 1f))
+
+    /** A stop plays the dot's first take at this speed: lower and firmer. */
+    const val STOP = 0.7f
+
     /** The end of a game: each captured area plays one note higher as it lights up. */
     fun ending(times: EndOfGame): List<Cue> = List(times.areas) { i -> Cue(Effect.AREA_LIGHT, times.areaStart(i), areaRate(i)) }
 
@@ -158,6 +167,9 @@ object Beats {
     fun booster(used: BoosterMoment): List<Beat> =
         if (used.booster == Booster.BOMB) listOf(Beat(Buzz.STRONG, BombEffect.BLAST)) else emptyList()
 
+    /** A stop is felt as a dot is (motion.md, "Stop and Done"). */
+    fun stop(): List<Beat> = listOf(Beat(Buzz.LIGHT, 0f))
+
     /**
      * The result note's vibrations, from the moment it starts to slide up: one as each of the
      * [stars] earned lands. With animations [still], the stars are not stamped, and nothing is felt.
@@ -185,7 +197,7 @@ fun PlayCues(key: Any?, clock: Timeline?, play: () -> Boolean = { true }, beats:
         if (key == null || !allowed()) return@LaunchedEffect
         val sounding = ArrayList<Sounding>()
         // Sounds and vibrations in one list, so those on the same millisecond start together.
-        val sounds: List<Pair<Float, () -> Unit>> = latest().map { cue -> cue.at to { sounding += audio.play(cue.effect, cue.rate, theme.sound(cue.effect)) } }
+        val sounds: List<Pair<Float, () -> Unit>> = latest().map { cue -> cue.at to { sounding += audio.play(cue.effect, cue.rate, theme.sound(cue.effect), cue.share) } }
         val felt: List<Pair<Float, () -> Unit>> = latestBeats().map { beat -> beat.at to { haptics.buzz(beat.buzz) } }
         val steps = (sounds + felt).sortedBy { it.first }
         if (steps.isEmpty()) return@LaunchedEffect

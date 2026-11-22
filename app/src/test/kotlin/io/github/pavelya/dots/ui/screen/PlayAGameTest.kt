@@ -13,6 +13,7 @@ import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.GameLength
 import io.github.pavelya.dots.data.GameMode
+import io.github.pavelya.dots.game.FreeGame
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -37,7 +38,7 @@ class PlayAGameTest {
         compose.setContent {
             var settings by remember { mutableStateOf(AppSettings()) }
             PlayAGameNote(
-                saved = saved,
+                saved = saved.associateWith { FreeGame.saved },
                 settings = settings,
                 onSettings = { change -> settings = change(settings); latest = settings },
                 onPlay = { mode, replace -> played += mode to replace },
@@ -70,9 +71,12 @@ class PlayAGameTest {
         compose.onNodeWithText("60 dots").assertIsDisplayed()
         compose.onNodeWithText("120 dots").assertIsDisplayed()
 
+        compose.onNodeWithText("Each side places 60 dots. More captures wins.").assertIsDisplayed()
+
         compose.onNodeWithText("Open-ended").performClick()
         assertEquals(GameLength.OPEN_ENDED, latest.length)
         compose.onNodeWithText("Open-ended").assertIsSelected()
+        compose.onNodeWithText("As on paper. Tap Stop once your dots are safe.").assertIsDisplayed()
     }
 
     @Test
@@ -85,6 +89,10 @@ class PlayAGameTest {
         compose.onNodeWithText("Board 15 × 15 · Short · change").performClick()
         compose.onNodeWithText("Against the computer").performClick()
         compose.onNodeWithText("Replace your saved game?").assertIsDisplayed()
+        // It shows the game that would end, and what starts instead.
+        compose.onNodeWithText("15 × 15 · Short · 9 dots left").assertIsDisplayed()
+        compose.onNodeWithText("You 4 · Computer 1").assertIsDisplayed()
+        compose.onNodeWithText("It ends, and a new short game starts.").assertIsDisplayed()
         compose.onNodeWithText("Keep it").performClick()
         assertEquals(1, played.size)
 

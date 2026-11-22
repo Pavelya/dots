@@ -477,6 +477,38 @@ object UndoEffect {
 }
 
 /**
+ * Stop and Done in an open-ended game (motion.md, "Stop and Done"). Stop's note slides as every
+ * note does ([NoteSlide]); as it comes, the dashed rings round the player's open dots grow in
+ * [RINGS] ms, and Cancel shrinks them away as fast. For the stop itself, 0 ms is the moment Stop
+ * here is tapped, or the computer stops: the tool bar (or Stop's note) leaves by [TOOLS_OUT], the
+ * "stopped" chip grows in by [CHIP], the stopper's open dots get their rings by [RINGS], and the
+ * collector's row slides up from [ROW_FROM] to [ROW_TO].
+ */
+object StopTimes {
+    const val RINGS = 150f
+    const val TOOLS_OUT = 200f
+    const val CHIP = 300f
+    const val ROW_FROM = 250f
+    const val ROW_TO = 550f
+    const val LENGTH = ROW_TO
+
+    /** The open dots' rings growing in, as a share of their size. */
+    fun ringsIn(t: Float): Float = phase(t, 0f, RINGS, Ease.OUT)
+
+    /** The rings shrinking away after Cancel. */
+    fun ringsOut(t: Float): Float = 1f - phase(t, 0f, RINGS, Ease.IN)
+
+    /** The tool bar sliding down and away, from 0 (in place) to 1 (gone). */
+    fun toolsOut(t: Float): Float = phase(t, 0f, TOOLS_OUT, Ease.IN)
+
+    /** The "stopped" chip's size: from 60% to 100%, as Double dot's chip grows. */
+    fun chip(t: Float): Float = 0.6f + 0.4f * phase(t, 0f, CHIP, Ease.OUT)
+
+    /** The collector's row sliding up in place of the tool bar, from 0 (below) to 1 (in place). */
+    fun row(t: Float): Float = phase(t, ROW_FROM, ROW_TO, Ease.OUT)
+}
+
+/**
  * The end of a game (motion.md, "End of game") with [areas] captured areas: 0 ms is the moment the
  * game is over and the last move has played out.
  */
