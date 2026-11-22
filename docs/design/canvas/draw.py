@@ -151,14 +151,14 @@ for _key, _aim in (("wall-aim", dict(booster="wall", point=(9, 9))), ("bomb-aim"
 
 
 # Free play and two players in an open-ended game (decision 0025, D-16): one position on a 15 x 15 board.
-# Red leads 4 to 1. Its two rings run to the top and right edges, a chain runs in from the left edge, and
-# one group of three in the lower middle is not joined to the edge. After a stop, only such groups can
-# still be captured (the engine's Grounding.ungrounded).
+# Red leads 4 to 1. Straight chains join its two rings to the top and right edges, a chain runs straight
+# in from the left edge, and one group of three in the lower middle is not joined to the edge. After a
+# stop, only such dots can still be captured (open_dots).
 FREE_R1 = area("red", [(6, 3), (7, 4), (6, 5), (5, 4)], [(6, 4)])
 FREE_R2 = area("red", [(9, 9), (10, 8), (11, 8), (12, 9), (11, 10), (10, 11), (9, 10)], [(10, 9), (11, 9), (10, 10)])
 FREE_B1 = area("blue", [(2, 3), (3, 4), (2, 5), (1, 4)], [(2, 4)])
-FREE_RED = (FREE_R1["ring"] + [(6, 2), (7, 1), (7, 0)] + FREE_R2["ring"] + [(13, 10), (14, 10)] +
-            [(0, 8), (1, 8), (2, 7), (3, 7)] + [(5, 11), (6, 11), (6, 12)] + [(2, 4)])
+FREE_RED = (FREE_R1["ring"] + [(6, 2), (6, 1), (6, 0)] + FREE_R2["ring"] + [(13, 9), (14, 9)] +
+            [(0, 7), (1, 7), (2, 7), (3, 7)] + [(5, 11), (6, 11), (6, 12)] + [(2, 4)])
 FREE_BLUE = (FREE_B1["ring"] + [(0, 4)] + [(6, 4), (10, 9), (11, 9), (10, 10)] + [(4, 11), (7, 11), (6, 13)] +
              [(8, 14), (8, 13), (9, 12)] + [(9, 5), (10, 4), (11, 3), (12, 3), (13, 2), (14, 2)] +
              [(3, 9), (4, 6), (8, 7), (7, 8)])
@@ -166,28 +166,22 @@ FREE = dict(red=FREE_RED, blue=FREE_BLUE, areas=[FREE_R1, FREE_R2, FREE_B1], las
 
 
 def open_dots(pos, side):
-    """side's live dots in groups that touch no edge, joined across or diagonally: the dots that can
-    still be captured after a stop (Grounding.ungrounded)."""
-    captured = {p for a in pos["areas"] for p in a["inside"]}
-    live = set(pos[side]) - captured
-    out, seen = [], set()
-    for start in sorted(live):
-        if start in seen:
-            continue
-        group, stack = [], [start]
-        seen.add(start)
-        while stack:
-            x, y = stack.pop()
-            group.append((x, y))
-            for dx in (-1, 0, 1):
-                for dy in (-1, 0, 1):
-                    q = (x + dx, y + dy)
-                    if q in live and q not in seen:
-                        seen.add(q)
-                        stack.append(q)
-        if not any(x in (0, 14) or y in (0, 14) for x, y in group):
-            out += group
-    return sorted(out)
+    """side's live dots that can still be captured after a stop, by the engine's test (Grounding.exposed):
+    a dot is safe only when a chain joins it to the edge, stepping up, down, left or right through side's
+    live dots and the points inside any capture. A diagonal step does not count: the enemy can close its
+    own diagonal step through the same spot."""
+    dead = {p for a in pos["areas"] for p in a["inside"]}
+    live = set(pos[side]) - dead
+    links = live | dead
+    stack = [p for p in links if p[0] in (0, 14) or p[1] in (0, 14)]
+    reached = set(stack)
+    while stack:
+        x, y = stack.pop()
+        for q in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
+            if q in links and q not in reached:
+                reached.add(q)
+                stack.append(q)
+    return sorted(live - reached)
 
 
 def swapped(pos, drop=()):
@@ -200,8 +194,8 @@ def swapped(pos, drop=()):
                 last=m(pos["last"]))
 
 
-# The computer leads 4 to 1 and has only two dots not joined to the edge, so it stops: even if the player
-# captured both, it would still win (SearchAi.shouldStop).
+# The computer leads 4 to 1 and has only two open dots, so it stops: even if the player captured both, it
+# would still win (SearchAi.shouldStop).
 FREE_COMPUTER = swapped(FREE, drop=[(6, 12)])
 POSITIONS["free"] = FREE
 POSITIONS["free-stop"] = dict(FREE, open=open_dots(FREE, "red"))
@@ -1300,6 +1294,9 @@ FREE_MOMENTS = {  # mode, the computer's mood and bubble, who stopped, who moves
 }
 FREE_POSITION = {"free-open": "free", "free-stop": "free-stop", "free-computer-stops": "free-computer-stops",
                  "two-done": "two-done"}
+# The computer stops only when its lead is bigger than its open dots (SearchAi.shouldStop).
+_you, _them = FREE_MOMENTS["free-computer-stops"]["score"]
+assert _them - _you > len(POSITIONS["free-computer-stops"]["open"])
 
 
 def stopped_chip(t):
