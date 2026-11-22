@@ -42,6 +42,8 @@ flowchart TD
     settings["Settings"]
     details["Settings details"]
     theme["Theme"]
+    pieces["Pieces"]
+    rings["Rings"]
     stats["Stats"]
     ranks["Leaderboards and achievements"]
     shop["Shop"]
@@ -68,6 +70,10 @@ flowchart TD
     settings --> details
     settings -->|"Theme, when there is a choice"| theme
     theme -->|"More themes, once the Shop exists"| shop
+    settings -->|"Pieces, when there is a choice"| pieces
+    settings -->|"Rings, when there is a choice"| rings
+    pieces -->|"More piece styles"| shop
+    rings -->|"More ring effects"| shop
     stats --> ranks
     shop --> preview
 ```
@@ -164,6 +170,8 @@ over the map or the board, which stay visible around it.
 | Settings | Settings on the map | The controls listed under [Settings](#settings). | A-09 |
 | Settings details | A row in Settings | Language, privacy (the policy, ad choices and the Show ad offers switch), Play Games backup, credits and licences. | A-09, A-10, C-03 |
 | Theme | Theme in Settings, shown only when more than one theme can be chosen | One card per theme the player can choose, each on a small sample board drawn by that theme. The theme in use is ticked; tapping another puts it in use at once. See [Choosing a theme](#choosing-a-theme). | A-23 |
+| Pieces | Pieces in Settings, shown only when a piece style other than Standard can be chosen | One card per piece style the player can choose, Standard first, each on the Shop's small board drawn in the theme in use. The one in use is ticked; tapping another puts it in use at once. See [Choosing pieces and rings](#choosing-pieces-and-rings). | A-26 |
+| Rings | Rings in Settings, shown only when a ring effect other than Standard can be chosen | The same page for ring effects. | A-26 |
 | Developer menu | Seven taps on the version line at the bottom of Settings | The POC's difficulty picker and test-only settings. Not for players, so it is left out of the two-tap check. | A-01 |
 | Android screens | An action in the game | Not drawn by us: the share screen, the feedback email, the review prompt (A-12), Play Games sign-in, Google Play purchase, a rewarded ad, the ad consent form. Closing one returns to the screen that opened it. | A-07, A-12, O-02, C-02, C-03 |
 
@@ -184,7 +192,8 @@ to the map.
 
 - **Sound and vibration:** music volume, sound-effects volume, vibration on or off.
 - **Board:** theme (only when more than one can be chosen; see
-  [Choosing a theme](#choosing-a-theme)), high-contrast pieces, threat highlights, links between
+  [Choosing a theme](#choosing-a-theme)), pieces and rings (each only when more than Standard
+  can be chosen; see [Choosing pieces and rings](#choosing-pieces-and-rings)), high-contrast pieces, threat highlights, links between
   dots (off by default; the [theme page](theme-notebook.md#the-board) says where links show
   anyway), placing a dot (drag, the default, or two taps; decisions 0024 and 0026).
 - **Help and app:** Replay tutorial, Send feedback (an email, A-12), Language (shown once a second
@@ -241,6 +250,64 @@ The words:
 For TalkBack the cards are one group of choices named Theme. Each card is read as its name and
 its line, then selected or not selected; the sample board is not read.
 
+## Choosing pieces and rings
+
+A piece style and a ring effect are chosen apart from the theme and from each other
+([`cosmetics.md`](cosmetics.md), Rules). Each has a default, **Standard**: the theme's own pieces
+or ring, so Standard changes with the theme.
+
+- **Where.** Settings has a **Pieces** row and a **Rings** row below Theme, in that order, each
+  with the item in use on its right. Each row opens its page, and each shows only when the player
+  can choose more than Standard: always on a debug build, and on a release build once the player
+  owns a piece style (or a ring effect). Before the Shop exists, release builds have neither row
+  ([`money.md`](money.md), Owning an item).
+- **The Pieces page and the Rings page** are built like the Theme page: a full screen on
+  Notebook paper, one card per item the player can choose, Standard first, then the others in the
+  Shop's order (Hearts and clubs, Flame and frost; Lasso, Rubber stamp). Each card has the Shop's
+  small board ([`cosmetics.md`](cosmetics.md), The Shop's small board), the item's name and one
+  line about it. The board is drawn by the theme in use, in the light or dark version the phone
+  picks, with only the item changed: a piece style's card has the theme's own ring, and a ring
+  effect's card the theme's own pieces, as the Shop's tiles do. The board is still: a ring
+  effect's card shows the finished ring, without the capture's motion.
+- **Picking.** Tapping a card puts that item in use at once, with no confirm button. The tick and
+  "In use" move to that card. A Pieces card plays the theme's first placing sound (`sfx_place_1`,
+  or `sfx_star_chart_place_1` and `sfx_neon_arcade_place_1`); a Rings card plays the theme's ring
+  closing sound (`sfx_ring_close`, or `sfx_star_chart_ring_close` and
+  `sfx_neon_arcade_ring_close`). Both play at the sound-effects volume. Tapping the item in use
+  does nothing. Back returns to Settings. Every board from then on, a resumed game included, uses
+  the new item.
+- **An item the player can't choose is not on the page,** not even locked or greyed out. If the
+  player lacks one, the page ends with a link to the Shop: **More piece styles in the Shop** or
+  **More ring effects in the Shop**. A debug build lists every item and has no link.
+- **One choice, two ways to make it.** The game keeps one saved value for each kind: the piece
+  style in use and the ring effect in use. The page and the Shop's Cosmetic preview (its Use it
+  button, and In use) both read and set it, so they always agree. Changing the theme keeps both.
+  If the item in use can no longer be chosen, after a refund or a debug backup restored on a
+  release build, the game goes back to Standard without a message, as it does for a theme.
+- **Debug builds** show a dashed note at the top of each page, as on the Theme page.
+
+The words:
+
+| Where | Text |
+| --- | --- |
+| Settings rows | **Pieces**, with the piece style in use on the right: Standard, Hearts and clubs or Flame and frost. **Rings**, with the ring effect in use: Standard, Lasso or Rubber stamp |
+| Page titles | **Pieces**, **Rings** |
+| Standard card, Pieces | **Standard**. Your theme's own pieces. |
+| Hearts and clubs card | **Hearts and clubs**. Hearts for one side, clubs for the other. |
+| Flame and frost card | **Flame and frost**. Flames for one side, snowflakes for the other. |
+| Standard card, Rings | **Standard**. Your theme's own ring. |
+| Lasso card | **Lasso**. A rope thrown round the area and pulled tight. |
+| Rubber stamp card | **Rubber stamp**. A double line, and the area stamped down at once. |
+| The card in use | A tick and **In use** |
+| Under the cards | Shown in your theme. Light or dark follows your phone's dark theme. |
+| Link, when the player lacks an item | **More piece styles in the Shop**, **More ring effects in the Shop** |
+| Note on debug builds | Debug build: every piece style is here. Players see only the ones they own. (On Rings: every ring effect.) |
+
+The card lines name no colours, because the sides' colours change with the theme. For TalkBack
+each page's cards are one group of choices, named Pieces or Rings. Each card is read as its name
+and its line, then selected or not selected; the small board is not read. The Settings rows are
+read as their name and the item in use, for example "Pieces, Hearts and clubs".
+
 ## The two-tap check
 
 Taps are counted from the map to the first screen where the feature can be used. For a mode that
@@ -266,6 +333,7 @@ the developer menu are left out.
 | Shop and an item's preview | Shop → the item | 2 |
 | Settings | Settings | 1 |
 | Theme (when there is a choice) | Settings → Theme | 2 |
+| Pieces or Rings (when there is a choice) | Settings → Pieces or Rings | 2 |
 | Online lobby, a game or an invite (after launch) | Online → the game or Invite | 2 |
 | Ranked (after launch) | Online → Ranked | 2 |
 | Weekly challenge (after launch) | Today's puzzle → Play on the challenge card | 2 |
@@ -459,8 +527,9 @@ people the owner has shared it with.
   game), the game board (every moment), Result: win (a cosmetic earned), Result: loss (the ad
   offer, with the third-try hint, after the ad, or none), Chest (the ad offer, after the ad, or a
   booster and a cosmetic), Shop (for sale, a theme earned, earn only), Cosmetic preview (Star
-  chart or Neon arcade; for sale, owned, in use, earned or earn only), Settings (with or without the Theme row; scrolled to the top or the end),
-  Settings details, Theme (a debug build or after the Shop opens, and the theme in use), Invite
+  chart or Neon arcade; for sale, owned, in use, earned or earn only), Settings (with or without the Theme, Pieces and Rings rows; scrolled to the top or the end),
+  Settings details, Theme (a debug build or after the Shop opens, and the theme in use), Pieces
+  and Rings (a debug build or after the Shop opens, the theme in use, and the item in use), Invite
   and Ranked.
 - **Screens Google draws.** Leaderboards and achievements, and the other Android screens, are drawn
   by Google. Their frame shows only what we draw: the sign-in question over Stats.
