@@ -326,11 +326,14 @@ Boosters on top of the level's own come before the `|`, one word each:
 level/1 2-1 +hint *wall !wall | wall:d5 d6 a7 wall:g1 a1 g7
 ```
 
-The player's own and the given ones are used first and never cost stars. The ad's booster costs
-the same as one of the level's own: on `boosters` levels, a game with it never earns more stars
-than the same game without it. Its kind is `Level.adBooster`, the first kind the level allows in
-the order a level file lists them (wall, hint, bomb, double dot), never Undo. A level that allows
-only Undo offers none.
+The player's own and the given ones are used first and never cost stars. A game with the ad's
+booster never earns more stars than the same game without it. On `boosters` levels, it costs the
+same as one of the level's own. On `margin`, `moves` and `saved` levels, a passed game that used it
+earns 1 star, whatever the count. It counts as used once none of its kind is left
+(`Level.adBoosterUsed`), so a game that uses only the level's own of that kind, or takes the extra
+one back with an undo, earns its stars as usual. Its kind is `Level.adBooster`, the first kind the
+level allows in the order a level file lists them (wall, hint, bomb, double dot), never Undo. A
+level that allows only Undo offers none.
 
 ### Boss rules
 

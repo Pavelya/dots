@@ -100,7 +100,8 @@ data class Stars(val measure: StarMeasure, val two: Int, val three: Int) {
 /**
  * How a level game ended: where its mission stands, the [stars] earned (0 when the mission is not
  * passed) and the [starScore] they were judged on, which is null when the level has no star
- * targets.
+ * targets. A game that used a rewarded ad's booster earns 1 star whatever its [starScore], except
+ * on levels whose stars count the boosters left ([Level.result]).
  */
 data class LevelResult(val status: MissionStatus, val stars: Int, val starScore: Int?) {
     val isPassed: Boolean get() = status.outcome == Outcome.PASSED
