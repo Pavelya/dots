@@ -45,6 +45,7 @@ import io.github.pavelya.dots.ui.theme.GameTheme
 import io.github.pavelya.dots.ui.theme.Palette
 import io.github.pavelya.dots.ui.theme.ThemeCase
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -63,7 +64,8 @@ import org.robolectric.annotation.GraphicsMode
  * The boards are the canvas's own game of Level 7 (draw.py, `POSITIONS`), played by the rules,
  * with the canvas's boosters in the tool bar (draw.py, `BOOSTERS`). The booster previews (A-05) are
  * drawn on the threat position: Undo's as the canvas frame `game-undo`, Wall's and Bomb's as the
- * wireframes' "Booster aimed" in the same note.
+ * wireframes' "Booster aimed" in the same note, and both aimed by drag as the canvas frames
+ * `game-wall-drag` and `game-bomb-drag` (D-18).
  *
  * Every test runs in each theme ([ThemeCase]): Notebook, and Star chart and Neon arcade, whose
  * images are shown next to their own canvas frames (`game-threat-star-chart` and so on). The
@@ -377,6 +379,57 @@ class GameScreenshotTest(private val case: ThemeCase) {
         capture("game_wall_choosing")
     }
 
+    /**
+     * Aiming a booster by drag (canvas frames `game-wall-drag`, `game-bomb-drag`): the finger is
+     * down on [point], a target, so the booster's mark sits there and the guides run from it to the
+     * board's edges in Pencil. The app draws no thumb.
+     */
+    private fun aimedByDrag(name: String, booster: Booster, point: Pos, dark: Boolean) {
+        val state = CanvasGame.threat.state
+        // As the view model finds them: every empty point for a wall, every point whose plus holds a blue dot for a bomb.
+        val points = (0 until state.height).flatMap { y -> (0 until state.width).map { x -> Pos(x, y) } }
+        val targets = if (booster == Booster.WALL) state.legalMoves() else points.filter { state.bombHits(it).isNotEmpty() }
+        assertTrue("$point is a target", point in targets)
+        val aim = when (booster) {
+            Booster.WALL -> BoosterAim(Booster.WALL, point = point, targets = targets)
+            else -> {
+                val plus = listOf(point, Pos(point.x, point.y - 1), Pos(point.x - 1, point.y), Pos(point.x + 1, point.y), Pos(point.x, point.y + 1))
+                BoosterAim(Booster.BOMB, point = point, targets = targets, plus = plus, gone = state.bombHits(point))
+            }
+        }
+        show(dark = dark) { Preview(ui(CanvasGame.threat).copy(aim = aim), PlacingMethod.DRAG) }
+        compose.onNodeWithTag(BOARD_TAG).performTouchInput {
+            down(BoardGeometry(15, 15, width.toFloat(), height.toFloat()).center(point))
+        }
+        capture(name)
+    }
+
+    /** The Wall on the point that would close Blue's ring round Red's pair, as on the canvas. */
+    private val wallPoint = Pos(9, 9)
+
+    /** The Bomb on Red's dot in danger, as [bombAimed]: the app's engine has (8, 7), the canvas's point, already captured by Blue. */
+    private val bombPoint = Pos(9, 8)
+
+    @Test
+    fun wallAimedByDrag() = aimedByDrag("game_wall_drag", Booster.WALL, wallPoint, dark = false)
+
+    @Test
+    fun wallAimedByDragDark() = aimedByDrag("game_wall_drag_dark", Booster.WALL, wallPoint, dark = true)
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun wallAimedByDragOnASmallPhone() = aimedByDrag("game_wall_drag_small_phone", Booster.WALL, wallPoint, dark = false)
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun wallAimedByDragOnASmallPhoneDark() = aimedByDrag("game_wall_drag_small_phone_dark", Booster.WALL, wallPoint, dark = true)
+
+    @Test
+    fun bombAimedByDrag() = aimedByDrag("game_bomb_drag", Booster.BOMB, bombPoint, dark = false)
+
+    @Test
+    fun bombAimedByDragDark() = aimedByDrag("game_bomb_drag_dark", Booster.BOMB, bombPoint, dark = true)
+
     /** After a Hint and a Double dot (the engine allows one booster a turn; the frame shows both marks): the circled point and the "×2" chip. */
     @Test
     fun hintAndDoubleDot() {
@@ -479,12 +532,12 @@ class GameScreenshotTest(private val case: ThemeCase) {
 
     /** The board with [ui]'s booster preview open over the player's line and the tool bar, as GameScreen lays it. */
     @Composable
-    private fun Preview(ui: GameUiState) {
+    private fun Preview(ui: GameUiState, method: PlacingMethod = PlacingMethod.TWO_TAPS) {
         Box(Modifier.fillMaxSize()) {
-            Board(ui)
+            Board(ui, input = BoardInput(method, {}, {}, {}))
             BoosterNote(
                 aim = ui.aim!!,
-                method = PlacingMethod.TWO_TAPS,
+                method = method,
                 style = Palette.current,
                 onCancel = {},
                 onConfirm = {},

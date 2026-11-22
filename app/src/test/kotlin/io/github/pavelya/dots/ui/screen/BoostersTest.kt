@@ -2,6 +2,7 @@ package io.github.pavelya.dots.ui.screen
 
 import androidx.activity.ComponentActivity
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -29,6 +30,7 @@ import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.board.BoardGeometry
+import io.github.pavelya.dots.ui.board.GuidesAt
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import kotlinx.coroutines.Dispatchers
 import org.junit.Assert.assertEquals
@@ -43,7 +45,8 @@ import org.robolectric.annotation.Config
 /**
  * The five boosters on the game screen (A-05): each from its tool, through its preview, with
  * Confirm, Cancel and Back; a booster with none left; and the point chosen by either placing
- * method (decision 0024).
+ * method (decision 0024). Under drag, the guides show only while the finger is over a target
+ * (motion.md, "Aiming Wall or Bomb by drag").
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w360dp-h800dp")
@@ -91,6 +94,14 @@ class BoostersTest {
     private fun place(x: Int, y: Int) = repeat(2) { tapBoard(x, y) }
 
     private fun tool(description: String) = compose.onNodeWithContentDescription(description)
+
+    private fun board() = compose.onNodeWithTag(BOARD_TAG)
+
+    /** The point whose row and column the guides show, or null when there are none. */
+    private fun guidesAt(): Pos? = board().fetchSemanticsNode().config.getOrNull(GuidesAt)
+
+    /** Where the booster's mark is: the point under the finger over a target, else the one chosen. */
+    private fun GameViewModel.mark(): Pos? = ui.value.aim?.point
 
     private fun GameViewModel.left(booster: Booster) = ui.value.state.boostersLeft(Player.RED, booster)
 
@@ -140,6 +151,85 @@ class BoostersTest {
     }
 
     @Test
+    fun `under drag a Wall's mark and guides follow the finger over the targets, and lifting there chooses the point`() {
+        val vm = game()
+        show(vm, PlacingMethod.DRAG)
+        tool("Wall, 1 left").performClick()
+        assertNull(guidesAt())
+
+        board().performTouchInput { down(center(1, 1, width, height)) }
+        assertEquals(Pos(1, 1), vm.mark())
+        assertEquals(Pos(1, 1), guidesAt())
+        board().performTouchInput { moveTo(center(2, 1, width, height)) }
+        assertEquals(Pos(2, 1), vm.mark())
+        assertEquals(Pos(2, 1), guidesAt())
+        // The computer's dot is not a target: with no point chosen yet, no mark and no guides.
+        board().performTouchInput { moveTo(center(3, 3, width, height)) }
+        assertNull(vm.mark())
+        assertNull(guidesAt())
+        board().performTouchInput { moveTo(center(2, 4, width, height)) }
+        assertEquals(Pos(2, 4), vm.mark())
+        assertEquals(Pos(2, 4), guidesAt())
+        board().performTouchInput { up() }
+        assertEquals(Pos(2, 4), vm.mark())
+        assertNull("the guides go when the finger lifts", guidesAt())
+        compose.onNodeWithText("Block it").assertIsEnabled()
+
+        // A second drag: over a point that is not a target the mark goes back to (2, 4), without guides.
+        board().performTouchInput { down(center(4, 4, width, height)) }
+        assertEquals(Pos(4, 4), vm.mark())
+        assertEquals(Pos(4, 4), guidesAt())
+        board().performTouchInput { moveTo(center(5, 5, width, height)) }
+        assertEquals(Pos(2, 4), vm.mark())
+        assertNull(guidesAt())
+        board().performTouchInput { up() }
+        assertEquals(Pos(2, 4), vm.mark())
+
+        compose.onNodeWithText("Block it").performClick()
+        assertTrue(vm.ui.value.state.isBlocked(Pos(2, 4)))
+        assertNull(vm.ui.value.state.ownerAt(Pos(4, 4)))
+    }
+
+    @Test
+    fun `under drag a Bomb's plus and guides follow the finger over the targets, and a touch off them keeps the point`() {
+        val vm = game()
+        show(vm, PlacingMethod.DRAG)
+        tool("Bomb, 1 left").performClick()
+
+        // (2, 3) is a target: the computer's (3, 3) is in its plus.
+        board().performTouchInput { down(center(2, 3, width, height)) }
+        assertEquals(Pos(2, 3), vm.mark())
+        assertEquals(Pos(2, 3), guidesAt())
+        // (0, 0) is not: no blue dot in its plus.
+        board().performTouchInput { moveTo(center(0, 0, width, height)) }
+        assertNull(vm.mark())
+        assertNull(guidesAt())
+        board().performTouchInput {
+            moveTo(center(5, 4, width, height))
+            up()
+        }
+        assertEquals(Pos(5, 4), vm.mark())
+        assertNull(guidesAt())
+
+        // Down off the targets: the plus stays on (5, 4), without guides.
+        board().performTouchInput { down(center(0, 6, width, height)) }
+        assertEquals(Pos(5, 4), vm.mark())
+        assertNull(guidesAt())
+        board().performTouchInput { moveTo(center(3, 4, width, height)) }
+        assertEquals(Pos(3, 4), vm.mark())
+        assertEquals(Pos(3, 4), guidesAt())
+        board().performTouchInput { moveTo(center(0, 6, width, height)) }
+        assertEquals(Pos(5, 4), vm.mark())
+        assertNull(guidesAt())
+        board().performTouchInput { up() }
+        assertEquals(Pos(5, 4), vm.mark())
+
+        compose.onNodeWithText("Bomb it").performClick()
+        assertNull(vm.ui.value.state.ownerAt(Pos(5, 5)))
+        assertEquals(Player.BLUE, vm.ui.value.state.ownerAt(Pos(3, 3)))
+    }
+
+    @Test
     fun `under two taps a Bomb is aimed by one tap, and a tap off the board keeps the point`() {
         val vm = game()
         show(vm)
@@ -148,6 +238,7 @@ class BoostersTest {
         tapBoard(3, 3) // the computer's dot is a target too: it moves the point
         tapBoard(0, 0) // too far from any dot: keeps it
         assertEquals(Pos(3, 3), vm.ui.value.aim?.point)
+        assertNull("no guides with two taps", guidesAt())
         tapBoard(5, 4)
         assertEquals(Pos(5, 4), vm.ui.value.aim?.point)
         compose.onNodeWithText("Bomb it").performClick()

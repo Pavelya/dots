@@ -83,7 +83,9 @@ import kotlin.random.Random
  * they show ([LinksShown]). [dangers] marks groups close to
  * capture (the threat highlight). [marked] is the dot a level's mission is about (rescue or
  * target), circled twice in the player's ink. [guides] draws the preview's row and column across
- * the board, around a finger that hides the point itself (placing by drag). [pointer] is the point
+ * the board, around a finger that hides the point itself (placing by drag); in a booster preview
+ * they run from the booster's mark at its point, in Pencil. The board tells tests where they are
+ * ([GuidesAt]). [pointer] is the point
  * the tutorial asks the player to tap: circled in the player's ink, with a hand pointing at it (the
  * wireframes' "Tutorial level"). A level's board may have holes, where no grid line reaches, so the
  * board can have an odd outline and gaps inside. Blocked points, a wall booster's among them, carry
@@ -127,16 +129,17 @@ fun BoardView(
     val areas = remember(state) { state.areas() }
     val regions = remember(areas) { areas.map { it.region.toHashSet() } }
     val undone = remember(booster, state) { UndoneParts.of(booster, state, regions) }
+    val guided = if (guides) preview ?: marks.point else null
     Canvas(
         modifier = modifier
             .aspectRatio(state.width.toFloat() / state.height)
             .semantics {
                 contentDescription = description
                 linksShown = showLinks
+                guided?.let { guidesAt = it }
             },
     ) {
         val geometry = BoardGeometry(state.width, state.height, size.width, size.height)
-        val guided = if (guides) preview ?: marks.point else null
         val bt = if (booster == null) Float.MAX_VALUE else boosterTime()
         val frame = Frame.of(moment, if (moment == null) Float.MAX_VALUE else time(), areas, regions, edgeMarks, glow, booster, bt, undone)
         drawPosition(state, areas, geometry, style, lastMove, preview, showLinks, dangers, marked, marks, guided, frame, if (guided != null) guideReach() else 1f)
@@ -310,9 +313,13 @@ private class UndoneParts(val areas: List<Area>, val uncut: Map<Pos, Player>, va
 val LinksShown = SemanticsPropertyKey<Boolean>("LinksShown")
 private var SemanticsPropertyReceiver.linksShown by LinksShown
 
+/** The point whose row and column drag's guides show, while they show; for tests, TalkBack does not read it. */
+val GuidesAt = SemanticsPropertyKey<Pos>("GuidesAt")
+private var SemanticsPropertyReceiver.guidesAt by GuidesAt
+
 /**
  * What a booster adds to the board (A-05). In the booster preview: the [targets] it may be aimed
- * at, the [point] chosen (drag's guides follow it), a [wall] about to go up, the bomb's [plus] and the pieces it would take away ([gone]: the
+ * at, the [point] chosen (or under the finger while it drags over a target), a [wall] about to go up, the bomb's [plus] and the pieces it would take away ([gone]: the
  * bomb's hits, or the turn Undo takes back), pale in dashed rings. After a Hint: its [hint] point,
  * circled twice in the player's ink. In an open-ended game, on Stop's note and after a stop: the
  * [open] dots that can still be captured, each in a dashed Highlighter ring, at [openSize] of its
@@ -442,7 +449,11 @@ private fun DrawScope.drawPosition(
         drawLinks(state, geometry, style, frame)
         drawGoingLinks(state, geometry, style, frame)
     }
-    guided?.let { drawGuides(state, it, geometry, style, areas, strokes, guideReach) }
+    guided?.let { point ->
+        // No preview: the guides are a booster's, aimed by drag (theme-notebook.md, "Aiming Wall or Bomb by drag").
+        val ink = if (preview == null) style.pencil else style.color(state.toMove)
+        drawGuides(state, point, geometry, style, areas, strokes, guideReach, ink) { dx, dy -> guideStart(point, dx, dy, preview, marks, geometry, style) }
+    }
     drawHalos(state, geometry, style, areas, strokes, frame)
     drawGlows(state, geometry, style, frame)
     // A tube is drawn in three passes, every ring's glow before any tube, so no glow lies over another ring's tube.
@@ -897,28 +908,53 @@ private fun DrawScope.drawDashedRing(center: Offset, radius: Float, color: Color
 }
 
 /**
- * Drag's guides (theme-notebook.md, "Drag's guides"): four arms from the preview's ring along its
- * row and column to the board's outermost grid lines, in the ink of the side to move, dashed in
- * the theme's dashes, each arm's dashes starting at the ring. A fingertip covers about 60 dp; the
- * arms run past it.
+ * Where the guide's arm from [point] one step along ([dx], [dy]) starts, as a distance from the
+ * point: at the [preview]'s ring when placing a dot (theme-notebook.md, "Drag's guides"); when a
+ * booster is aimed ("Aiming Wall or Bomb by drag"), at the side of the wall's square, 0.35 of the
+ * spacing, or past the bomb's plus: at the outer edge of the ring of its point on that side, 1.46
+ * of the spacing, or of the centre's ring, 0.46, where the plus has no point there.
  */
-private fun DrawScope.drawGuides(state: GameState, point: Pos, geometry: BoardGeometry, style: BoardStyle, areas: List<Area>, strokes: List<RingStroke>, reach: Float) {
+private fun DrawScope.guideStart(point: Pos, dx: Int, dy: Int, preview: Pos?, marks: BoardMarks, geometry: BoardGeometry, style: BoardStyle): Float = when {
+    preview == null && marks.wall != null -> geometry.spacing * 0.35f
+    preview == null && marks.plus.isNotEmpty() -> geometry.spacing * if (Pos(point.x + dx, point.y + dy) in marks.plus) 1.46f else 0.46f
+    else -> style.look.previewRing.px(geometry.spacing, density) / 2
+}
+
+/**
+ * Drag's guides (theme-notebook.md, "Drag's guides"): four arms from the mark on [point] along its
+ * row and column to the board's outermost grid lines, in [color] (the ink of the side to move, or
+ * Pencil for a booster), dashed in the theme's dashes. Each arm starts [startAt] away from the point
+ * in its direction, at the edge of the preview's ring or the booster's mark, and its dashes start
+ * there too; an arm with no room left is not drawn. A fingertip covers about 60 dp; the arms run
+ * past it.
+ */
+private fun DrawScope.drawGuides(
+    state: GameState,
+    point: Pos,
+    geometry: BoardGeometry,
+    style: BoardStyle,
+    areas: List<Area>,
+    strokes: List<RingStroke>,
+    reach: Float,
+    color: Color,
+    startAt: (dx: Int, dy: Int) -> Float,
+) {
     val look = style.look
-    val ink = style.color(state.toMove).copy(alpha = look.guideAlpha)
+    val ink = color.copy(alpha = look.guideAlpha)
     val width = look.guide.px(geometry.spacing, density)
     val dashes = if (look.guideDash > 0f) PathEffect.dashPathEffect(floatArrayOf(look.guideDash.dp.toPx(), look.guideGap.dp.toPx())) else null
     val center = geometry.center(point)
-    val ring = look.previewRing.px(geometry.spacing, density) / 2
     val ends = listOf(
-        geometry.center(0, point.y),
-        geometry.center(state.width - 1, point.y),
-        geometry.center(point.x, 0),
-        geometry.center(point.x, state.height - 1),
+        Triple(-1, 0, geometry.center(0, point.y)),
+        Triple(1, 0, geometry.center(state.width - 1, point.y)),
+        Triple(0, -1, geometry.center(point.x, 0)),
+        Triple(0, 1, geometry.center(point.x, state.height - 1)),
     )
-    val arms = ends.mapNotNull { end ->
+    val arms = ends.mapNotNull { (dx, dy, end) ->
         val length = hypot(end.x - center.x, end.y - center.y)
-        if (length <= ring) return@mapNotNull null
-        val start = Offset(center.x + (end.x - center.x) * ring / length, center.y + (end.y - center.y) * ring / length)
+        val from = startAt(dx, dy)
+        if (length <= from) return@mapNotNull null
+        val start = Offset(center.x + (end.x - center.x) * from / length, center.y + (end.y - center.y) * from / length)
         // Drawn out from the ring to the edge as the finger goes down (motion.md, "Placing by drag").
         start to if (reach >= 1f) end else Offset(start.x + (end.x - start.x) * reach, start.y + (end.y - start.y) * reach)
     }
