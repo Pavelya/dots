@@ -116,7 +116,7 @@ Each starts at 0 ms, when the player taps Confirm in the booster preview.
 | `sfx_draw` | The draw headline writes in | 800 ms | even, neither up nor down | full | code |
 | `sfx_star` | Each earned star is stamped (with its light vibration). Star 1 at normal speed, star 2 at 112% (one note up), star 3 at 150% (two notes up) | 400 ms | a soft click and a bell | full | code |
 | `sfx_world_open` | A world opens: from 300 ms of the page turn | 2 s | a rising run and a held chord: the biggest reward sound | full | code |
-| `sfx_reward` | The chest opens; an item bought or earned in the Shop; the daily streak goes up | 600 ms | sparkle and chord | full | code |
+| `sfx_reward` | The chest opens; an item bought or earned in the Shop; the daily streak goes up; a rewarded ad's reward is given | 600 ms | sparkle and chord | full | code |
 
 ## Deliberate silences
 
@@ -209,6 +209,11 @@ Where the tables above leave a choice open, the app does this:
 - `sfx_boss_turn` plays 200 ms after the player's dot that brings the boss's turn of two dots.
 - The daily streak's `sfx_reward` plays 1.5 s after `sfx_win`, once the win has played.
 - The chest's `sfx_reward` plays as the player picks a reward.
+- A rewarded ad's reward plays `sfx_reward` once, when the game comes back from a finished ad and
+  the reward shows: "One Wall ready for your retry" on Result, or both choices marked Kept on the
+  chest. An ad closed early or one that fails gives nothing and plays nothing.
+- A cosmetic newly earned by a win's stars plays `sfx_reward` as its line shows on Result, after
+  the last star lands.
 - Each area of the end of the game plays one note higher than the one before, up to the D an
   octave above the first: the phone plays a sound at most twice as fast.
 

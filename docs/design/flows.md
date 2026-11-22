@@ -298,7 +298,10 @@ The first tap a new player makes is a move on the board.
 ## Campaign
 
 - **Win.** Stars and unlocks are saved before Result opens. Result shows the new stars, a newly
-  unlocked world and any reward over the final board. Next is the main button, with a small Retry
+  unlocked world and any reward over the final board. A cosmetic that the new stars earn shows
+  as a line under the stars, with no button; it waits in the Shop, marked New until its preview
+  is opened. Until the player next opens the Shop, a small red dot sits on the map's Shop icon.
+  Only an earned item puts it there, never something for sale. Next is the main button, with a small Retry
   beside it. Next returns to the map, where the stars fly to the level; when a world opens, its
   page turns and the path goes on.
 - **Fail or draw.** Result says how close it was. Retry is the main button, with a small Map.
@@ -371,8 +374,11 @@ The first tap a new player makes is a move on the board.
 What is sold, the prices, how each item is earned and where ads appear are in
 [`money.md`](money.md) (decision 0030).
 
-- The Shop is separate from play. A preview shows the price in local currency and how to earn the
-  item; where Google Play can't sell, only how to earn it. Owned items can be put to use offline.
+- The Shop is separate from play. Each tile and preview shows the price in local currency and
+  the stars that earn the item, with the player's own count. An owned item says Owned, Earned or
+  In use instead. Where Google Play can't sell, the Shop has no prices, no Buy and no Restore
+  purchases: one line says every item is earned with stars from the campaign. Owned items can be
+  put to use offline.
 - A purchase returns to the same preview and shows whether it is owned, pending, cancelled or
   failed. A failure offers Retry. Restore purchases sits in Shop. If a purchase is refunded, the
   item goes back to the default, unless the player has also earned it.
@@ -383,6 +389,29 @@ What is sold, the prices, how each item is earned and where ads appear are in
   fails, never blocks play; an offer whose ad isn't ready is not shown. The reward is given once,
   after the ad completes. Every ad reward can also be earned by playing (decision 0004). A booster
   from an ad is for the retry only and does not join the player's own boosters.
+- After a finished ad, the offer is replaced by its reward: "One Wall ready for your retry" on
+  Result, or both choices marked Kept on the chest, which then opens the next level's card as
+  after a pick. An ad closed early leaves the offer where it was.
+
+The words (the booster, the prices and the star counts are examples):
+
+| Where | Text |
+| --- | --- |
+| Result of a failed level, below Retry | Watch an ad for one Wall on your retry |
+| The same, after the ad | One Wall ready for your retry |
+| Result, third failure (A-03) | Retry with a free Hint, above the ad offer |
+| Chest of two boosters, below the choices | Watch an ad to keep both |
+| The chest after the ad | **Both are yours!** Opening the next level… Each choice marked ✓ Kept |
+| Result, a cosmetic earned | **New theme: Star chart**. Earned with 150 stars. It waits for you in the Shop. |
+| The map's Shop icon, after an item is earned | A red dot, read by TalkBack as "Shop, something new". It clears when the Shop opens. |
+| Shop tile, for sale | $2.99, then a bar and "Or earn: 112 / 150 ★" |
+| Shop tile, owned | **In use**, **Owned**, or **Earned** with a New mark until the preview is opened |
+| Shop tile, earn only | A bar and "Earn: 112 / 150 ★" |
+| Shop, earn only, under the tabs | Every item here is earned with stars from the campaign. |
+| Cosmetic preview, for sale | Or earn it with 150 stars. You have 112. **Buy for $2.99** |
+| Cosmetic preview, earned | Earned with 150 stars, New. **Use it** |
+| Cosmetic preview, earn only | Earn it with 150 stars from the campaign. You have 112: 38 to go. No button. |
+| Settings details, Privacy | **Show ad offers**, a switch, on. A booster for a short ad, after a lost level or at a chest. Never during a game. |
 
 ## Leaderboards at launch
 
@@ -418,16 +447,19 @@ They are drawn from the [game-screen brief](game-screens.md). Each frame carries
 screen in the tables above; the game board has one frame per moment. The canvas opens only for
 people the owner has shared it with.
 
-- **Four rows.** Loading, the map and the way into a level; the play, one level moment by moment;
-  around the game; after launch.
+- **Five rows.** Loading, the map and the way into a level; the play, one level moment by moment;
+  around the game; after launch; ad offers and earning, one frame per state, with its own
+  small-phone row.
 - **Two phone sizes.** Every frame is 360 x 800 dp. Under each of the first three rows, the same
   screens on a small phone, 320 x 568 dp.
 - **Sketches, not art.** Paper, red and blue ink, hand-drawn icons and Caveat headings. Faces, the
   map's landscape and world pictures are doodles that mark where art goes.
 - **States.** Some frames show more than one state, picked in the frame's Tweaks: the map (home,
-  a world opens), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
-  game), the game board (every moment), Cosmetic preview (Star chart or Neon arcade; for sale,
-  owned or in use), Settings (with or without the Theme row; scrolled to the top or the end),
+  a world opens, a dot on Shop), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
+  game), the game board (every moment), Result: win (a cosmetic earned), Result: loss (the ad
+  offer, with the third-try hint, after the ad, or none), Chest (the ad offer, after the ad, or a
+  booster and a cosmetic), Shop (for sale, a theme earned, earn only), Cosmetic preview (Star
+  chart or Neon arcade; for sale, owned, in use, earned or earn only), Settings (with or without the Theme row; scrolled to the top or the end),
   Settings details, Theme (a debug build or after the Shop opens, and the theme in use), Invite
   and Ranked.
 - **Screens Google draws.** Leaderboards and achievements, and the other Android screens, are drawn
