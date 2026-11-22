@@ -90,7 +90,7 @@ internal fun StopNote(
                 .fillMaxWidth()
                 .shadow(6.dp, RectangleShape, clip = false)
                 .background(style.card)
-                .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+                .padding(start = 10.dp, end = 10.dp, top = 6.dp, bottom = 6.dp), // as tight as the canvas: the board's last row shows
         ) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Icon(remember(style) { Doodles.icon(Doodles.FLAG, style.blue, width = 2f) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(22.dp))
@@ -113,7 +113,7 @@ internal fun StopNote(
                 OpenRing(style, Modifier.size(16.dp))
                 Text(risk, style = NoteText.small.copy(fontWeight = FontWeight.Bold), color = style.graphite)
             }
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(2.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 SmallButton(
                     stringResource(R.string.stop_cancel),

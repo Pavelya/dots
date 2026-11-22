@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
@@ -48,6 +49,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
@@ -277,7 +279,8 @@ private fun PlayCard(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        // Narrow sides leave the name more room, as the small setup's cards do (draw.py, `play_card`).
+        horizontalArrangement = Arrangement.spacedBy(if (side < 14.dp) side - 4.dp else 12.dp),
         modifier = Modifier
             .fillMaxWidth()
             .height(height)
@@ -510,13 +513,36 @@ private fun ReplaceNote(
     }
 }
 
-/** The saved game's board, 96 dp across in a thin frame of the grid's ink. */
+/**
+ * The saved game's board, 96 dp across in a thin frame of the grid's ink: drawn as in the game, at
+ * 24 dp between points, and shrunk to fit, so its pieces keep their size to the grid (the board's
+ * pieces have a smallest size for a finger, too big for so small a board).
+ */
 @Composable
 private fun SavedBoard(state: GameState, style: Palette) {
-    Box(Modifier.size(96.dp).border(1.dp, style.grid).padding(3.dp)) {
-        BoardView(state = state, style = BoardStyle.current, description = stringResource(R.string.play_saved_board), modifier = Modifier.fillMaxSize())
+    val across = SAVED_BOARD - 6.dp
+    val drawn = GAME_SPACING * maxOf(state.width, state.height)
+    Box(Modifier.size(SAVED_BOARD).border(1.dp, style.grid).padding(3.dp), contentAlignment = Alignment.Center) {
+        BoardView(
+            state = state,
+            style = BoardStyle.current,
+            description = stringResource(R.string.play_saved_board),
+            modifier = Modifier
+                .requiredSize(GAME_SPACING * state.width, GAME_SPACING * state.height)
+                .graphicsLayer {
+                    val scale = across / drawn
+                    scaleX = scale
+                    scaleY = scale
+                },
+        )
     }
 }
+
+/** The saved game's board, with its frame. */
+private val SAVED_BOARD = 96.dp
+
+/** The spacing it is drawn at before it shrinks: the game's on a 360 dp phone. */
+private val GAME_SPACING = 24.dp
 
 /** The saved game's board size and length, and the player's dots left when it has a limit: "15 × 15 · Short · 9 dots left". */
 @Composable
