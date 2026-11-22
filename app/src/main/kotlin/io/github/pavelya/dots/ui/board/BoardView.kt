@@ -85,8 +85,10 @@ import kotlin.random.Random
  * target), circled twice in the player's ink. [guides] draws the preview's row and column across
  * the board, around a finger that hides the point itself (placing by drag). [pointer] is the point
  * the tutorial asks the player to tap: circled in the player's ink, with a hand pointing at it (the
- * wireframes' "Tutorial level"). Blocked points, a wall booster's among them, carry the wall's mark;
- * [marks] adds the booster preview and the Hint's circle (A-05).
+ * wireframes' "Tutorial level"). A level's board may have holes, where no grid line reaches, so the
+ * board can have an odd outline and gaps inside. Blocked points, a wall booster's among them, carry
+ * the wall's mark, and bonus points a pearl's; [marks] adds the booster preview and the Hint's
+ * circle (A-05).
  *
  * Motion (docs/design/motion.md): the [moment] of the dot that has just landed plays as [time]
  * runs from 0 ms: the dot grows and settles, its links grow, the pinhole moves, an announced dot
@@ -429,6 +431,7 @@ private fun DrawScope.drawPosition(
     val boosting = frame.boosting
     val wallGoingUp = boosting?.point?.takeIf { boosting.booster == Booster.WALL }
     drawWalls(state, geometry, style, skip = wallGoingUp)
+    drawBonusPoints(state, geometry, style)
     wallGoingUp?.let { drawWallGoingUp(geometry.center(it), geometry, style, WallEffect.square(frame.bt), WallEffect.hatch(frame.bt)) }
     // Undo gives back a wall used in the turn: it stays until it flies back to its button.
     val givenBack = undoing?.givenBack?.takeIf { frame.bt < UndoEffect.FLIGHT_FROM }
@@ -794,6 +797,27 @@ private fun DrawScope.drawWalls(state: GameState, geometry: BoardGeometry, style
 }
 
 /**
+ * Every bonus point with its mark, a pearl: a circle in Pencil, 0.7 of the spacing across like the
+ * wall's square and in the same line, with a short shine in Graphite inside its upper left. A dot
+ * placed there sits inside the circle, so a dot captured on it still shows it counted 2.
+ */
+private fun DrawScope.drawBonusPoints(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
+    val radius = geometry.spacing * 0.35f
+    val width = max(geometry.spacing * 0.075f, 1.5.dp.toPx())
+    val shine = geometry.spacing * 0.2f
+    for (y in 0 until state.height) for (x in 0 until state.width) {
+        if (!state.isBonus(x, y) || state.isHole(x, y)) continue
+        val at = geometry.center(x, y)
+        drawCircle(style.pencil, radius, at, style = Stroke(width))
+        drawArc(
+            style.graphite, startAngle = 195f, sweepAngle = 60f, useCenter = false,
+            topLeft = Offset(at.x - shine, at.y - shine), size = Size(2 * shine, 2 * shine),
+            style = Stroke(width * 0.8f, cap = StrokeCap.Round),
+        )
+    }
+}
+
+/**
  * The wall's mark (motion.md, Boosters: Wall): a square, 0.7 of the spacing, round the point in one
  * Pencil stroke, filled with five hatch lines in Graphite. In the [preview] its outline is dashed.
  */
@@ -1024,17 +1048,47 @@ private fun DrawScope.drawLastMove(at: Offset, geometry: BoardGeometry, style: B
     }
 }
 
-/** The grid lines, the outermost ones (the board's edge) in the edge's width. */
+/**
+ * The grid lines between the board's points, in the edge's width along the board's edge. A hole
+ * has no point, so no line reaches it: holes along the map's edge give the board an odd outline,
+ * and a hole inside it is a gap edged like the board.
+ */
 private fun DrawScope.drawGrid(state: GameState, geometry: BoardGeometry, style: BoardStyle) {
     val line = style.look.grid.px(geometry.spacing, density)
     val edge = style.look.edge.px(geometry.spacing, density)
+    fun point(x: Int, y: Int) = state.inBounds(x, y) && !state.isHole(x, y)
+    // A square of the grid, by its top-left point, is inside the board when its four corners are points.
+    fun inside(x: Int, y: Int) = point(x, y) && point(x + 1, y) && point(x, y + 1) && point(x + 1, y + 1)
+    // A line is the board's edge where a square beside it is not inside the board.
     for (x in 0 until state.width) {
-        val width = if (x == 0 || x == state.width - 1) edge else line
-        drawLine(style.grid, geometry.center(x, 0), geometry.center(x, state.height - 1), width)
+        lineRuns(state.height - 1, { y -> point(x, y) && point(x, y + 1) }, { y -> inside(x - 1, y) && inside(x, y) }) { from, to, inner ->
+            drawLine(style.grid, geometry.center(x, from), geometry.center(x, to), if (inner) line else edge)
+        }
     }
     for (y in 0 until state.height) {
-        val width = if (y == 0 || y == state.height - 1) edge else line
-        drawLine(style.grid, geometry.center(0, y), geometry.center(state.width - 1, y), width)
+        lineRuns(state.width - 1, { x -> point(x, y) && point(x + 1, y) }, { x -> inside(x, y - 1) && inside(x, y) }) { from, to, inner ->
+            drawLine(style.grid, geometry.center(from, y), geometry.center(to, y), if (inner) line else edge)
+        }
+    }
+}
+
+/**
+ * Joins the [count] steps of one grid line, step i running from point i to point i + 1, into runs:
+ * each run of steps that are [drawn] and alike in being [inner] is drawn once, from its first point
+ * to its last. A board without holes gets one run per line.
+ */
+private inline fun lineRuns(count: Int, drawn: (Int) -> Boolean, inner: (Int) -> Boolean, draw: (from: Int, to: Int, inner: Boolean) -> Unit) {
+    var i = 0
+    while (i < count) {
+        if (!drawn(i)) {
+            i++
+            continue
+        }
+        val kind = inner(i)
+        var j = i + 1
+        while (j < count && drawn(j) && inner(j) == kind) j++
+        draw(i, j, kind)
+        i = j
     }
 }
 

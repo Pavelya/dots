@@ -16,6 +16,7 @@ import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.ui.theme.GameTheme
 import io.github.pavelya.dots.ui.theme.ThemeCase
+import org.junit.Assert.assertEquals
 import org.junit.Assume.assumeTrue
 import org.junit.Rule
 import org.junit.Test
@@ -194,6 +195,45 @@ class BoardScreenshotTest(private val case: ThemeCase) {
 
     @Test
     fun piecesHighContrastDark() = capturePieces("board_pieces_contrast_dark", dark = true, highContrast = true)
+
+    /**
+     * A level's special points (A-15): holes at the corners give the board an odd outline, a hole
+     * inside it is a gap, a blocked point carries the wall's mark, and two bonus points carry the
+     * pearl's. Blue's dot on one pearl has just been captured, for 2 points; the other is empty.
+     */
+    private fun captureSpecialPoints(name: String, dark: Boolean) {
+        val start = GameState.fromAscii(
+            """
+            --.......--
+            -.........-
+            ...........
+            ....R...+..
+            ...R+R.....
+            ...........
+            ...B..--...
+            ...BR.-....
+            .....#.....
+            -.....B...-
+            --.......--
+            """,
+            dotsPerPlayer = 20,
+            first = Player.BLUE,
+        )
+        val captured = start.play(Pos(4, 4)).state.play(Pos(4, 5))
+        assertEquals(listOf(2), captured.captures.map { it.points })
+        compose.setContent {
+            Box(Modifier.size(360.dp)) {
+                BoardView(captured.state, BoardStyle.of(case.theme, dark), "board", Modifier.fillMaxSize(), lastMove = Pos(4, 5))
+            }
+        }
+        compose.onRoot().captureRoboImage("src/test/screenshots/${case.name(name)}.png")
+    }
+
+    @Test
+    fun specialPoints() = captureSpecialPoints("board_special_points", dark = false)
+
+    @Test
+    fun specialPointsDark() = captureSpecialPoints("board_special_points_dark", dark = true)
 
     /** The POC's plain look, once. */
     @Test

@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
@@ -77,6 +78,7 @@ class LevelScreenshotTest {
     @Test
     fun levelCard() {
         card(Campaign.level(1, 7))
+        compose.onNodeWithText("Holes", substring = true).assertDoesNotExist() // a board without holes says nothing of them
         capture("level_card")
     }
 
@@ -96,6 +98,28 @@ class LevelScreenshotTest {
     fun bossCard() {
         card(Campaign.level(1, 15))
         capture("level_card_boss")
+    }
+
+    /** Full Moon (3-6), a round board whose corner holes count as border: the card says holes are safe (A-15). */
+    @Test
+    fun cardWithSafeHoles() {
+        card(Campaign.level(3, 6))
+        compose.onNodeWithText("Holes are safe: a dot next to a hole can never be captured.").assertExists()
+        capture("level_card_holes_safe")
+    }
+
+    /** Reef (4-18): open holes, rocks and pearls; the card says holes are open. */
+    @Test
+    fun cardWithOpenHoles() {
+        card(Campaign.level(4, 18))
+        compose.onNodeWithText("Holes are open: a ring can go round a hole, so a dot next to one can be captured.").assertExists()
+        capture("level_card_holes_open")
+    }
+
+    @Test
+    fun cardWithOpenHolesDark() {
+        card(Campaign.level(4, 18), dark = true)
+        capture("level_card_holes_open_dark")
     }
 
     @Test
