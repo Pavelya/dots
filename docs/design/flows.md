@@ -300,7 +300,8 @@ The first tap a new player makes is a move on the board.
 - **Win.** Stars and unlocks are saved before Result opens. Result shows the new stars, a newly
   unlocked world and any reward over the final board. A cosmetic that the new stars earn shows
   as a line under the stars, with no button; it waits in the Shop, marked New until its preview
-  is opened. Next is the main button, with a small Retry
+  is opened. Until the player next opens the Shop, a small red dot sits on the map's Shop icon.
+  Only an earned item puts it there, never something for sale. Next is the main button, with a small Retry
   beside it. Next returns to the map, where the stars fly to the level; when a world opens, its
   page turns and the path goes on.
 - **Fail or draw.** Result says how close it was. Retry is the main button, with a small Map.
@@ -402,6 +403,7 @@ The words (the booster, the prices and the star counts are examples):
 | Chest of two boosters, below the choices | Watch an ad to keep both |
 | The chest after the ad | **Both are yours!** Opening the next level… Each choice marked ✓ Kept |
 | Result, a cosmetic earned | **New theme: Star chart**. Earned with 150 stars. It waits for you in the Shop. |
+| The map's Shop icon, after an item is earned | A red dot, read by TalkBack as "Shop, something new". It clears when the Shop opens. |
 | Shop tile, for sale | $2.99, then a bar and "Or earn: 112 / 150 ★" |
 | Shop tile, owned | **In use**, **Owned**, or **Earned** with a New mark until the preview is opened |
 | Shop tile, earn only | A bar and "Earn: 112 / 150 ★" |
@@ -453,7 +455,7 @@ people the owner has shared it with.
 - **Sketches, not art.** Paper, red and blue ink, hand-drawn icons and Caveat headings. Faces, the
   map's landscape and world pictures are doodles that mark where art goes.
 - **States.** Some frames show more than one state, picked in the frame's Tweaks: the map (home,
-  a world opens), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
+  a world opens, a dot on Shop), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
   game), the game board (every moment), Result: win (a cosmetic earned), Result: loss (the ad
   offer, with the third-try hint, after the ad, or none), Chest (the ad offer, after the ad, or a
   booster and a cosmetic), Shop (for sale, a theme earned, earn only), Cosmetic preview (Star
