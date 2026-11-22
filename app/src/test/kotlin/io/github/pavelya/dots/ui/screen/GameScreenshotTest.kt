@@ -28,8 +28,10 @@ import dots.engine.GameState
 import dots.engine.MoveResult
 import dots.engine.Player
 import dots.engine.Pos
+import dots.log.GameLogEntry
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.BoosterAim
+import io.github.pavelya.dots.game.FreeGame
 import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.LastCapture
@@ -54,7 +56,7 @@ import org.robolectric.annotation.GraphicsMode
 /**
  * The game board in the moments of the canvas game frames (docs/design/canvas: `game-start`, with
  * the level opening, `game-threat` and `game-big-capture`, with the mission note), in free play,
- * between two people, and in Pause. Each is
+ * between two people (with an open-ended game's Stop and Done, the frames of D-16), and in Pause. Each is
  * shown next to its frame in the PR. Reference images in app/src/test/screenshots; they are
  * recorded in CI (CLAUDE.md, "Recording screenshots").
  *
@@ -373,29 +375,46 @@ class GameScreenshotTest(private val case: ThemeCase) {
         capture("game_free_play")
     }
 
-    /** Free play, open-ended (decision 0025): Undo and Stop in the tool bar, no dots left. */
-    @Test
-    fun freePlayOpenEnded() {
-        val start = GameSettings.POC.copy(seed = 1, dotsPerPlayer = null).newGame()
-        val first = start.play(start.near(7, 7)).state
-        val reply = first.near(8, 8)
-        val ui = ui(MoveResult(first.play(reply).state, emptyList()), lastMove = reply)
-            .copy(canUndo = true, openEnded = true, canStop = true)
-        show { Board(ui, campaign = null) }
-        capture("game_free_play_open_ended")
+    /**
+     * The canvas's open-ended game (D-16, draw.py `FREE`) as the view model shows it, on the game
+     * screen: [entry] played by the rules, Stop's note open when [asking]. The light frames run in
+     * every theme; the dark ones in Notebook, whose frames the canvas draws.
+     */
+    private fun freeGame(name: String, entry: GameLogEntry, dark: Boolean, asking: Boolean = false) {
+        if (dark) assumeTrue(case.isNotebook)
+        val game = FreeGame.viewModel(entry)
+        if (asking) game.askStop()
+        show(dark = dark) { GameScreen(game, onToMap = {}, onRules = {}) }
+        capture(name)
     }
 
-    /** Two players, open-ended: Red has stopped, and Blue collects, then taps Done. */
+    /** Canvas frame `game-free-open`: Stop at the left, Undo at the right, "no limit" for the dots left. */
     @Test
-    fun twoPlayersCollecting() {
-        val start = GameSettings.POC.copy(seed = 1, dotsPerPlayer = null).newGame()
-        val first = start.play(start.near(7, 7)).state
-        val second = first.play(first.near(8, 8)).state
-        val stopped = second.stop()
-        val ui = GameUiState(state = stopped, lastMove = first.near(8, 8), openEnded = true, collecting = true)
-        show { Board(ui, campaign = null) }
-        capture("game_two_players_collecting")
-    }
+    fun freeOpen() = freeGame("game_free_open", FreeGame.open, dark = false)
+
+    @Test
+    fun freeOpenDark() = freeGame("game_free_open_dark", FreeGame.open, dark = true)
+
+    /** Canvas frame `game-free-stop`: Stop's note, Red's three open dots circled. */
+    @Test
+    fun freeStop() = freeGame("game_free_stop", FreeGame.open, dark = false, asking = true)
+
+    @Test
+    fun freeStopDark() = freeGame("game_free_stop_dark", FreeGame.open, dark = true, asking = true)
+
+    /** Canvas frame `game-computer-stops`: the computer stopped, smug; its two open dots circled; the player collects. */
+    @Test
+    fun computerStops() = freeGame("game_computer_stops", FreeGame.computerStopped, dark = false)
+
+    @Test
+    fun computerStopsDark() = freeGame("game_computer_stops_dark", FreeGame.computerStopped, dark = true)
+
+    /** Canvas frame `game-two-done`: two players, Red stopped, Blue collects. */
+    @Test
+    fun twoDone() = freeGame("game_two_done", FreeGame.redStopped, dark = false)
+
+    @Test
+    fun twoDoneDark() = freeGame("game_two_done_dark", FreeGame.redStopped, dark = true)
 
     @Test
     fun twoPlayersTurnBanner() {

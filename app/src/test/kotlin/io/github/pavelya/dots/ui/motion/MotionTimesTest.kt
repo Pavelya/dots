@@ -407,4 +407,20 @@ class MotionTimesTest {
         near(1800f, Unlocking(worldOpens = false).card)
         near(2100f, Unlocking(worldOpens = false).card + NoteSlide.IN)
     }
+
+    @Test
+    fun `a stop leaves the tool bar in 200 ms, grows the chip in 300 ms and slides the collector's row up from 250 to 550 ms`() {
+        // motion.md, "Stop and Done": the stop's table.
+        near(200f, ends { StopTimes.toolsOut(it) })
+        assertEquals(0.6f, StopTimes.chip(0f), 0.001f)
+        near(300f, ends { if (StopTimes.chip(it) >= 1f) 1f else 0f })
+        assertEquals(1f, StopTimes.chip(5_000f))
+        near(150f, ends { StopTimes.ringsIn(it) })
+        near(250f, starts { StopTimes.row(it) })
+        near(550f, ends { StopTimes.row(it) })
+        near(550f, StopTimes.LENGTH)
+        // Stop's note: its rings grow in 150 ms as it comes, and shrink away as fast after Cancel.
+        assertEquals(1f, StopTimes.ringsOut(0f))
+        assertEquals(0f, StopTimes.ringsOut(StopTimes.RINGS))
+    }
 }

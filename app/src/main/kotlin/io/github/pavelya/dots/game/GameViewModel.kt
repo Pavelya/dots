@@ -21,6 +21,7 @@ import dots.engine.Booster
 import dots.engine.Game
 import dots.engine.GameRecord
 import dots.engine.GameState
+import dots.engine.Grounding
 import dots.engine.MoveResult
 import dots.engine.Player
 import dots.engine.Pos
@@ -100,6 +101,15 @@ data class GameUiState(
      * like, then end the game with done.
      */
     val collecting: Boolean = false,
+    /** True while Stop's note asks the side to move whether to stop; the board takes no dots meanwhile. */
+    val askingStop: Boolean = false,
+    /**
+     * The dots circled in dashed rings: on Stop's note the asking side's, after a stop the stopper's,
+     * that can still be captured ([Grounding.exposed], the engine's own test). Empty otherwise.
+     */
+    val openDots: List<Pos> = emptyList(),
+    /** The stop just made, for the screen to play; null in a new game and after an undo takes it back. */
+    val stopMoment: StopMoment? = null,
     /**
      * The campaign's boosters the player may use now (A-05): on their turn, while the computer is
      * not thinking and no booster preview is open. Empty outside the campaign.
@@ -154,8 +164,8 @@ data class BoosterAim(
 
 /**
  * Holds one game and turns screen events into game actions. The screen sends events ([onTap],
- * [aim], [release], [undo], [stop], [done], [playAgain], and for boosters [chooseBooster],
- * [confirmBooster] and [cancelBooster]) and draws [ui]; all rules are the engine's.
+ * [aim], [release], [undo], [askStop], [cancelStop], [stop], [done], [playAgain], and for boosters
+ * [chooseBooster], [confirmBooster] and [cancelBooster]) and draws [ui]; all rules are the engine's.
  *
  * A game is described by a [GameLogEntry]: a new one, or the saved one when the app was closed
  * mid-game (its moves are replayed). Every change is reported to the [journal], which saves it
@@ -243,6 +253,12 @@ class GameViewModel(
     /** The booster just used, for its effect; see [GameUiState.booster]. */
     private var boosterMoment: BoosterMoment? = null
 
+    /** True while Stop's note is open; see [GameUiState.askingStop]. */
+    private var askingStop = false
+
+    /** The last stop; see [GameUiState.stopMoment]. */
+    private var stopMoment: StopMoment? = null
+
     /** The dot the edge marks show; see [GameUiState.edgeMarks]. */
     private var edgeMarks: Pos? = null
 
@@ -323,8 +339,11 @@ class GameViewModel(
         _ui.value = _ui.value.copy(preview = preview, guide = guideFor(game.state, preview))
     }
 
-    /** True when a touch on the board may place a dot: not while the computer thinks or after the end. */
-    private fun humanToMove(): Boolean =
+    /** True when a touch on the board may place a dot: not while the computer thinks, Stop's note asks, or after the end. */
+    private fun humanToMove(): Boolean = canAct() && !askingStop
+
+    /** True when the person to move may act: not while the computer thinks or after the end. */
+    private fun canAct(): Boolean =
         !_ui.value.thinking && !game.isOver && (computer == null || game.state.toMove == human)
 
     /** Counts a touch on the board for the log; it is saved with the next move. */
@@ -487,12 +506,33 @@ class GameViewModel(
     }
 
     /**
-     * In an open-ended game, the side to move declares the dots they keep grounded. The other side
-     * then collects what is left: the computer by itself, a person until they are [done].
+     * Stop in an open-ended game: it does not stop yet, but opens Stop's note, which circles the
+     * dots of the side to move that can still be captured. [stop] stops; [cancelStop] closes it.
+     */
+    fun askStop() {
+        if (!canAct() || !_ui.value.canStop) return
+        askingStop = true
+        _ui.value = snapshot(lastMove = lastPlaced())
+    }
+
+    /** Closes Stop's note; the game goes on. */
+    fun cancelStop() {
+        if (!askingStop) return
+        askingStop = false
+        _ui.value = snapshot(lastMove = lastPlaced())
+    }
+
+    /**
+     * In an open-ended game, the side to move declares the dots they keep grounded (Stop here on
+     * Stop's note). The other side then collects what is left: the computer by itself, a person
+     * until they are [done].
      */
     fun stop() {
-        if (!humanToMove() || !_ui.value.canStop) return
+        if (!canAct() || !_ui.value.canStop) return
+        askingStop = false
+        val mover = game.state.toMove
         game.apply(Action.Stop)
+        stopMoment = StopMoment(++moments, mover)
         changed()
         _ui.value = snapshot(lastMove = lastPlaced())
         letComputerMove()
@@ -539,6 +579,7 @@ class GameViewModel(
             entry = entry.copy(undos = entry.undos + 1)
             still()
             edgeMarks = null
+            if (!game.state.isCleanup) stopMoment = null
             changed()
         }
         _ui.value = snapshot(lastMove = lastPlaced())
@@ -589,6 +630,8 @@ class GameViewModel(
         still()
         edgeMarks = null
         captureOrder = null
+        askingStop = false
+        stopMoment = null
         round++
         lastActive = clock()
         journal?.start(entry)
@@ -615,6 +658,7 @@ class GameViewModel(
             val result = game.apply(action)
             changed()
             val dot = (action as? Action.Place)?.pos
+            if (action == Action.Stop) stopMoment = StopMoment(++moments, mover)
             if (dot != null) {
                 landed(before, dot, mover, result)
             } else {
@@ -808,6 +852,14 @@ class GameViewModel(
             null
         }
         val humanTurn = !over && (computer == null || state.toMove == human)
+        val canStop = openEnded && peopleToMove && state.isLegal(Action.Stop)
+        val asking = askingStop && canStop
+        val stopper = state.stopper
+        val openDots = when {
+            asking -> Grounding.exposed(state, state.toMove).flatten()
+            stopper != null && !over -> Grounding.exposed(state, stopper).flatten()
+            else -> emptyList()
+        }
         val usable = if (level == null || !humanTurn || aim != null) emptySet() else Booster.entries.filter { game.canUse(it) }.toSet()
         return GameUiState(
             state = state,
@@ -829,8 +881,11 @@ class GameViewModel(
             guided = level != null && Tutorial.lesson(level) != null && !skipped,
             practice = entry.practice,
             openEnded = openEnded,
-            canStop = openEnded && peopleToMove && state.isLegal(Action.Stop),
+            canStop = canStop,
             collecting = openEnded && peopleToMove && !over && state.isCleanup,
+            askingStop = asking,
+            openDots = openDots,
+            stopMoment = stopMoment,
             usable = usable,
             aim = aim,
             hint = (game.record.actions.lastOrNull() as? Action.Hint)?.pos?.takeIf { humanTurn },

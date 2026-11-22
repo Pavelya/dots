@@ -42,7 +42,7 @@ class ThemeScreenTest {
     private class Recorder : Audio {
         val played = mutableListOf<Pair<Effect, String>>()
 
-        override fun play(effect: Effect, rate: Float, file: String): Sounding {
+        override fun play(effect: Effect, rate: Float, file: String, share: Float): Sounding {
             played += effect to file
             return Sounding.NONE
         }

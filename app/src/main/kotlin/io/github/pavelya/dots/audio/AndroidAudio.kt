@@ -84,9 +84,9 @@ class AndroidAudio(context: Context) : Audio {
         }
     }
 
-    override fun play(effect: Effect, rate: Float, file: String): Sounding {
+    override fun play(effect: Effect, rate: Float, file: String, share: Float): Sounding {
         val sound = PlayingEffect()
-        handler.post { start(sound, effect, rate, file) }
+        handler.post { start(sound, effect, rate, file, share) }
         return sound
     }
 
@@ -125,10 +125,10 @@ class AndroidAudio(context: Context) : Audio {
         return Effect.entries.map { it.file }.toSet() + shipped
     }
 
-    private fun start(sound: PlayingEffect, effect: Effect, rate: Float, file: String) {
+    private fun start(sound: PlayingEffect, effect: Effect, rate: Float, file: String, share: Float) {
         val calling = inCall()
         if (calling != state.inCall) update(state.copy(inCall = calling))
-        val gain = state.effectsGain * effect.share
+        val gain = state.effectsGain * share
         val id = loaded[file] ?: loaded[effect.file] ?: return
         if (gain <= 0f) return
         sound.stream = pool.play(id, gain, gain, 1, 0, rate.coerceIn(MIN_RATE, MAX_RATE))

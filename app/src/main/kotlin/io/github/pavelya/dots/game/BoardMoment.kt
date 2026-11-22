@@ -91,3 +91,9 @@ data class ThreatMark(val group: Set<Pos>, val dotsNeeded: Int) {
 
 /** A captured area at the end of a game: its first point (the board's areas are found by it) and its captor. */
 data class CapturedArea(val first: Pos, val by: Player)
+
+/**
+ * A stop in an open-ended game (motion.md, "Stop and Done"), for the screen to play: the side that
+ * stopped ([by]). [id] counts with the dots' and boosters' moments, so each is heard once.
+ */
+data class StopMoment(val id: Int, val by: Player)

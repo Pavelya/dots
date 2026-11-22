@@ -2,10 +2,12 @@ package io.github.pavelya.dots.game
 
 import androidx.lifecycle.ViewModelStore
 import dots.ai.Ai
+import dots.ai.SearchAi
 import dots.campaign.Strength
 import dots.engine.Action
 import dots.engine.GameSettings
 import dots.engine.GameState
+import dots.engine.Grounding
 import dots.engine.Opening
 import dots.engine.Player
 import dots.engine.Pos
@@ -345,6 +347,66 @@ class GameViewModelTest {
 
         assertTrue(vm.ui.value.isOver)
         assertTrue(journal.entries.last().record.actions.contains(Action.Stop))
+    }
+
+    @Test
+    fun `Stop opens Stop's note, which circles exactly the player's exposed dots, and nothing stops until Stop here`() {
+        val vm = FreeGame.viewModel(FreeGame.open)
+        val before = vm.ui.value.state
+        assertTrue(vm.ui.value.canStop)
+
+        vm.askStop()
+        val asking = vm.ui.value
+        assertTrue(asking.askingStop)
+        assertFalse(asking.state.isCleanup)
+        // The engine's own test for what can still be captured after a stop (G-19).
+        assertEquals(Grounding.exposed(before, Player.RED).flatten().toSet(), asking.openDots.toSet())
+        assertEquals(FreeGame.openRed.toSet(), asking.openDots.toSet())
+
+        // The board takes no dot while the note asks.
+        vm.onTap(Pos(0, 14))
+        vm.onTap(Pos(0, 14))
+        assertNull(vm.ui.value.state.ownerAt(Pos(0, 14)))
+
+        vm.cancelStop()
+        assertFalse(vm.ui.value.askingStop)
+        assertTrue(vm.ui.value.openDots.isEmpty())
+        assertFalse(vm.ui.value.state.isCleanup)
+        assertNull(vm.ui.value.stopMoment)
+
+        vm.askStop()
+        vm.stop()
+        val stopped = vm.ui.value
+        assertTrue(stopped.state.isCleanup)
+        assertFalse(stopped.askingStop)
+        assertEquals(Player.RED, stopped.stopMoment?.by)
+        // The stopper's open dots stay circled while the computer collects.
+        assertEquals(FreeGame.openRed.toSet(), stopped.openDots.toSet())
+    }
+
+    @Test
+    fun `between two people, the side that stopped keeps its open dots circled while the other collects`() {
+        val vm = FreeGame.viewModel(FreeGame.redStopped)
+        val ui = vm.ui.value
+        assertTrue(ui.collecting)
+        assertEquals(Player.BLUE, ui.state.toMove)
+        assertEquals(FreeGame.openRed.toSet(), ui.openDots.toSet())
+        assertFalse(ui.canStop)
+        vm.askStop() // no stop while the other side collects
+        assertFalse(vm.ui.value.askingStop)
+    }
+
+    @Test
+    fun `the computer stops once it cannot lose, smug, and the player collects its open dots`() = runTest(dispatcher) {
+        val vm = FreeGame.viewModel(FreeGame.computerToStop, ai = SearchAi(Strength.HARD.config), dispatcher = dispatcher)
+        advanceUntilIdle()
+
+        val ui = vm.ui.value
+        assertTrue(ui.state.isCleanup)
+        assertEquals(Player.BLUE, ui.stopMoment?.by)
+        assertTrue(ui.collecting)
+        assertEquals(OpponentLook(Mood.SMUG, Bubble.STOPPED), ui.opponent)
+        assertEquals(FreeGame.openBlue.toSet(), ui.openDots.toSet())
     }
 
     @Test

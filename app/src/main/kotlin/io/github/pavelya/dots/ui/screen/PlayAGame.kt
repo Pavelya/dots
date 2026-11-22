@@ -2,13 +2,16 @@ package io.github.pavelya.dots.ui.screen
 
 import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,27 +47,40 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dots.engine.Game
+import dots.engine.GameRecord
+import dots.engine.GameSettings
+import dots.engine.GameState
+import dots.engine.Player
+import dots.log.GameLogEntry
 import io.github.pavelya.dots.R
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.data.BoardSize
 import io.github.pavelya.dots.data.GameLength
 import io.github.pavelya.dots.data.GameMode
+import io.github.pavelya.dots.ui.board.BoardStyle
+import io.github.pavelya.dots.ui.board.BoardView
 import io.github.pavelya.dots.ui.motion.NoteMotion
 import io.github.pavelya.dots.ui.motion.dim
 import io.github.pavelya.dots.ui.motion.rememberNoteMotion
@@ -74,25 +90,26 @@ import io.github.pavelya.dots.ui.theme.Palette
 /** The hand-cut shape of the big cards (the wireframe's border-radius). */
 private val CARD_SHAPE = RoundedCornerShape(topStart = 16.dp, topEnd = 20.dp, bottomEnd = 14.dp, bottomStart = 22.dp)
 
-/** A choice on the setup: a little rounder than a tool. */
-private val CHOICE_SHAPE = RoundedCornerShape(14.dp)
-
 /**
  * Play a game, over the map, as the wireframes' frame "Play a game" draws it: a ruled note taped at
  * the bottom of the screen with two big cards, Against the computer (free play) and Two players.
- * A card resumes its mode's saved game, or starts a new one at once with the board size and game
- * length in [settings]. The small link under the cards opens the setup on the same note, where
- * [onSettings] applies a change of board size or game length to the saved settings for the next games (decision 0025: Short,
- * Long or Open-ended). With the setup open, a card starts a new game; if that mode has a saved
- * game, the note asks first.
+ * A card resumes its mode's [saved] game, or starts a new one at once with the board size and game
+ * length in [settings].
  *
- * [onPlay] gets the mode and whether to start a new game even though one is [saved]. Close, Back
- * or a tap on the map around the note closes it ([onClose]); while the note asks, Back returns to
- * the cards. It slides up as the map behind it dims, and down as it leaves ([motion]).
+ * The small link under the cards opens the setup on the same note (canvas frames `play-setup` and
+ * `small-play-setup`): Board and Game length, each a row of three choices, and one line on the
+ * length chosen. [onSettings] applies a change to the saved settings for the next games (decision
+ * 0025: Short, Long or Open-ended). With the setup open, a card starts a new game; if that mode has
+ * a saved game, a second note is taped over the cards and asks first (canvas frame `play-replace`):
+ * it shows the saved game on a small board, and Keep it or New game.
+ *
+ * [onPlay] gets the mode and whether to start a new game even though one is saved. Close, Back
+ * or a tap on the map around the note closes it ([onClose]); while the second note asks, Back
+ * returns to the setup. It slides up as the map behind it dims, and down as it leaves ([motion]).
  */
 @Composable
 fun PlayAGameNote(
-    saved: Set<GameMode>,
+    saved: Map<GameMode, GameLogEntry>,
     settings: AppSettings,
     onSettings: (change: (AppSettings) -> AppSettings) -> Unit,
     onPlay: (mode: GameMode, replace: Boolean) -> Unit,
@@ -102,7 +119,7 @@ fun PlayAGameNote(
     val style = Palette.current
     var setup by rememberSaveable { mutableStateOf(false) }
     var askingKey by rememberSaveable { mutableStateOf<String?>(null) }
-    val asking = GameMode.of(askingKey)
+    val asking = GameMode.of(askingKey)?.takeIf { it in saved }
     BackHandler(enabled = asking != null) { askingKey = null }
     val title = stringResource(R.string.map_play)
     fun choose(mode: GameMode) {
@@ -112,17 +129,40 @@ fun PlayAGameNote(
             else -> onPlay(mode, true)
         }
     }
+    // The second note stays drawn while it slides down, with the game it showed.
+    val replacing = rememberNoteMotion(asking != null)
+    val lastAsked = remember { arrayOfNulls<GameMode>(1) }
+    if (asking != null) lastAsked[0] = asking
     BoxWithConstraints(
         contentAlignment = Alignment.BottomCenter,
         modifier = Modifier.fillMaxSize().dim(style.scrim) { motion.up }.semantics { paneTitle = title },
     ) {
-        val cardHeight = if (maxHeight >= 700.dp) 88.dp else 72.dp
+        val small = maxHeight < 700.dp
+        val cardHeight = when {
+            setup -> if (small) 64.dp else 80.dp
+            small -> 72.dp
+            else -> 88.dp
+        }
+        // The setup's rows sit closer together than the cards alone (draw.py, `setup_note`).
+        val gap = when {
+            !setup -> 12.dp
+            small -> 8.dp
+            else -> 10.dp
+        }
+        val pad = if (setup && small) 12.dp else 16.dp
         val tallest = maxHeight - 40.dp
         // A tap on the map around the note closes it; the note takes its own taps.
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
-        Box(Modifier.slideUp { motion.up }.padding(start = 10.dp, end = 10.dp, bottom = 14.dp, top = 24.dp).rotate(0.6f)) {
+        Box(
+            Modifier
+                .slideUp { motion.up }
+                .padding(start = 10.dp, end = 10.dp, bottom = 14.dp, top = 24.dp)
+                .rotate(0.6f)
+                // Under the second note, the setup is out of reach, also for TalkBack.
+                .then(if (asking != null) Modifier.clearAndSetSemantics {} else Modifier),
+        ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(gap),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = tallest)
@@ -130,7 +170,7 @@ fun PlayAGameNote(
                     .background(style.card)
                     .ruled(style.blue.copy(alpha = 0.12f))
                     .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
+                    .padding(start = pad, end = pad, bottom = pad, top = if (setup) pad - 4.dp else pad),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
@@ -141,16 +181,12 @@ fun PlayAGameNote(
                     )
                     CloseIcon(style, onClose)
                 }
-                if (asking != null) {
-                    ReplaceQuestion(
-                        style,
-                        detail = stringResource(R.string.play_replace_detail),
-                        replace = stringResource(R.string.play_replace),
-                        onReplace = { onPlay(asking, true) },
-                        onKeep = { askingKey = null },
-                    )
-                } else {
-                    if (setup) Setup(settings, style, onSettings)
+                if (setup) Setup(settings, style, small, gap, onSettings)
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(gap),
+                    modifier = Modifier.padding(top = if (!setup) 0.dp else if (small) 2.dp else 6.dp),
+                ) {
+                    val side = if (setup && small) 10.dp else 14.dp
                     PlayCard(
                         title = R.string.play_card_computer,
                         detail = when {
@@ -162,6 +198,7 @@ fun PlayAGameNote(
                         background = style.blue,
                         style = style,
                         height = cardHeight,
+                        side = side,
                         onClick = { choose(GameMode.FREE_PLAY) },
                     )
                     PlayCard(
@@ -175,12 +212,27 @@ fun PlayAGameNote(
                         background = style.red,
                         style = style,
                         height = cardHeight,
+                        side = side,
                         onClick = { choose(GameMode.TWO_PLAYERS) },
                     )
-                    if (!setup) SetupLink(settings, style) { setup = true }
                 }
+                if (!setup) SetupLink(settings, style) { setup = true }
             }
             Tape(style, Modifier.offset(x = 30.dp, y = (-8).dp).rotate(-4f).size(width = 56.dp, height = 16.dp))
+        }
+        val shown = asking ?: lastAsked[0]
+        val entry = shown?.let { saved[it] }
+        if (shown != null && entry != null && !replacing.gone) {
+            ReplaceNote(
+                mode = shown,
+                entry = entry,
+                length = settings.length,
+                style = style,
+                onKeep = { askingKey = null },
+                onReplace = { onPlay(shown, true) },
+                open = replacing.open,
+                modifier = Modifier.slideUp { replacing.up }.padding(start = 22.dp, end = 22.dp, bottom = 30.dp),
+            )
         }
     }
 }
@@ -220,6 +272,7 @@ private fun PlayCard(
     background: Color,
     style: Palette,
     height: Dp,
+    side: Dp,
     onClick: () -> Unit,
 ) {
     Row(
@@ -231,10 +284,15 @@ private fun PlayCard(
             .clip(CARD_SHAPE)
             .background(background)
             .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = side),
     ) {
         // A short card, on a small phone, gives its room to the name.
-        Icon(icon, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(if (height < 88.dp) 40.dp else 52.dp))
+        val iconSize = when {
+            height < 72.dp -> 34.dp
+            height < 88.dp -> 40.dp
+            else -> 52.dp
+        }
+        Icon(icon, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(iconSize))
         Column(Modifier.weight(1f)) {
             // A long name shrinks to fit, never below the 24 sp that Caveat needs.
             BasicText(
@@ -268,70 +326,217 @@ private fun SetupLink(settings: AppSettings, style: Palette, onClick: () -> Unit
     }
 }
 
-/** Board size and game length for the next games, each a row of choices. */
+/**
+ * Board size and game length for the next games (canvas frame `play-setup`): each a row of three
+ * choices, a board size with a small square of squared paper, denser for a bigger board, and a
+ * length with each side's dots; then one line on the length chosen. On a [small] phone the choices
+ * are lower.
+ */
 @Composable
-private fun Setup(settings: AppSettings, style: Palette, onSettings: ((AppSettings) -> AppSettings) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(stringResource(R.string.settings_board), style = NoteText.label, color = style.graphite, modifier = Modifier.semantics { heading() })
-        ChoiceRow {
-            for (size in BoardSize.entries) {
-                Choice(
-                    label = stringResource(R.string.settings_board_size, size.points, size.points),
-                    detail = null,
-                    selected = settings.boardSize == size,
-                    style = style,
-                ) { onSettings { it.copy(boardSize = size) } }
-            }
+private fun Setup(settings: AppSettings, style: Palette, small: Boolean, gap: Dp, onSettings: ((AppSettings) -> AppSettings) -> Unit) {
+    val height = if (small) 48.dp else 56.dp
+    SetupRow(R.string.settings_board, style, gap) {
+        for (size in BoardSize.entries) {
+            Choice(
+                label = stringResource(R.string.settings_board_size, size.points, size.points),
+                detail = null,
+                lines = sizeLines(size),
+                selected = settings.boardSize == size,
+                height = height,
+                style = style,
+            ) { onSettings { it.copy(boardSize = size) } }
         }
-        Text(
-            stringResource(R.string.settings_length),
-            style = NoteText.label,
-            color = style.graphite,
-            modifier = Modifier.padding(top = 4.dp).semantics { heading() },
-        )
-        ChoiceRow {
-            for (length in GameLength.entries) {
-                val dots = AppSettings.dotsFor(settings.boardSize, length)
-                Choice(
-                    label = stringResource(lengthName(length)),
-                    detail = if (dots == null) stringResource(R.string.length_open_detail) else pluralStringResource(R.plurals.length_dots, dots, dots),
-                    selected = settings.length == length,
-                    style = style,
-                ) { onSettings { it.copy(length = length) } }
-            }
+    }
+    SetupRow(R.string.settings_length, style, gap) {
+        for (length in GameLength.entries) {
+            val dots = AppSettings.dotsFor(settings.boardSize, length)
+            Choice(
+                label = stringResource(lengthName(length)),
+                detail = if (dots == null) stringResource(R.string.length_open_detail) else pluralStringResource(R.plurals.length_dots, dots, dots),
+                lines = null,
+                selected = settings.length == length,
+                height = height,
+                style = style,
+            ) { onSettings { it.copy(length = length) } }
         }
+    }
+    LengthLine(settings, style)
+}
+
+/** A row of the setup under its label, which sits a little closer to it than the rows to each other. */
+@Composable
+private fun SetupRow(@StringRes label: Int, style: Palette, gap: Dp, content: @Composable RowScope.() -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(gap - 4.dp)) {
+        Text(stringResource(label), style = NoteText.label, color = style.graphite, modifier = Modifier.semantics { heading() })
+        Row(horizontalArrangement = Arrangement.spacedBy(gap), modifier = Modifier.fillMaxWidth().selectableGroup(), content = content)
     }
 }
 
-@Composable
-private fun ChoiceRow(content: @Composable RowScope.() -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().selectableGroup(), content = content)
+/** The lines across a board size's picture: more for a bigger board (draw.py, `size_pic`). */
+private fun sizeLines(size: BoardSize): Int = when (size) {
+    BoardSize.SMALL -> 4
+    BoardSize.STANDARD -> 5
+    BoardSize.LARGE -> 7
 }
 
-/** One choice: filled blue when chosen, outlined otherwise. */
+/** The line under the lengths, for the one chosen: how the game ends. */
 @Composable
-private fun RowScope.Choice(label: String, detail: String?, selected: Boolean, style: Palette, onClick: () -> Unit) {
+private fun LengthLine(settings: AppSettings, style: Palette) {
+    val dots = settings.dotsPerPlayer
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        if (dots == null) {
+            Icon(remember(style) { Doodles.icon(Doodles.FLAG, style.graphite, width = 2f) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(16.dp))
+        }
+        Text(
+            if (dots == null) stringResource(R.string.length_line_open) else pluralStringResource(R.plurals.length_line_dots, dots, dots),
+            style = NoteText.small.copy(fontWeight = FontWeight.Bold),
+            color = style.graphite,
+        )
+    }
+}
+
+/**
+ * One choice: filled blue when chosen, outlined in pale blue otherwise, in the tool shape. A board
+ * size has its picture, a square of squared paper with [lines] lines each way.
+ */
+@Composable
+private fun RowScope.Choice(label: String, detail: String?, lines: Int?, selected: Boolean, height: Dp, style: Palette, onClick: () -> Unit) {
     val ink = if (selected) style.paper else style.blue
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .weight(1f)
-            .heightIn(min = 48.dp)
-            .clip(CHOICE_SHAPE)
+            .height(height)
+            .clip(TOOL_SHAPE)
             .background(if (selected) style.blue else style.card)
-            .toolOutline(style.blue, dashed = false, CHOICE_SHAPE)
+            .toolOutline(if (selected) style.blue else style.bluePale, dashed = false, TOOL_SHAPE)
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 6.dp),
+            .padding(horizontal = 4.dp),
     ) {
-        BasicText(label, style = CHOICE_TEXT.copy(color = ink), maxLines = 1, autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = 14.sp))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            lines?.let { SizePicture(it, ink, Modifier.size(20.dp)) }
+            BasicText(
+                label,
+                style = CHOICE_TEXT.copy(color = ink),
+                maxLines = 1,
+                autoSize = TextAutoSize.StepBased(minFontSize = 10.sp, maxFontSize = if (lines != null) 15.sp else 14.sp),
+            )
+        }
         detail?.let { Text(it, style = NoteText.small, color = ink, maxLines = 1) }
+    }
+}
+
+/** A board size's picture: a square of squared paper, [lines] lines each way (draw.py, `size_pic`). */
+@Composable
+private fun SizePicture(lines: Int, ink: Color, modifier: Modifier) {
+    Canvas(modifier) {
+        val u = size.minDimension / 20f
+        val stroke = 1.1.dp.toPx()
+        for (k in 0 until lines) {
+            val at = (2f + 16f * k / (lines - 1)) * u
+            drawLine(ink, Offset(at, 2 * u), Offset(at, 18 * u), stroke, StrokeCap.Round)
+            drawLine(ink, Offset(2 * u, at), Offset(18 * u, at), stroke, StrokeCap.Round)
+        }
     }
 }
 
 private val CHOICE_TEXT: TextStyle
     @Composable @ReadOnlyComposable
     get() = NoteText.label.copy(lineHeight = 18.sp)
+
+/**
+ * With the setup open, before a new game takes the place of the saved one of its [mode] (canvas
+ * frame `play-replace`): a second note taped over the cards. It shows the saved game ([entry]) on a
+ * small board, with its board size, length, dots left and score, and says what starts instead, a
+ * game of [length]. Keep it, or New game. While it is [open] it takes every tap on it.
+ * Back, handled by [PlayAGameNote], is Keep it.
+ */
+@Composable
+private fun ReplaceNote(
+    mode: GameMode,
+    entry: GameLogEntry,
+    length: GameLength,
+    style: Palette,
+    onKeep: () -> Unit,
+    onReplace: () -> Unit,
+    open: Boolean,
+    modifier: Modifier,
+) {
+    val title = stringResource(R.string.play_replace_question)
+    val state = remember(entry) { runCatching { Game.from(entry.record).state }.getOrNull() }
+    val settings = (entry.record as? GameRecord)?.settings
+    val vsComputer = mode == GameMode.FREE_PLAY
+    Box(
+        modifier
+            .rotate(-1.2f)
+            // While it slides down it takes no taps, and TalkBack no longer reads it.
+            .then(if (open) Modifier.pointerInput(Unit) { detectTapGestures { } }.semantics { paneTitle = title } else Modifier.clearAndSetSemantics {}),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .shadow(6.dp, RectangleShape, clip = false)
+                .background(style.card)
+                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp),
+        ) {
+            Text(title, style = NoteText.headline.copy(fontWeight = FontWeight.Bold), color = style.blue, modifier = Modifier.semantics { heading() })
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                state?.let { SavedBoard(it, style) }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    Text(stringResource(if (vsComputer) R.string.play_card_computer else R.string.play_two), style = NoteText.label, color = style.pencil)
+                    savedSetup(settings, state)?.let { Text(it, style = NoteText.small, color = style.graphite) }
+                    val red = stringResource(R.string.play_saved_score, stringResource(if (vsComputer) R.string.player_you else R.string.player_red), entry.red)
+                    val blue = stringResource(R.string.play_saved_score, stringResource(if (vsComputer) R.string.player_computer else R.string.player_blue), entry.blue)
+                    Text(
+                        buildAnnotatedString {
+                            withStyle(SpanStyle(color = style.red)) { append(red) }
+                            append(" · ")
+                            withStyle(SpanStyle(color = style.blue)) { append(blue) }
+                        },
+                        style = NoteText.small.copy(fontWeight = FontWeight.Bold),
+                        color = style.graphite,
+                    )
+                }
+            }
+            Text(stringResource(R.string.play_replace_ends, stringResource(lengthWord(length))), style = NoteText.small, color = style.graphite)
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                SmallButton(stringResource(R.string.play_keep), style, onKeep, Modifier.weight(1f), height = 56.dp, padding = PaddingValues(horizontal = 4.dp))
+                BigButton(stringResource(R.string.play_replace), style, onReplace, Modifier.weight(2f))
+            }
+        }
+        Tape(style, Modifier.offset(x = 130.dp, y = (-9).dp).rotate(3f).size(width = 60.dp, height = 16.dp))
+    }
+}
+
+/** The saved game's board, 96 dp across in a thin frame of the grid's ink. */
+@Composable
+private fun SavedBoard(state: GameState, style: Palette) {
+    Box(Modifier.size(96.dp).border(1.dp, style.grid).padding(3.dp)) {
+        BoardView(state = state, style = BoardStyle.current, description = stringResource(R.string.play_saved_board), modifier = Modifier.fillMaxSize())
+    }
+}
+
+/** The saved game's board size and length, and the player's dots left when it has a limit: "15 × 15 · Short · 9 dots left". */
+@Composable
+private fun savedSetup(settings: GameSettings?, state: GameState?): String? {
+    settings ?: return null
+    val parts = ArrayList<String>()
+    parts += stringResource(R.string.settings_board_size, settings.width, settings.height)
+    val size = BoardSize.entries.firstOrNull { it.points == settings.width && it.points == settings.height }
+    val length = size?.let { GameLength.entries.firstOrNull { length -> AppSettings.dotsFor(size, length) == settings.dotsPerPlayer } }
+    length?.let { parts += stringResource(lengthName(it)) }
+    state?.dotsLeft(Player.RED)?.let { parts += pluralStringResource(R.plurals.game_dots_left, it, it) }
+    return parts.joinToString(" · ")
+}
+
+@StringRes
+private fun lengthWord(length: GameLength): Int = when (length) {
+    GameLength.SHORT -> R.string.length_short_lower
+    GameLength.LONG -> R.string.length_long_lower
+    GameLength.OPEN_ENDED -> R.string.length_open_lower
+}
 
 /**
  * Before a new game takes the place of a saved one of the same mode (flows.md, "Saved games"): what

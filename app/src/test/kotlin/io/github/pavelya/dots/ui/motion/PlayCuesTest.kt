@@ -33,7 +33,7 @@ class PlayCuesTest {
     private class Recorder : Audio {
         val played: MutableList<Pair<Effect, String>> = Collections.synchronizedList(ArrayList())
 
-        override fun play(effect: Effect, rate: Float, file: String): Sounding {
+        override fun play(effect: Effect, rate: Float, file: String, share: Float): Sounding {
             played += effect to file
             return Sounding.NONE
         }
@@ -47,7 +47,7 @@ class PlayCuesTest {
     private inner class Timed : Audio, Haptics {
         val events: MutableList<Pair<Any, Long>> = Collections.synchronizedList(ArrayList())
 
-        override fun play(effect: Effect, rate: Float, file: String): Sounding {
+        override fun play(effect: Effect, rate: Float, file: String, share: Float): Sounding {
             events += effect to compose.mainClock.currentTime
             return Sounding.NONE
         }

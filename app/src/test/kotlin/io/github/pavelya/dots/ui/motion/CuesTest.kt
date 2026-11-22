@@ -10,6 +10,7 @@ import io.github.pavelya.dots.audio.Effect
 import io.github.pavelya.dots.game.BoardMoment
 import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.game.ThreatMark
+import io.github.pavelya.dots.haptics.Buzz
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -144,5 +145,11 @@ class CuesTest {
         assertEquals(listOf(Cue(Effect.WORLD_OPEN, Unlocking.FILL_TO + 300f)), Cues.unlock(worldOpens = true, still = false))
         assertEquals(listOf(Cue(Effect.WORLD_OPEN, 0f)), Cues.unlock(worldOpens = true, still = true))
         assertTrue(Cues.unlock(worldOpens = false, still = false).isEmpty())
+    }
+
+    @Test
+    fun `a stop, by either side, plays the dot's first take at 70 percent speed and full volume, and is felt as a dot`() {
+        assertEquals(listOf(Cue(Effect.PLACE_1, 0f, 0.7f, share = 1f)), Cues.stop())
+        assertEquals(listOf(Beat(Buzz.LIGHT, 0f)), Beats.stop())
     }
 }
