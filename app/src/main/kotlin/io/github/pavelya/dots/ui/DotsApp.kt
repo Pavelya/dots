@@ -72,6 +72,8 @@ import io.github.pavelya.dots.data.GameMode
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.data.ReviewRule
+import io.github.pavelya.dots.data.PieceStyleId
+import io.github.pavelya.dots.data.RingEffectId
 import io.github.pavelya.dots.data.ThemeId
 import io.github.pavelya.dots.game.GameViewModel
 import io.github.pavelya.dots.game.computerFor
@@ -90,6 +92,7 @@ import io.github.pavelya.dots.ui.screen.ChestNote
 import io.github.pavelya.dots.ui.screen.DailyAction
 import io.github.pavelya.dots.ui.screen.DailyPuzzleNote
 import io.github.pavelya.dots.ui.screen.DeveloperScreen
+import io.github.pavelya.dots.ui.screen.LookChoices
 import io.github.pavelya.dots.ui.screen.GameScreen
 import io.github.pavelya.dots.ui.screen.LevelCard
 import io.github.pavelya.dots.ui.screen.LoadingScreen
@@ -203,6 +206,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
     val appSettings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
     // The theme the game screen is drawn in; the map, the notes over it and the menu screens stay Notebook (decision 0028).
     val themeInUse by app.themes.inUse.collectAsStateWithLifecycle(initialValue = ThemeId.DEFAULT)
+    // The piece style and ring effect the game screen draws in that theme's inks (docs/design/cosmetics.md).
+    val piecesInUse by app.themes.pieces.collectAsStateWithLifecycle(initialValue = PieceStyleId.DEFAULT)
+    val ringsInUse by app.themes.rings.collectAsStateWithLifecycle(initialValue = RingEffectId.DEFAULT)
     LaunchedEffect(appSettings?.dailyAhead) {
         appSettings?.let { app.clock.shiftDays = if (it.dailyAhead) PuzzleClock.YEAR_AHEAD_DAYS else 0 }
     }
@@ -503,7 +509,13 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 DisposableEffect(Unit) { onDispose { gameTrack = null } }
                                 val scope = rememberCoroutineScope()
                                 val context = LocalContext.current
-                                DotsTheme(GameTheme.of(themeInUse), dark = GameTheme.isDark, highContrast = GameTheme.highContrast) {
+                                DotsTheme(
+                                    GameTheme.of(themeInUse),
+                                    dark = GameTheme.isDark,
+                                    highContrast = GameTheme.highContrast,
+                                    pieces = piecesInUse,
+                                    rings = ringsInUse,
+                                ) {
                                     GameScreen(
                                         game,
                                         onToMap = toMap,
@@ -625,6 +637,15 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             dailyAhead = appSettings?.dailyAhead ?: false,
                             onDailyAhead = { on -> appScope.launch { app.settings.update { it.copy(dailyAhead = on) } } },
                             onClearDaily = { appScope.launch { app.daily.clear() } },
+                            looks = LookChoices(
+                                pieces = piecesInUse,
+                                pieceChoices = app.themes.pieceChoices,
+                                // Saved in the app's scope, like a setting, so Back never cuts the change short.
+                                onPieces = { style -> appScope.launch { app.themes.use(style) } },
+                                rings = ringsInUse,
+                                ringChoices = app.themes.ringChoices,
+                                onRings = { effect -> appScope.launch { app.themes.use(effect) } },
+                            ),
                             loggedGames = loggedGames,
                             onShareLog = { scope.launch { shareLog(context, app) } },
                             onBack = back,

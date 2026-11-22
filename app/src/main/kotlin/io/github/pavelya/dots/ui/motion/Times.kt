@@ -192,6 +192,56 @@ object Twinkle {
 }
 
 /**
+ * The ring effects' captures (docs/design/cosmetics.md, "How the capture moves"): 0 ms is the
+ * moment the closing piece lands. Both close at the theme's time ([Capturing.ringEnd]: 550 ms, 650
+ * ms for a big capture), with the theme's sound and vibration; the wash, the cuts, +N, the face
+ * and the score keep the theme's times.
+ */
+object RingEffects {
+    /** Lasso: the rope is thrown round the area from here to [PULL] ms before the ring closes. */
+    const val THROW_FROM = 150f
+
+    /** Lasso: it is pulled tight over the last this many ms before the ring closes. */
+    const val PULL = 100f
+
+    /** Lasso: thrown loose, at this share of the ring's size about the area's centre. */
+    const val LOOSE = 1.15f
+
+    /** Rubber stamp: it comes down from here until the ring closes. */
+    const val STAMP_FROM = 250f
+
+    /** Rubber stamp: it starts at this share of the area's size about its centre. */
+    const val STAMP_SIZE = 1.25f
+
+    /** Lasso: how far round the area the rope has been thrown, from the closing piece. */
+    fun thrown(capture: Capturing, t: Float): Float = phase(t, THROW_FROM, capture.ringEnd - PULL, Ease.IN_OUT)
+
+    /** Lasso: the rope's size as a share of the ring's: loose, then pulled tight; exactly 1 once tight. */
+    fun rope(capture: Capturing, t: Float): Float {
+        val p = phase(t, capture.ringEnd - PULL, capture.ringEnd, Ease.IN)
+        return if (p >= 1f) 1f else LOOSE - (LOOSE - 1f) * p
+    }
+
+    /** Rubber stamp: how far it has come down, from 0 (not shown) to 1 (down); its colours blend from Paper as far. */
+    fun down(capture: Capturing, t: Float): Float = phase(t, STAMP_FROM, capture.ringEnd, Ease.IN)
+
+    /** Rubber stamp: its size as a share of the area's; exactly 1 once down. */
+    fun stamp(capture: Capturing, t: Float): Float {
+        val q = down(capture, t)
+        return if (q >= 1f) 1f else STAMP_SIZE - (STAMP_SIZE - 1f) * q
+    }
+
+    /**
+     * Star chart: the closing star's size as a share of its own. It twinkles as the rope pulls tight
+     * or the stamp comes down, from [PULL] ms before the ring closes; the stars along the way don't.
+     */
+    fun closingStar(capture: Capturing, t: Float): Float {
+        val start = capture.ringEnd - PULL
+        return 1f + (Twinkle.PEAK - 1f) * swell(t, start, start + Twinkle.LENGTH)
+    }
+}
+
+/**
  * Neon arcade's light (motion.md, "Neon arcade"): a placed piece lights up as it settles; a ring is
  * drawn unlit and lights up as it closes, with one flicker and a burst of sparks.
  */

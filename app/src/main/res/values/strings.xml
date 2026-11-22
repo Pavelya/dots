@@ -333,6 +333,15 @@
     <string name="daily_next_in">Next puzzle in %1$s</string>
     <string name="daily_share">Share</string>
     <string name="daily_share_title">Share your result</string>
+    <string name="developer_looks">Pieces and rings</string>
+    <string name="developer_looks_note">Debug build: every piece style and ring effect is here. The game board draws them in the theme in use. Players get only Standard until the Shop opens.</string>
+    <string name="developer_pieces">Pieces</string>
+    <string name="developer_rings">Rings</string>
+    <string name="look_standard">Standard</string>
+    <string name="pieces_hearts_and_clubs">Hearts and clubs</string>
+    <string name="pieces_flame_and_frost">Flame and frost</string>
+    <string name="rings_lasso">Lasso</string>
+    <string name="rings_rubber_stamp">Rubber stamp</string>
     <string name="developer_daily">Daily puzzle</string>
     <string name="developer_daily_note">The puzzles start on 1 January 2027. A year ahead moves the puzzle’s clock 365 days on, to try them now.</string>
     <string name="developer_daily_ahead">A year ahead</string>

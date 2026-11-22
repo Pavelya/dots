@@ -52,12 +52,14 @@ import io.github.pavelya.dots.ui.motion.WallEffect
 import io.github.pavelya.dots.ui.motion.length
 import io.github.pavelya.dots.ui.screen.Doodles
 import io.github.pavelya.dots.ui.motion.Placing
+import io.github.pavelya.dots.ui.motion.RingEffects
 import io.github.pavelya.dots.ui.motion.NeonLight
 import io.github.pavelya.dots.ui.motion.Threat
 import io.github.pavelya.dots.ui.motion.Twinkle
 import io.github.pavelya.dots.ui.theme.BoardLook
 import io.github.pavelya.dots.ui.theme.CaptureMotion
 import io.github.pavelya.dots.ui.theme.PieceShape
+import io.github.pavelya.dots.ui.theme.RingEffect
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
@@ -180,12 +182,18 @@ private class Frame(
     /**
      * The size of the piece on ([x], [y]) as a share of its own: a dot just placed grows to 115% and
      * settles (motion.md, "Placing a dot"); one Undo gives back after a bomb grows back in; in Star
-     * chart, a star the line has just reached twinkles (motion.md, "Capture in Star chart").
+     * chart, a star the line has just reached twinkles (motion.md, "Capture in Star chart"). With a
+     * ring effect only the closing star twinkles, as the rope pulls tight or the stamp comes down
+     * (cosmetics.md).
      */
     fun pieceScale(x: Int, y: Int, look: BoardLook): Float {
         val dot = newDot
         val base = if (dot != null && dot.x == x && dot.y == y) Placing.dotScale(t) else grownBack(x, y)
         if (look.capture != CaptureMotion.CONSTELLATION || timing == null) return base
+        if (look.ringEffect != RingEffect.THEME) {
+            val closing = capturing.values.any { it.capture.closing.x == x && it.capture.closing.y == y }
+            return if (closing) base * RingEffects.closingStar(timing, t) else base
+        }
         val share = reached[Pos(x, y)] ?: return base
         return base * Twinkle.size(timing, t, share)
     }
@@ -395,6 +403,14 @@ private fun DrawScope.drawPosition(
         val wash = if (lit > 0f) lerp(style.palette.wash(area.by), style.palette.pale(area.by), lit) else style.palette.wash(area.by)
         when {
             capturing == null -> drawArea(area.by, strokes[i], style, wash)
+            // Rubber stamp: the area comes down with the ring, large and pale, and shrinks to its place.
+            style.look.ringEffect == RingEffect.STAMP -> {
+                val down = RingEffects.down(frame.timing!!, frame.t)
+                if (down > 0f) {
+                    val stamp = ringStroke(area, geometry, style.look, RingEffects.stamp(frame.timing, frame.t))
+                    drawArea(area.by, stamp, style, fade(wash, style.paper, 1f - down), fade(style.palette.pale(area.by), style.paper, 1f - down))
+                }
+            }
             // Star chart: the haze and its hatching blend in from the paper over the whole area.
             style.look.capture == CaptureMotion.CONSTELLATION -> {
                 val haze = 1f - Twinkle.haze(frame.timing!!, frame.t)
@@ -424,6 +440,8 @@ private fun DrawScope.drawPosition(
     drawGlows(state, geometry, style, frame)
     // A tube is drawn in three passes, every ring's glow before any tube, so no glow lies over another ring's tube.
     val layers = if (style.look.ringGlow.dp > 0f || style.look.ringCore > 0f) RingLayer.entries else listOf(RingLayer.TUBE)
+    // A ring effect's ring on its way to its place: the loose rope, the stamp coming down (cosmetics.md).
+    val moving = areas.indices.associateWith { i -> effectRing(areas[i], strokes[i], frame.capturing[i], frame, geometry, style) }
     for (layer in layers) {
         areas.forEachIndexed { i, area ->
             val width = 1f + 0.9f * (frame.glow[i] ?: 0f)
@@ -432,14 +450,22 @@ private fun DrawScope.drawPosition(
             // Neon arcade: the tube is drawn unlit and lights up as it closes.
             val lit = capturing == null || timing == null || style.look.capture != CaptureMotion.NEON || NeonLight.lit(timing, frame.t)
             if (layer != RingLayer.TUBE && !lit) return@forEachIndexed
-            val drawn = when {
-                capturing == null -> 1f
-                style.look.capture == CaptureMotion.CONSTELLATION -> Twinkle.traced(timing!!, frame.t)
-                else -> timing!!.ring(frame.t)
+            if (capturing == null || timing == null) return@forEachIndexed drawRingOf(area.by, strokes[i], style, width = width, layer = layer)
+            when (style.look.ringEffect) {
+                RingEffect.THEME -> {
+                    val drawn = if (style.look.capture == CaptureMotion.CONSTELLATION) Twinkle.traced(timing, frame.t) else timing.ring(frame.t)
+                    drawAreaRing(area.by, strokes[i], style, from = capturing.start, drawn = drawn, width = width, layer = layer)
+                }
+                // Thrown loose round the area from the closing piece, then pulled tight.
+                RingEffect.LASSO -> drawRope(area.by, moving.getValue(i), style, from = capturing.start, drawn = RingEffects.thrown(timing, frame.t), width = width, layer = layer)
+                // Down at once, pale and large, shrinking to its place as its colours come in.
+                RingEffect.STAMP -> {
+                    val down = RingEffects.down(timing, frame.t)
+                    if (down > 0f) drawStamp(area.by, moving.getValue(i), style, width = width, layer = layer, pale = 1f - down)
+                }
             }
-            drawAreaRing(area.by, strokes[i], style, from = capturing?.start ?: 0, drawn = drawn, width = width, layer = layer)
         }
-        undoneAreas.forEachIndexed { i, area -> drawAreaRing(area.by, undoneStrokes[i], style, drawn = 1f - frame.rubbedOut(area.by), layer = layer) }
+        undoneAreas.forEachIndexed { i, area -> drawRingOf(area.by, undoneStrokes[i], style, drawn = 1f - frame.rubbedOut(area.by), layer = layer) }
     }
     drawThreatRings(dangers, geometry, style, frame)
     drawPlusRings(state, marks.plus, geometry, style)
@@ -578,16 +604,42 @@ private fun DrawScope.drawBurst(geometry: BoardGeometry, style: BoardStyle, fram
  * own width. The bow and the width come from a seed taken from the area, so the same ring looks
  * the same on every frame.
  */
-private class RingStroke(val outline: Path, val sides: List<Pair<Path, Float>>)
+internal class RingStroke(
+    val outline: Path,
+    val sides: List<Pair<Path, Float>>,
+    /** Each side as a quadratic curve: its start, its control point and its end. */
+    val curves: List<Triple<Offset, Offset, Offset>> = emptyList(),
+    /** The theme's ring width in pixels, before each side's own change. */
+    val width: Float = 0f,
+    /** The board's spacing in pixels. */
+    val spacing: Float = 0f,
+    /** The ring's size as a share of its place: above 1 while a ring effect brings it in. */
+    val scale: Float = 1f,
+) {
+    /** The same ring with other [sides]: its glow or its core. */
+    fun withSides(sides: List<Pair<Path, Float>>): RingStroke = RingStroke(outline, sides, curves, width, spacing, scale)
+}
 
-private fun DrawScope.ringStroke(area: Area, geometry: BoardGeometry, look: BoardLook): RingStroke {
+/**
+ * [area]'s ring at [scale] times its size about the middle of its dots: 1 is its place on the
+ * board. Its sides bow the same way at every size.
+ */
+private fun DrawScope.ringStroke(area: Area, geometry: BoardGeometry, look: BoardLook, scale: Float = 1f): RingStroke {
     val first = area.region.first()
     val random = Random(31 * (31 * area.by.ordinal + first.x) + first.y)
-    val points = area.ring.map(geometry::center)
+    val centres = area.ring.map(geometry::center)
+    val points = if (scale == 1f) {
+        centres
+    } else {
+        val mx = centres.sumOf { it.x.toDouble() }.toFloat() / centres.size
+        val my = centres.sumOf { it.y.toDouble() }.toFloat() / centres.size
+        centres.map { Offset(mx + (it.x - mx) * scale, my + (it.y - my) * scale) }
+    }
     val bow = look.ringBow.dp.toPx()
     val width = look.ring.px(geometry.spacing, density)
     val outline = Path()
     val sides = ArrayList<Pair<Path, Float>>(points.size)
+    val curves = ArrayList<Triple<Offset, Offset, Offset>>(points.size)
     for (i in points.indices) {
         val a = points[i]
         val b = points[(i + 1) % points.size]
@@ -604,9 +656,25 @@ private fun DrawScope.ringStroke(area: Area, geometry: BoardGeometry, look: Boar
             moveTo(a.x, a.y)
             quadraticTo(cx, cy, b.x, b.y)
         } to sideWidth
+        curves += Triple(a, Offset(cx, cy), b)
     }
     outline.close()
-    return RingStroke(outline, sides)
+    return RingStroke(outline, sides, curves, width, geometry.spacing, scale)
+}
+
+/**
+ * The ring of [area] as its ring effect shows it in this frame: Lasso's rope loose, or Rubber
+ * stamp's ring still coming down, at its size about the area's middle; [stroke] once in place.
+ */
+private fun DrawScope.effectRing(area: Area, stroke: RingStroke, capturing: AreaCapture?, frame: Frame, geometry: BoardGeometry, style: BoardStyle): RingStroke {
+    val timing = frame.timing
+    if (capturing == null || timing == null) return stroke
+    val scale = when (style.look.ringEffect) {
+        RingEffect.THEME -> 1f
+        RingEffect.LASSO -> RingEffects.rope(timing, frame.t)
+        RingEffect.STAMP -> RingEffects.stamp(timing, frame.t)
+    }
+    return if (scale == 1f) stroke else ringStroke(area, geometry, style.look, scale)
 }
 
 /**
@@ -639,16 +707,28 @@ private fun DrawScope.drawArea(by: Player, stroke: RingStroke, style: BoardStyle
 }
 
 /** The passes of a ring drawn as a tube (theme-neon-arcade.md, "The ring"); a plain ring is the tube alone. */
-private enum class RingLayer { GLOW, TUBE, CORE }
+internal enum class RingLayer { GLOW, TUBE, CORE }
+
+/**
+ * A captured area's ring in place, as the ring effect draws it: the theme's ring, Lasso's rope or
+ * Rubber stamp's double line. As Undo takes it back it is undrawn ([drawn] below 1) from side [from].
+ */
+private fun DrawScope.drawRingOf(by: Player, ring: RingStroke, style: BoardStyle, from: Int = 0, drawn: Float = 1f, width: Float = 1f, layer: RingLayer) {
+    when (style.look.ringEffect) {
+        RingEffect.THEME -> drawAreaRing(by, ring, style, from, drawn, width, layer)
+        RingEffect.LASSO -> drawRope(by, ring, style, from, drawn, width, layer)
+        RingEffect.STAMP -> drawStamp(by, ring, style, from, drawn, width, layer)
+    }
+}
 
 /**
  * The ring round a captured area, in the captor's ink, each side with round ends, [width] times
  * as thick as drawn. While a capture plays, it is drawn like a pen stroke: from side [from] (the
  * closing dot) round the area, as far as [drawn] of its length. As a tube, its [layer] is the
  * glow to either side of it in the captor's pale ink, the tube itself, or the core along its
- * middle; all three thicken together.
+ * middle; all three thicken together. [pale] blends it towards the paper (Rubber stamp coming down).
  */
-private fun DrawScope.drawAreaRing(
+internal fun DrawScope.drawAreaRing(
     by: Player,
     ring: RingStroke,
     style: BoardStyle,
@@ -656,18 +736,23 @@ private fun DrawScope.drawAreaRing(
     drawn: Float = 1f,
     width: Float = 1f,
     layer: RingLayer = RingLayer.TUBE,
+    pale: Float = 0f,
 ) {
     val look = style.look
-    val ink = when (layer) {
-        RingLayer.GLOW -> style.palette.pale(by)
-        RingLayer.TUBE -> style.color(by)
-        RingLayer.CORE -> style.palette.core(by)
-    }
+    val ink = fade(
+        when (layer) {
+            RingLayer.GLOW -> style.palette.pale(by)
+            RingLayer.TUBE -> style.color(by)
+            RingLayer.CORE -> style.palette.core(by)
+        },
+        style.paper,
+        pale,
+    )
     val glow = look.ringGlow.px(0f, density)
     val stroke = when (layer) {
-        RingLayer.GLOW -> RingStroke(ring.outline, ring.sides.map { (side, w) -> side to w + 2 * glow })
+        RingLayer.GLOW -> ring.withSides(ring.sides.map { (side, w) -> side to w + 2 * glow })
         RingLayer.TUBE -> ring
-        RingLayer.CORE -> RingStroke(ring.outline, ring.sides.map { (side, w) -> side to w * look.ringCore })
+        RingLayer.CORE -> ring.withSides(ring.sides.map { (side, w) -> side to w * look.ringCore })
     }
     if (drawn >= 1f) {
         for ((side, w) in stroke.sides) drawPath(side, ink, style = Stroke(w * width, cap = StrokeCap.Round))
@@ -1065,7 +1150,7 @@ private fun DrawScope.drawRing(center: Offset, radius: Float, color: Color, widt
 }
 
 /** [color] blended towards [to] by [p]; exactly [color] at 0, so still frames do not move. */
-private fun fade(color: Color, to: Color, p: Float): Color = if (p <= 0f) color else lerp(color, to, min(p, 1f))
+internal fun fade(color: Color, to: Color, p: Float): Color = if (p <= 0f) color else lerp(color, to, min(p, 1f))
 
 /** Booster marks are sized for the canvas's 24 dp spacing: one of its dp, in pixels, at this board's spacing. */
 private fun BoardGeometry.unit(): Float = spacing / 24f

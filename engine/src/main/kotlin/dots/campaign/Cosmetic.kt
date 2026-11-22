@@ -6,10 +6,15 @@ package dots.campaign
  * ([Progress.cosmetics]). The star counts are those of docs/design/money.md, "The catalogue at
  * launch". Stars never go down, so an earned cosmetic is never lost.
  *
- * [id] is the name [Progress] stores and the app uses for the item. Notebook is not here: it is
- * always owned.
+ * [id] is the name [Progress] stores and the app uses for the item. Notebook, and the theme's own
+ * pieces and ring (Standard), are not here: they are always owned. The piece styles and ring
+ * effects are those of docs/design/cosmetics.md.
  */
 enum class Cosmetic(val id: String, val kind: Kind, val stars: Int) {
+    HEARTS_AND_CLUBS("hearts-and-clubs", Kind.PIECE_STYLE, 40),
+    LASSO("lasso", Kind.RING_EFFECT, 70),
+    FLAME_AND_FROST("flame-and-frost", Kind.PIECE_STYLE, 100),
+    RUBBER_STAMP("rubber-stamp", Kind.RING_EFFECT, 125),
     STAR_CHART("star-chart", Kind.THEME, 150),
     NEON_ARCADE("neon-arcade", Kind.THEME, 200),
     ;

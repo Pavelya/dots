@@ -89,8 +89,8 @@ the disk. The campaign progress is kept apart, in `files/datastore/progress.pref
 (`ProgressRepository`): the stars of each level, the player's own boosters, the chests opened and
 the cosmetics chests gave, one line each, and the failures in a row. The daily puzzle keeps the days
 solved and the last week's attempts there too (`DailyRepository`, two more lines), so the streak is
-backed up with the stars, and the theme in use (`ThemeRepository`), so it comes back beside the
-stars and chests that earn cosmetics. It is the only file Android's backup
+backed up with the stars, and the theme, piece style and ring effect in use (`ThemeRepository`), so
+they come back beside the stars and chests that earn cosmetics. It is the only file Android's backup
 and device transfer take (`res/xml/data_extraction_rules.xml`), so a reinstall restores it. A part
 saved by an older version that lacks a line reads as empty; an entry that cannot be read is left
 out; a file that cannot be read at all starts empty instead of stopping the app. Testers share the log from the developer menu, "Share the game log" (Android share sheet, through

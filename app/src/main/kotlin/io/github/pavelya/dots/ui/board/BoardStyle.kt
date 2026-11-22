@@ -9,14 +9,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.DrawStyle
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.withTransform
 import dots.engine.Player
+import io.github.pavelya.dots.data.PieceStyleId
+import io.github.pavelya.dots.data.RingEffectId
 import io.github.pavelya.dots.ui.theme.BoardLook
 import io.github.pavelya.dots.ui.theme.GameTheme
 import io.github.pavelya.dots.ui.theme.Palette
 import io.github.pavelya.dots.ui.theme.Piece
 import io.github.pavelya.dots.ui.theme.PieceShape
+import io.github.pavelya.dots.ui.theme.dressed
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
@@ -38,14 +43,28 @@ data class BoardStyle(val palette: Palette, val look: BoardLook) {
     fun piece(player: Player): Piece = if (player == Player.RED) look.red else look.blue
 
     companion object {
-        /** The board's style in [theme], in its dark version when [dark], with high-contrast pieces when [highContrast]. */
-        fun of(theme: GameTheme, dark: Boolean, highContrast: Boolean = false): BoardStyle =
-            BoardStyle(theme.palette(dark), theme.board(highContrast))
+        /**
+         * The board's style in [theme], in its dark version when [dark], with high-contrast pieces
+         * when [highContrast], and with the piece style [pieces] and the ring effect [rings].
+         */
+        fun of(
+            theme: GameTheme,
+            dark: Boolean,
+            highContrast: Boolean = false,
+            pieces: PieceStyleId = PieceStyleId.DEFAULT,
+            rings: RingEffectId = RingEffectId.DEFAULT,
+        ): BoardStyle = BoardStyle(theme.palette(dark), theme.board(highContrast).dressed(pieces, rings))
 
-        /** The board's style in the theme, the light or dark version and the piece contrast the screen is drawn in. */
+        /**
+         * The board's style in the theme, the light or dark version, the piece contrast, the piece
+         * style and the ring effect the screen is drawn in.
+         */
         val current: BoardStyle
             @Composable @ReadOnlyComposable
-            get() = BoardStyle(Palette.current, GameTheme.current.board(GameTheme.highContrast))
+            get() = BoardStyle(
+                Palette.current,
+                GameTheme.current.board(GameTheme.highContrast).dressed(GameTheme.pieceStyle, GameTheme.ringEffect),
+            )
     }
 }
 
@@ -56,6 +75,10 @@ data class BoardStyle(val palette: Palette, val look: BoardLook) {
 fun DrawScope.drawPiece(piece: Piece, center: Offset, dotSize: Float, color: Color, outline: Float = 0f) {
     val half = dotSize * piece.across / 2
     val style = if (outline > 0f) Stroke(outline, join = StrokeJoin.Round) else Fill
+    StyleShapes.outline(piece.shape)?.let { shape ->
+        val k = dotSize * piece.across
+        return drawStyleShape(shape, center, k, color, if (outline > 0f) Stroke(outline / k, join = StrokeJoin.Round) else Fill)
+    }
     when (piece.shape) {
         PieceShape.DOT -> drawCircle(color, half, center, style = if (outline > 0f) Stroke(outline) else Fill)
         PieceShape.DIAMOND -> drawPath(
@@ -76,10 +99,16 @@ fun DrawScope.drawPiece(piece: Piece, center: Offset, dotSize: Float, color: Col
 /**
  * A band [band] pixels wide round [piece]'s outline, in [color], with the piece inside it: a glow or
  * a high-contrast band. A dot's or a diamond's band is the piece grown ([grown]); every other
- * shape's follows its outline with round corners (theme-star-chart.md and theme-neon-arcade.md).
+ * shape's follows its outline with round corners (theme-star-chart.md, theme-neon-arcade.md and,
+ * for the piece styles' shapes, cosmetics.md).
  */
 fun DrawScope.drawPieceBand(piece: Piece, center: Offset, dotSize: Float, color: Color, band: Float) {
     if (band <= 0f) return
+    StyleShapes.outline(piece.shape)?.let { shape ->
+        val k = dotSize * piece.across
+        drawStyleShape(shape, center, k, color, Fill)
+        return drawStyleShape(shape, center, k, color, Stroke(2 * band / k, join = StrokeJoin.Round))
+    }
     when (piece.shape) {
         PieceShape.DOT, PieceShape.DIAMOND -> drawPiece(piece.grown(band, dotSize), center, dotSize, color)
         else -> {
@@ -101,10 +130,14 @@ fun Piece.grown(by: Float, dotSize: Float): Piece {
 
 /**
  * The box round [piece] for a dot size of [dotSize], with its centre at (0, 0): a comet reaches
- * further up and to the left, a star and a triangle further up than down.
+ * further up and to the left, a star and a triangle further up than down, a heart further down.
  */
 fun Piece.bounds(dotSize: Float): Rect {
     val half = dotSize * across / 2
+    StyleShapes.bounds(shape)?.let { box ->
+        val k = dotSize * across
+        return Rect(box.left * k, box.top * k, box.right * k, box.bottom * k)
+    }
     return when (shape) {
         PieceShape.DOT, PieceShape.DIAMOND -> Rect(-half, -half, half, half)
         PieceShape.COMET -> {
@@ -116,6 +149,16 @@ fun Piece.bounds(dotSize: Float): Rect {
             val points = cornerPoints(this, Offset.Zero, dotSize)
             Rect(points.minOf { it.x }, points.minOf { it.y }, points.maxOf { it.x }, points.maxOf { it.y })
         }
+    }
+}
+
+/** A piece style's [shape], in dot sizes, drawn [k] pixels to the dot size round [center]; a stroke's width is in dot sizes too. */
+private fun DrawScope.drawStyleShape(shape: Path, center: Offset, k: Float, color: Color, style: DrawStyle) {
+    withTransform({
+        translate(center.x, center.y)
+        scale(k, k, pivot = Offset.Zero)
+    }) {
+        drawPath(shape, color, style = style)
     }
 }
 
