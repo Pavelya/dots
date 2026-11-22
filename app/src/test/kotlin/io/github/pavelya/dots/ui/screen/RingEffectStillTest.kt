@@ -1,18 +1,12 @@
 package io.github.pavelya.dots.ui.screen
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.graphics.toPixelMap
-import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.hasAnyAncestor
-import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.test.onNodeWithTag
 import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.data.PieceStyleId
@@ -35,11 +29,12 @@ import org.robolectric.annotation.GraphicsMode
  * With the phone's animations removed, a ring effect keeps its look and drops only its motion
  * (docs/design/cosmetics.md, Rules): the big capture's moment, just started, draws the same board
  * as no moment at all, in every theme and with each ring effect; with animations on, the
- * same moment just started draws something else (the ring is not there yet).
+ * same moment just started draws something else (the ring is not there yet). Both are drawn in
+ * one place, one after the other, so they line up to the pixel.
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w720dp-h800dp-xhdpi")
+@Config(qualifiers = "w360dp-h800dp-xhdpi")
 class RingEffectStillTest(private val case: ThemeCase) {
     companion object {
         @JvmStatic
@@ -62,33 +57,40 @@ class RingEffectStillTest(private val case: ThemeCase) {
     )
 
     /**
-     * Two game boards side by side, the big capture's moment just started on the left and no moment
-     * on the right, with animations removed when [reduce]: their pixels.
+     * The game board in one place: the big capture's moment just started, then no moment at all,
+     * with animations removed when [reduce]. Their pixels.
      */
     private fun boards(rings: RingEffectId, reduce: Boolean): Pair<IntArray, IntArray> {
         val still = CanvasGame.ui(CanvasGame.bigCapture)
-        val playing = still.copy(moment = moment)
+        val shown = mutableStateOf(still.copy(moment = moment))
         compose.mainClock.autoAdvance = false
         compose.setContent {
             CompositionLocalProvider(LocalReduceMotion provides reduce) {
                 DotsTheme(case.theme, dark = false, pieces = PieceStyleId.HEARTS_AND_CLUBS, rings = rings) {
-                    Row {
-                        for ((tag, ui) in listOf("playing" to playing, "still" to still)) {
-                            Box(Modifier.width(360.dp).fillMaxHeight().testTag(tag)) {
-                                GameBoard(ui, Player.RED, campaign = null, input = BoardInput.NONE, onUndo = {}, onPause = {})
-                            }
-                        }
-                    }
+                    GameBoard(shown.value, Player.RED, campaign = null, input = BoardInput.NONE, onUndo = {}, onPause = {})
                 }
             }
         }
         // The first frame composes, the next is the moment's first (MotionScreenshotTest).
         compose.mainClock.advanceTimeByFrame()
         compose.mainClock.advanceTimeByFrame()
-        // Only the boards: the rest of the screen (the score's swell, the face) has its own rules.
-        fun pixels(tag: String): IntArray =
-            compose.onNode(hasTestTag(BOARD_TAG) and hasAnyAncestor(hasTestTag(tag))).captureToImage().toPixelMap().buffer
-        return pixels("playing") to pixels("still")
+        // Only the board: the rest of the screen has its own rules.
+        fun pixels(): IntArray = compose.onNodeWithTag(BOARD_TAG).captureToImage().toPixelMap().buffer
+        val playing = pixels()
+        compose.runOnUiThread {
+            shown.value = still
+            Snapshot.sendApplyNotifications()
+        }
+        compose.mainClock.advanceTimeByFrame()
+        compose.mainClock.advanceTimeByFrame()
+        return playing to pixels()
+    }
+
+    /** The theme's own ring, for comparison. */
+    @Test
+    fun standardWithAnimationsRemoved() {
+        val (playing, still) = boards(RingEffectId.STANDARD, reduce = true)
+        assertArrayEquals(still, playing)
     }
 
     @Test
