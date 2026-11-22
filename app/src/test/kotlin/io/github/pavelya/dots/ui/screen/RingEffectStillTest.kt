@@ -10,7 +10,8 @@ import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.unit.dp
 import dots.engine.Player
 import dots.engine.Pos
@@ -32,8 +33,8 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * With the phone's animations removed, a ring effect keeps its look and drops only its motion
- * (docs/design/cosmetics.md, Rules): the big capture's moment, just started, draws the same pixels
- * as the board with no moment, in every theme and with each ring effect; with animations on, the
+ * (docs/design/cosmetics.md, Rules): the big capture's moment, just started, draws the same board
+ * as no moment at all, in every theme and with each ring effect; with animations on, the
  * same moment just started draws something else (the ring is not there yet).
  */
 @RunWith(ParameterizedRobolectricTestRunner::class)
@@ -84,7 +85,9 @@ class RingEffectStillTest(private val case: ThemeCase) {
         // The first frame composes, the next is the moment's first (MotionScreenshotTest).
         compose.mainClock.advanceTimeByFrame()
         compose.mainClock.advanceTimeByFrame()
-        fun pixels(tag: String): IntArray = compose.onNodeWithTag(tag).captureToImage().toPixelMap().buffer
+        // Only the boards: the rest of the screen (the score's swell, the face) has its own rules.
+        fun pixels(tag: String): IntArray =
+            compose.onNode(hasTestTag(BOARD_TAG) and hasAnyAncestor(hasTestTag(tag))).captureToImage().toPixelMap().buffer
         return pixels("playing") to pixels("still")
     }
 
