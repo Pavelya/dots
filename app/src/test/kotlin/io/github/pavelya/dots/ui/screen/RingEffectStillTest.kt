@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -83,7 +84,7 @@ class RingEffectStillTest(private val case: ThemeCase) {
         // The first frame composes, the next is the moment's first (MotionScreenshotTest).
         compose.mainClock.advanceTimeByFrame()
         compose.mainClock.advanceTimeByFrame()
-        fun pixels(tag: String) = compose.onNodeWithTag(tag).captureToImage().toPixelMap().buffer
+        fun pixels(tag: String): IntArray = compose.onNodeWithTag(tag).captureToImage().toPixelMap().buffer
         return pixels("playing") to pixels("still")
     }
 
