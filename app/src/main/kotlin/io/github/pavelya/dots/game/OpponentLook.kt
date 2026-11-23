@@ -2,7 +2,6 @@ package io.github.pavelya.dots.game
 
 import dots.engine.GameState
 import dots.engine.Player
-import dots.engine.TurnRule
 
 /**
  * The computer's moods on the canvas game frames (docs/design/canvas/draw.py, `face`), and a
@@ -64,7 +63,7 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
          * before it, when the boss-turn sound plays (`Cues`), until its second dot.
          */
         fun bossTurn(state: GameState, boss: Player): Boolean =
-            state.toMove == boss && state.turnRule(boss) is TurnRule.DoubleMove && state.doubleMoveIn(boss) == 0
+            state.toMove == boss && bossCountdown(state, boss) == 0
 
         /** How a finished game ended for [human] by the score; null while it goes on. */
         fun endingOf(state: GameState, human: Player): Ending? = when {

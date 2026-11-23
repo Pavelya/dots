@@ -3,16 +3,20 @@ package io.github.pavelya.dots.ui.screen
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.getBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import dots.ai.Ai
 import dots.campaign.Campaign
 import dots.campaign.CampaignMap
@@ -295,5 +299,70 @@ class LevelScreensTest {
         assertTrue(lines.filter { it.substringAfter(": ").isBlank() }.toString(), lines.none { it.substringAfter(": ").isBlank() })
         assertTrue("1-1: With 2 moves to spare" in lines)
         assertTrue("1-15: Every 5 turns it places two dots. The counter above the board shows when." in lines)
+    }
+
+    // The boss's counter above the board (A-28).
+
+    private fun levelViewModel(level: Level) = GameViewModel(
+        start = levelGame(level, threatHighlight = false, now = 0),
+        nextGame = { levelGame(level, threatHighlight = false, now = 0) },
+        computerFor = { firstFreePoint },
+        campaign = Journal(),
+        computerDispatcher = Dispatchers.Default,
+        replyDelayMillis = 0,
+        clock = { 0L },
+    )
+
+    private val anyCounter = hasContentDescription("The boss places two dots", substring = true)
+
+    private fun showLevel(world: Int, number: Int) {
+        compose.setContent { DotsTheme { GameScreen(levelViewModel(Campaign.level(world, number)), onToMap = {}, onRules = {}) } }
+        waitFor(hasContentDescription("You, score 0, to move"))
+    }
+
+    @Test
+    fun `on 1-15 the boss's counter shows the turns left from the first move, and TalkBack reads it`() {
+        showLevel(1, 15)
+        compose.onNode(hasContentDescription("The boss places two dots in 5 turns")).assertIsDisplayed()
+    }
+
+    @Test
+    fun `2-20 counts every fourth turn`() {
+        showLevel(2, 20)
+        compose.onNode(hasContentDescription("The boss places two dots in 4 turns")).assertIsDisplayed()
+    }
+
+    @Test
+    fun `3-20 counts every third turn`() {
+        showLevel(3, 20)
+        compose.onNode(hasContentDescription("The boss places two dots in 3 turns")).assertIsDisplayed()
+    }
+
+    @Test
+    fun `a level without a boss has no counter`() {
+        showLevel(1, 14)
+        compose.onAllNodes(anyCounter).assertCountEquals(0)
+    }
+
+    @Test
+    fun `4-20's boss places two dots on every turn, so it has no counter`() {
+        showLevel(4, 20)
+        compose.onAllNodes(anyCounter).assertCountEquals(0)
+    }
+
+    /**
+     * On 320 x 568 dp the counter fits between the top row and the board, and the board stays where
+     * it is without one: its bottom over the player's line and the tool bar.
+     */
+    @Test
+    @Config(qualifiers = "w320dp-h568dp")
+    fun `on a small phone the counter fits above the board without moving it`() {
+        showLevel(1, 15)
+        val counter = compose.onNode(hasContentDescription("The boss places two dots in 5 turns")).assertIsDisplayed().getBoundsInRoot()
+        val board = compose.onNodeWithTag(BOARD_TAG).getBoundsInRoot()
+        val screen = compose.onRoot().getBoundsInRoot()
+        assertTrue("under the top row: $counter", counter.top >= 56.dp)
+        assertTrue("over the board: $counter, $board", counter.bottom <= board.top)
+        assertEquals((screen.bottom - 56.dp - 64.dp).value, board.bottom.value, 1f)
     }
 }
