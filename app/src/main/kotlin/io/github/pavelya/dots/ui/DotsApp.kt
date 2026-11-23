@@ -97,6 +97,8 @@ import io.github.pavelya.dots.ui.screen.GameScreen
 import io.github.pavelya.dots.ui.screen.LevelCard
 import io.github.pavelya.dots.ui.screen.LoadingScreen
 import io.github.pavelya.dots.ui.screen.MapActions
+import io.github.pavelya.dots.ui.screen.boostersLeft
+import io.github.pavelya.dots.ui.screen.boostersWaiting
 import io.github.pavelya.dots.ui.screen.MapScreen
 import io.github.pavelya.dots.ui.screen.PlayAGameNote
 import io.github.pavelya.dots.ui.screen.RulesScreen
@@ -352,9 +354,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         val number = entry.arguments?.getInt("number") ?: 1
                         val level = remember(world, number) { Campaign.levels.firstOrNull { it.world == world && it.number == number } }
                         val progress by app.progress.saved.collectAsStateWithLifecycle()
-                        val owned = level?.let { progress?.owned(it) }.orEmpty()
-                        val left = level?.boosters.orEmpty().let { own -> (own.keys + owned.keys).associateWith { (own[it] ?: 0) + (owned[it] ?: 0) } }
-                        NoteWindow(back) { motion, close -> BoostersNote(left = left, onClose = close, motion = motion) }
+                        val left = level?.let { boostersLeft(it, progress) }.orEmpty()
+                        val waiting = level?.let { boostersWaiting(it, progress) }.orEmpty()
+                        NoteWindow(back) { motion, close -> BoostersNote(left = left, waiting = waiting, onClose = close, motion = motion) }
                     }
                     dialog(
                         Routes.CHEST,

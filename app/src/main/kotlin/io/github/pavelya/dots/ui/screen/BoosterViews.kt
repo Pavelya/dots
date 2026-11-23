@@ -51,6 +51,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dots.campaign.Campaign
+import dots.campaign.Level
+import dots.campaign.Progress
 import dots.engine.Booster
 import dots.engine.Player
 import io.github.pavelya.dots.R
@@ -231,13 +234,36 @@ internal fun BoosterNote(
 }
 
 /**
+ * The player's own boosters of a kind the level does not allow: [owned] of them wait for level
+ * [from], the first one from here on that allows the kind; null when no later level does.
+ */
+data class WaitingBooster(val owned: Int, val from: String?)
+
+/** What the Boosters note counts on [level]: the level's own boosters plus the player's of the kinds it allows (decision 0027). */
+internal fun boostersLeft(level: Level, progress: Progress?): Map<Booster, Int> {
+    val owned = progress?.owned(level).orEmpty()
+    return (level.boosters.keys + owned.keys).associateWith { (level.boosters[it] ?: 0) + (owned[it] ?: 0) }
+}
+
+/** The player's own boosters [level] leaves out, each with the first level from here on that takes it. */
+internal fun boostersWaiting(level: Level, progress: Progress?): Map<Booster, WaitingBooster> =
+    progress?.waiting(level).orEmpty().mapValues { (kind, count) -> WaitingBooster(count, Campaign.firstAllowing(kind, level)?.code) }
+
+/**
  * The Boosters screen (canvas frame `boosters`), from a booster on the Level card: a note over the
  * map with each of the five boosters, what it does and how many the player has in this level
- * ([left]), and how more are earned. Close, Back or a tap around the note returns to the card.
- * It slides up as the map behind it dims, and down as it leaves ([motion]).
+ * ([left]), and how more are earned. A kind the player owns but this level does not allow
+ * ([waiting]) shows how many they have and the level that allows it, in pencil, in place of ×0
+ * (the wireframes' "Boosters: owned, not allowed here"). Close, Back or a tap around the note
+ * returns to the card. It slides up as the map behind it dims, and down as it leaves ([motion]).
  */
 @Composable
-fun BoostersNote(left: Map<Booster, Int>, onClose: () -> Unit, motion: NoteMotion = rememberNoteMotion()) {
+fun BoostersNote(
+    left: Map<Booster, Int>,
+    onClose: () -> Unit,
+    waiting: Map<Booster, WaitingBooster> = emptyMap(),
+    motion: NoteMotion = rememberNoteMotion(),
+) {
     val style = Palette.current
     val title = stringResource(R.string.screen_boosters)
     BoxWithConstraints(
@@ -268,7 +294,7 @@ fun BoostersNote(left: Map<Booster, Int>, onClose: () -> Unit, motion: NoteMotio
                     )
                     CloseButton(style, onClose)
                 }
-                for (booster in Booster.entries) BoosterRow(booster, left[booster] ?: 0, style)
+                for (booster in Booster.entries) BoosterRow(booster, left[booster] ?: 0, waiting[booster]?.takeIf { (left[booster] ?: 0) == 0 }, style)
                 Text(
                     stringResource(R.string.boosters_footer),
                     style = NoteText.small,
@@ -282,7 +308,7 @@ fun BoostersNote(left: Map<Booster, Int>, onClose: () -> Unit, motion: NoteMotio
 }
 
 @Composable
-private fun BoosterRow(booster: Booster, left: Int, style: Palette) {
+private fun BoosterRow(booster: Booster, left: Int, waiting: WaitingBooster?, style: Palette) {
     val any = left > 0
     val name = boosterName(booster)
     val what = stringResource(
@@ -294,7 +320,19 @@ private fun BoosterRow(booster: Booster, left: Int, style: Palette) {
             Booster.UNDO -> R.string.booster_undo_what
         },
     )
-    val description = pluralStringResource(R.plurals.boosters_row, left, name, left, what)
+    val later = waiting?.let {
+        if (it.from != null) {
+            pluralStringResource(R.plurals.boosters_waiting, it.owned, it.owned, it.from)
+        } else {
+            pluralStringResource(R.plurals.boosters_waiting_none, it.owned, it.owned)
+        }
+    }
+    // TalkBack reads the same words as the row.
+    val description = when {
+        waiting?.from != null -> pluralStringResource(R.plurals.boosters_row_waiting, waiting.owned, name, waiting.owned, waiting.from, what)
+        waiting != null -> pluralStringResource(R.plurals.boosters_row_waiting_none, waiting.owned, name, waiting.owned, what)
+        else -> pluralStringResource(R.plurals.boosters_row, left, name, left, what)
+    }
     val grid = style.bluePale
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -317,18 +355,22 @@ private fun BoosterRow(booster: Booster, left: Int, style: Palette) {
             contentAlignment = Alignment.Center,
             modifier = Modifier
                 .size(52.dp)
-                .toolOutline(if (any) style.blue else style.graphite, dashed = !any, TOOL_SHAPE),
+                // Owned but not allowed here: a solid frame, as the player has some, in grey.
+                .toolOutline(if (any) style.blue else style.graphite, dashed = !any && later == null, TOOL_SHAPE),
         ) {
             BoosterPicture(booster, if (any) style.blue else style.graphite, style, active = any)
         }
         Column(Modifier.weight(1f)) {
             Text(name, style = HAND, color = style.pencil)
             Text(what, style = NoteText.label.copy(fontWeight = FontWeight.Medium), color = style.graphite)
+            if (later != null) Text(later, style = NoteText.label.copy(fontWeight = FontWeight.ExtraBold), color = style.pencil)
         }
-        Text(
-            stringResource(R.string.boosters_count, left),
-            style = NoteText.score,
-            color = if (any) style.red else style.graphite,
-        )
+        if (later == null) {
+            Text(
+                stringResource(R.string.boosters_count, left),
+                style = NoteText.score,
+                color = if (any) style.red else style.graphite,
+            )
+        }
     }
 }

@@ -718,6 +718,13 @@ class NavigationTest {
         compose.waitUntil(timeoutMillis = 5_000) { app.progress.saved.value?.boosters == mapOf(Booster.WALL to 2) }
         assertTrue("1-10" in app.progress.saved.value!!.chests)
 
+        // 1-11 allows no walls, but Boosters still shows the two kept, and where they can be used.
+        compose.onNodeWithContentDescription("Undo, 1. What it does").performClick()
+        at(Routes.BOOSTERS)
+        compose.onNode(hasContentDescription("Wall, you have 2. Levels allow it from 2-1.", substring = true)).assertExists()
+        back()
+        at(Routes.LEVEL)
+
         back()
         at(Routes.MAP)
         compose.onNodeWithContentDescription("Chest after level 1-10, opened").assertExists()

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,10 +42,12 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dots.campaign.Campaign
 import dots.campaign.Chest
 import dots.campaign.Reward
 import io.github.pavelya.dots.R
@@ -59,6 +62,7 @@ import io.github.pavelya.dots.ui.theme.Palette
  * The Chest (the wireframes' Chest), over the map after every 10th level: the chest, "Ten levels
  * done!", and its two rewards side by side. Tapping one keeps it ([onPick]). A chest of one reward
  * (decision 0038) shows it in the middle with one big button, Keep it, which keeps it the same way.
+ * A reward the very next level does not allow says from which level it can be used.
  * Back, or a tap on the map around the note, closes it unopened ([onClose]); the chest then waits
  * on the map. It slides up as the map behind it dims, and down as it leaves ([motion]).
  */
@@ -73,6 +77,11 @@ fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit, motio
             .dim(style.scrim) { motion.up }
             .semantics { paneTitle = title },
     ) {
+        // Each reward's first level, when it is not the very next one.
+        val from = remember(chest) {
+            val next = Campaign.after(chest.after)?.code
+            chest.choices.associate { reward -> reward.booster to Campaign.firstUse(chest, reward.booster)?.code?.takeIf { it != next } }
+        }
         val tall = maxHeight >= 700.dp
         val tallest = maxHeight - 48.dp
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
@@ -102,13 +111,13 @@ fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit, motio
                     val reward = chest.choices.single()
                     Text(stringResource(R.string.chest_single), style = NoteText.body, color = style.pencil, textAlign = TextAlign.Center)
                     // The width of one of two choices side by side.
-                    Choice(reward, style, Modifier.fillMaxWidth(0.5f).height(choiceHeight), onClick = null)
+                    Choice(reward, from[reward.booster], style, Modifier.fillMaxWidth(0.5f).height(choiceHeight), onClick = null)
                     BigButton(stringResource(R.string.chest_keep), style, onClick = { onPick(reward) }, Modifier.fillMaxWidth())
                 } else {
                     Text(stringResource(R.string.chest_pick), style = NoteText.body, color = style.pencil, textAlign = TextAlign.Center)
                     Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
                         for (reward in chest.choices) {
-                            Choice(reward, style, Modifier.weight(1f).height(choiceHeight)) { onPick(reward) }
+                            Choice(reward, from[reward.booster], style, Modifier.weight(1f).height(choiceHeight)) { onPick(reward) }
                         }
                     }
                 }
@@ -134,16 +143,19 @@ private fun OpenChest(height: Dp) {
 }
 
 /**
- * One reward: its booster's picture, "Bomb ×2" and "a booster", in a hand-cut frame. Tapping it
- * keeps it ([onClick]); a chest's only reward has no [onClick], as Keep it below it keeps it.
+ * One reward: its booster's picture, "Bomb ×2" and "a booster", in a hand-cut frame. A reward
+ * first usable on a later level says "from level 3-1" ([from]) in pencil instead of "a booster".
+ * Tapping it keeps it ([onClick]); a chest's only reward has no [onClick], as Keep it below it
+ * keeps it.
  */
 @Composable
-private fun Choice(reward: Reward, style: Palette, modifier: Modifier, onClick: (() -> Unit)?) {
+private fun Choice(reward: Reward, from: String?, style: Palette, modifier: Modifier, onClick: (() -> Unit)?) {
     val name = boosterName(reward.booster)
-    val description = if (onClick == null) {
-        pluralStringResource(R.plurals.chest_single_reward, reward.count, name, reward.count)
-    } else {
-        pluralStringResource(R.plurals.chest_choice, reward.count, name, reward.count)
+    val description = when {
+        onClick == null && from != null -> pluralStringResource(R.plurals.chest_single_reward_later, reward.count, name, reward.count, from)
+        onClick == null -> pluralStringResource(R.plurals.chest_single_reward, reward.count, name, reward.count)
+        from != null -> pluralStringResource(R.plurals.chest_choice_later, reward.count, name, reward.count, from)
+        else -> pluralStringResource(R.plurals.chest_choice, reward.count, name, reward.count)
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -164,7 +176,11 @@ private fun Choice(reward: Reward, style: Palette, modifier: Modifier, onClick: 
     ) {
         BoosterIcon(reward.booster, style.blue, Modifier.size(44.dp))
         Text(stringResource(R.string.chest_reward, name, reward.count), style = HAND.copy(fontSize = 26.sp), color = style.blue)
-        Text(stringResource(R.string.chest_a_booster), style = NoteText.small, color = style.graphite)
+        if (from != null) {
+            Text(stringResource(R.string.chest_from, from), style = NoteText.small.copy(fontWeight = FontWeight.ExtraBold), color = style.pencil)
+        } else {
+            Text(stringResource(R.string.chest_a_booster), style = NoteText.small, color = style.graphite)
+        }
     }
 }
 
