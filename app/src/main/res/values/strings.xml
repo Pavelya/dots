@@ -38,6 +38,9 @@
     <!-- The chest (the wireframes' Chest): every 10 levels, pick one of two rewards. -->
     <string name="chest_title">Ten levels done!</string>
     <string name="chest_pick">Pick one to keep.</string>
+    <!-- A chest of one reward (decision 0038): no pick, one button. -->
+    <string name="chest_single">For the levels ahead.</string>
+    <string name="chest_keep">Keep it</string>
     <string name="chest_reward">%1$s ×%2$d</string>
     <string name="chest_a_booster">a booster</string>
     <!-- The player's title on Stats (the wireframes' Stats). -->
@@ -456,6 +459,10 @@
     <plurals name="chest_choice">
         <item quantity="one">%1$s, %2$d booster. Keep it.</item>
         <item quantity="other">%1$s, %2$d boosters. Keep it.</item>
+    </plurals>
+    <plurals name="chest_single_reward">
+        <item quantity="one">%1$s, %2$d booster.</item>
+        <item quantity="other">%1$s, %2$d boosters.</item>
     </plurals>
     <plurals name="map_world_stars">
         <item quantity="one">%1$d of %2$d star</item>

@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -21,6 +22,7 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import dots.campaign.Campaign
+import dots.campaign.Chest
 import dots.campaign.Progress
 import dots.campaign.Reward
 import dots.engine.Booster
@@ -48,9 +50,16 @@ class ProgressScreensTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val chest = Campaign.chests.first()
+    /** A chest of two boosters: Wall or Bomb, after 2-15. */
+    private val chest = Campaign.chests.single { it.after.code == "2-15" }
 
-    /** Level 1-10 just passed: the map behind the chest. */
+    /** The chest after 1-10, whose one reward is two walls (decision 0038). */
+    private val single = Campaign.chests.first()
+
+    /**
+     * Level 1-10 just passed: the map behind either chest. The note hides which level it follows, so
+     * the two-booster chest keeps the screenshots it had when the chest after 1-10 held two.
+     */
     private val passedTen = Progress(Campaign.levels.take(10).withIndex().associate { (i, it) -> it.code to listOf(3, 2, 1)[i % 3] })
 
     /** Draws [content] as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
@@ -66,10 +75,15 @@ class ProgressScreensTest {
 
     private val noActions = MapActions(onLevel = {}, onDaily = {}, onPlay = {}, onRules = {}, onStats = {}, onShop = {}, onSettings = {})
 
-    private fun chestOverMap(dark: Boolean = false, picked: MutableList<Reward> = mutableListOf(), closed: () -> Unit = {}) = show(dark) {
+    private fun chestOverMap(
+        dark: Boolean = false,
+        picked: MutableList<Reward> = mutableListOf(),
+        closed: () -> Unit = {},
+        shown: Chest = chest,
+    ) = show(dark) {
         Box {
             MapScreen(Campaign.map(passedTen), noActions)
-            ChestNote(chest, onPick = { picked += it }, onClose = closed)
+            ChestNote(shown, onPick = { picked += it }, onClose = closed)
         }
     }
 
@@ -111,6 +125,36 @@ class ProgressScreensTest {
         chestOverMap()
         compose.onNodeWithContentDescription("Bomb, 2 boosters. Keep it.").assertIsDisplayed()
         capture("chest_small_phone")
+    }
+
+    @Test
+    fun `a chest of one reward shows it with Keep it, and Keep it keeps it`() {
+        val picked = mutableListOf<Reward>()
+        chestOverMap(picked = picked, shown = single)
+
+        compose.onNodeWithText("Ten levels done!").assertIsDisplayed()
+        compose.onNodeWithText("For the levels ahead.").assertIsDisplayed()
+        compose.onNodeWithText("Pick one to keep.").assertDoesNotExist()
+        // The reward is shown, not a button: Keep it is the only way to keep it.
+        compose.onNodeWithContentDescription("Wall, 2 boosters.").assertIsDisplayed().assertHasNoClickAction()
+        capture("chest_single")
+
+        compose.onNodeWithText("Keep it").performClick()
+        assertEquals(listOf(Reward(Booster.WALL, 2)), picked)
+    }
+
+    @Test
+    fun `the chest of one reward, dark`() {
+        chestOverMap(dark = true, shown = single)
+        capture("chest_single_dark")
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun `the chest of one reward on a small phone`() {
+        chestOverMap(shown = single)
+        compose.onNodeWithText("Keep it").assertIsDisplayed()
+        capture("chest_single_small_phone")
     }
 
     @Test

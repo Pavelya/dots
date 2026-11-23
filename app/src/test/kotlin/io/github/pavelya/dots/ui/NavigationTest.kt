@@ -705,16 +705,17 @@ class NavigationTest {
 
     @Test
     @Config(qualifiers = "w360dp-h800dp") // the whole Level card, Start included, fits on the screen
-    fun `a ready chest on the map opens the Chest, and a pick keeps the reward and opens the next level's card`() {
+    fun `a ready chest on the map opens the Chest, and Keep it keeps its one reward and opens the next level's card`() {
         launch(Progress(Campaign.levels.take(10).associate { it.code to 1 }))
         compose.onNodeWithContentDescription("Chest after level 1-10, ready to open").performClick()
         at(Routes.CHEST)
         waitFor("Ten levels done!")
 
-        compose.onNodeWithContentDescription("Bomb, 2 boosters. Keep it.").performClick()
+        // The chest after 1-10 holds one reward, two walls, and no pick (decision 0038).
+        tap("Keep it")
         at(Routes.LEVEL)
         waitFor("World 1 · Level 11")
-        compose.waitUntil(timeoutMillis = 5_000) { app.progress.saved.value?.boosters == mapOf(Booster.BOMB to 2) }
+        compose.waitUntil(timeoutMillis = 5_000) { app.progress.saved.value?.boosters == mapOf(Booster.WALL to 2) }
         assertTrue("1-10" in app.progress.saved.value!!.chests)
 
         back()

@@ -57,9 +57,10 @@ import io.github.pavelya.dots.ui.theme.Palette
 
 /**
  * The Chest (the wireframes' Chest), over the map after every 10th level: the chest, "Ten levels
- * done!", and its two rewards side by side. Tapping one keeps it ([onPick]). Back, or a tap on the
- * map around the note, closes it unopened ([onClose]); the chest then waits on the map. It slides
- * up as the map behind it dims, and down as it leaves ([motion]).
+ * done!", and its two rewards side by side. Tapping one keeps it ([onPick]). A chest of one reward
+ * (decision 0038) shows it in the middle with one big button, Keep it, which keeps it the same way.
+ * Back, or a tap on the map around the note, closes it unopened ([onClose]); the chest then waits
+ * on the map. It slides up as the map behind it dims, and down as it leaves ([motion]).
  */
 @Composable
 fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit, motion: NoteMotion = rememberNoteMotion()) {
@@ -96,10 +97,19 @@ fun ChestNote(chest: Chest, onPick: (Reward) -> Unit, onClose: () -> Unit, motio
                     textAlign = TextAlign.Center,
                     modifier = Modifier.semantics { heading() },
                 )
-                Text(stringResource(R.string.chest_pick), style = NoteText.body, color = style.pencil, textAlign = TextAlign.Center)
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
-                    for (reward in chest.choices) {
-                        Choice(reward, style, Modifier.weight(1f).height(if (tall) 150.dp else 128.dp)) { onPick(reward) }
+                val choiceHeight = if (tall) 150.dp else 128.dp
+                if (chest.isSingle) {
+                    val reward = chest.choices.single()
+                    Text(stringResource(R.string.chest_single), style = NoteText.body, color = style.pencil, textAlign = TextAlign.Center)
+                    // The width of one of two choices side by side.
+                    Choice(reward, style, Modifier.fillMaxWidth(0.5f).height(choiceHeight), onClick = null)
+                    BigButton(stringResource(R.string.chest_keep), style, onClick = { onPick(reward) }, Modifier.fillMaxWidth())
+                } else {
+                    Text(stringResource(R.string.chest_pick), style = NoteText.body, color = style.pencil, textAlign = TextAlign.Center)
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.fillMaxWidth()) {
+                        for (reward in chest.choices) {
+                            Choice(reward, style, Modifier.weight(1f).height(choiceHeight)) { onPick(reward) }
+                        }
                     }
                 }
             }
@@ -123,11 +133,18 @@ private fun OpenChest(height: Dp) {
     )
 }
 
-/** One reward: its booster's picture, "Bomb ×2" and "a booster", in a hand-cut frame. */
+/**
+ * One reward: its booster's picture, "Bomb ×2" and "a booster", in a hand-cut frame. Tapping it
+ * keeps it ([onClick]); a chest's only reward has no [onClick], as Keep it below it keeps it.
+ */
 @Composable
-private fun Choice(reward: Reward, style: Palette, modifier: Modifier, onClick: () -> Unit) {
+private fun Choice(reward: Reward, style: Palette, modifier: Modifier, onClick: (() -> Unit)?) {
     val name = boosterName(reward.booster)
-    val description = pluralStringResource(R.plurals.chest_choice, reward.count, name, reward.count)
+    val description = if (onClick == null) {
+        pluralStringResource(R.plurals.chest_single_reward, reward.count, name, reward.count)
+    } else {
+        pluralStringResource(R.plurals.chest_choice, reward.count, name, reward.count)
+    }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically),
@@ -135,11 +152,13 @@ private fun Choice(reward: Reward, style: Palette, modifier: Modifier, onClick: 
             .clip(CHOICE_SHAPE)
             .background(style.card)
             .toolOutline(style.blue, dashed = false, CHOICE_SHAPE)
-            .clickable(onClick = onClick)
+            .then(if (onClick == null) Modifier else Modifier.clickable(onClick = onClick))
             .clearAndSetSemantics {
                 contentDescription = description
-                role = Role.Button
-                onClick { onClick(); true }
+                if (onClick != null) {
+                    role = Role.Button
+                    onClick { onClick(); true }
+                }
             }
             .padding(8.dp),
     ) {
