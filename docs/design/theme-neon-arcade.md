@@ -319,10 +319,8 @@ everything else ([Notebook, Type](theme-notebook.md#type)).
 
 - Decision 0028 doesn't list fonts as part of a theme, and the game stays one notebook in every
   theme.
-- The mood board proposed Orbitron for headings. Orbitron has only basic Latin letters, so it
-  can't show Polish, Russian or Ukrainian (decision 0007).
-- It proposed Exo 2 for everything else. Exo 2 covers all four languages, but it brings a new font
-  and nothing Nunito lacks.
+- The mood board proposed Orbitron for headings and Exo 2 for everything else. Each would bring a
+  new font for a job Caveat or Nunito already does.
 
 ## Interface colours
 

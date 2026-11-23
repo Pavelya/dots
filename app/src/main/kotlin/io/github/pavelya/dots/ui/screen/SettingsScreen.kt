@@ -69,8 +69,7 @@ enum class SettingsPage(val key: String) {
  * decisions 0024 and 0026), and help (Replay the tutorial, Send feedback, Privacy, Play Games
  * backup, Credits and licences). Send feedback goes to [onFeedback], which opens an email; the
  * other help rows open their pages through [onPage]. Every change goes to [onChange] at once.
- * Language joins Help once a second language ships (A-10). Tapping the version line
- * [DEVELOPER_TAPS] times opens the developer menu.
+ * Tapping the version line [DEVELOPER_TAPS] times opens the developer menu.
  */
 @Composable
 fun SettingsScreen(

@@ -253,9 +253,8 @@ everything else ([Notebook, Type](theme-notebook.md#type)).
 
 - Decision 0028 doesn't list fonts as part of a theme, and the game stays one notebook in every
   theme.
-- The mood board proposed Fraunces for headings. Fraunces has no Cyrillic letters, so it can't
-  show Russian or Ukrainian (decision 0007).
-- Inter would do for body text, but it brings a new font and nothing Nunito lacks.
+- The mood board proposed Fraunces for headings and Inter for body text. Each would bring a new
+  font for a job Caveat or Nunito already does.
 
 ## Interface colours
 
