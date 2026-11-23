@@ -218,7 +218,7 @@ class ProgressRepositoryTest {
         assertEquals(mapOf(Booster.WALL to 2, Booster.UNDO to 1), progress.spent(level))
         assertEquals(mapOf(Booster.WALL to 0, Booster.UNDO to 0), progress.boostersFor(level))
         assertEquals(0, progress.game(level).start().boostersLeft(level.human, Booster.WALL))
-        assertEquals(mapOf(Booster.WALL to 1, Booster.UNDO to 1), progress.boostersFor(level("2-2")), "other levels keep theirs")
+        assertEquals("other levels keep theirs", mapOf(Booster.WALL to 1, Booster.UNDO to 1), progress.boostersFor(level("2-2")))
         again.close()
     }
 }
