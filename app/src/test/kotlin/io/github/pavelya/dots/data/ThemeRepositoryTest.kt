@@ -187,6 +187,29 @@ class ThemeRepositoryTest {
     }
 
     @Test
+    fun `only the items the player owns are listed, and one no longer owned goes back to Standard`() = runBlocking {
+        val session = Session(file())
+        var owned = setOfNotNull(PieceStyleId.HEARTS_AND_CLUBS.cosmetic, RingEffectId.RUBBER_STAMP.cosmetic)
+        val themes = ThemeRepository(session.store) { CosmeticRule { it in owned } }
+        assertEquals(listOf(PieceStyleId.STANDARD, PieceStyleId.HEARTS_AND_CLUBS), themes.pieceChoices)
+        assertEquals(listOf(RingEffectId.STANDARD, RingEffectId.RUBBER_STAMP), themes.ringChoices)
+
+        themes.use(PieceStyleId.FLAME_AND_FROST)
+        assertEquals("one the player doesn't own is not put in use", PieceStyleId.STANDARD, themes.pieces.first())
+        themes.use(PieceStyleId.HEARTS_AND_CLUBS)
+        themes.use(RingEffectId.RUBBER_STAMP)
+        assertEquals(PieceStyleId.HEARTS_AND_CLUBS, themes.pieces.first())
+        assertEquals(RingEffectId.RUBBER_STAMP, themes.rings.first())
+
+        // A refund of Hearts and clubs: the pieces go back to Standard without a message; the ring stays.
+        owned = setOfNotNull(RingEffectId.RUBBER_STAMP.cosmetic)
+        assertEquals(listOf(PieceStyleId.STANDARD), themes.pieceChoices)
+        assertEquals(PieceStyleId.STANDARD, themes.pieces.first())
+        assertEquals(RingEffectId.RUBBER_STAMP, themes.rings.first())
+        session.close()
+    }
+
+    @Test
     fun `each piece style and ring effect but Standard is a cosmetic of its kind`() {
         assertEquals(null, PieceStyleId.STANDARD.cosmetic)
         assertEquals(null, RingEffectId.STANDARD.cosmetic)

@@ -216,9 +216,14 @@ class NavigationTest {
 
         tap("Settings")
         at(Routes.SETTINGS)
-        // A debug build, as tests are, offers every theme, so Settings has the Theme row.
+        // A debug build, as tests are, offers every theme, piece style and ring effect, so Settings has their rows.
         waitFor("Theme")
         visit("Theme", Routes.THEME, returnTo = Routes.SETTINGS)
+        // And the Pieces and Rings rows, each with Standard in use.
+        compose.onNode(hasText("Pieces")).performScrollTo()
+        visit("Pieces", Routes.PIECES, returnTo = Routes.SETTINGS)
+        compose.onNode(hasText("Rings")).performScrollTo()
+        visit("Rings", Routes.RINGS, returnTo = Routes.SETTINGS)
         compose.onNodeWithText("Credits and licences").performScrollTo()
         visit("Credits and licences", Routes.SETTINGS_DETAILS, returnTo = Routes.SETTINGS)
         back()

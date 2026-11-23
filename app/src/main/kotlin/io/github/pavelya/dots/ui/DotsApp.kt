@@ -92,7 +92,6 @@ import io.github.pavelya.dots.ui.screen.ChestNote
 import io.github.pavelya.dots.ui.screen.DailyAction
 import io.github.pavelya.dots.ui.screen.DailyPuzzleNote
 import io.github.pavelya.dots.ui.screen.DeveloperScreen
-import io.github.pavelya.dots.ui.screen.LookChoices
 import io.github.pavelya.dots.ui.screen.GameScreen
 import io.github.pavelya.dots.ui.screen.LevelCard
 import io.github.pavelya.dots.ui.screen.LoadingScreen
@@ -108,6 +107,8 @@ import io.github.pavelya.dots.ui.screen.SettingsScreen
 import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.screen.StatsScreen
 import io.github.pavelya.dots.ui.screen.ThemeScreen
+import io.github.pavelya.dots.ui.screen.PiecesScreen
+import io.github.pavelya.dots.ui.screen.RingsScreen
 import io.github.pavelya.dots.ui.screen.Unlock
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.GameTheme
@@ -172,10 +173,16 @@ object Routes {
     /** From Settings: the themes the player can choose, each on a sample board (flows.md, "Choosing a theme"). */
     const val THEME = "settings/theme"
 
+    /** From Settings: the piece styles the player can choose, each on the Shop's small board (flows.md, "Choosing pieces and rings"). */
+    const val PIECES = "settings/pieces"
+
+    /** From Settings: the ring effects the player can choose, the same way. */
+    const val RINGS = "settings/rings"
+
     /** The POC's test settings; opens from the version line in Settings. */
     const val DEVELOPER = "developer"
 
-    val ALL = listOf(LOADING, MAP, LEVEL, BOOSTERS, CHEST, DAILY, PLAY, GAME, RULES, STATS, LEADERBOARDS, SHOP, COSMETIC, SETTINGS, SETTINGS_DETAILS, THEME, DEVELOPER)
+    val ALL = listOf(LOADING, MAP, LEVEL, BOOSTERS, CHEST, DAILY, PLAY, GAME, RULES, STATS, LEADERBOARDS, SHOP, COSMETIC, SETTINGS, SETTINGS_DETAILS, THEME, PIECES, RINGS, DEVELOPER)
 }
 
 @Composable
@@ -609,6 +616,11 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 // Only when there is more than one theme to choose from (decision 0029).
                                 theme = themeInUse.takeIf { app.themes.choices.size > 1 },
                                 onTheme = { navController.navigate(Routes.THEME) },
+                                // Each only when more than Standard can be chosen (flows.md, "Choosing pieces and rings").
+                                pieces = piecesInUse.takeIf { app.themes.pieceChoices.size > 1 },
+                                onPieces = { navController.navigate(Routes.PIECES) },
+                                rings = ringsInUse.takeIf { app.themes.ringChoices.size > 1 },
+                                onRings = { navController.navigate(Routes.RINGS) },
                             )
                         }
                     }
@@ -632,6 +644,30 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             onBack = back,
                         )
                     }
+                    composable(Routes.PIECES) {
+                        PiecesScreen(
+                            theme = themeInUse,
+                            choices = app.themes.pieceChoices,
+                            inUse = piecesInUse,
+                            // Saved in the app's scope, like a setting, so Back never cuts the change short.
+                            onUse = { style -> appScope.launch { app.themes.use(style) } },
+                            debugNote = app.debugBuild,
+                            // C-02 links the Shop here, once it exists.
+                            onShop = null,
+                            onBack = back,
+                        )
+                    }
+                    composable(Routes.RINGS) {
+                        RingsScreen(
+                            theme = themeInUse,
+                            choices = app.themes.ringChoices,
+                            inUse = ringsInUse,
+                            onUse = { effect -> appScope.launch { app.themes.use(effect) } },
+                            debugNote = app.debugBuild,
+                            onShop = null,
+                            onBack = back,
+                        )
+                    }
                     composable(Routes.DEVELOPER) {
                         val context = LocalContext.current
                         val scope = rememberCoroutineScope()
@@ -641,15 +677,6 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             dailyAhead = appSettings?.dailyAhead ?: false,
                             onDailyAhead = { on -> appScope.launch { app.settings.update { it.copy(dailyAhead = on) } } },
                             onClearDaily = { appScope.launch { app.daily.clear() } },
-                            looks = LookChoices(
-                                pieces = piecesInUse,
-                                pieceChoices = app.themes.pieceChoices,
-                                // Saved in the app's scope, like a setting, so Back never cuts the change short.
-                                onPieces = { style -> appScope.launch { app.themes.use(style) } },
-                                rings = ringsInUse,
-                                ringChoices = app.themes.ringChoices,
-                                onRings = { effect -> appScope.launch { app.themes.use(effect) } },
-                            ),
                             loggedGames = loggedGames,
                             onShareLog = { scope.launch { shareLog(context, app) } },
                             onBack = back,
