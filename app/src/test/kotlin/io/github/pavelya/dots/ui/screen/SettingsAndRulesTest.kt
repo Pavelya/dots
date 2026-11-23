@@ -173,7 +173,7 @@ class SettingsAndRulesTest {
         }
         assertEquals(listOf(SettingsPage.PRIVACY, SettingsPage.BACKUP, SettingsPage.CREDITS), pages)
         assertEquals(1, feedbacks)
-        // Language joins Help once a second language ships (A-10).
+        // The game is in English only (decision 0036): no Language row.
         compose.onNodeWithText("Language").assertDoesNotExist()
     }
 

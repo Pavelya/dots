@@ -211,16 +211,16 @@ Hatching keeps its 5 dp gap at every spacing. It is paper texture, not part of t
 ## Type
 
 Both fonts are on Google Fonts under the SIL Open Font License, which allows use in a commercial app.
-Both cover English, Polish, Russian and Ukrainian (decision 0007), and both draw all digits at
-the same width, so a score counting up does not jump about.
+Nunito draws all ten digits at the same width, so a score counting up does not jump about.
+Caveat's digits have five different widths, which is one more reason numbers stay in Nunito.
 
 | Font | Use | Why |
 | --- | --- | --- |
 | [Caveat](https://fonts.google.com/specimen/Caveat) (variable, 400 to 700) | Big headings only | Looks handwritten, like notes in a notebook |
 | [Nunito](https://fonts.google.com/specimen/Nunito) (variable, 200 to 1000) | Everything else | Rounded and friendly, easy to read at small sizes |
 
-The mood board suggested Atkinson Hyperlegible for body text. It has no Cyrillic letters, so it
-can't show Russian or Ukrainian. Nunito replaces it.
+The mood board suggested Atkinson Hyperlegible for body text. Nunito is used instead: its
+rounded letters suit the friendly tone, and its digits share one width.
 
 | Style | Font | Weight | Size | Line height | Used for |
 | --- | --- | --- | --- | --- | --- |

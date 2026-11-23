@@ -151,9 +151,9 @@ age the rating allows see no ads (C-03).
 
 - **Fair play.** Paid advantages are a common complaint in reviews of puzzle and strategy games
   (investigation, section 2), and Google Play has extra rules for random paid items.
-- **Players who can't pay.** Russian is one of the game's first languages and the paper game is
-  best known in Russia, where neither Google Play payments nor AdMob work. Making every cosmetic
-  earnable gives those players the whole game.
+- **Players who can't pay.** The paper game is best known in Russia, where neither Google Play
+  payments nor AdMob work. The game is in English only (decision 0036), but players there can
+  still play it. Making every cosmetic earnable gives those players the whole game.
 - **Real-money prices.** The EU consumer authorities' principles on in-game currencies (March 2025)
   ask for prices in real money and warn against currencies that hide them. Pinfold has no
   currency, so it has nothing to convert.

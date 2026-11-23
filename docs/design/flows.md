@@ -168,7 +168,7 @@ over the map or the board, which stay visible around it.
 | Shop | Shop on the map | Themes, piece styles and ring effects, each on a small board, with its price, or how to earn it where Google Play can't sell; owned items marked. Restore purchases. The catalogue and prices are in [`money.md`](money.md). | C-02 |
 | Cosmetic preview | An item in Shop | The item on a sample board, its price and how to earn it, and whether it is owned or in use. Buy or Use. Where Google Play can't sell, only how to earn it. | C-02 |
 | Settings | Settings on the map | The controls listed under [Settings](#settings). | A-09 |
-| Settings details | A row in Settings | Language, privacy (the policy, ad choices and the Show ad offers switch), Play Games backup, credits and licences. | A-09, A-10, C-03 |
+| Settings details | A row in Settings | Privacy (the policy, ad choices and the Show ad offers switch), Play Games backup, credits and licences. | A-09, C-03 |
 | Theme | Theme in Settings, shown only when more than one theme can be chosen | One card per theme the player can choose, each on a small sample board drawn by that theme. The theme in use is ticked; tapping another puts it in use at once. See [Choosing a theme](#choosing-a-theme). | A-23 |
 | Pieces | Pieces in Settings, shown only when a piece style other than Standard can be chosen | One card per piece style the player can choose, Standard first, each on the Shop's small board drawn in the theme in use. The one in use is ticked; tapping another puts it in use at once. See [Choosing pieces and rings](#choosing-pieces-and-rings). | A-26 |
 | Rings | Rings in Settings, shown only when a ring effect other than Standard can be chosen | The same page for ring effects. | A-26 |
@@ -196,9 +196,9 @@ to the map.
   can be chosen; see [Choosing pieces and rings](#choosing-pieces-and-rings)), high-contrast pieces, threat highlights, links between
   dots (off by default; the [theme page](theme-notebook.md#the-board) says where links show
   anyway), placing a dot (drag, the default, or two taps; decisions 0024 and 0026).
-- **Help and app:** Replay tutorial, Send feedback (an email, A-12), Language (shown once a second
-  language ships, A-10), Privacy (the policy, ad choices and Show ad offers, C-03), Play Games backup (O-02),
-  Credits and licences.
+- **Help and app:** Replay tutorial, Send feedback (an email, A-12), Privacy (the policy, ad
+  choices and Show ad offers, C-03), Play Games backup (O-02), Credits and licences. The game is in
+  English only (decision 0036), so there is no Language row.
 - **After launch:** notifications (O-05), delete my online data (O-06).
 
 ## Choosing a theme
@@ -578,9 +578,8 @@ On the prototype (D-10), and later on the app:
   predictable Back and coming back after an interruption.
 - [Compose accessibility defaults](https://developer.android.com/develop/ui/compose/accessibility/api-defaults):
   touch targets and screen-reader labels.
-- [Android settings design](https://developer.android.com/design/ui/mobile/guides/patterns/settings)
-  and [per-app languages](https://developer.android.com/guide/topics/resources/app-languages):
-  the Settings layout and the language choice.
+- [Android settings design](https://developer.android.com/design/ui/mobile/guides/patterns/settings):
+  the Settings layout.
 - [Apple: onboarding for games](https://developer.apple.com/app-store/onboarding-for-games/):
   teaching by playing.
 - [Play Billing](https://developer.android.com/google/play/billing/integrate),
