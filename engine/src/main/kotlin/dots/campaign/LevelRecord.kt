@@ -15,7 +15,11 @@ import dots.engine.PlayRecord
  * [dots.engine.GameRecord], a `+` word for each booster given, a `*` word for each booster brought
  * and a `!` word for the ad's booster:
  *
- *     level/1 2-5 +hint *wall !wall | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3
+ *     level/2 2-5 +hint *wall !wall | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3
+ *
+ * Records written before decision 0039 start with `level/1`. They replay under the rule of their
+ * time, where both dots of a two-dot turn came out of the budget ([extraSecondDot] false), and are
+ * written back the same way.
  */
 data class LevelRecord(
     val level: Level,
@@ -28,6 +32,11 @@ data class LevelRecord(
      * adds a star ([result]).
      */
     val ad: Booster? = null,
+    /**
+     * True for the rule of decision 0039: the second dot of a two-dot turn is extra. False for a
+     * `level/1` record, which replays under the old rule.
+     */
+    val extraSecondDot: Boolean = true,
 ) : PlayRecord {
     init {
         require(gift.values.all { it >= 1 }) { "a gift has 1 or more of each booster" }
@@ -41,7 +50,7 @@ data class LevelRecord(
     private val extra: Map<Booster, Int>
         get() = (gift.keys + owned.keys + listOfNotNull(ad)).associateWith { (gift[it] ?: 0) + (owned[it] ?: 0) + (if (it == ad) 1 else 0) }
 
-    override fun start(): GameState = level.newGame(extra)
+    override fun start(): GameState = level.newGame(extra, extraSecondDot)
 
     /**
      * How many of the player's [owned] boosters the game has used by [state], by kind: they are
@@ -67,7 +76,7 @@ data class LevelRecord(
     override fun withActions(actions: List<Action>): LevelRecord = copy(actions = actions)
 
     override fun toText(): String = buildString {
-        append("$FORMAT ${level.code}")
+        append("${if (extraSecondDot) FORMAT else OLD_FORMAT} ${level.code}")
         for ((booster, count) in gift.entries.sortedBy { it.key }) repeat(count) { append(" +").append(booster.text) }
         for ((booster, count) in owned.entries.sortedBy { it.key }) repeat(count) { append(" *").append(booster.text) }
         ad?.let { append(" !").append(it.text) }
@@ -76,13 +85,19 @@ data class LevelRecord(
     }
 
     companion object {
-        const val FORMAT = "level/1"
+        const val FORMAT = "level/2"
+
+        /** Records from before decision 0039, replayed under the old rule for two-dot turns. */
+        const val OLD_FORMAT = "level/1"
+
+        /** True if [text] starts like a level record of either format. */
+        fun isRecord(text: String): Boolean = text.trimStart().let { it.startsWith("$FORMAT ") || it.startsWith("$OLD_FORMAT ") }
 
         /** Reads a record written by [toText]; [find] gives the level for a world and number. */
         fun parse(text: String, find: (world: Int, number: Int) -> Level = Campaign::level): LevelRecord {
             val (head, body) = text.split('|', limit = 2).let { it[0].trim() to it.getOrElse(1) { "" }.trim() }
             val words = head.split(Regex("\\s+"))
-            require(words.size >= 2 && words[0] == FORMAT) { "Not a $FORMAT record: $text" }
+            require(words.size >= 2 && (words[0] == FORMAT || words[0] == OLD_FORMAT)) { "Not a $FORMAT record: $text" }
             val code = words[1].split('-').map { it.toIntOrNull() }
             require(code.size == 2 && code.all { it != null }) { "Bad level '${words[1]}' in: $text" }
             val extras = words.drop(2).map { word ->
@@ -95,7 +110,7 @@ data class LevelRecord(
             val ads = extras.filter { it.first == '!' }.map { it.second }
             require(ads.size <= 1) { "An ad gives one booster, not ${ads.size}, in: $text" }
             val actions = if (body.isEmpty()) emptyList() else body.split(Regex("\\s+")).map(Action::parse)
-            return LevelRecord(find(code[0]!!, code[1]!!), actions, gift, owned, ads.firstOrNull())
+            return LevelRecord(find(code[0]!!, code[1]!!), actions, gift, owned, ads.firstOrNull(), extraSecondDot = words[0] == FORMAT)
         }
     }
 }

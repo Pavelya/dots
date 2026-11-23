@@ -23,7 +23,7 @@ object Hints {
      */
     fun dangers(state: GameState, player: Player, maxDots: Int = 2): List<Danger> {
         if (state.isOver) return emptyList()
-        val dotsLeft = state.dotsLeft(player.opponent) ?: Int.MAX_VALUE
+        val dotsLeft = state.dotsToPlace(player.opponent) ?: Int.MAX_VALUE
         val width = state.width
         fun pos(i: Int) = Pos(i % width, i / width)
         return ThreatFinder().find(state, player, maxDots)

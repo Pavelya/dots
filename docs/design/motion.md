@@ -323,7 +323,8 @@ dashed and grey.
 | 220 to 350 | They shrink to nothing. | ease in |
 | 150 to 450 | Twelve specks in the opponent's ink fly out from the centre, growing and then shrinking away. | ease out |
 
-**Double dot** lets the player place two dots in one turn.
+**Double dot** lets the player place two dots in one turn. The second dot is extra (decision
+0039): the count of dots left drops by one as the first dot lands, and not again.
 
 | Time | What moves | Easing |
 | --- | --- | --- |

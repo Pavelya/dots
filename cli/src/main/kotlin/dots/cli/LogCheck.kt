@@ -2,6 +2,7 @@ package dots.cli
 
 import dots.campaign.LevelRecord
 import dots.daily.DailyRecord
+import dots.engine.Action
 import dots.engine.Player
 import dots.log.GameLogEntry
 import dots.log.Outcome
@@ -13,7 +14,9 @@ import java.time.format.DateTimeFormatter
 /**
  * `cli log-check <file>...`: replays every game in exported app logs (docs/poc/test-protocol.md)
  * and prints each game with its result, marking any game whose logged result the replay does not
- * reproduce. Returns the number of problems (unreadable lines and mismatches).
+ * reproduce. A level game from before decision 0039 that had a turn of two dots (a boss's double
+ * move or a Double dot) is marked "old rule": it replays under the rule of its time. Returns the
+ * number of problems (unreadable lines and mismatches).
  */
 object LogCheck {
     private val time = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm").withZone(ZoneOffset.UTC)
@@ -49,6 +52,10 @@ object LogCheck {
         return problems
     }
 
+    /** True for a record from before decision 0039 in which the old rule could change the game. */
+    private fun LevelRecord.oldTwoDotRule(): Boolean =
+        !extraSecondDot && (level.rule?.turnRule != null || Action.DoubleDot in actions)
+
     private fun describe(entry: GameLogEntry): String {
         val start = entry.record.start()
         val record = entry.record
@@ -57,7 +64,7 @@ object LogCheck {
             else -> entry.outcome.name.lowercase()
         }
         val level = when (record) {
-            is LevelRecord -> "  level ${record.level.code}"
+            is LevelRecord -> "  level ${record.level.code}" + if (record.oldTwoDotRule()) " (old rule for two-dot turns)" else ""
             is DailyRecord -> "  daily ${record.day}"
             else -> ""
         }

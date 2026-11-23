@@ -100,14 +100,46 @@ class TurnRuleTest {
             }
             perTurn += dots
         }
-        // Turns 1 to 7 take 1, 1, 2, 1, 1, 2, 1 dots: 9 in all.
-        assertEquals(listOf(1, 1, 2, 1, 1, 2, 1), perTurn)
+        // Its 9 turns take 1, 1, 2, 1, 1, 2, 1, 1, 2 dots: the budget counts turns, so 12 in all.
+        assertEquals(listOf(1, 1, 2, 1, 1, 2, 1, 1, 2), perTurn)
+        assertEquals(12, state.dotsPlaced(BLUE))
+        assertEquals(9, state.movesMade(BLUE))
     }
 
     @Test
-    fun `with one dot left, the double move is a single dot`() {
+    fun `a double move on blue's last turn still has two dots`() {
+        // 6 dots each: blue's 6 turns take 1, 1, 2, 1, 1, 2; the second dot of each is extra.
+        assertEquals(listOf(1, 1, 2, 1, 1, 2), blueTurns(game(TurnRule.DoubleMove(3), dots = 6)))
+    }
+
+    @Test
+    fun `both sides place their last dot on the same turn`() {
+        for (every in listOf(2, 3, 5)) {
+            var state = game(TurnRule.DoubleMove(every), dots = 10)
+            // Each turn as the player who took it and the dots they placed.
+            val turns = ArrayList<Pair<Player, Int>>()
+            while (!state.isOver) {
+                val mover = state.toMove
+                var dots = 0
+                while (state.toMove == mover && !state.isOver) {
+                    state = state.play(state.quietMove()).state
+                    dots++
+                }
+                turns += mover to dots
+            }
+            // Red and blue take turns to the end, 10 each, blue answering red's last dot.
+            assertEquals(List(10) { listOf(RED, BLUE) }.flatten(), turns.map { it.first }, "every $every")
+            assertEquals(expected(every, 10), turns.filter { it.first == BLUE }.map { it.second }, "every $every")
+            assertEquals(10, state.dotsPlaced(RED))
+            assertEquals(10 + 10 / every, state.dotsPlaced(BLUE), "every $every")
+        }
+    }
+
+    @Test
+    fun `the old rule, for old records, takes both dots of a double move from the budget`() {
+        val old = GameState.start(15, 15, 7, turnRules = mapOf(BLUE to TurnRule.DoubleMove(3)), extraSecondDot = false)
         // 7 dots each: blue's turns take 1, 1, 2, 1, 1 and then 1, its last dot, on turn 6.
-        assertEquals(listOf(1, 1, 2, 1, 1, 1), blueTurns(game(TurnRule.DoubleMove(3), dots = 7)))
+        assertEquals(listOf(1, 1, 2, 1, 1, 1), blueTurns(old))
     }
 
     @Test
@@ -162,16 +194,36 @@ class TurnRuleTest {
     }
 
     @Test
-    fun `the countdown stops when blue will not have two dots for its double move`() {
-        // 7 dots each, double every 3: turn 3 is the last that gets two.
+    fun `the countdown stops when blue's dots run out before its next double move`() {
+        // Double every 3: with 5 dots each, blue's turn 3 is the last double move; with 6, turn 6.
+        for ((dots, expected) in mapOf(5 to listOf(3, 2, 1, null, null), 6 to listOf(3, 2, 1, 3, 2, 1))) {
+            var state = game(TurnRule.DoubleMove(3), dots = dots)
+            val onRedTurns = ArrayList<Int?>()
+            while (!state.isOver) {
+                if (state.toMove == RED) onRedTurns += state.doubleMoveIn(BLUE)
+                state = state.play(state.quietMove()).state
+            }
+            assertEquals(expected, onRedTurns, "$dots dots")
+            assertNull(state.doubleMoveIn(BLUE))
+        }
+    }
+
+    @Test
+    fun `dots to place count the extra dots of the double moves to come`() {
+        // 7 dots each, double every 3: blue's turns 3 and 6 have two, so 9 dots in all.
         var state = game(TurnRule.DoubleMove(3), dots = 7)
-        val onRedTurns = ArrayList<Int?>()
+        val seen = ArrayList<Int?>()
         while (!state.isOver) {
-            if (state.toMove == RED) onRedTurns += state.doubleMoveIn(BLUE)
+            seen += state.dotsToPlace(BLUE)
             state = state.play(state.quietMove()).state
         }
-        assertEquals(listOf(3, 2, 1, null, null, null, null), onRedTurns)
-        assertNull(state.doubleMoveIn(BLUE))
+        seen += state.dotsToPlace(BLUE)
+        assertEquals(9, state.dotsPlaced(BLUE))
+        // Before each dot: it falls by one with every blue dot, and not at all on red's.
+        assertEquals(9, seen.first())
+        assertEquals(seen.zipWithNext().count { (a, b) -> a != b }, 9)
+        assertTrue(seen.zipWithNext().all { (a, b) -> a == b || a == b!! + 1 })
+        assertEquals(0, seen.last())
     }
 
     @Test

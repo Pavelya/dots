@@ -68,6 +68,36 @@ class LogCheckTest {
     }
 
     @Test
+    fun `a boss game from before decision 0039 replays under the old rule, and is marked`() {
+        // 1-15 played to its end under the old rule: the boss runs out after 15 turns, and the
+        // player places their last 3 dots with no reply. Nothing is captured.
+        val level = Campaign.level(1, 15)
+        val game = Game(LevelRecord(level, emptyList(), extraSecondDot = false))
+        while (!game.isOver) {
+            val moves = game.state.legalMoves().filter { game.state.play(it).captures.isEmpty() }
+            game.apply(Action.Place(if (game.state.toMove == level.human) moves.last() else moves.first()))
+        }
+        assertEquals(18, game.state.dotsPlaced(level.computer))
+        val entry = GameLogEntry.start(game.record, level.strength.text, threatHighlight = false, now = 0)
+            .copy(outcome = Outcome.FINISHED, red = game.state.score(Player.RED), blue = game.state.score(Player.BLUE), record = game.record)
+        val text = entry.toJson()
+        assertTrue(text.contains("\"record\":\"level/1 1-15 |"), text)
+
+        val printed = java.io.ByteArrayOutputStream()
+        val out = System.out
+        System.setOut(java.io.PrintStream(printed))
+        val problems = try {
+            LogCheck.run(listOf(logFile(text).path))
+        } finally {
+            System.setOut(out)
+        }
+        assertEquals(0, problems, printed.toString())
+        assertTrue(printed.toString().contains("level 1-15 (old rule for two-dot turns)"), printed.toString())
+        // Read under the new rule, the same moves do not give the logged game.
+        assertEquals(1, LogCheck.run(listOf(logFile(text.replace("level/1 1-15", "level/2 1-15")).path)))
+    }
+
+    @Test
     fun `a level game that used the booster from an ad replays, and only with it`() {
         val level = Campaign.level(2, 4) // wall 1, undo 1
         val game = Game(LevelRecord(level, emptyList(), ad = level.adBooster))

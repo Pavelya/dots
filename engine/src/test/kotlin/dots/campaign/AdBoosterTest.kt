@@ -125,18 +125,18 @@ class AdBoosterTest {
         val record = LevelRecord(level, actions("wall:d5 d6 a7 wall:g1 a1 g7"), gift = mapOf(Booster.HINT to 1), owned = mapOf(Booster.WALL to 1), ad = Booster.WALL)
         val text = record.toText()
 
-        assertEquals("level/1 2-1 +hint *wall !wall | wall:d5 d6 a7 wall:g1 a1 g7", text)
+        assertEquals("level/2 2-1 +hint *wall !wall | wall:d5 d6 a7 wall:g1 a1 g7", text)
         val read = LevelRecord.parse(text)
         assertEquals(record, read)
         assertEquals(Booster.WALL, read.ad)
         assertEquals(record.replay().toAscii(), read.replay().toAscii())
         assertEquals(record.replay().toAscii(), Game.from(read).state.toAscii())
         assertEquals(record, Game.from(read).record)
-        assertNull(LevelRecord.parse("level/1 2-1 *wall | d5").ad, "a record without the word has no ad")
-        assertFailsWith<IllegalArgumentException>("one ad, one booster") { LevelRecord.parse("level/1 2-1 !wall !wall |") }
-        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-1 !undo |") }
-        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-1 !bomb |") }
-        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-1 !boom |") }
+        assertNull(LevelRecord.parse("level/2 2-1 *wall | d5").ad, "a record without the word has no ad")
+        assertFailsWith<IllegalArgumentException>("one ad, one booster") { LevelRecord.parse("level/2 2-1 !wall !wall |") }
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/2 2-1 !undo |") }
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/2 2-1 !bomb |") }
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/2 2-1 !boom |") }
     }
 
     /** Red's d3 encloses both blue dots, c3 and e3, at once. Six red dots, none in danger. */

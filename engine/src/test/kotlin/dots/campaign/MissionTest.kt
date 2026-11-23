@@ -1,5 +1,7 @@
 package dots.campaign
 
+import dots.engine.Action
+import dots.engine.Booster
 import dots.engine.GameState
 import dots.engine.Notation
 import dots.engine.Player
@@ -86,6 +88,18 @@ class MissionTest {
 
         assertStatus(level, level.newGame().then("a1", "e5"), Outcome.PLAYING, null, movesLeft = 1)
         assertStatus(level, level.newGame().then("a1", "e5", "a5"), Outcome.FAILED, Reason.OUT_OF_MOVES, movesLeft = 0)
+    }
+
+    @Test
+    fun `a turn with a double dot is one move, and its second dot can still pass on the last move`() {
+        val level = Level(1, 1, "Test", Strength.EASY, 2, LevelMap(redCaptures), Mission.Capture(dots = 1, moves = 2), boosters = mapOf(Booster.DOUBLE_DOT to 1))
+        val last = level.newGame().then("a1", "e5")
+        assertStatus(level, last, Outcome.PLAYING, null, movesLeft = 1)
+
+        // The last move: a double dot, then a5 and d3, which captures.
+        val doubled = last.apply(Action.DoubleDot).state.then("a5")
+        assertStatus(level, doubled, Outcome.PLAYING, null, movesLeft = 0)
+        assertStatus(level, doubled.then("d3"), Outcome.PASSED, Reason.CAPTURED_ENOUGH, movesLeft = 0)
     }
 
     @Test

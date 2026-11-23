@@ -58,14 +58,14 @@ internal class MissionGoal(private val level: Level, override val player: Player
         else -> null
     }
 
-    /** The dots [attacker] has left, or fewer in "capture" for the player and in "survive" for the computer. */
+    /** The dots [attacker] can still place, or fewer moves in "capture" for the player and in "survive" for the computer. */
     override fun movesLeft(state: GameState, attacker: Player): Int? {
         val limit = when {
-            mission is Mission.Capture && attacker == level.human -> mission.moves - state.dotsPlaced(attacker)
-            mission is Mission.Survive && attacker == level.computer -> mission.moves - state.dotsPlaced(attacker)
+            mission is Mission.Capture && attacker == level.human -> dotsWithin(mission.moves, state, attacker)
+            mission is Mission.Survive && attacker == level.computer -> dotsWithin(mission.moves, state, attacker)
             else -> null
         }
-        val dots = state.dotsLeft(attacker)
+        val dots = state.dotsToPlace(attacker)
         return if (limit == null || dots == null) limit ?: dots else min(limit, dots)
     }
 

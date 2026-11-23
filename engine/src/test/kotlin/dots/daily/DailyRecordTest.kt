@@ -35,7 +35,7 @@ class DailyRecordTest {
     fun `a day with no puzzle, or a bad line, is refused`() {
         assertFailsWith<NoSuchElementException> { DailyRecord.parse("daily/1 2026-11-15 |") }
         assertFailsWith<IllegalArgumentException> { DailyRecord.parse("daily/1 15-11-2026 |") }
-        assertFailsWith<IllegalArgumentException> { DailyRecord.parse("level/1 1-1 |") }
+        assertFailsWith<IllegalArgumentException> { DailyRecord.parse("level/2 1-1 |") }
     }
 
     @Test

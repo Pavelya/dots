@@ -429,4 +429,4 @@ Four crosses on 11x11, 16 dots each, against the steady computer: it thinks abou
  12 . . . . . . . . . . . .
 ```
 
-Four crosses on 12x12, two blue blots in the middle, 18 dots each. Every fifth computer turn it places two dots (turns 5, 10 and 15); the countdown shows when.
+Four crosses on 12x12, two blue blots in the middle, 18 dots each. Every fifth computer turn it places two dots (turns 5, 10 and 15); the countdown shows when. The second dot is extra (decision 0039), so the computer places 21 dots in its 18 turns and answers the player's last dot.

@@ -57,8 +57,9 @@ Both use one format, `GameLogEntry` in the engine (`dots.log`), one line of JSON
 ```
 
 - `record` is the game record (settings, seed, every move), so the game replays exactly: `dots/1`
-  for a free game, `level/1 1-7 ...` for a campaign level, `daily/1 2027-01-05 ...` for an attempt
-  at a daily puzzle.
+  for a free game, `level/2 1-7 ...` for a campaign level, `daily/1 2027-01-05 ...` for an attempt
+  at a daily puzzle. A `level/1` record comes from before decision 0039 and replays under the
+  old rule, where both dots of a two-dot turn came out of the budget.
 - `started` / `updated` are milliseconds since 1970 (UTC); `play_ms` is time spent playing, where a
   pause of over 2 minutes between moves counts as 2 minutes (the player put the phone down).
 - `opponent` is `human` (two players on one phone) or the computer's strength (`steady`): a

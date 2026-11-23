@@ -494,3 +494,5 @@ computer's replies in brackets, as `check-levels` prints them.
  13 . . . . . . . . . . . . . .
  14 . . . . . . . . . . . . . .
 ```
+
+The computer's 22 turns each take one dot from its budget, and every fourth has an extra second dot (decision 0039): 27 dots against the player's 20. After the player's last dot it places its last two turns with no reply.

@@ -53,9 +53,9 @@ internal object LevelHint {
     /** How many moves of the player's the mission has left in [state], at most [Solver.MAX_MOVES]. */
     private fun movesLeft(level: Level, state: GameState): Int {
         val left = when (val mission = level.mission) {
-            is Mission.Capture -> mission.moves - state.dotsPlaced(level.human)
+            is Mission.Capture -> mission.moves - state.movesMade(level.human)
             // The player moves before each of the computer's dots.
-            is Mission.Survive -> mission.moves - state.dotsPlaced(level.computer)
+            is Mission.Survive -> mission.moves - state.movesMade(level.computer)
             else -> Solver.MAX_MOVES
         }
         return minOf(left, Solver.MAX_MOVES, state.dotsLeft(level.human) ?: Solver.MAX_MOVES)

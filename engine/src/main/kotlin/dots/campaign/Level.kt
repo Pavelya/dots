@@ -88,8 +88,12 @@ data class Level(
      */
     val fortress: List<Pos> get() = if (rule is SpecialRule.Fortress) map.groups(LevelMap.COMPUTER).first() else emptyList()
 
-    /** A new game of this level; [gift] gives the player boosters on top of the level's own. */
-    fun newGame(gift: Map<Booster, Int> = emptyMap()): GameState = start(gift)
+    /**
+     * A new game of this level; [gift] gives the player boosters on top of the level's own.
+     * [extraSecondDot] false plays the rule from before decision 0039, for old records only
+     * (`GameState.start`).
+     */
+    fun newGame(gift: Map<Booster, Int> = emptyMap(), extraSecondDot: Boolean = true): GameState = start(gift, extraSecondDot)
 
     /**
      * The booster a rewarded ad offers for a retry of this level (decision 0030): the first kind in
@@ -144,10 +148,11 @@ data class Level(
      * The human has the level's [boosters], plus any [gift]; the computer has none (decision 0006).
      * The computer has the [rule]'s turn rule, if any.
      */
-    private fun start(gift: Map<Booster, Int> = emptyMap()) = map.start(
+    private fun start(gift: Map<Booster, Int> = emptyMap(), extraSecondDot: Boolean = true) = map.start(
         holes, dotsPerPlayer, human, dotsFor = mapOf(human to humanDots),
         boosters = mapOf(human to (boosters.keys + gift.keys).associateWith { (boosters[it] ?: 0) + (gift[it] ?: 0) }),
         turnRules = rule?.turnRule?.let { mapOf(computer to it) } ?: emptyMap(),
+        extraSecondDot = extraSecondDot,
     )
 
     private fun checkMission() {
@@ -265,10 +270,11 @@ data class LevelMap(val rows: List<String>) {
         dotsFor: Map<Player, Int> = emptyMap(),
         boosters: Map<Player, Map<Booster, Int>> = emptyMap(),
         turnRules: Map<Player, TurnRule> = emptyMap(),
+        extraSecondDot: Boolean = true,
     ): GameState = GameState.start(
         width, height, dotsPerPlayer, first, startDots(), dotsFor, boosters, turnRules,
         holes = points(HOLE).toSet(), holesAreBorder = holes != Holes.OPEN,
-        blocked = points(BLOCKED).toSet(), bonus = points(BONUS).toSet(),
+        blocked = points(BLOCKED).toSet(), bonus = points(BONUS).toSet(), extraSecondDot = extraSecondDot,
     )
 
     /**
@@ -404,9 +410,9 @@ sealed interface SpecialRule {
 
         override val turnRule get() = TurnRule.DoubleMove(every)
 
-        // The turns before the first double move take one dot each, and the double move two.
-        override fun problem(map: LevelMap, dotsPerPlayer: Int) = if (dotsPerPlayer < every + 1) {
-            "the computer's $dotsPerPlayer dots run out before its first double move, which needs ${every + 1}"
+        // Each turn takes one dot from the budget, the double move too: its second dot is extra.
+        override fun problem(map: LevelMap, dotsPerPlayer: Int) = if (dotsPerPlayer < every) {
+            "the computer's $dotsPerPlayer dots run out before its first double move, on its turn $every"
         } else {
             null
         }

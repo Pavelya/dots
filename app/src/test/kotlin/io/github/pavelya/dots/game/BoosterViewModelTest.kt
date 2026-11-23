@@ -234,6 +234,30 @@ class BoosterViewModelTest {
     }
 
     @Test
+    fun `a Double dot can be used with one dot left, and its second dot is extra`() = runTest(dispatcher) {
+        val vm = game()
+        // Five of the player's 6 dots along the bottom row, each answered along the top.
+        for (x in 0 until 5) {
+            vm.place(Pos(x, 6))
+            advanceUntilIdle()
+        }
+        assertEquals(1, vm.state.dotsLeft(Player.RED))
+        assertTrue(Booster.DOUBLE_DOT in vm.ui.value.usable)
+
+        vm.chooseBooster(Booster.DOUBLE_DOT)
+        vm.confirmBooster()
+        vm.place(Pos(5, 6))
+        assertEquals(Player.RED, vm.state.toMove)
+        assertEquals(0, vm.state.dotsLeft(Player.RED))
+        assertEquals(1, vm.ui.value.doubleDots)
+        vm.place(Pos(6, 6))
+        assertEquals(7, vm.state.dotsPlaced(Player.RED))
+        advanceUntilIdle()
+        assertEquals("the computer answers with its last dot", 6, vm.state.dotsPlaced(Player.BLUE))
+        assertTrue(vm.state.isOver)
+    }
+
+    @Test
     fun `a Hint circles the best move until the player's dot lands`() = runTest(dispatcher) {
         val vm = game()
         vm.chooseBooster(Booster.HINT)
