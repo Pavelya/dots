@@ -3,6 +3,7 @@ package dots.ai
 import dots.engine.GameState
 import dots.engine.Grounding
 import dots.engine.Openings
+import dots.engine.Notation
 import dots.engine.Player
 import dots.engine.Pos
 import kotlin.random.Random
@@ -96,6 +97,89 @@ class ThreatFinderTest {
         assertTrue(finder.find(ring, Player.BLUE, 5).isEmpty(), "a dot inside a finished chain needs a dividing wall instead")
     }
 
+    /** Red's a2 is on the border; b3 joins it only across a diagonal step, and blue b2 captures it. */
+    private fun diagonalStep(first: Player) = GameState.fromAscii(
+        """
+        .....
+        R.B..
+        BRB..
+        .B...
+        .....
+        """,
+        first = first,
+    )
+
+    private fun p(name: String) = Notation.parse(name)!!
+
+    @Test
+    fun `a dot joined to the border only across a diagonal step is a threat`() {
+        val state = diagonalStep(Player.BLUE)
+
+        val threat = finder.find(state, Player.RED, 3).single()
+
+        assertEquals(1, threat.cost)
+        assertEquals(cells(state, p("b3")), threat.group.toSet())
+        assertEquals(cells(state, p("b2")), threat.cells.toSet())
+    }
+
+    @Test
+    fun `the computer captures a dot joined to the border only across a diagonal step`() {
+        val state = diagonalStep(Player.BLUE)
+        for (tier in listOf(AiConfig.EASY, AiConfig.NORMAL, AiConfig.HARD)) {
+            val move = SearchAi(tier, Random(1)).chooseMove(state)
+            assertEquals(p("b2"), move, "$tier")
+            assertTrue(state.play(move!!).state.isCaptured(p("b3")))
+        }
+    }
+
+    @Test
+    fun `the computer defends its dot joined to the border only across a diagonal step`() {
+        // The shape above on a larger board, with other dots elsewhere. EASY looks at its own move
+        // only, so only the danger estimate can make it see blue's b4 coming.
+        val state = GameState.fromAscii(
+            """
+            .........
+            .........
+            .........
+            R.B......
+            BRB......
+            .B.......
+            .....B...
+            ....R.R..
+            .........
+            """,
+            first = Player.RED,
+        )
+        for (tier in listOf(AiConfig.EASY, AiConfig.NORMAL, AiConfig.HARD)) {
+            for (seed in 1..3) assertEquals(p("b4"), SearchAi(tier, Random(seed)).chooseMove(state), "$tier")
+        }
+    }
+
+    @Test
+    fun `a fork against a dot joined to the border only diagonally wins a dot`() {
+        // Red's d2 shortens two captures to one move each: blue's c2, which touches the border only
+        // across a diagonal step to b1, and blue's e2. Blue can only save one of them.
+        val fork = GameState.fromAscii(
+            """
+            .BR.R..
+            .RB.BR.
+            .......
+            .......
+            .......
+            .......
+            """,
+        )
+        val red = SearchAi(AiConfig.HARD, Random(1))
+        val blue = SearchAi(AiConfig.HARD, Random(2))
+
+        val afterFork = fork.play(red.chooseMove(fork)!!).state
+        assertEquals(p("d2"), afterFork.lastPlaced(Player.RED))
+        val afterDefence = afterFork.play(blue.chooseMove(afterFork)!!).state
+        val result = afterDefence.play(red.chooseMove(afterDefence)!!)
+
+        assertEquals(1, result.state.score(Player.RED))
+    }
+
     @Test
     fun `agrees with the slow planner on positions from real games`() {
         val sloppy = AiConfig(depth = 1, breadth = 12, mistakeRate = 0.6)
@@ -128,7 +212,7 @@ class ThreatFinderTest {
         val threats = finder.find(state, victim, limit)
         var count = 0
         var real = 0
-        for (group in Grounding.ungrounded(state, victim)) {
+        for (group in Grounding.exposed(state, victim)) {
             val reference = Cleanup.cheapestEnclosure(state, group, attacker)
             val anchors = group.map { it.y * state.width + it.x }.toSet()
             val threat = threats.firstOrNull { it.anchor in anchors }

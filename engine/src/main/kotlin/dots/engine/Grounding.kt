@@ -28,14 +28,6 @@ object Grounding {
         groupsOf(state) { x, y -> isLive(state, player, x, y) }
 
     /**
-     * The groups ([groups]) that touch no border point. This is a quick guess at what can be
-     * captured, not a guarantee: a group touching the border can still lose the dots it reaches
-     * only by a diagonal step (see [Grounding]). [exposed] gives the exact answer.
-     */
-    fun ungrounded(state: GameState, player: Player): List<List<Pos>> =
-        groups(state, player).filter { group -> group.none { state.isBorder(it.x, it.y) } }
-
-    /**
      * [player]'s live dots that are not [safe], in groups joined orthogonally or diagonally. These
      * are exactly the dots an opponent playing unanswered can capture.
      */

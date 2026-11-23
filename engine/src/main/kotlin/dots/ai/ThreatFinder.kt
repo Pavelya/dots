@@ -1,6 +1,7 @@
 package dots.ai
 
 import dots.engine.GameState
+import dots.engine.Grounding
 import dots.engine.Player
 
 /**
@@ -17,8 +18,11 @@ import dots.engine.Player
 internal class Threat(val anchor: Int, val size: Int, val cost: Int, val cells: IntArray, val group: IntArray, val points: Int = size)
 
 /**
- * Finds, for every group of a player's dots that is not grounded, the fewest dots the opponent
- * needs to place to capture it: a minimum vertex cut between the group and the border.
+ * Finds, for every group of a player's exposed dots ([Grounding.exposed]), the fewest dots the
+ * opponent needs to place to capture it: a minimum vertex cut between the group and the border.
+ * Safe dots ([Grounding.safe]) can never be captured, so the flow passes through them freely, but
+ * they form no groups. A group that touches the border only across a diagonal step thus still
+ * loses the dots past that step.
  *
  * It is the same quantity as the collecting planner's cut ([Cleanup.cheapestEnclosure]), but built
  * for speed inside the search: the grid is the graph (nothing is allocated per call), flows are
@@ -35,6 +39,7 @@ internal class ThreatFinder {
 
     private var kind = ByteArray(0)
     private var border = BooleanArray(0)
+    private var dead = BooleanArray(0)
     private var bonus = BooleanArray(0)
     private var flowThrough = IntArray(0)
     private var flowOnLink = IntArray(0)
@@ -58,7 +63,6 @@ internal class ThreatFinder {
         for (start in 0 until cells) {
             if (kind[start] != VICTIM || groupSeen[start] == groupStamp) continue
             val size = collectGroup(start)
-            if (size == 0) continue // touches the border: grounded
             val threat = cheapestWall(start, size, maxCost)
             if (threat != null) result += threat
         }
@@ -72,6 +76,7 @@ internal class ThreatFinder {
             cells = width * height
             kind = ByteArray(cells)
             border = BooleanArray(cells)
+            dead = BooleanArray(cells)
             bonus = BooleanArray(cells)
             flowThrough = IntArray(cells)
             flowOnLink = IntArray(4 * cells)
@@ -90,6 +95,7 @@ internal class ThreatFinder {
             val y = i / width
             val owner = state.ownerAt(x, y)
             border[i] = state.isBorder(x, y)
+            dead[i] = state.isDead(x, y)
             bonus[i] = state.isBonus(x, y)
             kind[i] = when {
                 owner == attacker && !state.isCaptured(x, y) -> WALL
@@ -98,23 +104,53 @@ internal class ThreatFinder {
                 else -> PASSABLE
             }
         }
+        markSafe()
     }
 
     /**
-     * Gathers the group containing [start] (dots linked orthogonally or diagonally) into
-     * [groupCells] and returns its size, or 0 if it touches the border.
+     * Turns the victim's safe dots ([Grounding.safe]) from [VICTIM] into [SAFE]: those joined to
+     * the border by straight steps through the victim's live dots and points out of play.
+     */
+    private fun markSafe() {
+        stamp++
+        var tail = 0
+        for (i in 0 until cells) {
+            if (border[i] && isLink(i)) {
+                visitedAt[2 * i] = stamp
+                queue[tail++] = i
+            }
+        }
+        var head = 0
+        while (head < tail) {
+            val i = queue[head++]
+            if (kind[i] == VICTIM) kind[i] = SAFE
+            val x = i % width
+            val y = i / width
+            for (d in 0 until 4) {
+                val j = neighbour(i, x, y, d)
+                if (j < 0 || visitedAt[2 * j] == stamp || !isLink(j)) continue
+                visitedAt[2 * j] = stamp
+                queue[tail++] = j
+            }
+        }
+    }
+
+    /** A point a safe chain may run through, as in [Grounding.safe]. Call before [markSafe] changes it. */
+    private fun isLink(i: Int): Boolean = kind[i] == VICTIM || dead[i]
+
+    /**
+     * Gathers the group of exposed dots containing [start] (linked orthogonally or diagonally) into
+     * [groupCells] and returns its size. None of them is on the border: a dot there is safe.
      */
     private fun collectGroup(start: Int): Int {
         var size = 0
         var head = 0
         groupCells[size++] = start
         groupSeen[start] = groupStamp
-        var grounded = false
         while (head < size) {
             val i = groupCells[head++]
             val x = i % width
             val y = i / width
-            if (border[i]) grounded = true
             for (dy in -1..1) {
                 for (dx in -1..1) {
                     val nx = x + dx
@@ -128,12 +164,15 @@ internal class ThreatFinder {
                 }
             }
         }
-        return if (grounded) 0 else size
+        return size
     }
 
+    /**
+     * The cheapest wall round the group in [groupCells], or null if it costs more than [maxCost].
+     * The group cannot reach the border through cells nobody can build on (it would be safe), so
+     * the flow is bounded.
+     */
     private fun cheapestWall(anchor: Int, size: Int, maxCost: Int): Threat? {
-        if (canEscapeUnblocked(size)) return null
-
         var flow = 0
         var exhausted = false // no augmenting path left: the flow is maximal, so it equals the cut
         while (flow <= maxCost) {
@@ -159,30 +198,6 @@ internal class ThreatFinder {
         }
         resetFlows()
         return threat
-    }
-
-    /** True if the group can reach the border through cells nobody can build on. */
-    private fun canEscapeUnblocked(size: Int): Boolean {
-        stamp++
-        var head = 0
-        var tail = 0
-        for (k in 0 until size) {
-            queue[tail++] = groupCells[k]
-            visitedAt[2 * groupCells[k]] = stamp
-        }
-        while (head < tail) {
-            val i = queue[head++]
-            val x = i % width
-            val y = i / width
-            if (border[i]) return true
-            for (d in 0 until 4) {
-                val j = neighbour(i, x, y, d)
-                if (j < 0 || kind[j] == WALL || kind[j] == BUILDABLE || visitedAt[2 * j] == stamp) continue
-                visitedAt[2 * j] = stamp
-                queue[tail++] = j
-            }
-        }
-        return false
     }
 
     /**
@@ -290,5 +305,8 @@ internal class ThreatFinder {
         const val BUILDABLE: Byte = 1
         const val PASSABLE: Byte = 2
         const val VICTIM: Byte = 3
+
+        /** A victim's dot that can never be captured: passed through like [PASSABLE]. */
+        const val SAFE: Byte = 4
     }
 }

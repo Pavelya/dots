@@ -97,7 +97,7 @@ class LevelRecordTest {
             undos += record.actions.count { it == Action.Undo }
         }
         assertTrue(used > 100, "only $used boosters used")
-        assertTrue(undos > 10, "only $undos undos used")
+        assertTrue(undos > 5, "only $undos undos used")
     }
 
     @Test

@@ -36,11 +36,6 @@ class GroundingTest {
     }
 
     @Test
-    fun `the quick test counts that group as grounded`() {
-        assertTrue(Grounding.ungrounded(diagonalStep, Player.RED).isEmpty())
-    }
-
-    @Test
     fun `a dot joined to the border by straight steps is safe and the others are exposed`() {
         val state = GameState.fromAscii(
             """
