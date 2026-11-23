@@ -61,8 +61,8 @@ others, and the play-tests say how they feel.
 - **The Comet's double move comes every 4th turn,** one turn sooner than the Mole's, and it has
   two dots more than the player. With a double move every 3rd turn it would be a wall whatever
   the dots on either side: the average stand-in passes at most 13% of games.
-- **Three puzzles are hard:** 3-8 Owl (the average stand-in passes 14%, a wall that is not
-  noted), 3-13 Reflection, a deliberate wall (0%), and 3-17 Dusk (29%). The strong stand-in passes all three every time;
+- **Three puzzles are hard:** 3-8 Owl (the average stand-in passes 46%), 3-13 Reflection, a
+  deliberate wall (0%), and 3-17 Dusk (29%). The strong stand-in passes all three every time;
   each answer is three moves deep.
 - **Survive puzzles are passed every time** by all three stand-ins. They are the easy steps
   between the hard levels.
@@ -248,11 +248,16 @@ computer's replies in brackets, as `check-levels` prints them.
   5 . . R B . . . . .
   6 . . . . . B R . .
   7 . . . . R R B R .
-  8 - . . . . . B B -
+  8 - . . . . . B . -
   9 - - . . . . . - -
 ```
 
 `check-levels`: passes in 3 moves: f5 (e6) d6 (e5) e4; 1 first move passes: f5.
+
+The computer's group g7, g8 stops short of the lake on purpose. With a dot at h8 it would touch
+the lake and be safe, f6 would hang off it by a diagonal step only, and every computer step would
+see f6 as the one dot to attack: the average stand-in would open with e6 in most games and pass
+only 14% of them, a wall.
 
 ### 3-9 Crater Rim
 
