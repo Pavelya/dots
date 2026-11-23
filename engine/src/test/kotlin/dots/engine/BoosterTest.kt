@@ -258,8 +258,11 @@ class BoosterTest {
 
         val second = first.place("a2")
         assertEquals(Player.BLUE, second.toMove)
-        assertEquals(8, second.dotsLeft(Player.RED))
+        // The second dot is extra: the turn takes one from the budget, like any other.
+        assertEquals(9, first.dotsLeft(Player.RED))
+        assertEquals(9, second.dotsLeft(Player.RED))
         assertEquals(2, second.dotsPlaced(Player.RED))
+        assertEquals(1, second.movesMade(Player.RED))
         assertFalse(second.boosterUsed)
     }
 
@@ -306,9 +309,9 @@ class BoosterTest {
     }
 
     @Test
-    fun `a double dot needs two dots left and ends early on a full board`() {
-        assertFalse(board(".....\n..R..\n..B..", dots = 1).canUse(Booster.DOUBLE_DOT))
-        assertTrue(board(".....\n..R..\n..B..", dots = 2).canUse(Booster.DOUBLE_DOT))
+    fun `a double dot needs one dot left and ends early on a full board`() {
+        assertFalse(board(".....\n..R..\n..B..", dots = 0).canUse(Booster.DOUBLE_DOT))
+        assertTrue(board(".....\n..R..\n..B..", dots = 1).canUse(Booster.DOUBLE_DOT))
         assertTrue(board(".....\n..R..\n..B..").canUse(Booster.DOUBLE_DOT))
 
         val lastPoint = board(
@@ -320,6 +323,49 @@ class BoosterTest {
         ).use(Action.DoubleDot).place("b2")
         assertTrue(lastPoint.isOver)
         assertEquals(1, lastPoint.dotsThisTurn)
+    }
+
+    @Test
+    fun `with one dot left, a double dot places two, and the second is the player's last`() {
+        val start = board(".......\n.......\n...R...\n...B...\n.......", dots = 1)
+        assertTrue(start.canUse(Booster.DOUBLE_DOT))
+
+        val first = start.use(Action.DoubleDot).place("a1")
+        assertEquals(0, first.dotsLeft(Player.RED))
+        assertEquals(1, first.dotsToPlace(Player.RED))
+        assertEquals(Player.RED, first.toMove)
+        assertTrue(first.isLegal(p("a2")))
+        assertFalse(first.isOver)
+
+        val second = first.place("a2")
+        assertEquals(2, second.dotsPlaced(Player.RED))
+        assertEquals(0, second.dotsToPlace(Player.RED))
+        assertEquals(Player.BLUE, second.toMove, "blue still answers with its last dot")
+        assertTrue(second.place("g1").isOver)
+    }
+
+    @Test
+    fun `with a double dot used once, both sides place their last dot on the same turn`() {
+        // 6 dots each, red first; red's turn 3 has two dots. Red places 7, blue 6, turn by turn.
+        var state = board(".........\n.........\n....R....\n....B....\n.........\n.........", dots = 6)
+        val turns = ArrayList<Pair<Player, Int>>()
+        while (!state.isOver) {
+            val mover = state.toMove
+            if (mover == Player.RED && state.dotsLeft(Player.RED) == 4) state = state.use(Action.DoubleDot)
+            var dots = 0
+            while (state.toMove == mover && !state.isOver) {
+                state = state.play(state.legalMoves().first()).state
+                dots++
+            }
+            turns += mover to dots
+        }
+        val red = turns.filter { it.first == Player.RED }.map { it.second }
+        val blue = turns.filter { it.first == Player.BLUE }.map { it.second }
+        assertEquals(listOf(1, 1, 2, 1, 1, 1), red)
+        assertEquals(listOf(1, 1, 1, 1, 1, 1), blue)
+        assertEquals(Player.BLUE, turns.last().first, "blue answers red's last dot")
+        assertEquals(7, state.dotsPlaced(Player.RED))
+        assertEquals(6, state.movesMade(Player.RED))
     }
 
     // Undo

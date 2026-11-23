@@ -54,10 +54,10 @@ stand-ins are computers, not people: the numbers say which levels are hard compa
 others, and the play-tests say how they feel.
 
 - **Whole games get harder through the world:** the average stand-in passes 73%, 43%, 48% and
-  24% of games in Full Moon, Crater, Twin Stars and the Comet; the weak one 33%, 27%, 28% and
-  23%. Twin Stars is a little easier than Crater. The Comet is the hardest whole game of the
-  campaign for the average stand-in. Full Moon is easier than the Mole (32% and 22%), so the
-  world opens with a dip.
+  10% of games in Full Moon, Crater, Twin Stars and the Comet; the weak one 33%, 27%, 28% and
+  7%. Twin Stars is a little easier than Crater. The Comet is under the wall line (20%) without
+  being meant as a wall. Full Moon is easier than the Mole (14% and 9%), so the world opens with
+  a dip.
 - **Three puzzles are hard:** 3-8 Owl (the average stand-in passes 46%), 3-13 Reflection, a
   deliberate wall (0%), and 3-17 Dusk (29%). The strong stand-in passes all three every time;
   each answer is three moves deep.
@@ -511,3 +511,5 @@ computer's replies in brackets, as `check-levels` prints them.
  13 - - . . . . . . . . . . - -
  14 - - - . . . . . . . . - - -
 ```
+
+The computer's 26 turns each take one dot from its budget, and every third has an extra second dot (decision 0039): 34 dots against the player's 23. After the player's last dot it places its last three turns with no reply.

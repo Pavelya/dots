@@ -111,7 +111,7 @@ data class LevelResult(val status: MissionStatus, val stars: Int, val starScore:
 internal fun count(stars: Stars, level: Level, state: GameState, ad: Booster? = null): Int = when (stars.measure) {
     StarMeasure.MARGIN -> state.score(level.human) - state.score(level.computer)
     StarMeasure.MOVES -> when (val mission = level.mission) {
-        is Mission.Capture -> (mission.moves - state.dotsPlaced(level.human)).coerceAtLeast(0)
+        is Mission.Capture -> (mission.moves - state.movesMade(level.human)).coerceAtLeast(0)
         else -> state.dotsLeft(level.human) ?: 0
     }
     StarMeasure.SAVED -> level.map.points(LevelMap.HUMAN).count { !state.isCaptured(it) }

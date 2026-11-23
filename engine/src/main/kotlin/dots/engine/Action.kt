@@ -44,7 +44,7 @@ sealed interface Action {
         override val booster get() = Booster.BOMB
     }
 
-    /** The player places two dots this turn instead of one. */
+    /** The player places two dots this turn instead of one; the second is extra and takes nothing from their dots left. */
     data object DoubleDot : UseBooster {
         override val booster get() = Booster.DOUBLE_DOT
     }

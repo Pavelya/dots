@@ -77,9 +77,9 @@ stand-in, which read the mission, each play the level 200 times against its own 
 stand-ins are computers, not people: the numbers say which levels are hard compared with the
 others, and the play-tests say how they feel.
 
-- **The whole games get harder** for a weak player: it passes 74%, 53%, 53%, 45% and 41% of
+- **The whole games get harder** for a weak player: it passes 74%, 53%, 53%, 45% and 32% of
   games in levels 11 to 15. The mini-boss, 1-15, is the hardest of them for the weak and the
-  average stand-in (41% and 55%).
+  average stand-in (32% and 35%).
 - **The average stand-in passes nearly every puzzle;** the hardest is 1-9 Three in a Row (71%).
   The weak one fails 1-4 Door in most games (13%).
 - **Border-only play passes no level of the world** (`cli bench levels 40 border`), so every
@@ -429,4 +429,4 @@ Four crosses on 11x11, 16 dots each, against the steady computer: it thinks abou
  12 . . . . . . . . . . . .
 ```
 
-Four crosses on 12x12, two blue blots in the middle, 18 dots each. Every fifth computer turn it places two dots (turns 5, 10 and 15); the countdown shows when.
+Four crosses on 12x12, two blue blots in the middle, 18 dots each. Every fifth computer turn it places two dots (turns 5, 10 and 15); the countdown shows when. The second dot is extra (decision 0039), so the computer places 21 dots in its 18 turns and answers the player's last dot.

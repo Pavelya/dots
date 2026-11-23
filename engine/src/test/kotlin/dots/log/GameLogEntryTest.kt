@@ -85,12 +85,12 @@ class GameLogEntryTest {
         val entry = GameLogEntry.start(game.record, level.strength.text, threatHighlight = false, now = 5)
             .copy(outcome = Outcome.FINISHED, red = game.state.score(Player.RED), blue = game.state.score(Player.BLUE), record = game.record)
 
-        assertTrue(entry.toJson().contains("\"record\":\"level/1 1-7 |"), entry.toJson())
+        assertTrue(entry.toJson().contains("\"record\":\"level/2 1-7 |"), entry.toJson())
         assertEquals(entry, GameLogEntry.parse(entry.toJson()))
         assertNull(entry.check(), "a level is over when its mission is decided")
         assertNotNull(entry.copy(outcome = Outcome.PLAYING).check())
         // A level that no longer exists cannot be read back; the app then forgets the saved game.
-        assertFailsWith<NoSuchElementException> { GameLogEntry.parse(entry.toJson().replace("level/1 1-7", "level/1 9-99")) }
+        assertFailsWith<NoSuchElementException> { GameLogEntry.parse(entry.toJson().replace("level/2 1-7", "level/2 9-99")) }
     }
 
     @Test

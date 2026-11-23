@@ -142,6 +142,9 @@ Implemented from the Wikipedia article
   number of dots to place; it ends when both have used theirs. This keeps sessions short and
   makes puzzle levels possible. With a budget, `stop` is still allowed but the computer never
   uses it. Dots placed up front (the computer's *head start*) don't count against the budget.
+  The budget counts turns: a turn of two dots (a boss's double move, the Double dot booster)
+  takes one from it, and its second dot is extra (decision 0039). So with equal budgets both
+  sides place their last dot on the same turn.
 - **One dot, several chains.** The article lets players choose which chain to draw (and says
   programs usually take the smallest area). This engine captures every newly enclosed area that
   holds an enemy dot, which is what a player drawing freely on paper would pick (decision 0035).
@@ -216,7 +219,7 @@ map:
 | `world`, `level` | The world (1 or more) and the level's number in it (1 to 99). They must match the file name. |
 | `name` | The name players see. |
 | `computer` | The computer's strength, weakest first: `beginner`, `easy`, `steady`, `normal` or `hard` (see [Strength steps](#strength-steps)), or `expert`. |
-| `dots` | Dots each side may place. |
+| `dots` | Dots each side may place: one a turn. The second dot of a turn of two is extra. |
 | `mission` | What passes the level: `win`, `win by 3`, `win with 8 dots`, `capture 5 in 8 moves`, `survive 6 moves`, `rescue e5` or `target e5`. See [Missions](#missions). |
 | `solutions` | `few` or `open`: how many first moves may pass a puzzle. `few` allows at most 3; `open` any number, for teaching levels where any sensible move should work. See [Checking puzzles](#checking-puzzles). |
 | `boosters` | `none`, or the boosters the player may use and how many of each: `wall 2, hint 1, bomb 1, double-dot 1, undo 1`. Every campaign level allows `undo 1`, and a test checks it. See [Boosters](#boosters). |
@@ -292,7 +295,7 @@ Boosters exist only in the campaign, and only the player has them (decision 0006
 | `wall` | Blocks one empty point that is in play. Nobody may place a dot there for the rest of the game. A ring passes over a wall as over an empty point, so a wall on the point that would close a ring stops that ring there, but a wider ring round the wall still captures. |
 | `hint` | Shows the player the move that serves their mission, within 1.5 seconds (`Level.hint`; see [The hint](#the-hint)). The board does not change. |
 | `bomb` | Removes the computer's dots on a point and the four points next to it, up, down, left and right. Points off the board and points out of play (inside a capture) are not touched, so a bomb never undoes a capture. It needs at least one dot to hit. The points become empty and playable; scores and dots left do not change. |
-| `double-dot` | The player places two dots this turn. It needs 2 dots left. No pass or stop between the two; if the board fills up after the first, the turn ends there. |
+| `double-dot` | The player places two dots this turn. The second is extra: the turn takes one from the dots left, like any other, so it works with 1 dot left. No pass or stop between the two; if the board fills up after the first, the turn ends there. |
 | `undo` | Takes back the player's last turn: their dot (both dots after a double dot), any booster used in that turn, which the player gets back, and the computer's reply. The player then plays that turn again. It can be used at the start of the player's turn, after their first move, and not once the level is over. Every campaign level allows one (decision 0023). |
 
 - A booster does not use up the turn: the player still places their dot afterwards.
@@ -303,7 +306,9 @@ Boosters exist only in the campaign, and only the player has them (decision 0006
   never use Undo.
 - A "target" mission cannot allow the bomb, which would remove the target instead of capturing
   it.
-- A double dot's two dots both count as moves, and both come out of the dots left.
+- A double dot's turn is one move: it takes one from the dots left, and from the moves of a
+  "capture" mission. Its second dot is extra, so a player who uses it places one dot more than
+  the budget (decision 0039).
 
 A level game is saved as a `LevelRecord`: the level and every action, boosters included, on one
 line. An undo is saved as `undo`, and the turn it took back stays in the record. The record
@@ -311,8 +316,12 @@ replays to exactly the same position, with the same boosters left, against the l
 is now.
 
 ```
-level/1 2-5 | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3 hint:b2 b2 c2 bomb:d3 d3 e2 undo c4 e2
+level/2 2-5 | e5 f6 wall:g7 g6 f8 double-dot d4 e4 c3 hint:b2 b2 c2 bomb:d3 d3 e2 undo c4 e2
 ```
+
+A record that starts `level/1` was written before decision 0039. It replays under the old rule,
+where both dots of a two-dot turn came out of the dots left, so old games and tester logs still
+replay as they were played.
 
 Boosters on top of the level's own come before the `|`, one word each:
 
@@ -323,7 +332,7 @@ Boosters on top of the level's own come before the `|`, one word each:
 | `!wall` | Given by a rewarded ad for this retry (decision 0030). At most one. |
 
 ```
-level/1 2-1 +hint *wall !wall | wall:d5 d6 a7 wall:g1 a1 g7
+level/2 2-1 +hint *wall !wall | wall:d5 d6 a7 wall:g1 a1 g7
 ```
 
 The player's own and the given ones are used first and never cost stars. A game with the ad's
@@ -342,19 +351,21 @@ move. Only the computer has the rule.
 
 | Rule | What the computer does | The level must have |
 |------|------------------------|---------------------|
-| `double move every 4 turns` | Places two dots on its turns 4, 8, 12 and so on, counting its own turns from 1. | Enough dots for the first double move: 5 here. |
+| `double move every 4 turns` | Places two dots on its turns 4, 8, 12 and so on, counting its own turns from 1. | Enough dots for the first double move: 4 here. |
 | `fortress of 12 dots` | Starts with a fortress: a group of 12 of its dots on the map, joined up, down, left, right or diagonally. A large head start in one piece. | A group of exactly that many computer dots on the map, bigger than any other, and at least 8. |
 | `two groups at once` | Places two dots on every turn, one in the left half of the board and one in the right half, in either order. | A board of even width, so the halves are equal. |
 
-- **Two dots in one turn** follow the double dot booster: both come out of the computer's dots
-  left, so it runs out sooner, and if no point is left for the second dot the turn ends after the
-  first. With only one dot left, a double move is a single dot.
+- **Two dots in one turn** follow the double dot booster: the turn takes one from the
+  computer's dots left, like any other, and the second dot is extra (decision 0039). So the
+  computer's turns last as long as its budget, and it places that many dots plus one for each
+  two-dot turn: on 1-15, 18 turns and 21 dots. If no point is left for the second dot, the turn
+  ends after the first.
 - **A pass or a stop** may come at the start of a two-dot turn, and uses it up. None between
   the two dots.
 - **The countdown.** `GameState.doubleMoveIn(computer)` says how many of the computer's turns
   until its next double move: 0 while it places it, 1 if its next turn is one, and so on. It is
   null when no double move can come any more: no rule, the game is over or in collecting, or the
-  computer will have fewer than 2 dots left by then. With `two groups at once`, every turn is a
+  computer's dots run out before that turn. With `two groups at once`, every turn is a
   double move. `Level.fortress` lists the fortress's dots, for the app to draw.
 - **Not checked as puzzles.** The puzzle checker counts one computer dot per turn, so it leaves
   out levels with `double move` or `two groups at once` (`check-levels` says "not checked").
@@ -711,7 +722,7 @@ In a level, the computer plays for the player to fail the mission, not only for 
 - **A marked dot.** In rescue and target, the group holding the marked dot counts as 10 dots.
 - **Moves left.** A ring that needs more dots than its attacker may still place is no threat: in
   "capture" the player's moves left, in "survive" the computer's, and otherwise the dots each side
-  has left.
+  can still place, a boss's extra dots included (`GameState.dotsToPlace`).
 
 | Mission | The computer's captures count | Its losses count | Also |
 |---------|------------------------------:|-----------------:|------|
@@ -811,19 +822,19 @@ game is "ok":
 1-12 Two Crosses     margin 2 4   116   165   409   110
 1-13 Head Start      margin 2 4   275   242   213    70
 1-14 Four Crosses    margin 2 4   198   194   292   116
-1-15 Ink Bottle      margin 2 5   260   123   350    67
+1-15 Ink Bottle      margin 2 5   371   147   262    20
 2-6  Flower Beds     margin 2 4   181   183   294   142
 2-12 Hedge           margin 2 4   262   165   268   105
 2-18 Few Seeds       margin 2 4   376   155   199    70
-2-20 Mole            margin 2 5   429   151   195    25
+2-20 Mole            margin 2 5   571    82   138     9
 3-6  Full Moon       margin 2 5   207   170   313   110
 3-12 Crater          margin 2 4   360   168   216    56
 3-18 Twin Stars      margin 2 4   341   142   213   104
-3-20 Comet           margin 2 5   425    99   199    77
+3-20 Comet           margin 2 5   638    49   102    11
 4-6  Rocky Shore     margin 2 4   298   186   206   110
 4-12 Pearls          margin 3 5   313   274   122    91
 4-18 Reef            margin 2 4   476    97   158    69
-4-20 Kraken          margin 3 8   418   104   205    73
+4-20 Kraken          margin 3 8   741    46    12     1
 ```
 
 The puzzles are meant to give three stars more often. Three stars mean the shortest answer: a

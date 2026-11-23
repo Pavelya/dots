@@ -302,7 +302,7 @@ class Solver(
             return when (val mission = level.mission) {
                 is Mission.Capture -> {
                     if (goal != Outcome.PASSED) return null
-                    val left = min(moves, mission.moves - state.dotsPlaced(human))
+                    val left = min(moves, mission.moves - state.movesMade(human))
                     if (liveDots(state, computer).none { walls.toCapture(state, human, it, left) <= left }) false else null
                 }
                 is Mission.Target -> {
@@ -314,7 +314,7 @@ class Solver(
                     if (goal != Outcome.PASSED) return null
                     // The player can always place a dot on the border, which can never be captured,
                     // as long as there are border points left even if the computer fills some.
-                    val left = min(mission.moves - state.dotsPlaced(computer), state.dotsLeft(computer) ?: Int.MAX_VALUE)
+                    val left = min(mission.moves - state.movesMade(computer), state.dotsToPlace(computer) ?: Int.MAX_VALUE)
                     if (freeBorderPoints(state) < 2 * left) return null
                     if (liveDots(state, human).none { walls.toCapture(state, computer, it, left) <= left }) true else null
                 }
@@ -571,7 +571,7 @@ class Solver(
                 is Mission.Target -> walls.toCapture(state, human, mission.dot.y * width + mission.dot.x, moves, key)
                 is Mission.Rescue -> walls.savePaths(state, human, mission.dot.y * width + mission.dot.x, key)
                 is Mission.Survive -> {
-                    val left = mission.moves - state.dotsPlaced(computer)
+                    val left = mission.moves - state.movesMade(computer)
                     for (dot in liveDots(state, human)) walls.toCapture(state, computer, dot, left, key)
                 }
                 else -> Unit

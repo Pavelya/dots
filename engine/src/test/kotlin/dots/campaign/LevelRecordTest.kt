@@ -46,10 +46,13 @@ class LevelRecordTest {
         return options.randomOrNull(random)
     }
 
-    /** The human plays at random and uses boosters often; the computer answers with [ai]. */
-    private fun play(level: Level, ai: SearchAi, random: Random): List<Action> {
+    /**
+     * The human plays at random and uses boosters often; the computer answers with [ai].
+     * [extraSecondDot] false plays the rule from before decision 0039.
+     */
+    private fun play(level: Level, ai: SearchAi, random: Random, extraSecondDot: Boolean = true): List<Action> {
         val actions = ArrayList<Action>()
-        var state = level.newGame()
+        var state = level.newGame(extraSecondDot = extraSecondDot)
         while (!level.isOver(state)) {
             val action = if (state.toMove == level.human) {
                 val booster = if (random.nextInt(3) == 0) randomBooster(state, random) else null
@@ -101,11 +104,36 @@ class LevelRecordTest {
     }
 
     @Test
+    fun `a record from before decision 0039 replays under the old rule and is written back the same`() {
+        val boss = Campaign.level(1, 15)
+        var doubles = 0
+        for ((game, seed) in listOf(boss to 1, boss to 2, level to 3, level to 4, level to 5)) {
+            val actions = play(game, SearchAi(game.ai, Random(seed)), Random(seed), extraSecondDot = false)
+            val old = LevelRecord(game, actions, extraSecondDot = false)
+            val text = old.toText()
+            assertTrue(text.startsWith("level/1 ${game.code} "), text)
+
+            val parsed = LevelRecord.parse(text) { _, _ -> game }
+            assertEquals(old, parsed, text)
+            val played = actions.fold(game.newGame(extraSecondDot = false)) { state, action -> state.apply(action).state }
+            val replayed = parsed.replay()
+            assertEquals(played.toAscii(), replayed.toAscii(), text)
+            for (player in Player.entries) assertEquals(played.dotsLeft(player), replayed.dotsLeft(player), text)
+            assertEquals(game.status(played), game.status(replayed), text)
+            doubles += actions.count { it == Action.DoubleDot }
+        }
+        assertTrue(doubles > 0, "no double dot used, so the old rule for it is not tried")
+        // A new record says so, and replays under the new rule.
+        assertTrue(LevelRecord(boss, emptyList()).toText().startsWith("level/2 1-15 "))
+        assertTrue(LevelRecord.parse("level/2 1-15 |").extraSecondDot)
+    }
+
+    @Test
     fun `a record with undos replays to the position the undos left`() {
         val actions = "a1 i9 wall:b1 b2 i8 c1 i7 undo undo d1 i8".split(' ').map(Action::parse)
         val record = LevelRecord(level, actions)
         val text = record.toText()
-        assertEquals("level/1 2-5 | a1 i9 wall:b1 b2 i8 c1 i7 undo undo d1 i8", text)
+        assertEquals("level/2 2-5 | a1 i9 wall:b1 b2 i8 c1 i7 undo undo d1 i8", text)
 
         val replayed = LevelRecord.parse(text) { _, _ -> level }.replay()
         val game = dots.engine.Game.from(record)
@@ -144,38 +172,38 @@ class LevelRecordTest {
             listOf(Action.Wall(Notation.parse("e6")!!), Action.Place(Notation.parse("c3")!!), Action.Place(Notation.parse("g7")!!), Action.DoubleDot),
         )
 
-        assertEquals("level/1 2-5 | wall:e6 c3 g7 double-dot", record.toText())
+        assertEquals("level/2 2-5 | wall:e6 c3 g7 double-dot", record.toText())
         assertEquals(record, LevelRecord.parse(record.toText()) { _, _ -> level })
-        assertEquals(Campaign.level(1, 3), LevelRecord.parse("level/1 1-3 |").level)
-        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2 | e5") { _, _ -> level } }
+        assertEquals(Campaign.level(1, 3), LevelRecord.parse("level/2 1-3 |").level)
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/2 2 | e5") { _, _ -> level } }
         assertFailsWith<IllegalArgumentException> { LevelRecord.parse("dots/1 2-5 | e5") { _, _ -> level } }
-        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-5 | boom:e5") { _, _ -> level } }
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/2 2-5 | boom:e5") { _, _ -> level } }
     }
 
     @Test
     fun `a gift of boosters is written in the record and replayed`() {
         val record = LevelRecord(level, listOf(Action.Place(Notation.parse("c3")!!)), gift = mapOf(Booster.HINT to 1))
 
-        assertEquals("level/1 2-5 +hint | c3", record.toText())
+        assertEquals("level/2 2-5 +hint | c3", record.toText())
         assertEquals(record, LevelRecord.parse(record.toText()) { _, _ -> level })
         assertEquals(boosters.getValue(Booster.HINT) + 1, record.start().boostersLeft(level.human, Booster.HINT))
-        assertEquals(mapOf(Booster.WALL to 2), LevelRecord.parse("level/1 2-5 +wall +wall |") { _, _ -> level }.gift)
-        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-5 +boom |") { _, _ -> level } }
-        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-5 hint |") { _, _ -> level } }
+        assertEquals(mapOf(Booster.WALL to 2), LevelRecord.parse("level/2 2-5 +wall +wall |") { _, _ -> level }.gift)
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/2 2-5 +boom |") { _, _ -> level } }
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/2 2-5 hint |") { _, _ -> level } }
     }
 
     @Test
     fun `the player's own boosters are written apart from a gift and replayed`() {
         val record = LevelRecord(level, emptyList(), gift = mapOf(Booster.HINT to 1), owned = mapOf(Booster.WALL to 2, Booster.HINT to 1))
 
-        assertEquals("level/1 2-5 +hint *wall *wall *hint |", record.toText())
+        assertEquals("level/2 2-5 +hint *wall *wall *hint |", record.toText())
         assertEquals(record, LevelRecord.parse(record.toText()) { _, _ -> level })
         val start = record.start()
         assertEquals(boosters.getValue(Booster.WALL) + 2, start.boostersLeft(level.human, Booster.WALL))
         assertEquals(boosters.getValue(Booster.HINT) + 2, start.boostersLeft(level.human, Booster.HINT))
         // A record from before the player had boosters of their own reads as it did.
-        assertEquals(emptyMap(), LevelRecord.parse("level/1 2-5 +hint | c3") { _, _ -> level }.owned)
-        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/1 2-5 *boom |") { _, _ -> level } }
+        assertEquals(emptyMap(), LevelRecord.parse("level/2 2-5 +hint | c3") { _, _ -> level }.owned)
+        assertFailsWith<IllegalArgumentException> { LevelRecord.parse("level/2 2-5 *boom |") { _, _ -> level } }
     }
 
     @Test

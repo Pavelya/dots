@@ -172,7 +172,7 @@ data class GameLogEntry(
         }
 
         /**
-         * Reads a record of any kind: a level's (`level/1 ...`), a daily puzzle's (`daily/1 ...`) or
+         * Reads a record of any kind: a level's (`level/2 ...`, or `level/1 ...` from before decision 0039), a daily puzzle's (`daily/1 ...`) or
          * a free game's (`dots/1 ...`). A level record names a level of the campaign, and a daily
          * record a day with a puzzle; if there is no such level or puzzle, it throws
          * [NoSuchElementException].
@@ -180,7 +180,7 @@ data class GameLogEntry(
         fun parseRecord(text: String): PlayRecord {
             val start = text.trimStart()
             return when {
-                start.startsWith(LevelRecord.FORMAT + " ") -> LevelRecord.parse(text)
+                LevelRecord.isRecord(start) -> LevelRecord.parse(text)
                 start.startsWith(DailyRecord.FORMAT + " ") -> DailyRecord.parse(text)
                 else -> GameRecord.parse(text)
             }

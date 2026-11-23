@@ -55,10 +55,10 @@ stand-ins are computers, not people: the numbers say which levels are hard compa
 others, and the play-tests say how they feel.
 
 - **Whole games get harder through the world:** the average stand-in passes 59%, 53%, 30% and
-  33% of games in Rocky Shore, Pearls, Reef and the Kraken; the weak one 27%, 21%, 28% and 9%.
-  Reef and the Kraken are equal within the noise for the average stand-in; the Kraken is the
-  hardest whole game of the campaign for the weak one. Rocky Shore is easier than the Comet (24%
-  and 23%), so the world opens with a dip.
+  2% of games in Rocky Shore, Pearls, Reef and the Kraken; the weak one 27%, 21%, 28% and 0%.
+  The Kraken is the hardest whole game of the campaign, and under the wall line (20%) without
+  being meant as a wall. Rocky Shore is easier than the Comet (10% and 7%), so the world opens
+  with a dip.
 - **Five puzzles are hard,** more than in any other world: 4-4 Anchor (the average stand-in
   passes 50%), 4-5 Rock Pool (42%), 4-15 Whirlpool (32%), 4-17 Driftwood (33%) and 4-19 Cove
   (49%). The strong stand-in passes them all every time; each answer is three moves deep.
@@ -523,3 +523,5 @@ computer's replies in brackets, as `check-levels` prints them.
  13 . . . . . . . . . . . . . .
  14 . . . . . . . . . . . . . .
 ```
+
+Each of the computer's 30 turns takes one dot from its budget, and its second dot, in the other half, is extra (decision 0039): 60 dots against the player's 30. The computer answers the player's last dot.

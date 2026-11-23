@@ -53,8 +53,11 @@ It prints the table, the charts below and the checks, as Markdown for this page.
   be deliberate: its level file's `note` starts with `Wall:`, saying why.
 - **No world has two walls in a row.**
 
-The bench prints both checks and whether they pass. Today they pass: the walls are 2-10 Rose
-Bush (22 of 200) and 3-13 Reflection (0 of 200), both noted, and they are not next to each other.
+The bench prints both checks and whether they pass. Today the wall check fails. The noted walls
+are 2-10 Rose Bush (22 of 200) and 3-13 Reflection (0 of 200). Three bosses are walls that are
+not noted: 2-20 Mole (29 of 200), 3-20 Comet (19 of 200) and 4-20 Kraken (4 of 200). They became
+walls when a boss's second dot of a turn became extra (decision 0039), which gives the bosses
+more dots. No two walls are next to each other.
 
 ## What the curve shows
 
@@ -63,18 +66,19 @@ average stand-in passes:
 
 | World | First whole game | Second | Third | Boss |
 | --- | ---: | ---: | ---: | ---: |
-| 1 | 1-11: 79%, then 1-12: 94% | 1-13: 69% | 1-14: 72% | 1-15: 55% |
-| 2 | 2-6: 75% | 2-12: 61% | 2-18: 39% | 2-20: 32% |
-| 3 | 3-6: 73% | 3-12: 43% | 3-18: 48% | 3-20: 24% |
-| 4 | 4-6: 59% | 4-12: 53% | 4-18: 30% | 4-20: 33% |
+| 1 | 1-11: 79%, then 1-12: 94% | 1-13: 69% | 1-14: 72% | 1-15: 35% |
+| 2 | 2-6: 75% | 2-12: 61% | 2-18: 39% | 2-20: 14% |
+| 3 | 3-6: 73% | 3-12: 43% | 3-18: 48% | 3-20: 10% |
+| 4 | 4-6: 59% | 4-12: 53% | 4-18: 30% | 4-20: 2% |
 
-- Each world opens easier than the boss before it, then climbs. Two steps go the other way or
-  stay level: 3-18 is a little easier than 3-12, and 4-18 and the Kraken are equal within the
-  noise (see "Limits").
-- The bosses get harder from World 1 to World 3. The Comet (3-20) is the hardest whole game for
-  the average stand-in (24%); the Kraken (4-20) is the hardest whole game for the weak one (9%).
+- Each world opens easier than the boss before it, then climbs. One step goes the other way:
+  3-18 is a little easier than 3-12 (see "Limits").
+- The bosses get harder from World 1 to World 4, and each is the hardest whole game of its world.
+  The Kraken (4-20) is the hardest of the campaign: the average stand-in passes 2% of games, the
+  weak one none.
 - The strong stand-in passes most whole games of Worlds 1 to 3 (68% to 99%) and the last ones of
-  World 4 less often (60% for Reef, 73% for the Kraken).
+  World 4 less often (60% for Reef). It passes the bosses of Worlds 2 to 4 less often still: 46%,
+  35% and 9%.
 
 **The computer's steps on the ladder (decision 0003).** The beginner plays 1-1 to 1-3, the easy
 step 1-4 to 1-13, the steady step 1-14 to 4-19 and the normal step only the Kraken. The steady
@@ -123,7 +127,8 @@ earns 0.4 to 1.6 stars a game, and the strong one 1.2 to 2.3.
   marked dot fails.
 - **3-20 Comet** gives the player 23 dots against the computer's 26. With 22 it sat on the wall
   line for the average stand-in (19.5% in a run of 200 games, 22% in a run of 400), a wall that
-  was not meant. With 23 the average stand-in passes 24%, still the least of World 3.
+  was not meant. Since the computer's second dot of a turn became extra (decision 0039), it
+  places 34 dots in its 26 turns, and the average stand-in passes 10%.
 - **1-3 First Capture** is passed a little less often by the average and strong stand-ins (95%
   and 93%) than by the weak one (99%). Its mission has 8 moves, more than the puzzle solver reads, so all
   three play their step's moves. Why the deeper steps do worse here is not known; it matters
@@ -158,9 +163,9 @@ xychart-beta
     title "World 1: games passed (%)"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"]
     y-axis "passed (%)" 0 --> 100
-    line [100, 100, 99, 13, 100, 100, 81, 90, 73, 96, 74, 53, 53, 45, 41]
-    line [100, 100, 95, 100, 100, 100, 100, 100, 71, 91, 79, 94, 69, 72, 55]
-    line [100, 100, 93, 100, 100, 100, 100, 100, 100, 100, 78, 99, 71, 98, 86]
+    line [100, 100, 99, 13, 100, 100, 81, 90, 73, 96, 74, 53, 53, 45, 32]
+    line [100, 100, 95, 100, 100, 100, 100, 100, 71, 91, 79, 94, 69, 72, 35]
+    line [100, 100, 93, 100, 100, 100, 100, 100, 100, 100, 78, 99, 71, 98, 76]
     line [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 ```
 
@@ -170,9 +175,9 @@ xychart-beta
     title "World 1: average stars per game"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"]
     y-axis "stars" 0 --> 3
-    line [3.00, 3.00, 2.93, 0.37, 3.00, 3.00, 2.30, 2.63, 2.08, 2.80, 1.12, 0.85, 0.89, 0.75, 0.67]
-    line [3.00, 3.00, 2.19, 3.00, 3.00, 3.00, 2.98, 3.00, 2.13, 2.64, 1.04, 1.58, 0.99, 1.02, 0.95]
-    line [3.00, 3.00, 2.18, 3.00, 3.00, 3.00, 3.00, 3.00, 3.00, 3.00, 1.29, 2.14, 1.39, 2.22, 1.75]
+    line [3.00, 3.00, 2.93, 0.37, 3.00, 3.00, 2.30, 2.63, 2.08, 2.80, 1.12, 0.85, 0.89, 0.75, 0.53]
+    line [3.00, 3.00, 2.19, 3.00, 3.00, 3.00, 2.98, 3.00, 2.13, 2.64, 1.04, 1.58, 0.99, 1.02, 0.49]
+    line [3.00, 3.00, 2.18, 3.00, 3.00, 3.00, 3.00, 3.00, 3.00, 3.00, 1.29, 2.14, 1.39, 2.22, 1.38]
 ```
 
 ### World 2
@@ -183,9 +188,9 @@ xychart-beta
     title "World 2: games passed (%)"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "passed (%)" 0 --> 100
-    line [100, 100, 100, 9, 100, 49, 100, 64, 100, 1, 100, 34, 26, 100, 100, 95, 100, 28, 100, 22]
-    line [100, 100, 100, 100, 100, 75, 100, 100, 100, 11, 100, 61, 33, 100, 100, 86, 100, 39, 100, 32]
-    line [100, 100, 100, 100, 100, 98, 100, 100, 100, 100, 100, 96, 100, 100, 100, 100, 100, 74, 100, 68]
+    line [100, 100, 100, 9, 100, 49, 100, 64, 100, 1, 100, 34, 26, 100, 100, 95, 100, 28, 100, 9]
+    line [100, 100, 100, 100, 100, 75, 100, 100, 100, 11, 100, 61, 33, 100, 100, 86, 100, 39, 100, 14]
+    line [100, 100, 100, 100, 100, 98, 100, 100, 100, 100, 100, 96, 100, 100, 100, 100, 100, 74, 100, 46]
     line [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 ```
 
@@ -195,9 +200,9 @@ xychart-beta
     title "World 2: average stars per game"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "stars" 0 --> 3
-    line [3.00, 3.00, 2.99, 0.23, 3.00, 0.81, 3.00, 1.32, 1.90, 0.01, 3.00, 0.60, 0.66, 3.00, 2.99, 2.82, 3.00, 0.47, 3.00, 0.33]
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.12, 3.00, 3.00, 3.00, 0.21, 3.00, 0.93, 0.74, 3.00, 3.00, 2.58, 3.00, 0.58, 3.00, 0.45]
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 2.33, 3.00, 3.00, 3.00, 3.00, 3.00, 2.04, 3.00, 3.00, 3.00, 3.00, 3.00, 1.55, 3.00, 1.23]
+    line [3.00, 3.00, 2.99, 0.23, 3.00, 0.81, 3.00, 1.32, 1.90, 0.01, 3.00, 0.60, 0.66, 3.00, 2.99, 2.82, 3.00, 0.47, 3.00, 0.12]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.12, 3.00, 3.00, 3.00, 0.21, 3.00, 0.93, 0.74, 3.00, 3.00, 2.58, 3.00, 0.58, 3.00, 0.21]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 2.33, 3.00, 3.00, 3.00, 3.00, 3.00, 2.04, 3.00, 3.00, 3.00, 3.00, 3.00, 1.55, 3.00, 0.86]
 ```
 
 ### World 3
@@ -208,9 +213,9 @@ xychart-beta
     title "World 3: games passed (%)"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "passed (%)" 0 --> 100
-    line [100, 100, 100, 100, 100, 33, 100, 2, 23, 16, 100, 27, 0, 86, 100, 100, 0, 28, 100, 23]
-    line [100, 100, 100, 100, 100, 73, 100, 46, 100, 100, 100, 43, 0, 100, 100, 100, 29, 48, 100, 24]
-    line [100, 100, 100, 100, 100, 97, 100, 100, 100, 100, 100, 77, 100, 100, 100, 100, 100, 79, 100, 71]
+    line [100, 100, 100, 100, 100, 33, 100, 2, 23, 16, 100, 27, 0, 86, 100, 100, 0, 28, 100, 7]
+    line [100, 100, 100, 100, 100, 73, 100, 46, 100, 100, 100, 43, 0, 100, 100, 100, 29, 48, 100, 10]
+    line [100, 100, 100, 100, 100, 97, 100, 100, 100, 100, 100, 77, 100, 100, 100, 100, 100, 79, 100, 35]
     line [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 ```
 
@@ -220,9 +225,9 @@ xychart-beta
     title "World 3: average stars per game"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "stars" 0 --> 3
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 0.57, 3.00, 0.02, 0.54, 0.34, 3.00, 0.44, 0.00, 1.46, 3.00, 3.00, 0.00, 0.45, 3.00, 0.38]
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.15, 3.00, 1.35, 3.00, 3.00, 3.00, 0.59, 0.00, 3.00, 3.00, 3.00, 0.85, 0.76, 3.00, 0.35]
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 2.12, 3.00, 3.00, 3.00, 3.00, 3.00, 1.51, 3.00, 3.00, 3.00, 3.00, 3.00, 1.76, 3.00, 1.47]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 0.57, 3.00, 0.02, 0.54, 0.34, 3.00, 0.44, 0.00, 1.46, 3.00, 3.00, 0.00, 0.45, 3.00, 0.11]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.15, 3.00, 1.35, 3.00, 3.00, 3.00, 0.59, 0.00, 3.00, 3.00, 3.00, 0.85, 0.76, 3.00, 0.14]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 2.12, 3.00, 3.00, 3.00, 3.00, 3.00, 1.51, 3.00, 3.00, 3.00, 3.00, 3.00, 1.76, 3.00, 0.63]
 ```
 
 ### World 4
@@ -233,9 +238,9 @@ xychart-beta
     title "World 4: games passed (%)"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "passed (%)" 0 --> 100
-    line [100, 6, 100, 49, 21, 27, 100, 33, 22, 100, 100, 21, 33, 100, 2, 100, 0, 28, 14, 9]
-    line [100, 100, 100, 50, 42, 59, 100, 100, 100, 100, 100, 53, 100, 100, 32, 100, 33, 30, 49, 33]
-    line [100, 100, 100, 100, 100, 90, 100, 100, 100, 100, 100, 91, 100, 100, 100, 100, 100, 60, 100, 73]
+    line [100, 6, 100, 49, 21, 27, 100, 33, 22, 100, 100, 21, 33, 100, 2, 100, 0, 28, 14, 0]
+    line [100, 100, 100, 50, 42, 59, 100, 100, 100, 100, 100, 53, 100, 100, 32, 100, 33, 30, 49, 2]
+    line [100, 100, 100, 100, 100, 90, 100, 100, 100, 100, 100, 91, 100, 100, 100, 100, 100, 60, 100, 9]
     line [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 ```
 
@@ -245,9 +250,9 @@ xychart-beta
     title "World 4: average stars per game"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "stars" 0 --> 3
-    line [1.34, 0.18, 3.00, 1.45, 0.49, 0.46, 3.00, 0.86, 0.64, 3.00, 3.00, 0.29, 0.88, 3.00, 0.05, 3.00, 0.00, 0.54, 0.41, 0.13]
-    line [3.00, 3.00, 3.00, 1.50, 1.24, 0.89, 3.00, 3.00, 3.00, 3.00, 3.00, 0.70, 3.00, 3.00, 0.69, 3.00, 0.99, 0.49, 1.46, 0.53]
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.90, 3.00, 3.00, 3.00, 3.00, 3.00, 1.66, 3.00, 3.00, 3.00, 3.00, 3.00, 1.27, 3.00, 1.40]
+    line [1.34, 0.18, 3.00, 1.45, 0.49, 0.46, 3.00, 0.86, 0.64, 3.00, 3.00, 0.29, 0.88, 3.00, 0.05, 3.00, 0.00, 0.54, 0.41, 0.00]
+    line [3.00, 3.00, 3.00, 1.50, 1.24, 0.89, 3.00, 3.00, 3.00, 3.00, 3.00, 0.70, 3.00, 3.00, 0.69, 3.00, 0.99, 0.49, 1.46, 0.02]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.90, 3.00, 3.00, 3.00, 3.00, 3.00, 1.66, 3.00, 3.00, 3.00, 3.00, 3.00, 1.27, 3.00, 0.11]
 ```
 
 ## Every level
@@ -271,7 +276,7 @@ Stars: the average stars per game, a failed game counting 0.
 | 1-12 | Two Crosses | win | easy | 53% | 94% | 99% | 0.8 | 1.6 | 2.1 |
 | 1-13 | Head Start | win | easy | 53% | 69% | 71% | 0.9 | 1.0 | 1.4 |
 | 1-14 | Four Crosses | win | steady | 45% | 72% | 98% | 0.8 | 1.0 | 2.2 |
-| 1-15 | Ink Bottle | win | steady | 41% | 55% | 86% | 0.7 | 0.9 | 1.8 |
+| 1-15 | Ink Bottle | win | steady | 32% | 35% | 76% | 0.5 | 0.5 | 1.4 |
 | 2-1 | Weeds | survive 2 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 2-2 | Path Home | rescue b4 | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 2-3 | Snail | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
@@ -291,7 +296,7 @@ Stars: the average stars per game, a failed game counting 0.
 | 2-17 | Garden Gate | rescue d3 | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 2-18 | Few Seeds | win with 18 dots | steady | 28% | 39% | 74% | 0.5 | 0.6 | 1.6 |
 | 2-19 | Trellis | survive 3 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 2-20 | Mole | win with 20 dots | steady | 22% | 32% | 68% | 0.3 | 0.5 | 1.2 |
+| 2-20 | Mole | win with 20 dots | steady | 9% | 14% | 46% | 0.1 | 0.2 | 0.9 |
 | 3-1 | Lake Shore | survive 3 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-2 | Shoreline | target e3 | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-3 | Night Swim | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
@@ -311,7 +316,7 @@ Stars: the average stars per game, a failed game counting 0.
 | 3-17 | Dusk | target d4 | steady | 0% | 29% | 100% | 0.0 | 0.9 | 3.0 |
 | 3-18 | Twin Stars | win with 19 dots | steady | 28% | 48% | 79% | 0.5 | 0.8 | 1.8 |
 | 3-19 | Stargazer | capture 1 in 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 3-20 | Comet | win with 23 dots | steady | 23% | 24% | 71% | 0.4 | 0.4 | 1.5 |
+| 3-20 | Comet | win with 23 dots | steady | 7% | 10% | 35% | 0.1 | 0.1 | 0.6 |
 | 4-1 | Rocks | capture 1 in 4 moves | steady | 100% | 100% | 100% | 1.3 | 3.0 | 3.0 |
 | 4-2 | Oyster | capture 3 in 4 moves | steady | 6% | 100% | 100% | 0.2 | 3.0 | 3.0 |
 | 4-3 | Tide Pool | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
@@ -331,4 +336,4 @@ Stars: the average stars per game, a failed game counting 0.
 | 4-17 | Driftwood | target e6 | steady | 0% | 33% | 100% | 0.0 | 1.0 | 3.0 |
 | 4-18 | Reef | win with 19 dots | steady | 28% | 30% | 60% | 0.5 | 0.5 | 1.3 |
 | 4-19 | Cove | capture 1 in 5 moves | steady | 14% | 49% | 100% | 0.4 | 1.5 | 3.0 |
-| 4-20 | Kraken | win | normal | 9% | 33% | 73% | 0.1 | 0.5 | 1.4 |
+| 4-20 | Kraken | win | normal | 0% | 2% | 9% | 0.0 | 0.0 | 0.1 |

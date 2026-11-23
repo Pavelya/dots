@@ -88,21 +88,21 @@ internal fun judge(mission: Mission, state: GameState, human: Player): MissionSt
         is Mission.WinBy -> byMargin(mission.margin)
         is Mission.WinWithFewerDots -> byMargin(1)
         is Mission.Capture -> {
-            val left = (mission.moves - state.dotsPlaced(human)).coerceAtLeast(0)
+            val left = (mission.moves - state.movesMade(human)).coerceAtLeast(0)
             val reach = stillCapturable(state, human)
             when {
                 captured >= mission.dots -> status(Outcome.PASSED, Reason.CAPTURED_ENOUGH, left)
-                left == 0 -> status(Outcome.FAILED, Reason.OUT_OF_MOVES, left)
+                dotsWithin(mission.moves, state, human) == 0 -> status(Outcome.FAILED, Reason.OUT_OF_MOVES, left)
                 state.isOver -> status(Outcome.FAILED, Reason.GAME_OVER, left)
                 reach != null && captured + reach < mission.dots -> status(Outcome.FAILED, Reason.OUT_OF_REACH, left)
                 else -> status(Outcome.PLAYING, null, left)
             }
         }
         is Mission.Survive -> {
-            val left = (mission.moves - state.dotsPlaced(computer)).coerceAtLeast(0)
+            val left = (mission.moves - state.movesMade(computer)).coerceAtLeast(0)
             when {
                 lost > 0 -> status(Outcome.FAILED, Reason.LOST_A_DOT, left)
-                left == 0 || stillCapturable(state, computer) == 0 -> status(Outcome.PASSED, Reason.SURVIVED, left)
+                dotsWithin(mission.moves, state, computer) == 0 || stillCapturable(state, computer) == 0 -> status(Outcome.PASSED, Reason.SURVIVED, left)
                 state.isOver -> status(Outcome.PASSED, Reason.GAME_OVER, left)
                 else -> status(Outcome.PLAYING, null, left)
             }
@@ -121,6 +121,13 @@ internal fun judge(mission: Mission, state: GameState, human: Player): MissionSt
         }
     }
 }
+
+/**
+ * The dots [player] may still place within a mission's first [moves] moves of theirs: one for each
+ * move left, and the extra second dot of the move they are making, if it is still to come.
+ */
+internal fun dotsWithin(moves: Int, state: GameState, player: Player): Int =
+    (moves - state.movesMade(player)).coerceAtLeast(0) + if (state.toMove == player && state.extraDotToCome) 1 else 0
 
 /**
  * The most [player] can still add to their score from here on: the opponent's live dots that are
@@ -144,7 +151,7 @@ private fun stillCapturable(state: GameState, player: Player): Int? {
         // After a stop only the collecting player moves, and the other places no more dots.
         state.isCleanup -> if (state.cleaner == player) exposed else 0
         else -> {
-            val left = state.dotsLeft(enemy) ?: return null
+            val left = state.dotsToPlace(enemy) ?: return null
             exposed + left + min(left, freeBonus)
         }
     }

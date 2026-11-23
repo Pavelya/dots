@@ -39,9 +39,13 @@ class BossCountdownTest {
         val doubleTurns: List<Int>,
     )
 
+    /** The first of [moves] that closes no ring. */
+    private fun GameState.quiet(moves: List<Pos>): Pos = moves.first { play(it).captures.isEmpty() }
+
     /**
-     * Plays [level] to the end of its dots: the player along the bottom row, the boss along the top,
-     * so that nothing is captured. The boss's second dot of a turn of two must still show 0.
+     * Plays [level] to the end of its dots: the player from the bottom row up, the boss from the
+     * top row down, each skipping points that would close a ring, so that nothing is captured. The
+     * boss's second dot of a turn of two must still show 0.
      */
     private fun play(level: Level): Game {
         var state = level.newGame()
@@ -61,12 +65,12 @@ class BossCountdownTest {
                     assertEquals("the second dot of turn ${bossTurns.size}", 0, bossCountdown(state, boss))
                 }
                 placed++
-                state = state.play(state.legalMoves().first()).state
+                state = state.play(state.quiet(state.legalMoves())).state
             } else {
                 turnDots = 0
                 placed = 0
                 playerTurns += bossTurns.size to bossCountdown(state, boss)
-                state = state.play(state.legalMoves().last()).state
+                state = state.play(state.quiet(state.legalMoves().reversed())).state
             }
         }
         assertEquals("nothing captured", 0, state.score(Player.RED) + state.score(Player.BLUE))
@@ -104,8 +108,10 @@ class BossCountdownTest {
     fun `2-20 and 3-20 have their own schedule, every 4 and every 3 turns`() {
         for ((level, every) in listOf(Campaign.level(2, 20) to 4, Campaign.level(3, 20) to 3)) {
             val game = play(level)
-            assertTrue(level.code, game.doubleTurns.isNotEmpty())
-            assertEquals(level.code, game.doubleTurns.indices.map { (it + 1) * every }, game.doubleTurns)
+            // Each turn takes one from the budget (decision 0039), so every double move up to the
+            // boss's last turn comes: 5 on 2-20 (22 turns), 8 on 3-20 (26 turns).
+            assertEquals(level.code, level.dotsPerPlayer, game.bossTurns.size)
+            assertEquals(level.code, List(level.dotsPerPlayer / every) { (it + 1) * every }, game.doubleTurns)
             assertEquals("${level.code}: from the first move", 0 to every, game.playerTurns.first())
             checkAgainstTheEngine(game)
         }

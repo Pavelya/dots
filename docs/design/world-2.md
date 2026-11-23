@@ -51,9 +51,9 @@ stand-ins are computers, not people: the numbers say which levels are hard compa
 others, and the play-tests say how they feel.
 
 - **Whole games get harder through the world:** the average stand-in passes 75%, 61%, 39% and
-  32% of games in Flower Beds, Hedge, Few Seeds and the Mole; the weak one 49%, 34%, 28% and
-  22%. Flower Beds is easier than World 1's mini-boss, 1-15 (55% and 41%), so the world opens
-  with a dip.
+  14% of games in Flower Beds, Hedge, Few Seeds and the Mole; the weak one 49%, 34%, 28% and
+  9%. The Mole is under the wall line (20%) without being meant as a wall. Flower Beds is easier
+  than World 1's mini-boss, 1-15 (35% and 32%), so the world opens with a dip.
 - **Two puzzles are hard:** 2-10 Rose Bush, a deliberate wall (the average stand-in passes 11%),
   and 2-13 Greenhouse (33%). The strong stand-in passes both every time; each answer is three
   moves deep.
@@ -494,3 +494,5 @@ computer's replies in brackets, as `check-levels` prints them.
  13 . . . . . . . . . . . . . .
  14 . . . . . . . . . . . . . .
 ```
+
+The computer's 22 turns each take one dot from its budget, and every fourth has an extra second dot (decision 0039): 27 dots against the player's 20. After the player's last dot it places its last two turns with no reply.

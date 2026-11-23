@@ -2,7 +2,8 @@ package dots.engine
 
 /**
  * A rule that gives a player two dots on some of their turns: the campaign's boss rules. A player
- * has at most one. Both dots come out of the player's dots left, as with [Booster.DOUBLE_DOT].
+ * has at most one. Such a turn takes one from the player's dots left, like any other turn: the
+ * second dot is extra, as with [Booster.DOUBLE_DOT] (decision 0039).
  * [GameState.doubleMoveIn] counts down to the next such turn.
  */
 sealed interface TurnRule {

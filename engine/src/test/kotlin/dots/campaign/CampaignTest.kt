@@ -115,8 +115,11 @@ class CampaignTest {
             val end = Match.playOut(level.newGame(), SearchAi(easy, Random(seed)), SearchAi(easy, Random(seed + 50)))
 
             assertTrue(end.isOver, level.name)
-            // In "win with fewer dots" the player has fewer dots than the computer.
-            assertEquals(level.humanDots + level.dotsPerPlayer, end.moveCount, level.name)
+            // In "win with fewer dots" the player has fewer dots than the computer. Each side's
+            // budget counts its moves; a boss's two-dot turns add extra dots on top.
+            assertEquals(level.humanDots, end.movesMade(level.human), level.name)
+            assertEquals(level.dotsPerPlayer, end.movesMade(level.computer), level.name)
+            assertEquals(end.dotsPlaced(level.human) + end.dotsPlaced(level.computer), end.moveCount, level.name)
         }
     }
 
