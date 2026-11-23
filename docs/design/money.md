@@ -116,9 +116,10 @@ only, and is lost if the player leaves the level. On levels whose stars count th
 using it costs the same as using one of the level's own boosters. On every other level, a game that
 uses it earns 1 star, a pass, whatever the stars count. It counts as used once the game has used
 every booster of its kind, the ad's one too; one given back by an undo is not used. So ads can help
-a player pass a level, but never raise the stars that the total-star leaderboard counts. The booster
-offered is the first kind the level allows, in the order a level file lists them: wall, hint, bomb,
-double dot. Levels that allow no booster but Undo show no offer.
+a player pass a level, but never raise the stars that the total-star leaderboard counts once it
+ships after the launch (O-02, decision 0037). The booster offered is the first kind the level
+allows, in the order a level file lists them: wall, hint, bomb, double dot. Levels that allow no
+booster but Undo show no offer.
 
 **Limits**
 
@@ -140,7 +141,8 @@ age the rating allows see no ads (C-03).
 ### Not used
 
 - **A daily reward to double.** The game has no daily reward. The daily puzzle and its streak stay
-  free of ads: the puzzle has a leaderboard, and an ad to save a streak would pressure players.
+  free of ads: the puzzle gets a leaderboard after the launch (O-02), and an ad to save a streak
+  would pressure players.
 - **Ads that give cosmetics.** Cosmetics are bought or earned by playing.
 - **"Remove ads" for sale.** Every ad is already optional, and the switch in Settings hides them
   for free.

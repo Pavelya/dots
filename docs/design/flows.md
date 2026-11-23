@@ -6,6 +6,7 @@ here, and the prototype (D-10) follows these flows.
 
 Three decisions shape it: no difficulty picker (decision 0003), boosters only in the solo campaign
 (decision 0006), and two players on one phone at launch with online play after it (decision 0014).
+Leaderboards, achievements and the Play Games backup also come after the launch (decision 0037).
 
 ## Navigation in short
 
@@ -45,7 +46,6 @@ flowchart TD
     pieces["Pieces"]
     rings["Rings"]
     stats["Stats"]
-    ranks["Leaderboards and achievements"]
     shop["Shop"]
     preview["Cosmetic preview"]
     board[["Game board"]]
@@ -74,7 +74,6 @@ flowchart TD
     settings -->|"Rings, when there is a choice"| rings
     pieces -->|"More piece styles"| shop
     rings -->|"More ring effects"| shop
-    stats --> ranks
     shop --> preview
 ```
 
@@ -117,6 +116,8 @@ saved first, so nothing is lost.
 flowchart TD
     map(["World map (home)"])
     daily["Today's puzzle"]
+    stats["Stats"]
+    ranks["Leaderboards and achievements"]
     link(["Invite link"])
     notification(["Turn notification"])
     lobby["Online lobby"]
@@ -139,6 +140,8 @@ flowchart TD
     result -->|"Rematch"| online
     result -->|"Lobby"| lobby
     daily -->|"Play on the weekly challenge card"| board
+    map -->|"Stats"| stats
+    stats -->|"Leaderboards or Achievements"| ranks
 ```
 
 ## Screens
@@ -163,22 +166,23 @@ over the map or the board, which stay visible around it.
 | Today's puzzle | The puzzle's note on the map | Over the map: the date, the mission, the streak, whether a freeze is left this week, and the time to the next puzzle. Play, Resume or View result. | A-07 |
 | Play a game | Play a game on the map | Over the map: two big cards, Free play (against the computer) and Two players (two people on one phone). A card starts a game at once with the defaults, or resumes the saved one. A small link opens the setup in the same note: board size and game length; then a card starts a new game, asking first if one is saved. The computer plays at the strength reached in the campaign; two players use the pure rules. | A-08 |
 | Rules | How to play on the map or in Pause | Placing, capturing, empty rings, the border and how a game ends, with small board pictures. Play tutorial. | A-06 |
-| Stats | Stats on the map | Games played and won, captures, best capture, longest streak, stars per world, the player's title. Opens Leaderboards and achievements. | A-11 |
-| Leaderboards and achievements | Stats | The daily puzzle and total-star leaderboards and the achievements, shown by Google Play Games. Asks to sign in when the player is not. Closing returns to Stats. | O-02 |
+| Stats | Stats on the map | Games played and won, captures, best capture, longest streak, stars per world, the player's title. After launch, it also opens Leaderboards and achievements. | A-11 |
 | Shop | Shop on the map | Themes, piece styles and ring effects, each on a small board, with its price, or how to earn it where Google Play can't sell; owned items marked. Restore purchases. The catalogue and prices are in [`money.md`](money.md). | C-02 |
 | Cosmetic preview | An item in Shop | The item on a sample board, its price and how to earn it, and whether it is owned or in use. Buy or Use. Where Google Play can't sell, only how to earn it. | C-02 |
 | Settings | Settings on the map | The controls listed under [Settings](#settings). | A-09 |
-| Settings details | A row in Settings | Privacy (the policy, ad choices and the Show ad offers switch), Play Games backup, credits and licences. | A-09, C-03 |
+| Settings details | A row in Settings | Privacy (the policy, ad choices and the Show ad offers switch), credits and licences. | A-09, C-03 |
 | Theme | Theme in Settings, shown only when more than one theme can be chosen | One card per theme the player can choose, each on a small sample board drawn by that theme. The theme in use is ticked; tapping another puts it in use at once. See [Choosing a theme](#choosing-a-theme). | A-23 |
 | Pieces | Pieces in Settings, shown only when a piece style other than Standard can be chosen | One card per piece style the player can choose, Standard first, each on the Shop's small board drawn in the theme in use. The one in use is ticked; tapping another puts it in use at once. See [Choosing pieces and rings](#choosing-pieces-and-rings). | A-26 |
 | Rings | Rings in Settings, shown only when a ring effect other than Standard can be chosen | The same page for ring effects. | A-26 |
 | Developer menu | Seven taps on the version line at the bottom of Settings | The POC's difficulty picker and test-only settings. Not for players, so it is left out of the two-tap check. | A-01 |
-| Android screens | An action in the game | Not drawn by us: the share screen, the feedback email, the review prompt (A-12), Play Games sign-in, Google Play purchase, a rewarded ad, the ad consent form. Closing one returns to the screen that opened it. | A-07, A-12, O-02, C-02, C-03 |
+| Android screens | An action in the game | Not drawn by us: the share screen, the feedback email, the review prompt (A-12), Google Play purchase, a rewarded ad, the ad consent form. Closing one returns to the screen that opened it. | A-07, A-12, C-02, C-03 |
 
 ### After launch
 
 | Screen | Opens from | What the player sees and does | Built in |
 | --- | --- | --- | --- |
+| Leaderboards and achievements | Leaderboards or Achievements on Stats | The daily puzzle and total-star leaderboards and the achievements, shown by Google Play Games. Asks to sign in when the player is not. Closing returns to Stats. | O-02 |
+| Play Games backup | A row in Settings, Help | Whether the player is signed in to Google Play Games and when the game was last saved there. Sign in. | O-02 |
 | Online lobby | Online on the map | Games grouped as Your turn, Waiting and Finished. Invite a friend or open a game. | O-03 |
 | Invite | Invite in the lobby, an invite link | Share an invite link, or see who invited you and accept. An expired or broken link offers the lobby. | O-03 |
 | Online game | A game in the lobby, a turn notification | The game board with the pure rules and no boosters. Shows waiting and reconnecting. The menu offers Lobby, Resign, Report and Block. It does not pause the game. | O-03, O-06 |
@@ -197,9 +201,10 @@ to the map.
   dots (off by default; the [theme page](theme-notebook.md#the-board) says where links show
   anyway), placing a dot (drag, the default, or two taps; decisions 0024 and 0026).
 - **Help and app:** Replay tutorial, Send feedback (an email, A-12), Privacy (the policy, ad
-  choices and Show ad offers, C-03), Play Games backup (O-02), Credits and licences. The game is in
-  English only (decision 0036), so there is no Language row.
-- **After launch:** notifications (O-05), delete my online data (O-06).
+  choices and Show ad offers, C-03), Credits and licences. The game is in English only (decision
+  0036), so there is no Language row.
+- **After launch:** Play Games backup (O-02), above Credits and licences; notifications (O-05),
+  delete my online data (O-06).
 
 ## Choosing a theme
 
@@ -329,7 +334,7 @@ the developer menu are left out.
 | Rules | How to play | 1 |
 | Tutorial | How to play → Play tutorial | 2 |
 | Stats | Stats | 1 |
-| Leaderboards or achievements | Stats → Leaderboards or Achievements | 2 |
+| Leaderboards or achievements (after launch) | Stats → Leaderboards or Achievements | 2 |
 | Shop and an item's preview | Shop → the item | 2 |
 | Settings | Settings | 1 |
 | Theme (when there is a choice) | Settings → Theme | 2 |
@@ -402,8 +407,8 @@ The first tap a new player makes is a move on the board.
   offers Retry on Result. After a solve, the button becomes View result.
 - The streak allows one free freeze a week (A-07). Share sends the puzzle number and a summary
   without spoilers through Android's share screen.
-- The puzzles ship with the app, so the daily puzzle works offline (G-12). A leaderboard score
-  that waits for a connection is marked as waiting.
+- The puzzles ship with the app, so the daily puzzle works offline (G-12). After launch, a
+  leaderboard score that waits for a connection is marked as waiting (O-02).
 - An attempt belongs to its date. If midnight passes during an attempt, it finishes as that day's
   puzzle, and Today's puzzle then shows the new one.
 
@@ -481,14 +486,13 @@ The words (the booster, the prices and the star counts are examples):
 | Cosmetic preview, earn only | Earn it with 150 stars from the campaign. You have 112: 38 to go. No button. |
 | Settings details, Privacy | **Show ad offers**, a switch, on. A booster for a short ad, after a lost level or at a chest. Never during a game. |
 
-## Leaderboards at launch
-
-Signing in to Google Play Games is optional. Without it, Stats and every offline mode still work.
-The game asks to sign in only where a feature needs it, and closing a Play Games screen returns to
-the same place in Stats. Settings shows the Play Games backup.
-
 ## Online after launch
 
+- Leaderboards, achievements and the Play Games backup come after the launch, with O-02
+  (decision 0037). Until then, Stats has no Leaderboards or Achievements links and Settings has no
+  Play Games backup row. Once they ship, signing in to Google Play Games is optional: without it,
+  Stats and every offline mode still work. The game asks to sign in only where a feature needs it,
+  and closing a Play Games screen returns to the same place in Stats.
 - Online joins the icons on the map. Online games use the pure rules, without boosters
   (decision 0006).
 - An invite link opens Invite. A turn notification opens that game. If sign-in is needed, the
@@ -533,6 +537,9 @@ people the owner has shared it with.
   and Ranked.
 - **Screens Google draws.** Leaderboards and achievements, and the other Android screens, are drawn
   by Google. Their frame shows only what we draw: the sign-in question over Stats.
+- **After launch on the launch screens.** The Stats frame keeps Leaderboards and Achievements, and
+  the Settings and Settings details frames keep the Play Games backup. The launch build leaves
+  them out (decision 0037); O-02 adds them as drawn.
 
 The frames follow these layout rules:
 
@@ -564,8 +571,8 @@ On the prototype (D-10), and later on the app:
   Retry and Map should be easy to find; a locked world shows what it needs; the boss rule shows on
   both ways into a level.
 - **Leave and come back.** Try Back everywhere, a phone call mid-turn, a cold start, and midnight
-  passing offline. The right board, date and map position come back. Close the Play Games sign-in
-  and cancel a purchase and an ad.
+  passing offline. The right board, date and map position come back. Cancel a purchase and an
+  ad, and after launch, close the Play Games sign-in.
 - **Reach and read.** Buttons and controls are at least 48 x 48 dp. Try large text and TalkBack.
   Players and states differ by shape and text, not by colour alone.
 

@@ -47,7 +47,7 @@ const val DEVELOPER_TAPS = 7
 enum class SettingsPage(val key: String) {
     PRIVACY("privacy"),
 
-    /** O-02 builds the Play Games backup. */
+    /** The Play Games backup, which O-02 builds. No row opens it until then (decision 0037). */
     BACKUP("backup"),
     CREDITS("credits"),
 
@@ -66,9 +66,10 @@ enum class SettingsPage(val key: String) {
  * that opens the Theme page through [onTheme] and shows only when there is more than one theme to
  * choose from, flows.md "Choosing a theme"; high-contrast pieces,
  * threat highlights, links between dots, and placing a dot by drag, the default, or two taps,
- * decisions 0024 and 0026), and help (Replay the tutorial, Send feedback, Privacy, Play Games
- * backup, Credits and licences). Send feedback goes to [onFeedback], which opens an email; the
- * other help rows open their pages through [onPage]. Every change goes to [onChange] at once.
+ * decisions 0024 and 0026), and help (Replay the tutorial, Send feedback, Privacy, Credits and
+ * licences). Send feedback goes to [onFeedback], which opens an email; the other help rows open
+ * their pages through [onPage]. The Play Games backup row shows only with [playGamesBackup], which
+ * the app turns on once O-02 builds it (decision 0037). Every change goes to [onChange] at once.
  * Tapping the version line [DEVELOPER_TAPS] times opens the developer menu.
  */
 @Composable
@@ -83,6 +84,7 @@ fun SettingsScreen(
     onBack: () -> Unit,
     theme: ThemeId? = null,
     onTheme: () -> Unit = {},
+    playGamesBackup: Boolean = false,
 ) {
     val style = Palette.current
     PaperPage(stringResource(R.string.home_settings), onBack) {
@@ -121,7 +123,7 @@ fun SettingsScreen(
         LinkRow(stringResource(R.string.settings_replay_tutorial), onClick = onReplayTutorial)
         LinkRow(stringResource(R.string.settings_feedback), onClick = onFeedback)
         LinkRow(stringResource(R.string.settings_privacy)) { onPage(SettingsPage.PRIVACY) }
-        LinkRow(stringResource(R.string.settings_backup)) { onPage(SettingsPage.BACKUP) }
+        if (playGamesBackup) LinkRow(stringResource(R.string.settings_backup)) { onPage(SettingsPage.BACKUP) }
         LinkRow(stringResource(R.string.settings_credits)) { onPage(SettingsPage.CREDITS) }
 
         var taps by rememberSaveable { mutableIntStateOf(0) }

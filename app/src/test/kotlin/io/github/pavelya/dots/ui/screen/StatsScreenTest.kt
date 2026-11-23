@@ -27,9 +27,9 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 
 /**
- * Stats (A-11), as the wireframes' frame "Stats" draws it: the title, six totals, the stars of each
- * world, and Leaderboards and Achievements. Reference images in app/src/test/screenshots; they are
- * recorded in CI (CLAUDE.md, "Recording screenshots").
+ * Stats (A-11), as the wireframes' frame "Stats" draws it: the title, six totals and the stars of
+ * each world. The frame's Leaderboards and Achievements wait for O-02 (decision 0037). Reference
+ * images in app/src/test/screenshots; they are recorded in CI (CLAUDE.md, "Recording screenshots").
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -45,8 +45,11 @@ class StatsScreenTest {
 
     private val tapped = mutableListOf<String>()
 
-    /** Draws Stats as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the bottom. */
-    private fun show(dark: Boolean = false, stats: PlayerStats = this.stats, longestStreak: Int = 12, progress: Progress = this.progress) {
+    /**
+     * Draws Stats as the phone would: 24 dp of status bar at the top, 12 dp of gesture bar at the
+     * bottom. With [links], Stats gets Leaderboards and Achievements, as O-02 will give them.
+     */
+    private fun show(dark: Boolean = false, stats: PlayerStats = this.stats, longestStreak: Int = 12, progress: Progress = this.progress, links: Boolean = false) {
         compose.setContent {
             DotsTheme(GameTheme.NOTEBOOK, dark) {
                 Surface {
@@ -55,9 +58,9 @@ class StatsScreenTest {
                             map = Campaign.map(progress),
                             stats = stats,
                             longestStreak = longestStreak,
-                            onLeaderboards = { tapped += "leaderboards" },
-                            onAchievements = { tapped += "achievements" },
                             onBack = { tapped += "back" },
+                            onLeaderboards = if (links) ({ tapped += "leaderboards" }) else null,
+                            onAchievements = if (links) ({ tapped += "achievements" }) else null,
                         )
                     }
                 }
@@ -94,8 +97,18 @@ class StatsScreenTest {
     }
 
     @Test
-    fun `Leaderboards, Achievements and Back`() {
+    fun `Stats has no Leaderboards or Achievements until O-02 builds them`() {
         show()
+
+        compose.onNodeWithText("Leaderboards").assertDoesNotExist()
+        compose.onNodeWithText("Achievements").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Back to the map").performClick()
+        assertEquals(listOf("back"), tapped)
+    }
+
+    @Test
+    fun `with O-02's links, Leaderboards, Achievements and Back`() {
+        show(links = true)
 
         compose.onNodeWithText("Leaderboards").performClick()
         compose.onNodeWithText("Achievements").performClick()
@@ -111,10 +124,9 @@ class StatsScreenTest {
 
     @Test
     @Config(qualifiers = "w320dp-h568dp-xhdpi")
-    fun `Stats on a small phone keeps its buttons in reach`() {
+    fun `Stats on a small phone`() {
         show()
-        compose.onNodeWithText("Leaderboards").assertIsDisplayed()
-        compose.onNodeWithText("Achievements").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Back to the map").assertIsDisplayed()
         capture("stats_small_phone")
     }
 }

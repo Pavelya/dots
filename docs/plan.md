@@ -29,7 +29,7 @@ Each phase is a milestone. Its issues hold the task cards: goal, dependencies, s
 | [4 App](https://github.com/Pavelya/dots/milestone/6) | The screens around the board: world map, level card and result, progress, boosters, tutorial, daily puzzle, settings, stats. They use the plain POC look until phase 5 restyles them. |
 | [5 Visuals](https://github.com/Pavelya/dots/milestone/7) | The look and feel the canvas promised: theme system, Notebook theme, pieces, animations, haptics, sound effects, music, world map pages. The asset register (V-01) starts at once, because it guards every asset. |
 | [6 Money](https://github.com/Pavelya/dots/milestone/8) | Cosmetics for sale and optional rewarded ads (decisions 0004 and 0030). Every cosmetic can also be earned by playing. No advantages for money, no loot boxes, no forced ads. What is sold, the prices and where ads appear: [`design/money.md`](design/money.md). |
-| [7 Online](https://github.com/Pavelya/dots/milestone/9) | Leaderboards first (they can ship with the launch), then games with friends, turn by turn, after the launch. Ranked games only once enough people play (decision 0014). Online games use the pure rules, without boosters. |
+| [7 Online](https://github.com/Pavelya/dots/milestone/9) | After the launch: leaderboards, achievements and the Play Games backup first (decision 0037), then games with friends, turn by turn. Ranked games only once enough people play (decision 0014). Online games use the pure rules, without boosters. |
 | [8 Quality](https://github.com/Pavelya/dots/milestone/10) | Test coverage, speed on a cheap phone, accessibility, play-tests, crash reports, analytics, offline play. It runs beside phases 3 to 7 and must pass before the closed test. |
 | [9 Release](https://github.com/Pavelya/dots/milestone/11) | Play Console, release signing, privacy policy, age rating, store listing, the closed test, the launch and the work after it. |
 
@@ -47,7 +47,7 @@ Each phase is a milestone. Its issues hold the task cards: goal, dependencies, s
 ![Phase dependencies: 10 phases, 2 gates](images/plan-phase-dependencies.png)
 
 Naming and design run beside the POC test week. Money, the app and quality all feed the release.
-Online play follows the launch, except leaderboards, which can ship with it.
+Online play, leaderboards included, follows the launch.
 
 The P-10 testers can also be the 12 testers Google Play requires for the closed test
 ([R-06](https://github.com/Pavelya/dots/issues/108)), so recruit with that in mind.

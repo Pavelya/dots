@@ -24,8 +24,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * A page Settings opens, on the same paper (the wireframes' frame "Settings details"): Privacy,
- * Credits, the open-source licences, and a stand-in for the Play Games backup (O-02). Credits
- * opens the licences with [onPage].
+ * Credits, the open-source licences, and a stand-in for the Play Games backup, which O-02 builds
+ * and no row opens until then (decision 0037). Credits opens the licences with [onPage].
  */
 @Composable
 fun SettingsDetailsScreen(page: SettingsPage, onPage: (SettingsPage) -> Unit, onBack: () -> Unit) {

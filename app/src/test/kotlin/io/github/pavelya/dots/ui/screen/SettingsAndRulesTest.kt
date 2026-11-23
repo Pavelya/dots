@@ -49,8 +49,11 @@ class SettingsAndRulesTest {
     private var replays = 0
     private var feedbacks = 0
 
-    /** Settings over [start], saving each change as the app does: applied to the latest settings. */
-    private fun settings(start: AppSettings = AppSettings()) {
+    /**
+     * Settings over [start], saving each change as the app does: applied to the latest settings.
+     * [playGamesBackup] shows the Play Games backup row, as O-02 will.
+     */
+    private fun settings(start: AppSettings = AppSettings(), playGamesBackup: Boolean = false) {
         latest = start
         compose.setContent {
             var settings by remember { mutableStateOf(start) }
@@ -63,6 +66,7 @@ class SettingsAndRulesTest {
                 onReplayTutorial = { replays++ },
                 onFeedback = { feedbacks++ },
                 onBack = {},
+                playGamesBackup = playGamesBackup,
             )
         }
     }
@@ -168,13 +172,22 @@ class SettingsAndRulesTest {
         compose.onNodeWithText("Send feedback").performScrollTo().performClick()
         assertEquals(1, feedbacks)
 
-        for (row in listOf("Privacy", "Play Games backup", "Credits and licences")) {
+        for (row in listOf("Privacy", "Credits and licences")) {
             compose.onNodeWithText(row).performScrollTo().performClick()
         }
-        assertEquals(listOf(SettingsPage.PRIVACY, SettingsPage.BACKUP, SettingsPage.CREDITS), pages)
+        assertEquals(listOf(SettingsPage.PRIVACY, SettingsPage.CREDITS), pages)
         assertEquals(1, feedbacks)
         // The game is in English only (decision 0036): no Language row.
         compose.onNodeWithText("Language").assertDoesNotExist()
+        // The Play Games backup waits for O-02 (decision 0037).
+        compose.onNodeWithText("Play Games backup").assertDoesNotExist()
+    }
+
+    @Test
+    fun `once O-02 turns it on, the Play Games backup row opens its page`() {
+        settings(playGamesBackup = true)
+        compose.onNodeWithText("Play Games backup").performScrollTo().performClick()
+        assertEquals(listOf(SettingsPage.BACKUP), pages)
     }
 
     @Test
