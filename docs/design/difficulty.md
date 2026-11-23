@@ -95,7 +95,7 @@ puzzles (every level that is not a whole game):
 | --- | ---: | ---: | ---: | ---: |
 | 1 | 10 | 84.9% | 94.4% | 99.6% |
 | 2 | 16 | 80.8% | 89.3% | 100.0% |
-| 3 | 16 | 65.1% | 85.9% | 100.0% |
+| 3 | 16 | 69.1% | 85.9% | 100.0% |
 | 4 | 16 | 54.9% | 81.9% | 100.0% |
 
 - **The climb comes from the hard puzzles,** and each world has more of them: for the average
@@ -159,8 +159,9 @@ earns 0.2 to 1.6 stars a game, and the strong one 0.5 to 2.5; the bosses give th
   play like the computer's steps and a new threat changes their first move. One dot can decide
   it: if the computer's group in 3-8 Owl touched the lake, its marked dot would hang off a safe
   group by a diagonal step only, the average stand-in would attack it from the side, and it
-  would pass 14% of games instead of 46% (`world-3.md`, 3-8). After any change to how the
-  computer plays, re-run the bench.
+  would pass 14% of games instead of 46% (`world-3.md`, 3-8). 3-14 Pole Star had the same
+  shape: with the computer's dot at b2 by the lake, the weak stand-in passed 1% of games; at b4,
+  66%. After any change to how the computer plays, re-run the bench.
 - **The stand-ins do not use boosters and do not retry,** so puzzles are harder for them than for
   a person who does both.
 
@@ -228,7 +229,7 @@ xychart-beta
     title "World 3: games passed (%)"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "passed (%)" 0 --> 100
-    line [100, 100, 100, 100, 100, 38, 100, 2, 24, 16, 100, 28, 0, 1, 100, 100, 0, 21, 100, 17]
+    line [100, 100, 100, 100, 100, 38, 100, 2, 24, 16, 100, 28, 0, 66, 100, 100, 0, 21, 100, 17]
     line [100, 100, 100, 100, 100, 71, 100, 46, 100, 100, 100, 42, 0, 100, 100, 100, 29, 54, 100, 23]
     line [100, 100, 100, 100, 100, 97, 100, 100, 100, 100, 100, 73, 100, 100, 100, 100, 100, 80, 100, 53]
     line [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
@@ -240,7 +241,7 @@ xychart-beta
     title "World 3: average stars per game"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "stars" 0 --> 3
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 0.63, 3.00, 0.02, 0.55, 0.34, 3.00, 0.50, 0.00, 0.01, 3.00, 3.00, 0.00, 0.35, 3.00, 0.34]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 0.63, 3.00, 0.02, 0.55, 0.34, 3.00, 0.50, 0.00, 1.42, 3.00, 3.00, 0.00, 0.35, 3.00, 0.34]
     line [3.00, 3.00, 3.00, 3.00, 3.00, 1.22, 3.00, 1.36, 3.00, 3.00, 3.00, 0.58, 0.00, 3.00, 3.00, 3.00, 0.85, 0.95, 3.00, 0.38]
     line [3.00, 3.00, 3.00, 3.00, 3.00, 2.23, 3.00, 3.00, 3.00, 3.00, 3.00, 1.55, 3.00, 3.00, 3.00, 3.00, 3.00, 1.83, 3.00, 1.00]
 ```
@@ -325,7 +326,7 @@ Stars: the average stars per game, a failed game counting 0.
 | 3-11 | Shooting Star | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-12 | Crater | win with 20 dots | steady | 28% | 42% | 73% | 0.5 | 0.6 | 1.6 |
 | 3-13 | Reflection | target f3 | steady | 0% | 0% | 100% | 0.0 | 0.0 | 3.0 |
-| 3-14 | Pole Star | capture 1 in 4 moves | steady | 1% | 100% | 100% | 0.0 | 3.0 | 3.0 |
+| 3-14 | Pole Star | capture 1 in 4 moves | steady | 66% | 100% | 100% | 1.4 | 3.0 | 3.0 |
 | 3-15 | Black Pool | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-16 | Moon Bay | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-17 | Dusk | target d4 | steady | 0% | 29% | 100% | 0.0 | 0.9 | 3.0 |
