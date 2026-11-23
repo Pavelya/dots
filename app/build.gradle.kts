@@ -119,6 +119,7 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.datastore.preferences)
     implementation(libs.play.review) // Google Play's in-app review prompt
+    implementation(libs.play.billing) // Google Play Billing: the Shop's purchases (C-02)
     // Crash reports (decision 0032) and analytics (decision 0033) from store builds only. Debug
     // builds, which testers of GitHub builds and the tests use, don't contain Firebase and send
     // nothing; src/debug and src/release each give the game its `buildAnalytics`.

@@ -139,7 +139,7 @@ class ThemeScreenTest {
     @Test
     fun `a debug build says every theme is here, and nothing points to the Shop before it exists`() {
         page()
-        compose.onNodeWithText("Debug build: every theme is here. Players get only Notebook until the Shop opens.").assertExists()
+        compose.onNodeWithText("Debug build: every theme is here. Players see only the ones they own.").assertExists()
         compose.onNodeWithText("More themes in the Shop").assertDoesNotExist()
     }
 

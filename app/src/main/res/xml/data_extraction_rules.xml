@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Android 12 and newer. Backup and device transfer take only the progress store: stars, the
      player's own boosters, chests opened and cosmetics they gave (ProgressRepository), the daily
-     puzzles solved (DailyRepository), the totals on Stats (StatsRepository) and the theme in use
-     (ThemeRepository). Other settings, saved games and the test log stay on the phone: an
-     <include> leaves out everything it does not name. -->
+     puzzles solved (DailyRepository), the totals on Stats (StatsRepository), the theme in use
+     (ThemeRepository) and the Shop's New marks (ShopMarks). Other settings, saved games, the test
+     log and the purchases Google Play last confirmed (StoredPurchases; Google Play brings them back
+     itself) stay on the phone: an <include> leaves out everything it does not name. -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="file" path="datastore/progress.preferences_pb" />

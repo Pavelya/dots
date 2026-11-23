@@ -108,8 +108,6 @@
     <string name="screen_chest">Chest</string>
     <string name="screen_stats">Stats</string>
     <string name="screen_shop">Shop</string>
-    <string name="screen_cosmetic">Cosmetic preview</string>
-    <string name="shop_sample_item">A sample item</string>
     <string name="settings_credits">Credits and licences</string>
     <string name="settings_version">Version %1$s</string>
     <string name="developer_title">Developer menu</string>
@@ -324,7 +322,7 @@
     <string name="theme_in_use">In use</string>
     <string name="theme_light_or_dark">Light or dark follows your phone’s dark theme.</string>
     <string name="theme_more_in_shop">More themes in the Shop</string>
-    <string name="theme_debug_note">Debug build: every theme is here. Players get only Notebook until the Shop opens.</string>
+    <string name="theme_debug_note">Debug build: every theme is here. Players see only the ones they own.</string>
     <string name="settings_pieces">Pieces</string>
     <string name="settings_rings">Rings</string>
     <string name="look_standard">Standard</string>
@@ -343,6 +341,28 @@
     <string name="rings_more_in_shop">More ring effects in the Shop</string>
     <string name="pieces_debug_note">Debug build: every piece style is here. Players see only the ones they own.</string>
     <string name="rings_debug_note">Debug build: every ring effect is here. Players see only the ones they own.</string>
+    <!-- The Shop and the Cosmetic preview (flows.md, "Shop and rewarded ads"; money.md). The Shop's title is screen_shop. -->
+    <string name="shop_kinds">Kinds</string>
+    <string name="shop_themes">Themes</string>
+    <string name="shop_earn_only">Every item here is earned with stars from the campaign.</string>
+    <string name="shop_restore">Restore purchases</string>
+    <string name="shop_owned">Owned</string>
+    <string name="shop_earned">Earned</string>
+    <string name="shop_new">New</string>
+    <string name="shop_or_earn">Or earn: %1$d / %2$d ★</string>
+    <string name="shop_earn">Earn: %1$d / %2$d ★</string>
+    <string name="back_to_shop">Back to the shop</string>
+    <string name="preview_sample">A sample board with %1$s</string>
+    <string name="preview_buy">Buy for %1$s</string>
+    <string name="preview_use">Use it</string>
+    <string name="preview_pending_chip">Payment pending</string>
+    <string name="preview_pending">Google Play is waiting for the payment. The item is yours once it goes through.</string>
+    <string name="preview_cancelled">Purchase cancelled.</string>
+    <string name="preview_failed">The purchase didn’t go through.</string>
+    <string name="result_new_theme">New theme: %1$s</string>
+    <string name="result_new_pieces">New piece style: %1$s</string>
+    <string name="result_new_rings">New ring effect: %1$s</string>
+    <string name="map_shop_new">Shop, something new</string>
     <string name="settings_feedback">Send feedback</string>
     <!-- The feedback email (A-12): the game's support address (docs/plan.md, Accounts), its subject, and the
          lines under the player's message that say which build and phone it came from. -->
@@ -386,6 +406,26 @@
     <string name="developer_daily_clear">Clear the streak and attempts</string>
     <string name="licences_intro">Pinfold is built with these libraries. Each may be used under the licence printed below.</string>
 
+    <plurals name="preview_stars_of">
+        <item quantity="one">%1$d of %2$d star</item>
+        <item quantity="other">%1$d of %2$d stars</item>
+    </plurals>
+    <plurals name="preview_earned_with">
+        <item quantity="one">Earned with %d star</item>
+        <item quantity="other">Earned with %d stars</item>
+    </plurals>
+    <plurals name="preview_or_earn">
+        <item quantity="one">Or earn it with %1$d star. You have %2$d.</item>
+        <item quantity="other">Or earn it with %1$d stars. You have %2$d.</item>
+    </plurals>
+    <plurals name="preview_earn_only">
+        <item quantity="one">Earn it with %1$d star from the campaign. You have %2$d: %3$d to go.</item>
+        <item quantity="other">Earn it with %1$d stars from the campaign. You have %2$d: %3$d to go.</item>
+    </plurals>
+    <plurals name="result_earned_with">
+        <item quantity="one">Earned with %d star. It waits for you in the Shop.</item>
+        <item quantity="other">Earned with %d stars. It waits for you in the Shop.</item>
+    </plurals>
     <plurals name="daily_streak_days">
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>

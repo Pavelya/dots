@@ -5,6 +5,11 @@
     <!-- The light, medium and strong vibrations of play (motion.md, rule 6). Granted without asking. -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- The Shop sells only where Google Play's store app is on the phone (DotsApplication.store). -->
+    <queries>
+        <package android:name="com.android.vending" />
+    </queries>
+
     <application
         android:name=".DotsApplication"
         android:allowBackup="true"

@@ -170,6 +170,7 @@ fun MapScreen(
     unlock: Unlock? = null,
     onUnlocked: () -> Unit = {},
     covered: Boolean = false,
+    shopNew: Boolean = false,
 ) {
     val style = MapStyle.current
     var lock by remember { mutableStateOf<CampaignMap.Lock?>(null) }
@@ -229,7 +230,7 @@ fun MapScreen(
             Modifier.align(Alignment.BottomStart).padding(start = 1.dp, bottom = 22.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            MarginIcon(Doodles.SHOP, stringResource(R.string.map_shop), style, actions.onShop)
+            MarginIcon(Doodles.SHOP, stringResource(R.string.map_shop), style, actions.onShop, isNew = shopNew, newLabel = stringResource(R.string.map_shop_new))
             MarginIcon(Doodles.STATS, stringResource(R.string.map_stats), style, actions.onStats)
             MarginIcon(Doodles.HELP, stringResource(R.string.map_rules_icon), style, actions.onRules)
         }
@@ -533,17 +534,32 @@ private fun DailyNote(style: MapStyle, streak: Int, onClick: () -> Unit, modifie
 }
 
 @Composable
-private fun MarginIcon(path: String, label: String, style: MapStyle, onClick: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
-        modifier = Modifier
-            .size(width = 56.dp, height = 52.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .clickable(role = Role.Button, onClick = onClick),
-    ) {
-        Icon(remember(path, style) { Doodles.icon(path, style.done) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
-        Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = style.graphite)
+private fun MarginIcon(path: String, label: String, style: MapStyle, onClick: () -> Unit, isNew: Boolean = false, newLabel: String = label) {
+    Box {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp, Alignment.CenterVertically),
+            modifier = Modifier
+                .size(width = 56.dp, height = 52.dp)
+                .clip(RoundedCornerShape(8.dp))
+                .clickable(role = Role.Button, onClick = onClick)
+                .then(if (isNew) Modifier.clearAndSetSemantics { contentDescription = newLabel; role = Role.Button } else Modifier),
+        ) {
+            Icon(remember(path, style) { Doodles.icon(path, style.done) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(24.dp))
+            Text(label, style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold, color = style.graphite)
+        }
+        // Something new (flows.md, Campaign): a red dot ringed with paper, at the icon's top right.
+        if (isNew) {
+            Box(
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 5.dp, end = 11.dp)
+                    .size(12.dp)
+                    .background(style.paper, CircleShape)
+                    .padding(2.dp)
+                    .background(style.next, CircleShape),
+            )
+        }
     }
 }
 

@@ -199,5 +199,5 @@ private val CARD_LINE: TextStyle
     @Composable @ReadOnlyComposable
     get() = NoteText.body.copy(fontSize = 13.sp, lineHeight = 17.sp)
 
-/** Whether a page that lists [choices] of [all] should end with a link to the Shop: once the Shop exists ([onShop]) and the player lacks one. */
+/** Whether a page that lists [choices] of [all] should end with a link to the Shop ([onShop]): when the player lacks one. */
 internal fun <T> lacksOne(choices: List<T>, all: List<T>, onShop: (() -> Unit)?): Boolean = onShop != null && choices.size < all.size

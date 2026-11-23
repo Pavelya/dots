@@ -77,24 +77,56 @@ later challenge, so a player who misses one week can still earn it.
 - **Restore purchases** in the Shop asks Google Play again. Purchases also come back by
   themselves on a new phone signed in to the same Google account.
 - **Owned items work offline.** The game remembers the last purchases Google Play confirmed.
-- **Before the Shop exists**, release builds offer only Notebook, even to a player who already has
-  the stars (decision 0029). Earned items appear with the Shop.
+- **Debug builds** offer every item in Settings, so testers can check each one on a phone
+  (decision 0029). Their Shop still shows what the player has bought or earned.
 
 ## Prices by country
 
 Google Play turns one base price into local prices by the exchange rate, not by what people can
 afford. Pinfold sets lower prices by hand in two groups of countries. Each price is rounded the
-way prices usually end in that country, and never goes below Google Play's minimum.
+way prices usually end in that country, and never goes below Google Play's minimum. The share is
+of Google Play's own local price, which includes the country's tax.
 
 | Group | Countries | Share of the base | Theme | Piece style or ring effect |
 | --- | --- | --- | --- | --- |
 | Base | Every country not listed below | 100% | $2.99, converted by Google Play | $0.99, converted |
-| Central Europe | Poland, Czechia, Slovakia, Hungary, Romania, Bulgaria, Croatia, Lithuania, Latvia, Estonia | about 70% | about 7.99 zł | about 2.99 zł |
-| Lower prices | Ukraine, Kazakhstan, Moldova, Georgia, Armenia, Azerbaijan, Uzbekistan, Kyrgyzstan | about 40% | about 49 ₴ | about 19 ₴ |
+| Central Europe | Poland, Czechia, Slovakia, Hungary, Romania, Bulgaria, Croatia, Lithuania, Latvia, Estonia | about 70% | 10.49 zł | 3.49 zł |
+| Lower prices | Ukraine, Kazakhstan, Moldova, Georgia, Armenia, Azerbaijan, Uzbekistan, Kyrgyzstan | about 40% | 69 ₴ | 19 ₴ |
 | No sales | Russia, Belarus | — | earn only | earn only |
 
-C-02 sets the exact prices in Play Console. Google Play shows them with tax where a country
-requires it. The groups are reviewed with real sales once the game is out (R-08).
+The prices set in Play Console, tax included. "Google Play's price" is what Google Play makes of
+the base price with the exchange rate of 23 November 2026 and the country's tax; the price set is
+the group's share of it.
+
+| Country | Currency | Theme: Google Play's price | Theme: set | Piece style or ring effect: Google Play's price | Piece style or ring effect: set |
+| --- | --- | --- | --- | --- | --- |
+| Poland | PLN | 14.95 | 10.49 | 4.95 | 3.49 |
+| Czechia | CZK | 80.62 | 59 | 26.69 | 19 |
+| Slovakia | EUR | 3.35 | 2.39 | 1.11 | 0.79 |
+| Hungary | HUF | 1,291 | 890 | 428 | 290 |
+| Romania | RON | 17.62 | 12.49 | 5.83 | 3.99 |
+| Bulgaria | EUR | 3.27 | 2.29 | 1.08 | 0.79 |
+| Croatia | EUR | 3.41 | 2.39 | 1.13 | 0.79 |
+| Lithuania | EUR | 3.30 | 2.29 | 1.09 | 0.79 |
+| Latvia | EUR | 3.30 | 2.29 | 1.09 | 0.79 |
+| Estonia | EUR | 3.38 | 2.39 | 1.12 | 0.79 |
+| Ukraine | UAH | 161 | 69 | 53 | 19 |
+| Kazakhstan | KZT | 1,581 | 649 | 523 | 190 |
+| Moldova | MDL | 65.71 | 29 | 21.76 | 9 |
+| Georgia | GEL | 9.14 | 3.49 | 3.03 | 1.19 |
+| Armenia | AMD | 1,294 | 490 | 428 | 190 |
+| Azerbaijan | AZN | 5.99 | 2.39 | 1.98 | 0.79 |
+| Uzbekistan | UZS | 39,922 | 16,000 | 13,218 | 5,500 |
+| Kyrgyzstan | KGS | 292.92 | 119 | 96.99 | 39 |
+
+Where Play Console shows another currency for a country, or a price of its own far from the second
+column, the price set is the group's share of what Play Console shows, rounded the same way. The
+groups are reviewed with real sales once the game is out (R-08).
+
+**How the game knows it can't sell.** The Shop shows only how to earn when Google Play says
+billing is unavailable to the player, when the player's Google Play country is Russia or Belarus,
+or when Google Play has none of the products on sale there. The purchases Google Play still lists
+for the player count as owned in every case, so an item bought in another country stays theirs.
 
 **Russia and Belarus.** Google Play does not take payments from players there, and AdMob does
 not show ads to players in Russia. The game is the same for them in every other way. In the Shop,

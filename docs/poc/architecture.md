@@ -29,6 +29,7 @@ Layers, each depending only on the ones below it:
 | Game control | `game` | One `GameViewModel` per game: holds the `GameState`, runs the computer on a background thread with a time limit, exposes one immutable `GameUiState` | Kept |
 | Sound | `audio` | The effects and music of [`docs/design/sound.md`](../design/sound.md). `AudioState` holds the rules for when the game may make a sound: sound on, the ringer, calls, the game on the screen, the audio focus, the headphones. `AndroidAudio` plays them on a thread of its own: effects from a `SoundPool`, music from looping `MediaPlayer`s that fade into each other. Screens start each effect on its motion beat (`ui.motion.Cues`), from the screen's theme: Star chart and Neon arcade play their own board sounds (`GameTheme.sounds`), Notebook's for the rest; the app names the music of the screen shown | Kept |
 | Analytics | `analytics` | The game's events (`Events`: level start and end, booster used, daily puzzle done) and where they go (decision 0033). New games report their level start through the journal (`ReportingJournal`); the `GameViewModel` reports ends and boosters as they happen. `buildAnalytics` comes from `src/release` (Google Analytics for Firebase) or `src/debug` (the phone's log only) | Kept |
+| Shop | `shop` | Google Play Billing (docs/design/money.md). `PlayStore` asks Google Play for the prices and the purchases, acknowledges each purchase, and keeps the last ones confirmed in a store of their own (`StoredPurchases`), so owned items work offline. `Owned` joins them with the cosmetics earned in the progress; it decides which themes, piece styles and ring effects can be put in use. `PlayBilling` is the only code that uses the billing library; tests give `PlayStore` a fake, and a phone without the Play Store app gets `NoStore` | Kept |
 | Data | `data` | Settings and campaign progress (DataStore), saved game, game log file | Kept |
 
 Rules the code follows (common practice for mobile games built with Compose):
@@ -91,8 +92,11 @@ the disk. The campaign progress is kept apart, in `files/datastore/progress.pref
 the cosmetics chests gave and each level's own boosters used (decision 0040), one line each, and the
 failures in a row. Boosters a game uses and the level's end are saved in the order they happen. The daily puzzle keeps the days
 solved and the last week's attempts there too (`DailyRepository`, two more lines), so the streak is
-backed up with the stars, and the theme, piece style and ring effect in use (`ThemeRepository`), so
-they come back beside the stars and chests that earn cosmetics. It is the only file Android's backup
+backed up with the stars, the theme, piece style and ring effect in use (`ThemeRepository`), so
+they come back beside the stars and chests that earn cosmetics, and which earned items the Shop
+has shown (`ShopMarks`: the New marks and the map's red dot). Purchases are never written there:
+the last ones Google Play confirmed are in `files/datastore/purchases.preferences_pb`, which the
+backup leaves out, since Google Play brings them back by itself on a new phone. It is the only file Android's backup
 and device transfer take (`res/xml/data_extraction_rules.xml`), so a reinstall restores it. A part
 saved by an older version that lacks a line reads as empty; an entry that cannot be read is left
 out; a file that cannot be read at all starts empty instead of stopping the app. Testers share the log from the developer menu, "Share the game log" (Android share sheet, through

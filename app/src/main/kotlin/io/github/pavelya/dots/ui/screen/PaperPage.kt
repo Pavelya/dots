@@ -73,30 +73,7 @@ internal fun PaperPage(
 ) {
     val style = Palette.current
     Column(Modifier.fillMaxSize().squaredPaper(style)) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth().height(56.dp).padding(start = 4.dp, end = 8.dp),
-        ) {
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .clickable(role = Role.Button, onClick = onBack)
-                    .semantics { contentDescription = backLabel },
-            ) {
-                Icon(remember(style) { Doodles.icon(Doodles.BACK, style.blue, width = 2f) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(26.dp))
-            }
-            // A long title shrinks to fit, never below the 24 sp that Caveat needs.
-            BasicText(
-                title,
-                style = PAGE_TITLE.copy(color = style.blue),
-                maxLines = 1,
-                autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 34.sp),
-                modifier = Modifier.semantics { heading() },
-            )
-        }
+        PageHeader(title, onBack, backLabel)
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -108,6 +85,39 @@ internal fun PaperPage(
         if (footer != null) {
             Box(Modifier.fillMaxWidth().padding(start = 64.dp, end = 16.dp, bottom = 16.dp)) { footer() }
         }
+    }
+}
+
+/**
+ * The top of a full-screen page: Back, labelled [backLabel] for TalkBack, and the handwritten
+ * [title] in blue, 56 dp tall (the wireframes' Settings, Shop and Cosmetic preview).
+ */
+@Composable
+internal fun PageHeader(title: String, onBack: () -> Unit, backLabel: String) {
+    val style = Palette.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.fillMaxWidth().height(56.dp).padding(start = 4.dp, end = 8.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onBack)
+                .semantics { contentDescription = backLabel },
+        ) {
+            Icon(remember(style) { Doodles.icon(Doodles.BACK, style.blue, width = 2f) }, contentDescription = null, tint = Color.Unspecified, modifier = Modifier.size(26.dp))
+        }
+        // A long title shrinks to fit, never below the 24 sp that Caveat needs.
+        BasicText(
+            title,
+            style = PAGE_TITLE.copy(color = style.blue),
+            maxLines = 1,
+            autoSize = TextAutoSize.StepBased(minFontSize = 24.sp, maxFontSize = 34.sp),
+            modifier = Modifier.semantics { heading() },
+        )
     }
 }
 

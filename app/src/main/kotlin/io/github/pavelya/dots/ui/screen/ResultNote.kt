@@ -1,6 +1,15 @@
 package io.github.pavelya.dots.ui.screen
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.unit.sp
+import dots.campaign.Cosmetic
+import io.github.pavelya.dots.data.LookPart
+import io.github.pavelya.dots.data.PieceStyleId
+import io.github.pavelya.dots.data.RingEffectId
+import io.github.pavelya.dots.data.ThemeId
+import io.github.pavelya.dots.ui.theme.GameTheme
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -174,6 +183,7 @@ private fun LevelResult(
             Text(stringResource(need, starScoreText(level, target)), style = NoteText.small, color = style.graphite, textAlign = TextAlign.Center)
         }
         Opened(end, style)
+        for (cosmetic in end.earned) EarnedLine(cosmetic, style)
         Buttons {
             SquareButton(Doodles.RETRY, stringResource(R.string.result_retry), style, onAgain)
             BigButton(stringResource(R.string.result_next), style, onNext, Modifier.weight(1f), after = Doodles.NEXT)
@@ -408,6 +418,61 @@ private fun Opened(end: LevelEnd, style: Palette) {
         else -> return
     }
     Text(text, style = NoteText.label, color = style.blue, textAlign = TextAlign.Center)
+}
+
+/**
+ * A cosmetic the pass earned (the wireframes' Result: win, a theme earned; flows.md, Campaign): its
+ * picture on the Shop's small board, "New theme: Star chart" and where it waits, in a dashed frame
+ * in the earning ink. No button: it waits in the Shop, marked New.
+ */
+@Composable
+private fun EarnedLine(cosmetic: Cosmetic, style: Palette) {
+    val part: LookPart = ThemeId.of(cosmetic.id) ?: PieceStyleId.of(cosmetic.id) ?: RingEffectId.of(cosmetic.id) ?: return
+    val title = when (part) {
+        is ThemeId -> R.string.result_new_theme
+        is PieceStyleId -> R.string.result_new_pieces
+        is RingEffectId -> R.string.result_new_rings
+    }
+    val inUse = ThemeId.entries.firstOrNull { GameTheme.of(it) == GameTheme.current } ?: ThemeId.DEFAULT
+    val shape = RoundedCornerShape(14.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp)
+            .drawBehind {
+                val line = 1.5.dp.toPx()
+                drawRoundRect(
+                    style.highlighter,
+                    topLeft = Offset(line / 2, line / 2),
+                    size = Size(size.width - line, size.height - line),
+                    cornerRadius = CornerRadius(14.dp.toPx()),
+                    style = Stroke(line, pathEffect = PathEffect.dashPathEffect(floatArrayOf(4.dp.toPx(), 3.dp.toPx()))),
+                )
+            }
+            .clip(shape)
+            .padding(horizontal = 10.dp, vertical = 6.dp),
+    ) {
+        val picture = Modifier.size(40.dp).clearAndSetSemantics {}
+        when (part) {
+            is ThemeId -> LookBoard(LOOK_SAMPLE, LOOK_SAMPLE_LAST, part, picture)
+            is PieceStyleId -> LookBoard(LOOK_SAMPLE, LOOK_SAMPLE_LAST, inUse, picture, pieces = part)
+            is RingEffectId -> LookBoard(LOOK_SAMPLE, LOOK_SAMPLE_LAST, inUse, picture, rings = part)
+        }
+        Column(Modifier.weight(1f)) {
+            Text(
+                stringResource(title, stringResource(lookName(part))),
+                style = NoteText.label.copy(fontSize = 15.sp, lineHeight = 20.sp, fontWeight = FontWeight.ExtraBold),
+                color = style.highlighter,
+            )
+            Text(
+                pluralStringResource(R.plurals.result_earned_with, cosmetic.stars, cosmetic.stars),
+                style = NoteText.small.copy(fontSize = 12.sp, lineHeight = 16.sp),
+                color = style.graphite,
+            )
+        }
+    }
 }
 
 /** How far a capture mission got: a bar and "4 / 5" (the wireframes' Loss). */

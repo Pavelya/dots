@@ -14,8 +14,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -33,7 +31,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.stringArrayResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import androidx.core.content.FileProvider
@@ -72,6 +69,7 @@ import io.github.pavelya.dots.data.GameMode
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PuzzleClock
 import io.github.pavelya.dots.data.ReviewRule
+import io.github.pavelya.dots.data.LookPart
 import io.github.pavelya.dots.data.PieceStyleId
 import io.github.pavelya.dots.data.RingEffectId
 import io.github.pavelya.dots.data.ThemeId
@@ -89,6 +87,7 @@ import io.github.pavelya.dots.ui.motion.animationsRemoved
 import io.github.pavelya.dots.ui.motion.rememberNoteMotion
 import io.github.pavelya.dots.ui.screen.BoostersNote
 import io.github.pavelya.dots.ui.screen.ChestNote
+import io.github.pavelya.dots.ui.screen.CosmeticPreviewScreen
 import io.github.pavelya.dots.ui.screen.DailyAction
 import io.github.pavelya.dots.ui.screen.DailyPuzzleNote
 import io.github.pavelya.dots.ui.screen.DeveloperScreen
@@ -104,6 +103,10 @@ import io.github.pavelya.dots.ui.screen.RulesScreen
 import io.github.pavelya.dots.ui.screen.SettingsDetailsScreen
 import io.github.pavelya.dots.ui.screen.SettingsPage
 import io.github.pavelya.dots.ui.screen.SettingsScreen
+import io.github.pavelya.dots.ui.screen.ShopScreen
+import io.github.pavelya.dots.ui.screen.ShopTab
+import io.github.pavelya.dots.ui.screen.ShopView
+import io.github.pavelya.dots.ui.screen.tab
 import io.github.pavelya.dots.ui.screen.StandInScreen
 import io.github.pavelya.dots.ui.screen.StatsScreen
 import io.github.pavelya.dots.ui.screen.ThemeScreen
@@ -160,10 +163,13 @@ object Routes {
      * Stats. Until then no screen opens it (decision 0037).
      */
     const val LEADERBOARDS = "leaderboards"
-    const val SHOP = "shop"
+    /** The Shop, open at a tab: Themes from the map, or the tab a Settings page's link names. */
+    const val SHOP = "shop?tab={tab}"
+    fun shop(tab: ShopTab = ShopTab.THEMES) = "shop?tab=${tab.key}"
 
-    /** An item from the Shop, on a sample board. */
-    const val COSMETIC = "cosmetic"
+    /** An item from the Shop, on a sample board: its tab's kind and its key (`cosmetic/themes/star-chart`). */
+    const val COSMETIC = "cosmetic/{kind}/{key}"
+    fun cosmetic(part: LookPart) = "cosmetic/${part.tab.key}/${part.key}"
     const val SETTINGS = "settings"
 
     /** A page Settings opens: Privacy, Credits and the others of [SettingsPage]. */
@@ -230,6 +236,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
     val reduceMotion = remember { mutableStateOf(animationsRemoved(app)) }
     LifecycleResumeEffect(Unit) {
         reduceMotion.value = animationsRemoved(app)
+        // Google Play's purchases again (Play Billing's advice): one bought or refunded elsewhere shows up.
+        app.store.refresh()
         onPauseOrDispose {}
     }
     // The game's sound (docs/design/sound.md): the player's settings, whether the game is on the
@@ -294,6 +302,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     composable(Routes.MAP) {
                         val map by app.progress.map.collectAsStateWithLifecycle()
                         val daily by app.daily.saved.collectAsStateWithLifecycle()
+                        // A red dot on Shop while an item earned since the Shop last opened waits there.
+                        val owned by app.owned.collectAsStateWithLifecycle()
+                        val shownInShop by app.marks.shown.collectAsStateWithLifecycle(initialValue = null)
                         MapScreen(
                             map,
                             MapActions(
@@ -302,7 +313,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 onPlay = { navController.navigate(Routes.PLAY) },
                                 onRules = { navController.navigate(Routes.RULES) },
                                 onStats = { navController.navigate(Routes.STATS) },
-                                onShop = { navController.navigate(Routes.SHOP) },
+                                onShop = { navController.navigate(Routes.shop()) },
                                 onSettings = { navController.navigate(Routes.SETTINGS) },
                                 onChest = { navController.navigate(Routes.chest(it.after)) },
                             ),
@@ -310,6 +321,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             unlock = unlock,
                             onUnlocked = { unlock = null },
                             covered = top?.destination?.route != Routes.MAP,
+                            shopNew = shownInShop?.let { (owned.earned - it).isNotEmpty() } ?: false,
                         )
                     }
                     dialog(
@@ -590,16 +602,61 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                     composable(Routes.LEADERBOARDS) {
                         StandInScreen(R.string.screen_leaderboards, "O-02", onBack = back)
                     }
-                    composable(Routes.SHOP) {
-                        StandInScreen(R.string.screen_shop, "C-02", onBack = back) {
-                            TextButton(onClick = { navController.navigate(Routes.COSMETIC) }) { Text(stringResource(R.string.shop_sample_item)) }
+                    composable(Routes.SHOP, arguments = listOf(navArgument("tab") { type = NavType.StringType; defaultValue = ShopTab.THEMES.key })) { entry ->
+                        var tab by rememberSaveable { mutableStateOf(ShopTab.of(entry.arguments?.getString("tab")).key) }
+                        val view = shopView(app, themeInUse, piecesInUse, ringsInUse)
+                        // Opening the Shop asks Google Play again, and clears the map's red dot.
+                        LaunchedEffect(Unit) { app.store.refresh() }
+                        val earned = view?.owned?.earned
+                        LaunchedEffect(earned) { if (earned != null) appScope.launch { app.marks.shopOpened(earned) } }
+                        view?.let {
+                            ShopScreen(
+                                view = it,
+                                tab = ShopTab.of(tab),
+                                onTab = { chosen -> tab = chosen.key },
+                                onItem = { part -> navController.navigate(Routes.cosmetic(part)) },
+                                onRestore = { app.store.refresh() },
+                                onBack = back,
+                            )
                         }
                     }
-                    composable(Routes.COSMETIC) {
-                        StandInScreen(R.string.screen_cosmetic, "C-02", onBack = back)
+                    composable(
+                        Routes.COSMETIC,
+                        arguments = listOf(navArgument("kind") { type = NavType.StringType }, navArgument("key") { type = NavType.StringType }),
+                    ) { entry ->
+                        val part = lookPart(entry.arguments?.getString("kind"), entry.arguments?.getString("key"))
+                        val view = shopView(app, themeInUse, piecesInUse, ringsInUse)
+                        if (part == null) {
+                            LaunchedEffect(Unit) { back() }
+                        } else {
+                            // The New mark goes once the player has seen the preview: it shows here, then not on the tile.
+                            DisposableEffect(part) {
+                                onDispose { part.cosmetic?.let { appScope.launch { app.marks.previewOpened(it) } } }
+                            }
+                            view?.let {
+                                CosmeticPreviewScreen(
+                                    part = part,
+                                    view = it,
+                                    onBuy = { part.cosmetic?.let { item -> activity?.let { over -> app.store.buy(over, item) } } },
+                                    // Saved in the app's scope, like a setting; the Theme, Pieces and Rings pages read the same value.
+                                    onUse = {
+                                        appScope.launch {
+                                            when (part) {
+                                                is ThemeId -> app.themes.use(part)
+                                                is PieceStyleId -> app.themes.use(part)
+                                                is RingEffectId -> app.themes.use(part)
+                                            }
+                                        }
+                                    },
+                                    onBack = back,
+                                )
+                            }
+                        }
                     }
                     composable(Routes.SETTINGS) {
                         val settings by app.settings.settings.collectAsStateWithLifecycle(initialValue = null)
+                        // What the player owns decides the Theme, Pieces and Rings rows; read it so they follow a purchase or a refund.
+                        val owned by app.owned.collectAsStateWithLifecycle()
                         val context = LocalContext.current
                         settings?.let {
                             SettingsScreen(
@@ -614,12 +671,12 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 onFeedback = { sendFeedback(context) },
                                 onBack = back,
                                 // Only when there is more than one theme to choose from (decision 0029).
-                                theme = themeInUse.takeIf { app.themes.choices.size > 1 },
+                                theme = themeInUse.takeIf { owned.let { app.themes.choices.size > 1 } },
                                 onTheme = { navController.navigate(Routes.THEME) },
                                 // Each only when more than Standard can be chosen (flows.md, "Choosing pieces and rings").
-                                pieces = piecesInUse.takeIf { app.themes.pieceChoices.size > 1 },
+                                pieces = piecesInUse.takeIf { owned.let { app.themes.pieceChoices.size > 1 } },
                                 onPieces = { navController.navigate(Routes.PIECES) },
-                                rings = ringsInUse.takeIf { app.themes.ringChoices.size > 1 },
+                                rings = ringsInUse.takeIf { owned.let { app.themes.ringChoices.size > 1 } },
                                 onRings = { navController.navigate(Routes.RINGS) },
                             )
                         }
@@ -633,38 +690,40 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         }
                     }
                     composable(Routes.THEME) {
+                        val owned by app.owned.collectAsStateWithLifecycle()
                         ThemeScreen(
-                            choices = app.themes.choices,
+                            choices = owned.let { app.themes.choices },
                             inUse = themeInUse,
                             // Saved in the app's scope, like a setting, so Back never cuts the change short.
                             onUse = { theme -> appScope.launch { app.themes.use(theme) } },
                             debugNote = app.debugBuild,
-                            // C-02 links the Shop here, once it exists.
-                            onShop = null,
+                            // A player who lacks a theme gets a link to the Shop's Themes.
+                            onShop = { navController.navigate(Routes.shop(ShopTab.THEMES)) },
                             onBack = back,
                         )
                     }
                     composable(Routes.PIECES) {
+                        val owned by app.owned.collectAsStateWithLifecycle()
                         PiecesScreen(
                             theme = themeInUse,
-                            choices = app.themes.pieceChoices,
+                            choices = owned.let { app.themes.pieceChoices },
                             inUse = piecesInUse,
                             // Saved in the app's scope, like a setting, so Back never cuts the change short.
                             onUse = { style -> appScope.launch { app.themes.use(style) } },
                             debugNote = app.debugBuild,
-                            // C-02 links the Shop here, once it exists.
-                            onShop = null,
+                            onShop = { navController.navigate(Routes.shop(ShopTab.PIECES)) },
                             onBack = back,
                         )
                     }
                     composable(Routes.RINGS) {
+                        val owned by app.owned.collectAsStateWithLifecycle()
                         RingsScreen(
                             theme = themeInUse,
-                            choices = app.themes.ringChoices,
+                            choices = owned.let { app.themes.ringChoices },
                             inUse = ringsInUse,
                             onUse = { effect -> appScope.launch { app.themes.use(effect) } },
                             debugNote = app.debugBuild,
-                            onShop = null,
+                            onShop = { navController.navigate(Routes.shop(ShopTab.RINGS)) },
                             onBack = back,
                         )
                     }
@@ -686,6 +745,30 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
             }
         }
     }
+}
+
+/**
+ * What the Shop and its preview show (docs/design/money.md): Google Play's answers, what the player
+ * owns and their stars, the looks in use, and the earned items marked New. Null until the progress
+ * and the marks are read.
+ */
+@Composable
+private fun shopView(app: DotsApplication, theme: ThemeId, pieces: PieceStyleId, rings: RingEffectId): ShopView? {
+    val store by app.store.state.collectAsStateWithLifecycle()
+    val owned by app.owned.collectAsStateWithLifecycle()
+    val progress by app.progress.saved.collectAsStateWithLifecycle()
+    val seen by app.marks.seen.collectAsStateWithLifecycle(initialValue = null)
+    val stars = progress?.total ?: return null
+    val opened = seen ?: return null
+    return ShopView(store, owned, stars, theme, pieces, rings, fresh = owned.earned - opened)
+}
+
+/** The Shop item a preview's route names: a theme, piece style or ring effect by its tab and key. */
+internal fun lookPart(kind: String?, key: String?): LookPart? = when (kind) {
+    ShopTab.THEMES.key -> ThemeId.of(key)
+    ShopTab.PIECES.key -> PieceStyleId.of(key)
+    ShopTab.RINGS.key -> RingEffectId.of(key)
+    else -> null
 }
 
 /**

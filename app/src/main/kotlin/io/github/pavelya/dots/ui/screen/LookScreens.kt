@@ -37,7 +37,7 @@ fun ringEffectName(effect: RingEffectId): Int = when (effect) {
 
 /** A piece style's one line on its card (flows.md, "Choosing pieces and rings"). */
 @StringRes
-private fun pieceStyleLine(style: PieceStyleId): Int = when (style) {
+internal fun pieceStyleLine(style: PieceStyleId): Int = when (style) {
     PieceStyleId.STANDARD -> R.string.pieces_standard_line
     PieceStyleId.HEARTS_AND_CLUBS -> R.string.pieces_hearts_and_clubs_line
     PieceStyleId.FLAME_AND_FROST -> R.string.pieces_flame_and_frost_line
@@ -45,7 +45,7 @@ private fun pieceStyleLine(style: PieceStyleId): Int = when (style) {
 
 /** A ring effect's one line on its card. */
 @StringRes
-private fun ringEffectLine(effect: RingEffectId): Int = when (effect) {
+internal fun ringEffectLine(effect: RingEffectId): Int = when (effect) {
     RingEffectId.STANDARD -> R.string.rings_standard_line
     RingEffectId.LASSO -> R.string.rings_lasso_line
     RingEffectId.RUBBER_STAMP -> R.string.rings_rubber_stamp_line
@@ -155,13 +155,25 @@ private fun LookSample(
     pieces: PieceStyleId = PieceStyleId.STANDARD,
     rings: RingEffectId = RingEffectId.STANDARD,
 ) {
+    LookBoard(LOOK_SAMPLE, LOOK_SAMPLE_LAST, theme, Modifier.size(if (tall) 104.dp else 80.dp), pieces, rings)
+}
+
+/**
+ * A small still board, [state] with its [lastMove] marked, drawn by [theme] in the light or dark
+ * version the phone picks, with the [pieces] and [rings] given: the Settings cards, the Shop's
+ * tiles and its preview. TalkBack reads [description], if any.
+ */
+@Composable
+internal fun LookBoard(
+    state: GameState,
+    lastMove: Pos?,
+    theme: ThemeId,
+    modifier: Modifier,
+    pieces: PieceStyleId = PieceStyleId.STANDARD,
+    rings: RingEffectId = RingEffectId.STANDARD,
+    description: String = "",
+) {
     DotsTheme(GameTheme.of(theme), dark = GameTheme.isDark, highContrast = GameTheme.highContrast, pieces = pieces, rings = rings) {
-        BoardView(
-            LOOK_SAMPLE,
-            BoardStyle.current,
-            description = "",
-            lastMove = LOOK_SAMPLE_LAST,
-            modifier = Modifier.size(if (tall) 104.dp else 80.dp),
-        )
+        BoardView(state, BoardStyle.current, description = description, lastMove = lastMove, modifier = modifier)
     }
 }

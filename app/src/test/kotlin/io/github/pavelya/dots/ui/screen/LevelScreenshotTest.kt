@@ -16,6 +16,7 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import dots.ai.Ai
 import dots.campaign.Campaign
 import dots.campaign.CampaignMap
+import dots.campaign.Cosmetic
 import dots.campaign.Level
 import dots.campaign.LevelResult
 import dots.campaign.Progress
@@ -190,8 +191,10 @@ class LevelScreenshotTest {
         compose.waitUntil(timeoutMillis = 5_000) { compose.onAllNodes(hasText(text)).fetchSemanticsNodes().isNotEmpty() }
 
     /** Level 1-1 passed with a move to spare, in [theme]: two stars of three, and Level 1-2 opens. */
-    private fun win(name: String, theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false) {
-        val journal = CampaignJournal { _: Level, result: LevelResult -> LevelEnd(result, CampaignMap.Opened(emptyList(), listOf(Campaign.level(1, 2))), 0, Campaign.level(1, 2)) }
+    private fun win(name: String, theme: GameTheme = GameTheme.NOTEBOOK, dark: Boolean = false, earned: List<Cosmetic> = emptyList()) {
+        val journal = CampaignJournal { _: Level, result: LevelResult ->
+            LevelEnd(result, CampaignMap.Opened(emptyList(), listOf(Campaign.level(1, 2))), 0, Campaign.level(1, 2), earned = earned)
+        }
         val vm = level11(journal)
         show(theme, dark) { GameScreen(vm, onToMap = {}, onRules = {}) }
         play(vm, Pos(0, 6))
@@ -205,6 +208,17 @@ class LevelScreenshotTest {
 
     @Test
     fun resultWinDark() = win("result_level_win_dark", dark = true)
+
+    /** The wireframes' Result: win, a theme earned (D-28, MoneyWinEarned): the new stars passed 150. */
+    @Test
+    fun resultWinEarned() = win("result_level_win_earned", earned = listOf(Cosmetic.STAR_CHART))
+
+    @Test
+    fun resultWinEarnedDark() = win("result_level_win_earned_dark", dark = true, earned = listOf(Cosmetic.STAR_CHART))
+
+    /** A piece style earned, drawn in the theme in use. */
+    @Test
+    fun resultWinEarnedPiecesNeonArcade() = win("result_level_win_earned_pieces_neon_arcade", GameTheme.NEON_ARCADE, earned = listOf(Cosmetic.HEARTS_AND_CLUBS))
 
     /** Result over the final board in the other themes (canvas frames `result-win-star-chart` and `result-win-neon-arcade`). */
     @Test
