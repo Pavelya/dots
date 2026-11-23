@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.unit.dp
@@ -19,6 +20,7 @@ import dots.campaign.Level
 import dots.campaign.LevelResult
 import dots.campaign.Progress
 import dots.engine.Action
+import dots.engine.Booster
 import dots.engine.GameSettings
 import dots.engine.GameState
 import dots.engine.Opening
@@ -62,15 +64,18 @@ class LevelScreenshotTest {
 
     private fun capture(name: String) = compose.onRoot().captureRoboImage("src/test/screenshots/$name.png")
 
-    /** The card of [level] over the map, with every level before it passed, the map dimmed behind it by the card. */
-    private fun card(level: Level, saved: Boolean = false, dark: Boolean = false) {
+    /**
+     * The card of [level] over the map, with every level before it passed, the map dimmed behind it
+     * by the card. [boosters] are what a new game of the level has.
+     */
+    private fun card(level: Level, saved: Boolean = false, dark: Boolean = false, boosters: Map<Booster, Int> = level.boosters) {
         val before = Campaign.levels.takeWhile { it != level }
         val map = Campaign.map(Progress(before.withIndex().associate { (i, it) -> it.code to listOf(3, 2, 1)[i % 3] }))
         val actions = MapActions(onLevel = {}, onDaily = {}, onPlay = {}, onRules = {}, onStats = {}, onShop = {}, onSettings = {})
         show(dark = dark) {
             Box {
                 MapScreen(map, actions)
-                LevelCard(level, saved, onStart = {}, onBooster = {}, onClose = {})
+                LevelCard(level, saved, onStart = {}, onBooster = {}, onClose = {}, boosters = boosters)
             }
         }
     }
@@ -92,6 +97,36 @@ class LevelScreenshotTest {
     fun levelCardWithBoosters() {
         card(Campaign.level(2, 1), saved = true)
         capture("level_card_boosters_resume")
+    }
+
+    /** 2-1 (wall 2, undo 1) after an earlier attempt used a Wall and the Undo (decision 0040). */
+    private val spentOn21: Progress get() = Progress.NONE.spendOn(Campaign.level(2, 1), mapOf(Booster.WALL to 1, Booster.UNDO to 1))
+
+    /** The card counts what is left for the level: one wall, and Undo ×0 in grey. */
+    @Test
+    fun levelCardAfterBoostersSpent() {
+        val level = Campaign.level(2, 1)
+        card(level, boosters = spentOn21.boostersFor(level))
+        compose.onNodeWithContentDescription("Wall, 1. What it does").assertExists()
+        compose.onNodeWithContentDescription("Undo, 0. What it does").assertExists()
+        capture("level_card_boosters_spent")
+    }
+
+    /** The next game of 2-1 starts with what is left: the tool bar shows one wall, and Undo dashed with 0. */
+    @Test
+    fun toolBarAfterBoostersSpent() {
+        val level = Campaign.level(2, 1)
+        val vm = GameViewModel(
+            start = levelGame(level, threatHighlight = false, now = 0, progress = spentOn21),
+            nextGame = { levelGame(level, threatHighlight = false, now = 0, progress = spentOn21) },
+            computerFor = { firstFreePoint },
+            computerDispatcher = Dispatchers.Unconfined,
+            replyDelayMillis = 0,
+        )
+        show { GameScreen(vm, onToMap = {}, onRules = {}) }
+        compose.onNodeWithContentDescription("Wall, 1 left").assertExists()
+        compose.onNodeWithContentDescription("Undo, none left").assertExists()
+        capture("game_boosters_spent")
     }
 
     @Test

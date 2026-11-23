@@ -6,6 +6,7 @@ import dots.campaign.Level
 import dots.campaign.LevelMap
 import dots.campaign.LevelRecord
 import dots.campaign.Mission
+import dots.campaign.Progress
 import dots.campaign.Strength
 import dots.engine.Action
 import dots.engine.Booster
@@ -19,6 +20,7 @@ import dots.campaign.LevelResult
 import io.github.pavelya.dots.data.CampaignJournal
 import io.github.pavelya.dots.data.GameJournal
 import io.github.pavelya.dots.data.LevelEnd
+import io.github.pavelya.dots.data.UsedBoosters
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -424,17 +426,32 @@ class BoosterViewModelTest {
         assertEquals(now.score(Player.RED), replayed.score(Player.RED))
     }
 
-    /** Keeps what a game reports of the player's own boosters. */
+    /** Keeps what a game reports of the boosters it used. */
     private class Spending : CampaignJournal {
-        val reports = mutableListOf<Pair<Long, Map<Booster, Int>>>()
+        val reports = mutableListOf<Pair<Long, UsedBoosters>>()
         override suspend fun finished(level: Level, result: LevelResult) = LevelEnd(result, CampaignMap.Opened.NOTHING, 0, null)
-        override fun spent(game: Long, used: Map<Booster, Int>) { reports += game to used }
+        override fun spent(game: Long, level: Level, used: UsedBoosters) { reports += game to used }
+    }
+
+    /** Saves what games spend into [progress], as the progress store does: each game's change once. */
+    private class Saved(var progress: Progress) : CampaignJournal {
+        private var last: Pair<Long, UsedBoosters>? = null
+
+        override suspend fun finished(level: Level, result: LevelResult) = LevelEnd(result, CampaignMap.Opened.NOTHING, 0, null)
+
+        override fun spent(game: Long, level: Level, used: UsedBoosters) {
+            val before = last?.takeIf { it.first == game }?.second ?: UsedBoosters.NONE
+            fun change(now: Map<Booster, Int>, was: Map<Booster, Int>) = (now.keys + was.keys).associateWith { (now[it] ?: 0) - (was[it] ?: 0) }
+            progress = progress.spend(change(used.owned, before.owned)).spendOn(level, change(used.own, before.own))
+            last = game to used
+        }
     }
 
     @Test
     fun `the player's own boosters come on top of the level's, and the game reports each one it uses or gets back`() = runTest(dispatcher) {
         val spending = Spending()
-        val start = levelGame(level, threatHighlight = false, now = 7, owned = mapOf(Booster.WALL to 1))
+        val owned = Progress(boosters = mapOf(Booster.WALL to 1))
+        val start = levelGame(level, threatHighlight = false, now = 7, progress = owned)
         val vm = GameViewModel(
             start = start,
             nextGame = { start },
@@ -443,27 +460,108 @@ class BoosterViewModelTest {
             computerDispatcher = dispatcher,
             replyDelayMillis = 0,
             clock = { 0L },
-            ownedFor = { mapOf(Booster.WALL to 1) },
+            progress = { owned },
         )
         assertEquals(2, vm.left(Booster.WALL))
-        assertEquals("a new game reports nothing used yet", listOf(7L to mapOf(Booster.WALL to 0)), spending.reports)
+        assertEquals("a new game reports nothing used yet", listOf(7L to UsedBoosters.NONE), spending.reports)
 
         vm.chooseBooster(Booster.WALL)
         vm.onTap(Pos(2, 2))
         vm.confirmBooster()
         vm.place(Pos(4, 4))
         advanceUntilIdle()
-        assertEquals(7L to mapOf(Booster.WALL to 1), spending.reports.last())
+        assertEquals("the player's own wall is used first", 7L to UsedBoosters(owned = mapOf(Booster.WALL to 1)), spending.reports.last())
         val reported = spending.reports.size
 
         vm.chooseBooster(Booster.UNDO)
         vm.confirmBooster()
-        assertEquals("the undo gives the wall back", 7L to mapOf(Booster.WALL to 0), spending.reports.last())
+        assertEquals(
+            "the undo gives the wall back and is used itself",
+            7L to UsedBoosters(own = mapOf(Booster.UNDO to 1)),
+            spending.reports.last(),
+        )
         assertEquals(reported + 1, spending.reports.size)
 
         // Retry with the free Hint takes the player's own boosters again.
         vm.retryWith(Booster.HINT)
         assertEquals(2, vm.left(Booster.WALL))
         assertEquals(2, vm.left(Booster.HINT))
+    }
+
+    @Test
+    fun `a level's own booster used is gone on every later attempt, and an undo gives it back`() = runTest(dispatcher) {
+        val saved = Saved(Progress.NONE)
+        var now = 100L
+        val vm = GameViewModel(
+            start = levelGame(level, threatHighlight = false, now = now, progress = saved.progress),
+            nextGame = { levelGame(level, threatHighlight = false, now = ++now, progress = saved.progress) },
+            computerFor = { TopRow() },
+            campaign = saved,
+            computerDispatcher = dispatcher,
+            replyDelayMillis = 0,
+            clock = { ++now },
+            progress = { saved.progress },
+        )
+        vm.chooseBooster(Booster.WALL)
+        vm.onTap(Pos(2, 2))
+        vm.confirmBooster()
+        vm.place(Pos(4, 4))
+        advanceUntilIdle()
+        assertEquals(mapOf(Booster.WALL to 1), saved.progress.spent(level))
+
+        vm.chooseBooster(Booster.UNDO)
+        vm.confirmBooster()
+        assertEquals("the undo gives the wall back", 1, vm.left(Booster.WALL))
+        assertEquals("and stays used", mapOf(Booster.UNDO to 1), saved.progress.spent(level))
+
+        vm.chooseBooster(Booster.WALL)
+        vm.onTap(Pos(2, 2))
+        vm.confirmBooster()
+        vm.place(Pos(4, 4))
+        advanceUntilIdle()
+        assertEquals(mapOf(Booster.WALL to 1, Booster.UNDO to 1), saved.progress.spent(level))
+
+        // Retry and Restart start the next game from the saved progress: no Wall, no Undo.
+        vm.playAgain()
+        assertEquals(0, vm.left(Booster.WALL))
+        assertEquals(0, vm.left(Booster.UNDO))
+        assertEquals("an unused booster stays", 1, vm.left(Booster.BOMB))
+        assertFalse("the tool bar's Wall cannot be chosen", Booster.WALL in vm.ui.value.usable)
+        assertTrue(Booster.BOMB in vm.ui.value.usable)
+
+        // The free Hint is for one attempt; the attempt after it has the level's Hint only.
+        vm.retryWith(Booster.HINT)
+        assertEquals(2, vm.left(Booster.HINT))
+        assertEquals(0, vm.left(Booster.WALL))
+        vm.playAgain()
+        assertEquals(1, vm.left(Booster.HINT))
+
+        // A game started again from the map takes the same counts.
+        val fromMap = Game.from(levelGame(level, threatHighlight = false, now = ++now, progress = saved.progress).record).state
+        assertEquals(0, fromMap.boostersLeft(Player.RED, Booster.WALL))
+        assertEquals(1, fromMap.boostersLeft(Player.RED, Booster.BOMB))
+    }
+
+    @Test
+    fun `a practice game neither spends nor misses the level's boosters`() = runTest(dispatcher) {
+        val saved = Saved(Progress.NONE.spendOn(level, mapOf(Booster.WALL to 1)))
+        val practice = levelGame(level, threatHighlight = false, now = 0, progress = saved.progress, practice = true)
+        val vm = GameViewModel(
+            start = practice,
+            nextGame = { practice },
+            computerFor = { TopRow() },
+            campaign = saved,
+            computerDispatcher = dispatcher,
+            replyDelayMillis = 0,
+            clock = { 0L },
+            progress = { saved.progress },
+        )
+        assertEquals(1, vm.left(Booster.WALL))
+        vm.chooseBooster(Booster.BOMB)
+        vm.onTap(Pos(3, 4))
+        vm.confirmBooster()
+        advanceUntilIdle()
+        assertEquals(0, vm.left(Booster.BOMB))
+        assertEquals(mapOf(Booster.WALL to 1), saved.progress.spent(level))
     }
 }

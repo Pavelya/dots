@@ -4,6 +4,7 @@ import dots.ai.Ai
 import dots.ai.SearchAi
 import dots.campaign.Level
 import dots.campaign.LevelRecord
+import dots.campaign.Progress
 import dots.campaign.Strength
 import dots.campaign.Tutorial
 import dots.daily.DailyPuzzle
@@ -63,20 +64,23 @@ fun freeGameLike(game: GameLogEntry, threatHighlight: Boolean, now: Long, seed: 
 
 /**
  * A new game of [level], before its first move, against the computer at the level's strength.
- * [gift] gives the player boosters on top of the level's own (the free Hint after three failures),
- * and [owned] are the player's own boosters the game takes (decision 0027).
+ * The player's [progress] gives its boosters ([Progress.game]): the level's own left after earlier
+ * attempts (decision 0040) and the player's own (decision 0027). [gift] gives boosters for this
+ * game only (the free Hint after three failures). Every way into a level comes here: Start,
+ * Retry, Next and the free Hint's retry.
  * Threats show when [threatHighlight] is on, and always in the tutorial's levels (A-06). A
- * [practice] game, such as a replay of the tutorial, changes no campaign progress.
+ * [practice] game, such as a replay of the tutorial, changes no campaign progress: it has the
+ * level's full allowance and none of the player's own.
  */
 fun levelGame(
     level: Level,
     threatHighlight: Boolean,
     now: Long,
+    progress: Progress = Progress.NONE,
     gift: Map<Booster, Int> = emptyMap(),
-    owned: Map<Booster, Int> = emptyMap(),
     practice: Boolean = false,
 ): GameLogEntry = GameLogEntry.start(
-    LevelRecord(level, emptyList(), gift, if (practice) emptyMap() else owned.filterValues { it > 0 }),
+    (if (practice) Progress.NONE else progress).game(level, gift),
     level.strength.text,
     threatHighlight = threatHighlight || Tutorial.lesson(level) != null,
     now = now,

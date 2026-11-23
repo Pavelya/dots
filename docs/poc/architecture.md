@@ -88,7 +88,8 @@ Files, in the app's private folder (`files/games/`, excluded from backups):
 `GameStore` writes both on one background thread, in order, so the main thread never waits for
 the disk. The campaign progress is kept apart, in `files/datastore/progress.preferences_pb`
 (`ProgressRepository`): the stars of each level, the player's own boosters, the chests opened and
-the cosmetics chests gave, one line each, and the failures in a row. The daily puzzle keeps the days
+the cosmetics chests gave and each level's own boosters used (decision 0040), one line each, and the
+failures in a row. Boosters a game uses and the level's end are saved in the order they happen. The daily puzzle keeps the days
 solved and the last week's attempts there too (`DailyRepository`, two more lines), so the streak is
 backed up with the stars, and the theme, piece style and ring effect in use (`ThemeRepository`), so
 they come back beside the stars and chests that earn cosmetics. It is the only file Android's backup

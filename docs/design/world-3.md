@@ -35,7 +35,8 @@ moves deep, and its first move is not the one that looks natural. 3-13 is a wall
   gives 5, and `stars: moves 1 2` asks for both spares for three stars.
 - **Survive levels give two boosters,** plus the Undo every level has, and their stars count
   the boosters left (`stars: boosters 2 3`): three stars without a booster, two with one used,
-  one with two or more used. Every survive level
+  one with two or more used. Only the boosters used in that attempt count: one used on an
+  earlier attempt is gone, but never costs a star (decision 0040). Every survive level
   can be passed without them; the solver never uses a booster.
 - **The computer is the steady step** for every level of Worlds 2 to 4, so the difficulty
   comes from the boards, the missions, the dot budgets and the boss rules.

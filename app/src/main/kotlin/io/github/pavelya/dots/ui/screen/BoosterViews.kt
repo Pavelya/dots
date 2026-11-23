@@ -239,11 +239,11 @@ internal fun BoosterNote(
  */
 data class WaitingBooster(val owned: Int, val from: String?)
 
-/** What the Boosters note counts on [level]: the level's own boosters plus the player's of the kinds it allows (decision 0027). */
-internal fun boostersLeft(level: Level, progress: Progress?): Map<Booster, Int> {
-    val owned = progress?.owned(level).orEmpty()
-    return (level.boosters.keys + owned.keys).associateWith { (level.boosters[it] ?: 0) + (owned[it] ?: 0) }
-}
+/**
+ * What the Boosters note counts on [level]: the level's own boosters left after earlier attempts
+ * (decision 0040) plus the player's of the kinds it allows (decision 0027).
+ */
+internal fun boostersLeft(level: Level, progress: Progress?): Map<Booster, Int> = (progress ?: Progress.NONE).boostersFor(level)
 
 /** The player's own boosters [level] leaves out, each with the first level from here on that takes it. */
 internal fun boostersWaiting(level: Level, progress: Progress?): Map<Booster, WaitingBooster> =

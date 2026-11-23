@@ -33,7 +33,8 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
   gives 5, and `stars: moves 1 2` asks for both spares for three stars.
 - **Survive levels give two boosters,** plus the Undo every level has, and their stars count
   the boosters left (`stars: boosters 2 3`): three stars without a booster, two with one used,
-  one with two or more used. Every survive level
+  one with two or more used. Only the boosters used in that attempt count: one used on an
+  earlier attempt is gone, but never costs a star (decision 0040). Every survive level
   can be passed without them; the solver never uses a booster.
 - **The computer is the steady step** for every level of Worlds 2 to 4, so the difficulty
   comes from the boards, the missions, the dot budgets and the boss rules.

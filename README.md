@@ -279,7 +279,7 @@ play.
 | `margin` | Margin of victory: the player's captures minus the computer's, a dot on a bonus point counting 2. | Every mission. In the win missions, the two-star score must ask for more than passing does: more than 1 in `win`, more than 3 in `win by 3`. |
 | `moves` | Moves to spare: in `capture 5 in 8 moves`, the moves left of the 8; in `rescue` and `target`, the dots the player has not placed. | Capture, rescue and target, the missions that end the moment they pass. |
 | `saved` | Dots saved: the player's dots on the map at the start (`R`) that are not captured. | Every mission but survive, where losing a dot fails. At most the number of `R` dots. |
-| `boosters` | Boosters unused: the level's boosters the player has left, all kinds together, Undo included. | Levels with boosters, up to as many as they allow. |
+| `boosters` | Boosters unused: the level's full allowance, all kinds together, Undo included, less the level's own boosters used in this game. Those used on earlier attempts never count. | Levels with boosters, up to as many as they allow. |
 
 Both scores are 1 or more, and the three-star score is higher. Targets that do not fit the level
 are refused, with the line of the `stars` field. A level file may say `stars: none`, and then
@@ -288,7 +288,12 @@ passing earns one star; every campaign level has targets, and a test checks it.
 ### Boosters
 
 Boosters exist only in the campaign, and only the player has them (decision 0006). A level's
-`boosters` line says which ones the player may use and how many times in that level.
+`boosters` line says which ones the player may use and how many times in that level. A level hands
+them out once: one used is gone for every later attempt at that level, Retry, Restart and replays
+after passing included, and unused ones stay (decision 0040). The saved progress keeps each level's
+used boosters (`Progress.spent`), and `Progress.game` starts every new game of a level with what is
+left, plus the player's own (decision 0027). An undo that takes back a booster's turn gives that
+booster back; Undo itself stays used.
 
 | Booster | What it does |
 |---------|--------------|
@@ -323,19 +328,22 @@ A record that starts `level/1` was written before decision 0039. It replays unde
 where both dots of a two-dot turn came out of the dots left, so old games and tester logs still
 replay as they were played.
 
-Boosters on top of the level's own come before the `|`, one word each:
+The level's own boosters used on earlier attempts, and boosters on top of the level's own, come
+before the `|`, one word each:
 
 | Word | What it is |
 |------|------------|
+| `-wall` | Used on an earlier attempt: the game starts without it (decision 0040). A record without `-` words started with the level's full allowance. |
 | `+hint` | Given for this game: the free Hint after three failures. |
 | `*wall` | Brought from the player's own boosters (decision 0027). |
 | `!wall` | Given by a rewarded ad for this retry (decision 0030). At most one. |
 
 ```
-level/2 2-1 +hint *wall !wall | wall:d5 d6 a7 wall:g1 a1 g7
+level/2 2-1 -undo +hint *wall !wall | wall:d5 d6 a7 wall:g1 a1 g7
 ```
 
-The player's own and the given ones are used first and never cost stars. A game with the ad's
+The player's own and the given ones are used first and never cost stars, nor do the level's own
+used on earlier attempts: every attempt is judged from scratch. A game with the ad's
 booster never earns more stars than the same game without it. On `boosters` levels, it costs the
 same as one of the level's own. On `margin`, `moves` and `saved` levels, a passed game that used it
 earns 1 star, whatever the count. It counts as used once none of its kind is left

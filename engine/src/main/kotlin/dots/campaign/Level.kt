@@ -89,11 +89,23 @@ data class Level(
     val fortress: List<Pos> get() = if (rule is SpecialRule.Fortress) map.groups(LevelMap.COMPUTER).first() else emptyList()
 
     /**
-     * A new game of this level; [gift] gives the player boosters on top of the level's own.
-     * [extraSecondDot] false plays the rule from before decision 0039, for old records only
-     * (`GameState.start`).
+     * A new game of this level; [gift] gives the player boosters on top of the level's own, and
+     * [spent] are the level's own boosters used on earlier attempts, which the game starts without
+     * (decision 0040). [extraSecondDot] false plays the rule from before decision 0039, for old
+     * records only (`GameState.start`).
      */
-    fun newGame(gift: Map<Booster, Int> = emptyMap(), extraSecondDot: Boolean = true): GameState = start(gift, extraSecondDot)
+    fun newGame(
+        gift: Map<Booster, Int> = emptyMap(),
+        extraSecondDot: Boolean = true,
+        spent: Map<Booster, Int> = emptyMap(),
+    ): GameState = start(gift, extraSecondDot, spent)
+
+    /**
+     * The level's own boosters left for a game after [spent] were used on earlier attempts, by
+     * kind: every kind the level allows, with 0 for one used up (decision 0040).
+     */
+    fun boostersLeft(spent: Map<Booster, Int>): Map<Booster, Int> =
+        boosters.mapValues { (booster, count) -> (count - (spent[booster] ?: 0)).coerceAtLeast(0) }
 
     /**
      * The booster a rewarded ad offers for a retry of this level (decision 0030): the first kind in
@@ -113,9 +125,11 @@ data class Level(
 
     /**
      * What the [stars]' measure counts in [state], or null if the level has no star targets. [ad] is
-     * the booster the game was given by a rewarded ad, if any ([LevelRecord.ad]).
+     * the booster the game was given by a rewarded ad, if any ([LevelRecord.ad]), and [spent] the
+     * level's own boosters the game started without ([LevelRecord.spent]).
      */
-    fun starScore(state: GameState, ad: Booster? = null): Int? = stars?.let { count(it, this, state, ad) }
+    fun starScore(state: GameState, ad: Booster? = null, spent: Map<Booster, Int> = emptyMap()): Int? =
+        stars?.let { count(it, this, state, ad, spent) }
 
     /**
      * True if the game in [state] has used the booster a rewarded ad gave it, [ad]: none of its kind
@@ -130,11 +144,13 @@ data class Level(
      * level earns 1 to 3 stars (1 when it has no star targets), a failed one none. [ad] is the
      * booster the game was given by a rewarded ad, if any; [LevelRecord.result] passes it. A game
      * that used the ad's booster earns at most 1 star, unless the level's stars count the boosters
-     * left, where using it costs the same as using one of the level's own (decision 0030).
+     * left, where using it costs the same as using one of the level's own (decision 0030). [spent]
+     * are the level's own boosters the game started without, used on earlier attempts: they never
+     * cost stars (decision 0040).
      */
-    fun result(end: GameState, ad: Booster? = null): LevelResult {
+    fun result(end: GameState, ad: Booster? = null, spent: Map<Booster, Int> = emptyMap()): LevelResult {
         val status = status(end)
-        val score = starScore(end, ad)
+        val score = starScore(end, ad, spent)
         val earned = when {
             status.outcome != Outcome.PASSED -> 0
             score == null -> 1
@@ -145,15 +161,18 @@ data class Level(
     }
 
     /**
-     * The human has the level's [boosters], plus any [gift]; the computer has none (decision 0006).
-     * The computer has the [rule]'s turn rule, if any.
+     * The human has the level's [boosters] less those [spent] on earlier attempts, plus any [gift];
+     * the computer has none (decision 0006). The computer has the [rule]'s turn rule, if any.
      */
-    private fun start(gift: Map<Booster, Int> = emptyMap(), extraSecondDot: Boolean = true) = map.start(
-        holes, dotsPerPlayer, human, dotsFor = mapOf(human to humanDots),
-        boosters = mapOf(human to (boosters.keys + gift.keys).associateWith { (boosters[it] ?: 0) + (gift[it] ?: 0) }),
-        turnRules = rule?.turnRule?.let { mapOf(computer to it) } ?: emptyMap(),
-        extraSecondDot = extraSecondDot,
-    )
+    private fun start(gift: Map<Booster, Int>, extraSecondDot: Boolean, spent: Map<Booster, Int>): GameState {
+        val own = boostersLeft(spent)
+        return map.start(
+            holes, dotsPerPlayer, human, dotsFor = mapOf(human to humanDots),
+            boosters = mapOf(human to (own.keys + gift.keys).associateWith { (own[it] ?: 0) + (gift[it] ?: 0) }),
+            turnRules = rule?.turnRule?.let { mapOf(computer to it) } ?: emptyMap(),
+            extraSecondDot = extraSecondDot,
+        )
+    }
 
     private fun checkMission() {
         val what = "the mission '${mission.text}'"
@@ -179,7 +198,7 @@ data class Level(
             }
             Mission.Win, is Mission.WinBy -> Unit
         }
-        require(!status(start()).isDecided) { "$what is already decided before the first move" }
+        require(!status(newGame()).isDecided) { "$what is already decided before the first move" }
     }
 }
 
