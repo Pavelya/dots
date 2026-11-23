@@ -34,7 +34,7 @@ import org.robolectric.annotation.GraphicsMode
  * row, D-28: MoneyShop, MoneyShopEarned, MoneyShopEarnOnly, MoneyPreviewSale, MoneyPreviewEarned,
  * MoneyPreviewEarnOnly, MoneyMapNew; and the D-29 Shop tabs `shop-pieces` and `shop-rings`),
  * shown next to their frames in the PR. As on the frames, the player has 112 stars (152 once a
- * theme is earned) and Notebook in use. Reference images in app/src/test/screenshots; they are
+ * theme is earned; 30 on the Pieces and Rings tabs, so their items are for sale) and Notebook in use. Reference images in app/src/test/screenshots; they are
  * recorded in CI (CLAUDE.md, "Recording screenshots").
  */
 @RunWith(RobolectricTestRunner::class)
@@ -61,11 +61,21 @@ class ShopScreenshotTest {
         prices = Cosmetic.entries.associateWith { if (it.kind == Cosmetic.Kind.THEME) "$2.99" else "$0.99" },
     )
 
-    /** The D-28 Shop "for sale": Neon arcade bought, Hearts and clubs and Rubber stamp bought too. */
+    /** The D-28 Shop "for sale": 112 stars (which earn Hearts and clubs, Lasso and Flame and frost) and Neon arcade bought. */
     private val forSale = ShopView(
         store = selling,
-        owned = Owned(earned = emptySet(), bought = setOf(Cosmetic.NEON_ARCADE, Cosmetic.HEARTS_AND_CLUBS, Cosmetic.RUBBER_STAMP)),
+        owned = Owned(earned = Cosmetic.earnedAt(112), bought = setOf(Cosmetic.NEON_ARCADE)),
         stars = 112,
+    )
+
+    /**
+     * The D-29 Shop tabs: 30 stars, too few for any piece style or ring effect; Hearts and clubs
+     * and Rubber stamp bought, the others for sale.
+     */
+    private val fewStars = ShopView(
+        store = selling,
+        owned = Owned(earned = emptySet(), bought = setOf(Cosmetic.HEARTS_AND_CLUBS, Cosmetic.RUBBER_STAMP)),
+        stars = 30,
     )
 
     /** 152 stars: Star chart just earned, its preview not opened yet. Hearts and clubs, Lasso and Flame and frost earned and seen. */
@@ -120,20 +130,20 @@ class ShopScreenshotTest {
 
     @Test
     fun `shop, pieces`() {
-        shop(forSale, ShopTab.PIECES)
+        shop(fewStars, ShopTab.PIECES)
         capture("shop_pieces")
     }
 
     @Test
     fun `shop, rings`() {
-        shop(forSale, ShopTab.RINGS)
+        shop(fewStars, ShopTab.RINGS)
         capture("shop_rings")
     }
 
     /** The piece styles drawn in the theme in use: Star chart's inks. */
     @Test
     fun `shop, pieces in Star chart`() {
-        shop(forSale.copy(owned = forSale.owned.copy(bought = forSale.owned.bought + Cosmetic.STAR_CHART), theme = ThemeId.STAR_CHART), ShopTab.PIECES)
+        shop(fewStars.copy(owned = fewStars.owned.copy(bought = fewStars.owned.bought + Cosmetic.STAR_CHART), theme = ThemeId.STAR_CHART), ShopTab.PIECES)
         capture("shop_pieces_star_chart")
     }
 
@@ -182,13 +192,13 @@ class ShopScreenshotTest {
 
     @Test
     fun `preview, a piece style for sale`() {
-        preview(PieceStyleId.FLAME_AND_FROST, forSale)
+        preview(PieceStyleId.FLAME_AND_FROST, fewStars)
         capture("preview_pieces_for_sale")
     }
 
     @Test
     fun `preview, a ring effect for sale`() {
-        preview(RingEffectId.LASSO, forSale)
+        preview(RingEffectId.LASSO, fewStars)
         capture("preview_rings_for_sale")
     }
 
