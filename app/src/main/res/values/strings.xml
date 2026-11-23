@@ -325,6 +325,24 @@
     <string name="theme_light_or_dark">Light or dark follows your phone’s dark theme.</string>
     <string name="theme_more_in_shop">More themes in the Shop</string>
     <string name="theme_debug_note">Debug build: every theme is here. Players get only Notebook until the Shop opens.</string>
+    <string name="settings_pieces">Pieces</string>
+    <string name="settings_rings">Rings</string>
+    <string name="look_standard">Standard</string>
+    <string name="pieces_hearts_and_clubs">Hearts and clubs</string>
+    <string name="pieces_flame_and_frost">Flame and frost</string>
+    <string name="rings_lasso">Lasso</string>
+    <string name="rings_rubber_stamp">Rubber stamp</string>
+    <string name="pieces_standard_line">Your theme’s own pieces.</string>
+    <string name="pieces_hearts_and_clubs_line">Hearts for one side, clubs for the other.</string>
+    <string name="pieces_flame_and_frost_line">Flames for one side, snowflakes for the other.</string>
+    <string name="rings_standard_line">Your theme’s own ring.</string>
+    <string name="rings_lasso_line">A rope thrown round the area and pulled tight.</string>
+    <string name="rings_rubber_stamp_line">A double line, and the area stamped down at once.</string>
+    <string name="looks_shown_in_your_theme">Shown in your theme. Light or dark follows your phone’s dark theme.</string>
+    <string name="pieces_more_in_shop">More piece styles in the Shop</string>
+    <string name="rings_more_in_shop">More ring effects in the Shop</string>
+    <string name="pieces_debug_note">Debug build: every piece style is here. Players see only the ones they own.</string>
+    <string name="rings_debug_note">Debug build: every ring effect is here. Players see only the ones they own.</string>
     <string name="settings_feedback">Send feedback</string>
     <!-- The feedback email (A-12): the game's support address (docs/plan.md, Accounts), its subject, and the
          lines under the player's message that say which build and phone it came from. -->
@@ -362,15 +380,6 @@
     <string name="daily_next_in">Next puzzle in %1$s</string>
     <string name="daily_share">Share</string>
     <string name="daily_share_title">Share your result</string>
-    <string name="developer_looks">Pieces and rings</string>
-    <string name="developer_looks_note">Debug build: every piece style and ring effect is here. The game board draws them in the theme in use. Players get only Standard until the Shop opens.</string>
-    <string name="developer_pieces">Pieces</string>
-    <string name="developer_rings">Rings</string>
-    <string name="look_standard">Standard</string>
-    <string name="pieces_hearts_and_clubs">Hearts and clubs</string>
-    <string name="pieces_flame_and_frost">Flame and frost</string>
-    <string name="rings_lasso">Lasso</string>
-    <string name="rings_rubber_stamp">Rubber stamp</string>
     <string name="developer_daily">Daily puzzle</string>
     <string name="developer_daily_note">The puzzles start on 1 January 2027. A year ahead moves the puzzle’s clock 365 days on, to try them now.</string>
     <string name="developer_daily_ahead">A year ahead</string>
