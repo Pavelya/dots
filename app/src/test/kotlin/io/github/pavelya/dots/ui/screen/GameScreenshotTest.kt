@@ -37,6 +37,7 @@ import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.LastCapture
 import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.game.OpponentLook
+import io.github.pavelya.dots.game.bossCountdown
 import io.github.pavelya.dots.game.gameViewModel
 import io.github.pavelya.dots.ui.board.BoardGeometry
 import io.github.pavelya.dots.ui.board.BoardInput
@@ -203,31 +204,57 @@ class GameScreenshotTest(private val case: ThemeCase) {
     fun bigCaptureInWorld4Dark() = inWorld(4, big = true, dark = true)
 
     /**
-     * World 1's boss, the Ink Bottle (1-15), as it is about to place the two dots of its special
-     * turn: its attacking face above the board (docs/design/illustrations.md, "The World 1 boss").
-     * Both sides have placed their dots along the top row, so nothing is captured.
+     * World 1's boss, the Ink Bottle (1-15), played by both sides along the top row until [stop] says
+     * so, as the game screen shows it then: the boss's counter above it (A-28), and after its turn of
+     * two its dots numbered 1 and 2. Nothing is captured.
      */
-    private fun bossTurn(dark: Boolean) {
+    private fun boss(stop: (GameState) -> Boolean): Pair<GameUiState, CampaignParts> {
         val level = Campaign.level(1, 15)
         var state = level.newGame()
-        while (!OpponentLook.bossTurn(state, human.opponent)) state = state.play(state.legalMoves().first()).state
+        var numbered = emptyList<Pos>()
+        while (!stop(state)) {
+            val dot = state.legalMoves().first()
+            numbered = if (OpponentLook.bossTurn(state, human.opponent)) numbered + dot else emptyList()
+            state = state.play(dot).state
+        }
         val ui = GameUiState(
             state = state,
-            lastMove = state.lastPlaced(human),
+            lastMove = state.lastPlaced(state.toMove.opponent),
             vsComputer = true,
             opponent = OpponentLook.of(state, human, null, humanInDanger = false),
             strength = level.strength,
             level = level,
+            bossDots = numbered,
         )
-        assertEquals(OpponentLook(Mood.ATTACKING), ui.opponent)
         val parts = CampaignParts(
             title = "Level 15",
             mission = missionNote(level, level.status(state)),
             boosters = { BoosterBar(listOf(BoosterTool(Booster.UNDO, 1, usable = true)), Palette.current) {} },
             world = level.world,
         )
+        return ui to parts
+    }
+
+    /** The boss to place the two dots of its turn of two: its attacking face, and the counter at "now". */
+    private fun bossTurnUi(): Pair<GameUiState, CampaignParts> = boss { OpponentLook.bossTurn(it, human.opponent) }
+
+    /** The player's turn three boss turns before its turn of two: "in 3 turns". */
+    private fun bossCountingUi(): Pair<GameUiState, CampaignParts> = boss { it.toMove == human && bossCountdown(it, human.opponent) == 3 }
+
+    /** The player's turn just after the boss's turn of two: its dots numbered, and the counter back at 5. */
+    private fun bossNumberedUi(): Pair<GameUiState, CampaignParts> = boss { it.toMove == human && it.dotsPlaced(human.opponent) == 6 }
+
+    private fun boss(name: String, dark: Boolean, at: () -> Pair<GameUiState, CampaignParts>) {
+        val (ui, parts) = at()
         show(dark = dark) { Board(ui, campaign = parts) }
-        capture("game_boss_turn${if (dark) "_dark" else ""}")
+        capture("$name${if (dark) "_dark" else ""}")
+    }
+
+    private fun bossTurn(dark: Boolean) {
+        val (ui, _) = bossTurnUi()
+        assertEquals(OpponentLook(Mood.ATTACKING), ui.opponent)
+        assertEquals(0, bossCountdown(ui.state, human.opponent))
+        boss("game_boss_turn", dark, ::bossTurnUi)
     }
 
     /**
@@ -267,6 +294,52 @@ class GameScreenshotTest(private val case: ThemeCase) {
 
     @Test
     fun bossTurnDark() = bossTurn(dark = true)
+
+    @Test
+    fun bossCounting() {
+        assertEquals(3, bossCountdown(bossCountingUi().first.state, human.opponent))
+        boss("game_boss_counting", dark = false, ::bossCountingUi)
+    }
+
+    @Test
+    fun bossCountingDark() = boss("game_boss_counting", dark = true, ::bossCountingUi)
+
+    /** After the boss's turn of two, its dots numbered 1 and 2; Notebook only, as the numbers are in the boss's ink like the counter. */
+    private fun bossNumbered(dark: Boolean) {
+        assumeTrue(case.isNotebook)
+        val (ui, _) = bossNumberedUi()
+        assertEquals(2, ui.bossDots.size)
+        assertEquals(5, bossCountdown(ui.state, human.opponent))
+        boss("game_boss_numbered", dark, ::bossNumberedUi)
+    }
+
+    @Test
+    fun bossNumbered() = bossNumbered(dark = false)
+
+    @Test
+    fun bossNumberedDark() = bossNumbered(dark = true)
+
+    /** On a small phone the counter takes the room over the board, and the board stays where it is (A-28). */
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun bossTurnOnASmallPhone() {
+        assumeTrue(case.isNotebook)
+        boss("game_boss_turn_small_phone", dark = false, ::bossTurnUi)
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun bossCountingOnASmallPhone() {
+        assumeTrue(case.isNotebook)
+        boss("game_boss_counting_small_phone", dark = false, ::bossCountingUi)
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun bossCountingOnASmallPhoneDark() {
+        assumeTrue(case.isNotebook)
+        boss("game_boss_counting_small_phone", dark = true, ::bossCountingUi)
+    }
 
     /** The big capture with high-contrast pieces turned on in Settings (pieces.md, "High contrast"). */
     @Test

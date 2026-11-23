@@ -134,6 +134,11 @@ data class GameUiState(
     val captureOrder: List<CapturedArea> = emptyList(),
     /** Once the game is over, the computer's look before the end: it changes as the result note comes up. */
     val opponentInPlay: OpponentLook? = null,
+    /**
+     * The dots of the boss's turn of two dots, numbered 1 and 2 on the board (the wireframes' "Boss
+     * turn"): from its first dot until the player's next dot or booster. Empty otherwise and at the end.
+     */
+    val bossDots: List<Pos> = emptyList(),
 ) {
     /** True when Result can open: the game is over and, in a level or the daily puzzle, its end is saved. */
     val showsResult: Boolean get() = isOver && (level == null || levelEnd != null) && (daily == null || dailyEnd != null)
@@ -262,6 +267,9 @@ class GameViewModel(
     /** The dot the edge marks show; see [GameUiState.edgeMarks]. */
     private var edgeMarks: Pos? = null
 
+    /** The dots of the boss's last turn of two; see [GameUiState.bossDots]. */
+    private var bossDots: List<Pos> = emptyList()
+
     /** The captured areas in the order they were captured, worked out once the game is over. */
     private var captureOrder: List<CapturedArea>? = null
 
@@ -356,6 +364,7 @@ class GameViewModel(
         val mover = game.state.toMove
         val move = game.apply(Action.Place(point))
         entry = entry.copy(placed = entry.placed + 1)
+        bossDots = emptyList()
         changed()
         landed(before, point, mover, move)
         letComputerMove(after = move)
@@ -488,6 +497,7 @@ class GameViewModel(
         val result = game.apply(action)
         level?.takeIf { !entry.practice }?.let { analytics.log(Events.boosterUsed(it, action.booster)) }
         still()
+        bossDots = emptyList()
         boosterMoment = BoosterMoment(
             id = ++moments,
             booster = action.booster,
@@ -579,6 +589,7 @@ class GameViewModel(
             entry = entry.copy(undos = entry.undos + 1)
             still()
             edgeMarks = null
+            bossDots = emptyList()
             if (!game.state.isCleanup) stopMoment = null
             changed()
         }
@@ -629,6 +640,7 @@ class GameViewModel(
         chosen = null
         still()
         edgeMarks = null
+        bossDots = emptyList()
         captureOrder = null
         askingStop = false
         stopMoment = null
@@ -658,6 +670,11 @@ class GameViewModel(
             val result = game.apply(action)
             changed()
             val dot = (action as? Action.Place)?.pos
+            bossDots = when {
+                dot == null || !OpponentLook.bossTurn(position, mover) -> emptyList()
+                position.dotsThisTurn == 2 -> listOf(dot)
+                else -> bossDots + dot
+            }
             if (action == Action.Stop) stopMoment = StopMoment(++moments, mover)
             if (dot != null) {
                 landed(before, dot, mover, result)
@@ -895,6 +912,7 @@ class GameViewModel(
             edgeMarks = edgeMarks,
             captureOrder = if (over) captureOrder() else emptyList(),
             opponentInPlay = inPlay,
+            bossDots = if (over) emptyList() else bossDots,
         )
     }
 }

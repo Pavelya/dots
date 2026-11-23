@@ -150,6 +150,10 @@
     <string name="side_waiting">%1$s, score %2$d</string>
     <string name="turn_banner">%1$s’s turn</string>
     <string name="turn_banner_collects">%1$s collects</string>
+    <string name="boss_counter_now">Boss: two dots now!</string>
+    <string name="boss_counter_next">Boss: two dots next turn</string>
+    <string name="boss_counter_now_description">The boss places two dots now</string>
+    <string name="boss_counter_next_description">The boss places two dots on its next turn</string>
     <string name="bubble_good_luck">Good luck!</string>
     <string name="bubble_your_move">Your move…</string>
     <string name="bubble_hey">Hey!</string>
@@ -440,6 +444,14 @@
     <plurals name="boosters_row_waiting_none">
         <item quantity="one">%1$s, you have %2$d. No later level allows it. %3$s</item>
         <item quantity="other">%1$s, you have %2$d. No later level allows it. %3$s</item>
+    </plurals>
+    <plurals name="boss_counter_in">
+        <item quantity="one">Boss: two dots in %1$d turn</item>
+        <item quantity="other">Boss: two dots in %1$d turns</item>
+    </plurals>
+    <plurals name="boss_counter_in_description">
+        <item quantity="one">The boss places two dots in %1$d turn</item>
+        <item quantity="other">The boss places two dots in %1$d turns</item>
     </plurals>
     <plurals name="double_dot_left">
         <item quantity="one">%1$d more dot this turn</item>

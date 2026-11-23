@@ -63,8 +63,11 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
@@ -79,6 +82,7 @@ import io.github.pavelya.dots.R
 import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.GameUiState
 import io.github.pavelya.dots.game.OpponentLook
+import io.github.pavelya.dots.game.bossCountdown
 import io.github.pavelya.dots.ui.board.AreaGlow
 import io.github.pavelya.dots.ui.board.BoardInput
 import io.github.pavelya.dots.ui.board.BoardMarks
@@ -118,7 +122,9 @@ import kotlinx.coroutines.delay
  *   the mission note (right).
  * - **The opponent above the board:** against the computer, its face taped in like a photo, with a
  *   speech bubble; between two people, Blue's piece in the photo. Under it the opponent's piece,
- *   name, tally and score.
+ *   name, tally and score. On a boss level with a double move, the boss's counter sits above it all
+ *   ([BossCounter], the wireframes' "Boss turn"); it takes its room before the photo. The boss's two
+ *   dots of that turn are numbered 1 and 2 on the board until the player's next dot.
  * - **The board,** edge to edge, at the largest whole-dp spacing that fits ([boardSpacing]). Dots
  *   are placed by the [input]'s method ([PlayableBoard]).
  * - **The player below the board:** piece, name, tally and score, and the dots left.
@@ -267,6 +273,7 @@ internal fun GameBoard(
         }
     }
     val stopper = state.stopper?.takeUnless { ui.isOver }
+    val numbers = BossNumbers(rememberTextMeasurer(), NoteText.small.copy(color = style.card, fontWeight = FontWeight.ExtraBold, lineHeight = TextUnit.Unspecified))
     val chipSize = { if (stop != null) StopTimes.chip(stopping.now) else 1f }
     val stoppedChip = @Composable { player: Player ->
         if (stopper == player) StoppedChip(names.of(player), style, Modifier.graphicsLayer { val size = chipSize(); scaleX = size; scaleY = size })
@@ -281,6 +288,11 @@ internal fun GameBoard(
         val room = spare - guideRoom
         // On a small phone the opponent's line moves into the top row, and the mission note narrows to make room.
         val compact = room < OPPONENT_LINE
+        // The boss's counter goes above the opponent's line when it fits there; the photo only if it fits under it.
+        val countdown = if (ui.vsComputer && !ui.isOver) bossCountdown(state, above) else null
+        val counterGap = if (room >= OPPONENT_WITH_PHOTO + COUNTER + COUNTER_GAP_WIDE) COUNTER_GAP_WIDE else COUNTER_GAP
+        val counter = countdown?.takeIf { room >= (if (compact) 0.dp else OPPONENT_LINE) + COUNTER + counterGap }
+        val faceRoom = room - (if (counter != null) COUNTER + counterGap else 0.dp)
         val opponentLine = @Composable { inTopRow: Boolean ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SideLine(above, names.of(above), shownScore(above), toMove = isToMove(ui, above), style, inTopRow, swell = { scoreSwell(above) }, onTally = { spots.tally[above] = it })
@@ -307,7 +319,11 @@ internal fun GameBoard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Bottom,
             ) {
-                if (room >= OPPONENT_WITH_PHOTO) {
+                if (counter != null) {
+                    BossCounter(counter, style.ink(above), style)
+                    Spacer(Modifier.height(counterGap))
+                }
+                if (faceRoom >= OPPONENT_WITH_PHOTO) {
                     // The world's board touches sit in the paper beside the photo, so they go when it does.
                     Box(Modifier.fillMaxWidth().boardTouches(campaign?.world, style), contentAlignment = Alignment.TopCenter) {
                         Photo(above, look, ui.strength, Faces.boss(ui.level), style)
@@ -335,6 +351,7 @@ internal fun GameBoard(
                         val bomb = if (used?.booster == Booster.BOMB) BombEffect.shake(boosting.now) else 0f
                         translationX = ((capture?.shake(moment.now) ?: 0f) + bomb).dp.toPx()
                     }
+                    .bossNumbers(ui.bossDots, state.width, spacing, style.ink(above), numbers)
                     .testTag(BOARD_TAG),
                 lastMove = ui.lastMove,
                 dangers = ui.dangers,
@@ -459,6 +476,13 @@ private val GUIDE_ROOM = 96.dp
 /** The opponent's line above the board, when it fits there. */
 private val OPPONENT_LINE = 52.dp
 
+/** The boss's counter above the opponent ([BossCounter]). */
+private val COUNTER = 24.dp
+
+/** The paper between the boss's counter and what is under it, and more when the photo shows with room to spare. */
+private val COUNTER_GAP = 4.dp
+private val COUNTER_GAP_WIDE = 12.dp
+
 /** The height the photo takes, with its tape. */
 private val PHOTO_HEIGHT = 132.dp
 
@@ -537,6 +561,66 @@ private fun DoubleDotChip(left: Int, style: Palette, modifier: Modifier) {
             },
     )
 }
+
+/**
+ * The boss's counter above the opponent on a boss level with a double move (the wireframes' "Boss
+ * turn" and its counting states): the boss's [turns] until it places two dots, in its [ink]. TalkBack
+ * reads it, and again as it changes.
+ */
+@Composable
+private fun BossCounter(turns: Int, ink: Color, style: Palette) {
+    val text = when (turns) {
+        0 -> stringResource(R.string.boss_counter_now)
+        1 -> stringResource(R.string.boss_counter_next)
+        else -> pluralStringResource(R.plurals.boss_counter_in, turns, turns)
+    }
+    val description = when (turns) {
+        0 -> stringResource(R.string.boss_counter_now_description)
+        1 -> stringResource(R.string.boss_counter_next_description)
+        else -> pluralStringResource(R.plurals.boss_counter_in_description, turns, turns)
+    }
+    val shape = RoundedCornerShape(COUNTER / 2)
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .height(COUNTER)
+            .background(style.card, shape)
+            .border(2.dp, ink, shape)
+            .padding(horizontal = 12.dp)
+            .clearAndSetSemantics {
+                contentDescription = description
+                liveRegion = LiveRegionMode.Polite
+            },
+    ) {
+        Text(text, style = HAND.copy(fontSize = 18.sp), color = ink, maxLines = 1)
+    }
+}
+
+/** How the boss's dots are numbered: the [measurer] and the [text] style of the numbers. */
+private class BossNumbers(val measurer: TextMeasurer, val text: TextStyle)
+
+/**
+ * The boss's [dots] of its turn of two, numbered 1 and 2 as the wireframes' "Boss turn" draws them:
+ * a disc in the boss's [ink] above each dot and to its right, or to its left in the board's last
+ * column, sized to the board's [spacing].
+ */
+private fun Modifier.bossNumbers(dots: List<Pos>, columns: Int, spacing: Dp, ink: Color, numbers: BossNumbers): Modifier =
+    if (dots.isEmpty()) {
+        this
+    } else {
+        drawWithContent {
+            drawContent()
+            val s = spacing.toPx()
+            val style = numbers.text.copy(fontSize = (0.46f * s).toSp())
+            dots.forEachIndexed { i, dot ->
+                val side = if (dot.x == columns - 1) -1f else 1f
+                val disc = Offset((dot.x + 0.5f + side * 0.725f) * s, (dot.y - 0.075f) * s)
+                drawCircle(ink, 0.375f * s, disc)
+                val layout = numbers.measurer.measure((i + 1).toString(), style)
+                drawText(layout, topLeft = disc - Offset(layout.size.width / 2f, layout.size.height / 2f))
+            }
+        }
+    }
 
 /**
  * The top row: the pause icon and the [content], the game's name or, on a small phone, the
