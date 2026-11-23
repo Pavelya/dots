@@ -76,6 +76,7 @@ import dots.campaign.Mission
 import dots.campaign.Strength
 import dots.campaign.Tutorial
 import dots.engine.Booster
+import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.R
@@ -351,7 +352,7 @@ internal fun GameBoard(
                         val bomb = if (used?.booster == Booster.BOMB) BombEffect.shake(boosting.now) else 0f
                         translationX = ((capture?.shake(moment.now) ?: 0f) + bomb).dp.toPx()
                     }
-                    .bossNumbers(ui.bossDots, state.width, spacing, style.ink(above), numbers)
+                    .bossNumbers(ui.bossDots, state, spacing, style.ink(above), numbers)
                     .testTag(BOARD_TAG),
                 lastMove = ui.lastMove,
                 dangers = ui.dangers,
@@ -601,10 +602,11 @@ private class BossNumbers(val measurer: TextMeasurer, val text: TextStyle)
 
 /**
  * The boss's [dots] of its turn of two, numbered 1 and 2 as the wireframes' "Boss turn" draws them:
- * a disc in the boss's [ink] above each dot and to its right, or to its left in the board's last
- * column, sized to the board's [spacing].
+ * a disc in the boss's [ink], sized to the board's [spacing], straight above each dot, or below it
+ * when the point above holds a dot. Straight above, not to one side: the two dots are often
+ * neighbours, and a number to one side would sit over the other dot.
  */
-private fun Modifier.bossNumbers(dots: List<Pos>, columns: Int, spacing: Dp, ink: Color, numbers: BossNumbers): Modifier =
+private fun Modifier.bossNumbers(dots: List<Pos>, state: GameState, spacing: Dp, ink: Color, numbers: BossNumbers): Modifier =
     if (dots.isEmpty()) {
         this
     } else {
@@ -613,8 +615,9 @@ private fun Modifier.bossNumbers(dots: List<Pos>, columns: Int, spacing: Dp, ink
             val s = spacing.toPx()
             val style = numbers.text.copy(fontSize = (0.46f * s).toSp())
             dots.forEachIndexed { i, dot ->
-                val side = if (dot.x == columns - 1) -1f else 1f
-                val disc = Offset((dot.x + 0.5f + side * 0.725f) * s, (dot.y - 0.075f) * s)
+                val above = Pos(dot.x, dot.y - 1)
+                val below = state.inBounds(above.x, above.y) && state.ownerAt(above) != null
+                val disc = Offset((dot.x + 0.5f) * s, (dot.y + 0.5f + if (below) 0.72f else -0.72f) * s)
                 drawCircle(ink, 0.375f * s, disc)
                 val layout = numbers.measurer.measure((i + 1).toString(), style)
                 drawText(layout, topLeft = disc - Offset(layout.size.width / 2f, layout.size.height / 2f))
