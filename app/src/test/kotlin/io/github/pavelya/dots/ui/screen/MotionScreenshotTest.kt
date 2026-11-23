@@ -37,6 +37,7 @@ import dots.engine.areas
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PlacingMethod
 import io.github.pavelya.dots.game.BoardMoment
+import io.github.pavelya.dots.game.BoosterAim
 import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.game.Bubble
 import io.github.pavelya.dots.game.CapturedArea
@@ -464,6 +465,35 @@ class MotionScreenshotTest(private val case: ThemeCase) {
         }
         startsNow()
         frames("drag", 50, 100)
+    }
+
+    /**
+     * Aiming the Wall by drag (strip-drag-boosters, first row): the finger goes down on (9, 9), a
+     * target; the dashed square is there at once, and the Pencil guides are drawn out from its sides
+     * in 100 ms. With animations removed ([reduce]) they are at full length at once.
+     */
+    private fun wallAimedByDrag(name: String, reduce: Boolean, vararg times: Long) {
+        val point = Pos(9, 9)
+        val state = CanvasGame.threat.state
+        val aim = BoosterAim(Booster.WALL, point = point, targets = state.legalMoves())
+        show(reduce = reduce) { Board(ui(CanvasGame.threat, lastMove = Pos(7, 7)).copy(aim = aim), input = BoardInput(PlacingMethod.DRAG, {}, {}, {})) }
+        compose.onNodeWithTag(BOARD_TAG).performTouchInput {
+            down(BoardGeometry(15, 15, width.toFloat(), height.toFloat()).center(point))
+        }
+        startsNow()
+        frames(name, *times)
+    }
+
+    @Test
+    fun wallAimedByDrag() {
+        notebookOnly()
+        wallAimedByDrag("drag_wall", reduce = false, 0, 50, 100)
+    }
+
+    @Test
+    fun wallAimedByDragWithAnimationsRemoved() {
+        notebookOnly()
+        wallAimedByDrag("drag_wall_still", reduce = true, 0)
     }
 
     /** The threat position with one booster of each kind, as the booster strip starts: Blue's (7, 7) last, its edge marks on. */

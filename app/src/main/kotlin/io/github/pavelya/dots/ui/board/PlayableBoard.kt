@@ -55,8 +55,10 @@ class BoardInput(
  *
  * It decides nothing about the game: which points are playable comes back as the [preview]. The
  * tutorial's [pointer], the boosters' [marks] and the links ([showLinks]) are drawn as [BoardView] draws them. In a booster
- * preview the same touches choose the booster's point (the game decides), and drag's guides follow
- * the finger there too.
+ * preview the same touches choose the booster's point (the game decides). Under drag the guides
+ * show there only while the finger is over a target, which then holds the booster's mark; over any
+ * other point the mark stays where it was chosen and the guides go (motion.md, "Aiming Wall or
+ * Bomb by drag").
  *
  * Motion (docs/design/motion.md): the [moment], [edgeMarks], [glow] and [booster] play as [BoardView] plays
  * them. When the finger goes down, drag's guides are drawn out from the ring in 100 ms, then jump
@@ -87,6 +89,8 @@ fun PlayableBoard(
 ) {
     val method = input.method
     var fingerDown by remember { mutableStateOf(false) }
+    // The point under the finger while it is down, placing by drag; null off the board.
+    var fingerAt by remember { mutableStateOf<Pos?>(null) }
     // The gestures send to the events as they are now, not as they were when the gesture began.
     val events by rememberUpdatedState(input)
     val touched by rememberUpdatedState(onTouch)
@@ -120,7 +124,8 @@ fun PlayableBoard(
                 var at = down.position
                 drawOut()
                 fingerDown = true
-                events.onAim(pointAt(at))
+                fingerAt = pointAt(at)
+                events.onAim(fingerAt)
                 var lifted = false
                 try {
                     while (true) {
@@ -131,10 +136,13 @@ fun PlayableBoard(
                             lifted = true
                             break
                         }
-                        events.onAim(pointAt(at))
+                        val point = pointAt(at)
+                        if (point != fingerAt) fingerAt = point
+                        events.onAim(point)
                     }
                 } finally {
                     fingerDown = false
+                    fingerAt = null
                 }
                 events.onRelease(if (lifted) pointAt(at) else null)
             }
@@ -150,7 +158,8 @@ fun PlayableBoard(
         preview = preview,
         dangers = dangers,
         marked = marked,
-        guides = method == PlacingMethod.DRAG && fingerDown,
+        // In a booster preview, only while the finger holds the booster's mark: it is over a target.
+        guides = method == PlacingMethod.DRAG && fingerDown && (marks.targets.isEmpty() || (fingerAt != null && fingerAt == marks.point)),
         pointer = pointer,
         marks = marks,
         showLinks = showLinks,
