@@ -51,7 +51,7 @@ mark where art goes; the art itself comes later (D-07 and phase 5).
 | Map: a world opens | After the last star needed: the next world's page turns and the path continues. | P02, P06 |
 | Level card | A page torn from the notebook, over the map: the mission in one line, the board picture, the opponent's face and head start, the boosters allowed (tap one to see what it does), the star targets. One button: Start. | U01, P04 |
 | Boss card | The level card with the boss's name, face and rule as a banner. | U01, M07 |
-| Chest | Every 10 levels: pick one of two rewards. | U04 |
+| Chest | Every 10 levels: one or two rewards, each a booster the next levels allow. Pick one of two, or keep the only one. | U04 |
 | Play a game | A small sheet from the map: against the computer, or with a friend on one phone. One tap starts with the defaults. | U05, U07, U09 |
 | Today's puzzle | The puzzle's note: date, mission, streak, time to the next one. Play. | P03, M11 |
 

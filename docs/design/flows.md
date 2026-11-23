@@ -157,7 +157,7 @@ over the map or the board, which stay visible around it.
 | World map (home) | Loading; Back from Rules, Stats, Shop or Settings; leaving a game | One scrolling map with a section per world. Finished levels with their stars, the next level circled and marked "next", boss levels as fortresses, a chest every 10 levels, locked worlds with the stars they need. No Play buttons: a level opens its Level card. Labelled icons for Today's puzzle, Play a game, How to play, Stats, Shop and Settings; the player's title and stars. | A-01, A-02, A-04 |
 | Level card | A level on the map, Next on Result | Over the map: the mission in one line, a small picture of the board, the computer's face for its strength, its head start, allowed boosters and star targets. A boss level adds the boss's name, face and rule. One button: Start, or Resume when the level's game is saved. Tapping a booster opens Boosters. | A-03 |
 | Boosters | A booster on the Level card | Wall, Hint, Bomb, Double dot and Undo: how many the player has, what each does, how to earn more. Close returns to where it opened. | A-05 |
-| Chest | Next on the Result of every 10th level | Over the map: pick one of two rewards. When both are boosters, an ad offer can keep both ([`money.md`](money.md)). | A-04, C-03 |
+| Chest | Next on the Result of every 10th level | Over the map: one or two rewards. Pick one of two; one reward shows alone with **Keep it**. When both of two are boosters, an ad offer can keep both ([`money.md`](money.md)). | A-04, C-03, G-32 |
 | Game board | Start, Play, Resume, Retry, Play again | The opponent above the board, with a face and a tally; the player below it, with a tally and the tool bar. Whose turn, dots left, the last move (A-14), the mission note, special points and any boss countdown. In the campaign, the boosters sit in the tool bar, Undo among them (decision 0023). In free play, the tool bar holds an Undo button with no count; two players and the daily puzzle have no undo. An open-ended game adds Stop, and after a stop the side that collects gets Done (see [Free play and two players](#free-play-and-two-players)). A pause icon opens Pause. | A-03, A-05, A-13, A-14 |
 | Booster preview | A booster on a campaign board | Over the board: one line on what the booster does, the points it can act on, and its effect at the chosen point. Confirm or Cancel. One booster per turn. Undo has no point: its preview shows the turn it takes back, pale in dashed rings, and does not count as the turn's booster. | A-05 |
 | Pause | Pause icon or Back on the board | Over the board: Resume, Restart (asks first, where the mode allows it) and To the map. Small icons for sound on or off and How to play. | A-01 |
@@ -385,8 +385,9 @@ The first tap a new player makes is a move on the board.
   and any boss rule, big for a moment before it shrinks into the corner note. No tap is needed.
 - **Boss levels.** The boss rule shows on the Level card and on the board before the first move.
   The boss's face sits above the board, with a countdown to its special turn (G-05).
-- **Chests.** After every 10th level, Next opens a chest over the map: the player picks one of two
-  rewards (A-04).
+- **Chests.** After every 10th level, Next opens a chest over the map. It holds one or two
+  rewards, each a kind that a level before the next chest allows (decision 0038). The player picks
+  one of two, or keeps the only one with **Keep it** (A-04, G-32).
 
 ## Back and interruptions
 
@@ -529,8 +530,8 @@ people the owner has shared it with.
 - **States.** Some frames show more than one state, picked in the frame's Tweaks: the map (home,
   a world opens, a dot on Shop), Today's puzzle (play, resume, solved, weekly challenge), Play a game (a saved
   game), the game board (every moment), Result: win (a cosmetic earned), Result: loss (the ad
-  offer, with the third-try hint, after the ad, or none), Chest (the ad offer, after the ad, or a
-  booster and a cosmetic), Shop (for sale, a theme earned, earn only), Cosmetic preview (Star
+  offer, with the third-try hint, after the ad, or none), Chest (the ad offer, after the ad, a
+  booster and a cosmetic, or one reward), Shop (for sale, a theme earned, earn only), Cosmetic preview (Star
   chart or Neon arcade; for sale, owned, in use, earned or earn only), Settings (with or without the Theme, Pieces and Rings rows; scrolled to the top or the end),
   Settings details, Theme (a debug build or after the Shop opens, and the theme in use), Pieces
   and Rings (a debug build or after the Shop opens, the theme in use, and the item in use), Invite

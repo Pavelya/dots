@@ -11,6 +11,7 @@ import dots.campaign.MissionStatus
 import dots.campaign.Outcome
 import dots.campaign.Progress
 import dots.campaign.Reason
+import dots.campaign.Reward
 import dots.campaign.Title
 import dots.engine.Booster
 import kotlinx.coroutines.CoroutineScope
@@ -86,7 +87,7 @@ class ProgressRepositoryTest {
         val saved = Progress(
             stars = Campaign.levels.take(10).associate { it.code to 2 },
             cosmetics = setOf("ink-splash"),
-        ).open(chest, chest.choices.last())
+        ).open(chest, chest.choices.single())
         val first = Session(file())
         first.repository.replace(saved)
         first.close()
@@ -94,7 +95,7 @@ class ProgressRepositoryTest {
         val second = Session(file())
         val read = second.repository.progress.first()
         assertEquals(saved, read)
-        assertEquals(mapOf(Booster.BOMB to 2), read.boosters)
+        assertEquals("the chest after 1-10 gives two walls (decision 0038)", mapOf(Booster.WALL to 2), read.boosters)
         assertEquals(Title.APPRENTICE, second.repository.map.filterNotNull().first().title)
         assertEquals(ChestState.OPENED, second.repository.map.filterNotNull().first().chests.first().state)
         second.close()
@@ -136,7 +137,7 @@ class ProgressRepositoryTest {
     }
 
     @Test
-    fun `a pass of level 10 makes its chest ready once, and the pick is kept`() = runBlocking {
+    fun `a pass of level 10 makes its chest ready once, and its one reward is kept once`() = runBlocking {
         val session = Session(file())
         session.repository.replace(Progress(Campaign.levels.take(9).associate { it.code to 2 }))
         val chest = Campaign.chests.first()
@@ -145,8 +146,10 @@ class ProgressRepositoryTest {
         assertEquals(chest, end.chest)
         assertEquals(level("1-11"), end.next)
 
-        session.repository.open(chest, chest.choices.first())
-        session.repository.open(chest, chest.choices.last())
+        // One reward, two walls, and no pick (decision 0038). Keeping it twice keeps it once.
+        assertEquals(listOf(Reward(Booster.WALL, 2)), chest.choices)
+        session.repository.open(chest, chest.choices.single())
+        session.repository.open(chest, chest.choices.single())
         assertEquals(mapOf(Booster.WALL to 2), session.repository.progress.first().boosters)
         assertNull("an opened chest does not come back", session.repository.finished(level("1-10"), passed(3)).chest)
         session.close()
