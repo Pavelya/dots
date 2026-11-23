@@ -376,9 +376,9 @@ only 14% of them, a wall.
 ```
     a b c d e f g h i
   1 - - . . . . . - -
-  2 - B R R . . . . -
+  2 - . R R . . . . -
   3 . . B . . . . . .
-  4 . . R R . R . . .
+  4 . B R R . R . . .
   5 . . . . . B . . .
   6 . . . B . . . . .
   7 . . . . . . . . .
@@ -387,6 +387,12 @@ only 14% of them, a wall.
 ```
 
 `check-levels`: passes in 2 moves: b3 (d3) e3; 1 first move passes: b3.
+
+The computer's dot at b4 stays off the lake on purpose. At b2 it would touch the lake and be safe,
+c3 would hang off it by a diagonal step only, and every computer step would see c3 as the one dot
+to attack: the weak stand-in would open with e3 in every game, the computer would answer b3, which
+joins c3 to b2 side by side, and it would pass 1% of games. At b4 the dot is not safe, and the
+weak stand-in passes 66% of games: often it opens at e5 or e3 and still finds the capture.
 
 ### 3-15 Black Pool
 
