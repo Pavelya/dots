@@ -152,7 +152,10 @@ object Routes {
     const val RULES = "rules"
     const val STATS = "stats"
 
-    /** From Stats: the leaderboards and achievements of Google Play Games, which O-02 opens. */
+    /**
+     * The leaderboards and achievements of Google Play Games, which O-02 builds and opens from
+     * Stats. Until then no screen opens it (decision 0037).
+     */
     const val LEADERBOARDS = "leaderboards"
     const val SHOP = "shop"
 
@@ -570,8 +573,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 map = shown,
                                 stats = totals,
                                 longestStreak = daily?.longestStreak ?: 0,
-                                onLeaderboards = { navController.navigate(Routes.LEADERBOARDS) },
-                                onAchievements = { navController.navigate(Routes.LEADERBOARDS) },
+                                // No Leaderboards or Achievements until O-02 builds them (decision 0037).
                                 onBack = back,
                             )
                         }

@@ -199,11 +199,12 @@ class NavigationTest {
         back()
         at(Routes.MAP)
 
-        // Leaderboards and achievements open from Stats; Back returns there.
+        // Stats opens no leaderboards or achievements until O-02 builds them (decision 0037).
         tap("Stats")
         at(Routes.STATS)
-        waitFor("Leaderboards")
-        visit("Leaderboards", Routes.LEADERBOARDS, returnTo = Routes.STATS)
+        waitFor("Stars per world")
+        compose.onNodeWithText("Leaderboards").assertDoesNotExist()
+        compose.onNodeWithText("Achievements").assertDoesNotExist()
         back()
         at(Routes.MAP)
 
@@ -247,7 +248,8 @@ class NavigationTest {
         tap("To the map")
         at(Routes.MAP)
 
-        assertEquals(Routes.ALL.toSet(), visited)
+        // Every route but Leaderboards, which no screen opens until O-02 (decision 0037).
+        assertEquals(Routes.ALL.toSet() - Routes.LEADERBOARDS, visited)
     }
 
     @Test
@@ -444,7 +446,9 @@ class NavigationTest {
         tap("Settings")
         at(Routes.SETTINGS)
         waitFor("Send feedback")
-        for ((row, page) in listOf("Privacy" to "privacy", "Play Games backup" to "backup", "Credits and licences" to "credits")) {
+        // No Play Games backup row until O-02 builds it (decision 0037).
+        compose.onNodeWithText("Play Games backup").assertDoesNotExist()
+        for ((row, page) in listOf("Privacy" to "privacy", "Credits and licences" to "credits")) {
             compose.onNodeWithText(row).performScrollTo().performClick()
             at(Routes.SETTINGS_DETAILS)
             assertEquals(page, nav.currentBackStackEntry?.arguments?.getString("page"))

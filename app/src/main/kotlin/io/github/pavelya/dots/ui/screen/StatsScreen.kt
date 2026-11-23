@@ -38,30 +38,27 @@ import io.github.pavelya.dots.ui.theme.Palette
  * Stats, as the wireframes' frame "Stats" draws it (flows.md, Stats): on the notebook's paper,
  * the player's title and the stars to the next one ([TitleCard]); six totals, two a row: games
  * played and won, dots captured, the best capture, the longest daily streak ([longestStreak]) and
- * the stars; then the stars of each world of the [map]. Leaderboards and Achievements stay at the
- * bottom (O-02 opens Google Play Games from them). Back returns to the map.
+ * the stars; then the stars of each world of the [map]. Back returns to the map.
+ *
+ * Leaderboards and Achievements sit at the bottom only when [onLeaderboards] and [onAchievements]
+ * are given. The app gives them once O-02 opens Google Play Games from them; until then Stats has
+ * no links (decision 0037).
  */
 @Composable
 fun StatsScreen(
     map: CampaignMap,
     stats: PlayerStats,
     longestStreak: Int,
-    onLeaderboards: () -> Unit,
-    onAchievements: () -> Unit,
     onBack: () -> Unit,
+    onLeaderboards: (() -> Unit)? = null,
+    onAchievements: (() -> Unit)? = null,
 ) {
     val style = Palette.current
     PaperPage(
         stringResource(R.string.screen_stats),
         onBack,
         backLabel = stringResource(R.string.stats_back),
-        footer = {
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-                val padding = PaddingValues(horizontal = 8.dp)
-                SmallButton(stringResource(R.string.stats_leaderboards), style, onLeaderboards, Modifier.weight(1f), height = 56.dp, padding = padding)
-                SmallButton(stringResource(R.string.stats_achievements), style, onAchievements, Modifier.weight(1f), height = 56.dp, padding = padding)
-            }
-        },
+        footer = links(onLeaderboards, onAchievements, style),
     ) {
         Spacer(Modifier.height(4.dp))
         TitleCard(map.totalStars)
@@ -91,6 +88,18 @@ fun StatsScreen(
         Spacer(Modifier.height(6.dp))
         Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
             for (world in map.worlds) WorldStars(world.world.number, world.stars, world.world.maxStars, style)
+        }
+    }
+}
+
+/** The Leaderboards and Achievements buttons, or no footer at all while either is missing. */
+private fun links(onLeaderboards: (() -> Unit)?, onAchievements: (() -> Unit)?, style: Palette): (@Composable () -> Unit)? {
+    if (onLeaderboards == null || onAchievements == null) return null
+    return {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            val padding = PaddingValues(horizontal = 8.dp)
+            SmallButton(stringResource(R.string.stats_leaderboards), style, onLeaderboards, Modifier.weight(1f), height = 56.dp, padding = padding)
+            SmallButton(stringResource(R.string.stats_achievements), style, onAchievements, Modifier.weight(1f), height = 56.dp, padding = padding)
         }
     }
 }
