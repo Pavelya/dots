@@ -327,15 +327,15 @@ class LevelScreensTest {
     }
 
     @Test
-    fun `2-20 counts every fourth turn`() {
+    fun `2-20 counts every fifth turn`() {
         showLevel(2, 20)
-        compose.onNode(hasContentDescription("The boss places two dots in 4 turns")).assertIsDisplayed()
+        compose.onNode(hasContentDescription("The boss places two dots in 5 turns")).assertIsDisplayed()
     }
 
     @Test
-    fun `3-20 counts every third turn`() {
+    fun `3-20 counts every fourth turn`() {
         showLevel(3, 20)
-        compose.onNode(hasContentDescription("The boss places two dots in 3 turns")).assertIsDisplayed()
+        compose.onNode(hasContentDescription("The boss places two dots in 4 turns")).assertIsDisplayed()
     }
 
     @Test

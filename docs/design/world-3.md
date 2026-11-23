@@ -20,7 +20,7 @@ holes are in the [README](../../README.md#board-shapes-and-special-points).
 | 13 to 17 | Shut the way to the lake, an open hole that is no shelter, join a dot to the shore. |
 | 18 | Twin Stars: two round halves joined in the middle. |
 | 19 | The dot by the lake cannot be captured, so capture its neighbour. |
-| 20 | The Comet, World 3's boss: a double move every third turn, on a round board. |
+| 20 | The Comet, World 3's boss: a double move every fourth turn, on a round board. |
 
 The difficulty is a saw-tooth: levels 6, 12 and 18 are whole games, harder than the puzzles
 around them, and 20 is the boss. The hard puzzles are 3-8, 3-13 and 3-17: each answer is three
@@ -37,8 +37,8 @@ moves deep, and its first move is not the one that looks natural. 3-13 is a wall
   the boosters left (`stars: boosters 2 3`): three stars without a booster, two with one used,
   one with two or more used. Every survive level
   can be passed without them; the solver never uses a booster.
-- **The computer is the steady step** for every level but the last boss of World 4, so the
-  difficulty comes from the boards, the missions and the dot budgets.
+- **The computer is the steady step** for every level of Worlds 2 to 4, so the difficulty
+  comes from the boards, the missions, the dot budgets and the boss rules.
 - **Every level file has a one-line `note`,** repeated in italics below.
 - **Most puzzles started from the computer's own games or from random small positions,** and were
   kept only when the solver proved them and found one or two winning first moves. Their names
@@ -53,13 +53,15 @@ stand-in, which read the mission, each play the level 200 times against its own 
 stand-ins are computers, not people: the numbers say which levels are hard compared with the
 others, and the play-tests say how they feel.
 
-- **Whole games get harder through the world:** the average stand-in passes 73%, 43%, 48% and
-  10% of games in Full Moon, Crater, Twin Stars and the Comet; the weak one 33%, 27%, 28% and
-  7%. Twin Stars is a little easier than Crater. The Comet is under the wall line (20%) without
-  being meant as a wall. Full Moon is easier than the Mole (14% and 9%), so the world opens with
-  a dip.
-- **Three puzzles are hard:** 3-8 Owl (the average stand-in passes 46%), 3-13 Reflection, a
-  deliberate wall (0%), and 3-17 Dusk (29%). The strong stand-in passes all three every time;
+- **Whole games get harder through the world:** the average stand-in passes 71%, 42%, 54% and
+  23% of games in Full Moon, Crater, Twin Stars and the Comet; the weak one 38%, 28%, 21% and
+  17%. Twin Stars is easier than Crater. Full Moon is easier than the Mole (28% and 21%), so the
+  world opens with a dip.
+- **The Comet's double move comes every 4th turn,** one turn sooner than the Mole's, and it has
+  two dots more than the player. With a double move every 3rd turn it would be a wall whatever
+  the dots on either side: the average stand-in passes at most 13% of games.
+- **Three puzzles are hard:** 3-8 Owl (the average stand-in passes 14%, a wall that is not
+  noted), 3-13 Reflection, a deliberate wall (0%), and 3-17 Dusk (29%). The strong stand-in passes all three every time;
   each answer is three moves deep.
 - **Survive puzzles are passed every time** by all three stand-ins. They are the easy steps
   between the hard levels.
@@ -490,9 +492,9 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 3-20 Comet
 
-`win with 23 dots` · computer: steady · 26 dots each · boosters: `bomb 1, double-dot 1, undo 1` · rule: double move every 3 turns · stars: `margin 2 5` · holes: `border`
+`win with 23 dots` · computer: steady · 25 dots each · boosters: `bomb 1, double-dot 1, undo 1` · rule: double move every 4 turns · stars: `margin 2 5` · holes: `border`
 
-*World 3's boss: every third turn it places two dots, and it has 26 dots to your 23, on a round board.*
+*World 3's boss: every fourth turn it places two dots, and it has 25 dots to your 23, on a round board.*
 
 ```
     a b c d e f g h i j k l m n
@@ -512,4 +514,4 @@ computer's replies in brackets, as `check-levels` prints them.
  14 - - - . . . . . . . . - - -
 ```
 
-The computer's 26 turns each take one dot from its budget, and every third has an extra second dot (decision 0039): 34 dots against the player's 23. After the player's last dot it places its last three turns with no reply.
+The computer's 25 turns each take one dot from its budget, and every fourth has an extra second dot (decision 0039): 31 dots against the player's 23. After the player's last dot it places its last two turns with no reply.

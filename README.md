@@ -166,9 +166,9 @@ computer's tier, its head start (dots already on the board), the board size and 
   | World | Levels | New ideas | Boss | Design doc |
   |-------|-------:|-----------|------|------------|
   | 1 Countryside | 15 | The rules from zero: placing, chains, the first capture; capture and target puzzles; whole games | Ink Bottle: a double move every 5th turn | [`world-1.md`](docs/design/world-1.md) |
-  | 2 Garden | 20 | Survive and rescue missions; the wall booster | Mole: a double move every 4th turn, and 2 dots more | [`world-2.md`](docs/design/world-2.md) |
-  | 3 Night sky | 20 | Holes: lakes whose shore is border, open holes, round boards; the bomb and double dot boosters | Comet: a double move every 3rd turn, and 3 dots more | [`world-3.md`](docs/design/world-3.md) |
-  | 4 Sea | 20 | Rocks (blocked points) and pearls (bonus points) | Kraken: two dots every turn, one in each half, and the normal computer | [`world-4.md`](docs/design/world-4.md) |
+  | 2 Garden | 20 | Survive and rescue missions; the wall booster | Mole: a double move every 5th turn, and 1 dot more | [`world-2.md`](docs/design/world-2.md) |
+  | 3 Night sky | 20 | Holes: lakes whose shore is border, open holes, round boards; the bomb and double dot boosters | Comet: a double move every 4th turn, and 2 dots more | [`world-3.md`](docs/design/world-3.md) |
+  | 4 Sea | 20 | Rocks (blocked points) and pearls (bonus points) | Kraken: two dots every turn, one in each half | [`world-4.md`](docs/design/world-4.md) |
 
 - **Worlds open with the boss and stars** (decision 0022). A world opens when the previous world's
   last level, its boss, is passed and the player has enough stars in total: World 2 at 20, World 3
@@ -826,15 +826,15 @@ game is "ok":
 2-6  Flower Beds     margin 2 4   181   183   294   142
 2-12 Hedge           margin 2 4   262   165   268   105
 2-18 Few Seeds       margin 2 4   376   155   199    70
-2-20 Mole            margin 2 5   571    82   138     9
+2-20 Mole            margin 2 5   512   128   147    13
 3-6  Full Moon       margin 2 5   207   170   313   110
 3-12 Crater          margin 2 4   360   168   216    56
 3-18 Twin Stars      margin 2 4   341   142   213   104
-3-20 Comet           margin 2 5   638    49   102    11
+3-20 Comet           margin 2 5   530    68   177    25
 4-6  Rocky Shore     margin 2 4   298   186   206   110
 4-12 Pearls          margin 3 5   313   274   122    91
 4-18 Reef            margin 2 4   476    97   158    69
-4-20 Kraken          margin 3 8   741    46    12     1
+4-20 Kraken          margin 3 8   589   110    93     8
 ```
 
 The puzzles are meant to give three stars more often. Three stars mean the shortest answer: a

@@ -2,14 +2,14 @@ world: 2
 level: 20
 name: Mole
 computer: steady
-dots: 22
+dots: 21
 mission: win with 20 dots
 solutions: open
 boosters: wall 2, undo 1
-rule: double move every 4 turns
+rule: double move every 5 turns
 stars: margin 2 5
 holes: none
-note: World 2's boss: every fourth turn it places two dots, and it has 22 dots to your 20.
+note: World 2's boss: every fifth turn it places two dots, and it has 21 dots to your 20.
 map:
 ..............
 ..............

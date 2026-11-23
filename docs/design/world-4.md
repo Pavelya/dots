@@ -2,8 +2,8 @@
 
 World 4 has 20 levels. Its new ideas are two kinds of special point: **rocks** (`#`, blocked
 points), where nobody may place a dot but a ring may pass over, and **pearls** (`+`, bonus
-points), where a captured dot counts 2. It ends with the **Kraken**, the first real boss: the
-normal computer, placing two dots every turn. All five boosters are available. The level files
+points), where a captured dot counts 2. It ends with the **Kraken**, the last boss, placing
+two dots every turn, one in each half of the board. All five boosters are available. The level files
 are in [`engine/src/main/resources/levels/`](../../engine/src/main/resources/levels/); the rules
 for special points are in the
 [README](../../README.md#board-shapes-and-special-points).
@@ -20,7 +20,7 @@ for special points are in the
 | 13 to 17 | A dot run onto a pearl, a survive along the bottom, the longest capture, a run to the edge, a target that turns twice. |
 | 18 | Reef: open holes, rocks and pearls, with fewer dots than the computer. |
 | 19 | A capture that closes beyond a rock. |
-| 20 | The Kraken: the normal computer, and two dots every turn, one in each half of the board. |
+| 20 | The Kraken: two dots every turn, one in each half of the board. |
 
 The difficulty is a saw-tooth: levels 6, 12 and 18 are whole games, harder than the puzzles
 around them, and 20 is the boss. World 4 has the most hard puzzles: 4-4, 4-5, 4-15, 4-17 and
@@ -38,8 +38,8 @@ gap next to the dot that does not hold, or a fight elsewhere that draws the eye.
   the boosters left (`stars: boosters 2 3`): three stars without a booster, two with one used,
   one with two or more used. Every survive level
   can be passed without them; the solver never uses a booster.
-- **The computer is the steady step** for every level but the last boss of World 4, so the
-  difficulty comes from the boards, the missions and the dot budgets.
+- **The computer is the steady step** for every level of Worlds 2 to 4, so the difficulty
+  comes from the boards, the missions, the dot budgets and the boss rules.
 - **Every level file has a one-line `note`,** repeated in italics below.
 - **Most puzzles started from the computer's own games or from random small positions,** and were
   kept only when the solver proved them and found one or two winning first moves. Their names
@@ -54,13 +54,17 @@ stand-in, which read the mission, each play the level 200 times against its own 
 stand-ins are computers, not people: the numbers say which levels are hard compared with the
 others, and the play-tests say how they feel.
 
-- **Whole games get harder through the world:** the average stand-in passes 59%, 53%, 30% and
-  2% of games in Rocky Shore, Pearls, Reef and the Kraken; the weak one 27%, 21%, 28% and 0%.
-  The Kraken is the hardest whole game of the campaign, and under the wall line (20%) without
-  being meant as a wall. Rocky Shore is easier than the Comet (10% and 7%), so the world opens
-  with a dip.
+- **Whole games get harder through the world:** the average stand-in passes 65%, 59%, 26% and
+  14% of games in Rocky Shore, Pearls, Reef and the Kraken; the weak one 27%, 22%, 26% and 8%.
+  Rocky Shore is easier than the Comet (23% and 17%), so the world opens with a dip.
+- **The Kraken is a deliberate wall,** the hardest whole game of the campaign; the strong
+  stand-in passes 32% of games. No setting that keeps its two dots a turn brings the average
+  stand-in to the wall line (20%): the steady computer gives 14%, the easy one 9% and the normal
+  one 2%, and fewer dots or a head start for either side do not help ("Outliers" in the
+  [difficulty curve](difficulty.md)). In the half where the player plays, it has only one dot a
+  turn.
 - **Five puzzles are hard,** more than in any other world: 4-4 Anchor (the average stand-in
-  passes 50%), 4-5 Rock Pool (42%), 4-15 Whirlpool (32%), 4-17 Driftwood (33%) and 4-19 Cove
+  passes 50%), 4-5 Rock Pool (42%), 4-15 Whirlpool (33%), 4-17 Driftwood (38%) and 4-19 Cove
   (49%). The strong stand-in passes them all every time; each answer is three moves deep.
 - **Survive puzzles are passed every time** by all three stand-ins. They are the easy steps
   between the hard levels.
@@ -502,9 +506,9 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 4-20 Kraken
 
-`win` · computer: normal · 30 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1, undo 1` · rule: two groups at once · stars: `margin 3 8`
+`win` · computer: steady · 30 dots each · boosters: `wall 1, hint 1, bomb 1, double-dot 1, undo 1` · rule: two groups at once · stars: `margin 3 8`
 
-*The first real boss: the normal computer, and every turn it places two dots, one in each half of the board.*
+*Wall: the last boss places two dots every turn, one in each half of the board; play in one half, where it has only one dot a turn.*
 
 ```
     a b c d e f g h i j k l m n
