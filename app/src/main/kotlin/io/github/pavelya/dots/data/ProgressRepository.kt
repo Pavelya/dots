@@ -17,9 +17,11 @@ import dots.campaign.LevelState
 import dots.campaign.Progress
 import dots.campaign.Reward
 import dots.engine.Booster
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.completeWith
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,9 +35,9 @@ import java.io.File
 
 /**
  * The player's campaign progress, kept on the phone and in Android's backup: the stars, the
- * player's own boosters, the chests opened and the cosmetics chests gave ([Progress]), and how
- * many times in a row each unpassed level was failed. [scope] keeps [saved] and [map] up to date
- * while the app runs, and saves the boosters a game spends.
+ * player's own boosters, the chests opened, the cosmetics chests gave and each level's own
+ * boosters used ([Progress]), and how many times in a row each unpassed level was failed. [scope]
+ * keeps [saved] and [map] up to date while the app runs, and saves the boosters a game spends.
  *
  * Each part is one line under its own key. A key the store does not have yet (progress saved by an
  * older version) reads as empty, and an entry that cannot be read is left out ([Progress.parse]).
@@ -55,25 +57,18 @@ class ProgressRepository(private val store: DataStore<Preferences>, scope: Corou
     val map: StateFlow<CampaignMap?> = saved.filterNotNull().map(Campaign::map).flowOn(Dispatchers.Default)
         .stateIn(scope, SharingStarted.Eagerly, null)
 
-    /** Spent boosters, saved one after the other in the order they were reported ([spent]). */
-    private val spending = Channel<Pair<Long, Map<Booster, Int>>>(Channel.UNLIMITED)
+    /**
+     * Spent boosters ([spent]) and level ends ([finished]), saved one after the other in the order
+     * they were reported, so a level's end is saved after every booster its game used.
+     */
+    private val writes = Channel<suspend () -> Unit>(Channel.UNLIMITED)
 
     init {
-        scope.launch {
-            for ((game, used) in spending) {
-                store.edit { prefs ->
-                    val before = Spent.parse(prefs[SPENT].orEmpty())
-                    val already = if (before?.first == game) before.second else emptyMap()
-                    val change = (used.keys + already.keys).associateWith { (used[it] ?: 0) - (already[it] ?: 0) }
-                    write(prefs, read(prefs).spend(change))
-                    prefs[SPENT] = Spent.text(game, used)
-                }
-            }
-        }
+        scope.launch { for (write in writes) write() }
     }
 
-    /** The player's own boosters a new game of [level] takes, as last read. */
-    fun owned(level: Level): Map<Booster, Int> = saved.value?.owned(level).orEmpty()
+    /** The progress as last read, for a new game of a level ([Progress.game]); none until it is first read. */
+    fun current(): Progress = saved.value ?: Progress.NONE
 
     /** Keeps [stars] for [level] if they beat the stars it has. */
     suspend fun record(level: Level, stars: Int) {
@@ -86,6 +81,12 @@ class ProgressRepository(private val store: DataStore<Preferences>, scope: Corou
      * and which level Next opens: the next level, or the first level of a world the pass opened.
      */
     override suspend fun finished(level: Level, result: LevelResult): LevelEnd {
+        val end = CompletableDeferred<LevelEnd>()
+        writes.send { end.completeWith(runCatching { save(level, result) }) }
+        return end.await()
+    }
+
+    private suspend fun save(level: Level, result: LevelResult): LevelEnd {
         var before = Progress.NONE
         var after = Progress.NONE
         var failed = 0
@@ -118,9 +119,21 @@ class ProgressRepository(private val store: DataStore<Preferences>, scope: Corou
         store.edit { write(it, read(it).open(chest, reward)) }
     }
 
-    override fun spent(game: Long, used: Map<Booster, Int>) {
-        spending.trySend(game to used)
+    override fun spent(game: Long, level: Level, used: UsedBoosters) {
+        writes.trySend {
+            store.edit { prefs ->
+                val before = Spent.parse(prefs[SPENT].orEmpty())?.takeIf { it.game == game }
+                val owned = change(used.owned, before?.used?.owned.orEmpty())
+                val own = change(used.own, before?.takeIf { it.level == level.code }?.used?.own.orEmpty())
+                write(prefs, read(prefs).spend(owned).spendOn(level, own))
+                prefs[SPENT] = Spent(game, level.code, used).text
+            }
+        }
     }
+
+    /** What changed from [before] to [now], by kind. */
+    private fun change(now: Map<Booster, Int>, before: Map<Booster, Int>): Map<Booster, Int> =
+        (now.keys + before.keys).associateWith { (now[it] ?: 0) - (before[it] ?: 0) }
 
     /** Replaces all progress; for the developer menu. */
     suspend fun replace(progress: Progress) {
@@ -131,14 +144,16 @@ class ProgressRepository(private val store: DataStore<Preferences>, scope: Corou
         }
     }
 
-    private fun read(prefs: Preferences): Progress =
-        Progress.parse(prefs[STARS].orEmpty(), prefs[BOOSTERS].orEmpty(), prefs[CHESTS].orEmpty(), prefs[COSMETICS].orEmpty())
+    private fun read(prefs: Preferences): Progress = Progress.parse(
+        prefs[STARS].orEmpty(), prefs[BOOSTERS].orEmpty(), prefs[CHESTS].orEmpty(), prefs[COSMETICS].orEmpty(), prefs[LEVEL_SPENT].orEmpty(),
+    )
 
     private fun write(prefs: MutablePreferences, progress: Progress) {
         prefs[STARS] = progress.text
         prefs[BOOSTERS] = progress.boostersText
         prefs[CHESTS] = progress.chestsText
         prefs[COSMETICS] = progress.cosmeticsText
+        prefs[LEVEL_SPENT] = progress.spentText
     }
 
     companion object {
@@ -169,13 +184,17 @@ class ProgressRepository(private val store: DataStore<Preferences>, scope: Corou
         /** The cosmetics chests gave, by name; never purchases. */
         private val COSMETICS = stringPreferencesKey("cosmetics")
 
+        /** Each level's own boosters used so far: `1-7:wall:1 2-3:undo:1` (decision 0040). */
+        private val LEVEL_SPENT = stringPreferencesKey("level_spent")
+
         /** Failures in a row, by level code: `1-7:2 2-3:1`. */
         private val FAILURES = stringPreferencesKey("failures")
 
         /**
-         * The level game that last spent the player's own boosters, and how many it has used in
-         * all: `1731600000000 wall:1`. A later report of the same game changes the boosters by the
-         * difference only.
+         * The level game that last spent boosters, and how many it has used in all, the player's
+         * own and then the level's: `1731600000000 wall:1 | 2-1 undo:1`. A later report of the
+         * same game changes the boosters by the difference only, so a game resumed after the app
+         * closed spends nothing twice.
          */
         private val SPENT = stringPreferencesKey("spent")
     }
@@ -192,14 +211,26 @@ private object Failures {
     fun text(failures: Map<String, Int>): String = failures.entries.joinToString(" ") { "${it.key}:${it.value}" }
 }
 
-/** A game's start time and the owned boosters it has used, as one line; null if it cannot be read. */
-private object Spent {
-    fun parse(text: String): Pair<Long, Map<Booster, Int>>? {
-        val game = text.substringBefore(' ').toLongOrNull() ?: return null
-        return game to Progress.parseBoosters(text.substringAfter(' ', ""))
-    }
+/**
+ * A level game's start time, its [level] code and the boosters it has [used], as one line. A line
+ * saved before the level's own boosters were spent has the player's own only, and no level.
+ */
+private data class Spent(val game: Long, val level: String?, val used: UsedBoosters) {
+    val text: String get() = "$game ${Progress.boosterText(used.owned)} | $level ${Progress.boosterText(used.own)}"
 
-    fun text(game: Long, used: Map<Booster, Int>): String = "$game ${Progress.boosterText(used)}".trim()
+    companion object {
+        /** Reads [text]; null if it cannot be read. */
+        fun parse(line: String): Spent? {
+            val game = line.substringBefore(' ').toLongOrNull() ?: return null
+            val owned = line.substringAfter(' ', "").substringBefore('|')
+            val own = line.substringAfter('|', "").trim()
+            return Spent(
+                game,
+                own.substringBefore(' ').ifEmpty { null },
+                UsedBoosters(Progress.parseBoosters(owned), Progress.parseBoosters(own.substringAfter(' ', ""))),
+            )
+        }
+    }
 }
 
 /** Progress to try the map with, from the developer menu and the screenshot tests. */

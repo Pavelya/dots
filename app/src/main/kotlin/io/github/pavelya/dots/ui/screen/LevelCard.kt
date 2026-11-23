@@ -77,7 +77,9 @@ private val CHIP_SHAPE = RoundedCornerShape(24.dp)
  * picture of the board at the start, the computer's face for its strength and its head start, the
  * dots and boosters the player has (a booster opens [onBooster]: Boosters), on a board with holes
  * whether their edge is safe or open, and the star targets.
- * The boosters are the level's own plus the player's [owned] ones of the kinds it allows. A boss
+ * The [boosters] are what a new game of the level has ([dots.campaign.Progress.boostersFor]): the
+ * level's own left after earlier attempts (decision 0040) plus the player's own of the kinds it
+ * allows (decision 0027), with ×0 for a kind used up. A boss
  * level adds the boss's rule, and the boss's name and face in red. One button: Start, or Resume
  * when this level's game is [saved]. When the campaign's saved game is of another level, [replaces]
  * names it, and Start first asks before that game ends (flows.md, "Saved games"); Keep it, or
@@ -94,14 +96,13 @@ fun LevelCard(
     onBooster: (Booster) -> Unit,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
-    owned: Map<Booster, Int> = emptyMap(),
+    boosters: Map<Booster, Int> = level.boosters,
     replaces: String? = null,
     motion: NoteMotion = rememberNoteMotion(),
 ) {
     val style = Palette.current
     var asking by rememberSaveable { mutableStateOf(false) }
     BackHandler(enabled = asking) { asking = false }
-    val boosters = (level.boosters.keys + owned.keys).associateWith { (level.boosters[it] ?: 0) + (owned[it] ?: 0) }
     val boss = level.rule != null
     val title = stringResource(R.string.level_title, level.world, level.number)
     BoxWithConstraints(
@@ -291,7 +292,10 @@ private fun Allowance(level: Level, style: Palette) {
     Text(text, style = NoteText.small, color = style.graphite)
 }
 
-/** The boosters the level allows, as dashed chips with a count; each opens Boosters. */
+/**
+ * The boosters the level allows, as dashed chips with a count; each opens Boosters. A kind used up
+ * on earlier attempts shows ×0 in grey, as Boosters and the tool bar show none left.
+ */
 @Composable
 private fun BoosterChips(boosters: Map<Booster, Int>, style: Palette, onBooster: (Booster) -> Unit) {
     if (boosters.isEmpty()) return
@@ -307,19 +311,20 @@ private fun BoosterChips(boosters: Map<Booster, Int>, style: Palette, onBooster:
 @Composable
 private fun BoosterChip(booster: Booster, count: Int, style: Palette, onClick: () -> Unit) {
     val label = pluralStringResource(R.plurals.booster_chip, count, boosterName(booster), count)
+    val ink = if (count > 0) style.blue else style.graphite
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
             .height(48.dp)
             .clip(CHIP_SHAPE)
-            .toolOutline(style.blue, dashed = true, CHIP_SHAPE)
+            .toolOutline(ink, dashed = true, CHIP_SHAPE)
             .clickable(role = Role.Button, onClick = onClick)
             .clearAndSetSemantics { contentDescription = label }
             .padding(horizontal = 12.dp),
     ) {
-        BoosterIcon(booster, style.blue, Modifier.size(20.dp))
-        Text("×$count", style = NoteText.label, color = style.blue)
+        BoosterIcon(booster, ink, Modifier.size(20.dp))
+        Text("×$count", style = NoteText.label, color = ink)
     }
 }
 

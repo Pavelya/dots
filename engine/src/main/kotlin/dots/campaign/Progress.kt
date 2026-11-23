@@ -12,16 +12,22 @@ import dots.engine.Booster
  * - [chests]: the chests opened, by the code of the level each one follows.
  * - [cosmetics]: the cosmetics chests gave, by [Cosmetic.id] (C-05). Never purchases: those come
  *   from Google Play (C-02). A cosmetic is earned by chest or by stars ([earned]).
+ * - [spent]: each level's own boosters used so far, by level code and kind. A level hands out its
+ *   own boosters once: one used is gone for every later attempt at that level (decision 0040).
  */
 data class Progress(
     val stars: Map<String, Int> = emptyMap(),
     val boosters: Map<Booster, Int> = emptyMap(),
     val chests: Set<String> = emptySet(),
     val cosmetics: Set<String> = emptySet(),
+    val spent: Map<String, Map<Booster, Int>> = emptyMap(),
 ) {
     init {
         require(stars.values.all { it in 1..Stars.MAX }) { "a passed level has 1 to ${Stars.MAX} stars" }
         require(boosters.values.all { it >= 1 }) { "an owned booster is kept with a count of 1 or more" }
+        require(spent.values.all { kinds -> kinds.isNotEmpty() && kinds.values.all { it >= 1 } }) {
+            "a level's spent boosters are kept with a count of 1 or more"
+        }
     }
 
     /** All stars earned. */
@@ -52,6 +58,47 @@ data class Progress(
 
     /** The owned boosters a game of [level] leaves out, as the level does not allow their kinds: they wait for a later level. */
     fun waiting(level: Level): Map<Booster, Int> = boosters.filterKeys { it !in level.boosters }
+
+    /**
+     * The level's own boosters used so far on [level], by kind, at most what the level allows: a
+     * new game of the level starts without them (decision 0040).
+     */
+    fun spent(level: Level): Map<Booster, Int> = spent[level.code].orEmpty()
+        .mapValues { (booster, count) -> minOf(count, level.boosters[booster] ?: 0) }
+        .filterValues { it > 0 }
+
+    /**
+     * The boosters a new game of [level] has, by kind: the level's own left after earlier attempts
+     * ([spent]) plus the player's own of the kinds it allows ([owned]). Every kind the level allows
+     * is there, with 0 when none is left. The Level card, Boosters and the tool bar show these.
+     */
+    fun boostersFor(level: Level): Map<Booster, Int> {
+        val own = level.boostersLeft(spent(level))
+        val owned = owned(level)
+        return (own.keys + owned.keys).associateWith { (own[it] ?: 0) + (owned[it] ?: 0) }
+    }
+
+    /**
+     * A new game of [level], before its first move: the level's own boosters left after earlier
+     * attempts and the player's own of the kinds it allows (decision 0027). [gift] and [ad] add
+     * boosters for this one game: the free Hint after three failures, and a rewarded ad's booster
+     * (decision 0030). Every way into a level starts its game here.
+     */
+    fun game(level: Level, gift: Map<Booster, Int> = emptyMap(), ad: Booster? = null): LevelRecord =
+        LevelRecord(level, emptyList(), gift.filterValues { it > 0 }, owned(level), ad, spent = spent(level))
+
+    /**
+     * This progress with [used] of [level]'s own boosters spent, by kind; a negative count gives
+     * some back (an undo took back their turn). A level's count stays between 0 and what it allows.
+     */
+    fun spendOn(level: Level, used: Map<Booster, Int>): Progress {
+        if (used.values.all { it == 0 }) return this
+        val before = spent[level.code].orEmpty()
+        val after = (before.keys + used.keys).associateWith {
+            ((before[it] ?: 0) + (used[it] ?: 0)).coerceIn(0, level.boosters[it] ?: 0)
+        }.filterValues { it > 0 }
+        return copy(spent = if (after.isEmpty()) spent - level.code else spent + (level.code to after))
+    }
 
     /** True once [chest] has been opened. */
     fun isOpened(chest: Chest): Boolean = chest.after.code in chests
@@ -98,15 +145,22 @@ data class Progress(
     /** The [cosmetics] chests gave as one line, sorted. */
     val cosmeticsText: String get() = cosmetics.sorted().joinToString(" ")
 
+    /** The levels' [spent] boosters as one line, in level order: `1-7:wall:1 1-7:undo:1 2-3:bomb:2`. */
+    val spentText: String
+        get() = spent.entries
+            .sortedWith(compareBy({ order(it.key)?.first }, { order(it.key)?.second }))
+            .flatMap { (code, kinds) -> kinds.entries.sortedBy { it.key }.map { "$code:${it.key.text}:${it.value}" } }
+            .joinToString(" ")
+
     companion object {
         val NONE = Progress()
 
         /**
-         * Reads the lines written by [text], [boostersText], [chestsText] and [cosmeticsText]. An
-         * entry that cannot be read is left out, so damaged storage costs the player that one entry,
-         * not the whole campaign. A line saved before its part existed is empty.
+         * Reads the lines written by [text], [boostersText], [chestsText], [cosmeticsText] and
+         * [spentText]. An entry that cannot be read is left out, so damaged storage costs the player
+         * that one entry, not the whole campaign. A line saved before its part existed is empty.
          */
-        fun parse(stars: String, boosters: String = "", chests: String = "", cosmetics: String = ""): Progress = Progress(
+        fun parse(stars: String, boosters: String = "", chests: String = "", cosmetics: String = "", spent: String = ""): Progress = Progress(
             stars = entries(stars).mapNotNull { entry ->
                 val code = entry.substringBefore(':', "")
                 val count = entry.substringAfter(':', "").toIntOrNull()
@@ -115,7 +169,17 @@ data class Progress(
             boosters = parseBoosters(boosters),
             chests = entries(chests).filter { order(it) != null }.toSet(),
             cosmetics = entries(cosmetics).filter { COSMETIC.matches(it) }.toSet(),
+            spent = parseSpent(spent),
         )
+
+        /** Reads [spentText]; an entry that cannot be read, or a count below 1, is left out. */
+        private fun parseSpent(text: String): Map<String, Map<Booster, Int>> = entries(text).mapNotNull { entry ->
+            val parts = entry.split(':')
+            if (parts.size != 3 || order(parts[0]) == null) return@mapNotNull null
+            val booster = Booster.entries.firstOrNull { it.text == parts[1] }
+            val count = parts[2].toIntOrNull()
+            if (booster != null && count != null && count >= 1) Triple(parts[0], booster, count) else null
+        }.groupBy({ it.first }, { it.second to it.third }).mapValues { (_, kinds) -> kinds.toMap() }
 
         /** Boosters by kind as one line, `wall:2 bomb:1`, read back by [parseBoosters]. */
         fun boosterText(boosters: Map<Booster, Int>): String =

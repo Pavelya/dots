@@ -165,11 +165,23 @@ class ProgressScreensTest {
     private val twoBombs = passedTen.copy(boosters = mapOf(Booster.BOMB to 2))
 
     /** The Boosters note for [level] over the map, as the app opens it from the Level card. */
-    private fun boostersOverMap(level: Level, dark: Boolean = false) = show(dark) {
+    private fun boostersOverMap(level: Level, dark: Boolean = false, progress: Progress = twoBombs) = show(dark) {
         Box {
-            MapScreen(Campaign.map(twoBombs), noActions)
-            BoostersNote(left = boostersLeft(level, twoBombs), waiting = boostersWaiting(level, twoBombs), onClose = {})
+            MapScreen(Campaign.map(progress), noActions)
+            BoostersNote(left = boostersLeft(level, progress), waiting = boostersWaiting(level, progress), onClose = {})
         }
+    }
+
+    @Test
+    fun `after an earlier attempt, Boosters counts what is left of the level's own and the player's`() {
+        val level = Campaign.level(3, 1) // bomb 1, double dot 1, undo 1
+        val spent = twoBombs.spendOn(level, mapOf(Booster.BOMB to 1, Booster.UNDO to 1))
+        assertEquals(mapOf(Booster.BOMB to 2, Booster.DOUBLE_DOT to 1, Booster.UNDO to 0), boostersLeft(level, spent))
+
+        boostersOverMap(level, progress = spent)
+        compose.onNode(hasContentDescription("Bomb, you have 2.", substring = true)).assertExists()
+        compose.onNode(hasContentDescription("Undo, you have 0.", substring = true)).assertExists()
+        capture("boosters_spent")
     }
 
     @Test
@@ -225,7 +237,7 @@ class ProgressScreensTest {
                 MapScreen(Campaign.map(Progress(Campaign.worlds.first().levels.associate { it.code to 3 })), noActions)
                 LevelCard(
                     level, saved = false, onStart = { started++ }, onBooster = {}, onClose = {},
-                    owned = mapOf(Booster.WALL to 2), replaces = "1-7",
+                    boosters = Progress(boosters = mapOf(Booster.WALL to 2)).boostersFor(level), replaces = "1-7",
                 )
             }
         }

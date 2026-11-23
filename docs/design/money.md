@@ -108,12 +108,13 @@ screens and no ads when the app opens.
 
 | Place | The offer | The reward | Earned without an ad |
 | --- | --- | --- | --- |
-| Result of a failed campaign level, below Retry | "Watch an ad for one [booster] on your retry" | One booster for the next attempt at this level only. A kind the level allows, never Undo. | Chests, the boosters each level gives, the free Hint after three failures |
+| Result of a failed campaign level, below Retry | "Watch an ad for one [booster] on your retry" | One booster for the next attempt at this level only. A kind the level allows, never Undo. | Chests, the boosters each level gives once (decision 0040), the free Hint after three failures |
 | A chest whose two choices are both boosters | "Watch an ad to keep both" | The other choice as well | Later chests and levels give the same boosters |
 
 **The booster for a retry** is not added to the player's own boosters. It is for the next attempt
 only, and is lost if the player leaves the level. On levels whose stars count the boosters left,
-using it costs the same as using one of the level's own boosters. On every other level, a game that
+using it costs the same as using one of the level's own boosters, even when the level's own of
+its kind were used up on earlier attempts. On every other level, a game that
 uses it earns 1 star, a pass, whatever the stars count. It counts as used once the game has used
 every booster of its kind, the ad's one too; one given back by an undo is not used. So ads can help
 a player pass a level, but never raise the stars that the total-star leaderboard counts once it

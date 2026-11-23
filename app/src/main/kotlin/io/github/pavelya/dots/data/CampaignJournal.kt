@@ -3,8 +3,10 @@ package io.github.pavelya.dots.data
 import dots.campaign.CampaignMap
 import dots.campaign.Chest
 import dots.campaign.Level
+import dots.campaign.LevelRecord
 import dots.campaign.LevelResult
 import dots.engine.Booster
+import dots.engine.GameState
 
 /**
  * How a campaign level's game ended, once it is saved: the [result] (stars included), the worlds
@@ -27,15 +29,31 @@ data class LevelEnd(
     }
 }
 
+/**
+ * The boosters a level game has used so far, by kind: the player's [owned] ones (decision 0027),
+ * which leave the player's boosters, and the level's [own], which are gone for every later attempt
+ * at the level (decision 0040). An undo that gives one back lowers its count.
+ */
+data class UsedBoosters(val owned: Map<Booster, Int> = emptyMap(), val own: Map<Booster, Int> = emptyMap()) {
+    companion object {
+        val NONE = UsedBoosters()
+
+        /** What the game of [record] has used by [state]. */
+        fun of(record: LevelRecord, state: GameState): UsedBoosters =
+            UsedBoosters(record.ownedUsed(state).filterValues { it > 0 }, record.levelUsed(state))
+    }
+}
+
 /** Where the end of a campaign level is saved: stars, unlocks and failures ([ProgressRepository]). */
 fun interface CampaignJournal {
     /** Saves how [level] ended and returns what Result shows. Result opens only after this returns. */
     suspend fun finished(level: Level, result: LevelResult): LevelEnd
 
     /**
-     * The level game that started at [game] (its start time) has now [used] this many of the
-     * player's own boosters, by kind, in all: they leave the player's boosters, and come back if an
-     * undo lowers the count. Returns at once; the change is saved in order.
+     * The game of [level] that started at [game] (its start time) has now [used] this many
+     * boosters, by kind, in all: the player's own leave the player's boosters, and the level's own
+     * leave the level. Both come back if an undo lowers the count. Returns at once; the change is
+     * saved in order, before the level's end ([finished]).
      */
-    fun spent(game: Long, used: Map<Booster, Int>) {}
+    fun spent(game: Long, level: Level, used: UsedBoosters) {}
 }

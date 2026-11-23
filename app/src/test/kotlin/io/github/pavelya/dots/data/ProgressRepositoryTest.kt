@@ -173,21 +173,52 @@ class ProgressRepositoryTest {
         val session = Session(file())
         val repository = session.repository
         repository.replace(Progress(boosters = mapOf(Booster.WALL to 3, Booster.BOMB to 1)))
+        val level = level("4-6")
 
-        repository.spent(game = 1, used = mapOf(Booster.WALL to 1))
-        repository.spent(game = 1, used = mapOf(Booster.WALL to 2))
+        repository.spent(game = 1, level, UsedBoosters(owned = mapOf(Booster.WALL to 1)))
+        repository.spent(game = 1, level, UsedBoosters(owned = mapOf(Booster.WALL to 2)))
         repository.eventually { it.boosters == mapOf(Booster.WALL to 1, Booster.BOMB to 1) }
 
-        repository.spent(game = 1, used = mapOf(Booster.WALL to 2)) // reported again on resume
-        repository.spent(game = 1, used = mapOf(Booster.WALL to 1)) // an undo
+        repository.spent(game = 1, level, UsedBoosters(owned = mapOf(Booster.WALL to 2))) // reported again on resume
+        repository.spent(game = 1, level, UsedBoosters(owned = mapOf(Booster.WALL to 1))) // an undo
         repository.eventually { it.boosters == mapOf(Booster.WALL to 2, Booster.BOMB to 1) }
 
-        repository.spent(game = 2, used = mapOf(Booster.BOMB to 1)) // the next game
+        repository.spent(game = 2, level, UsedBoosters(owned = mapOf(Booster.BOMB to 1))) // the next game
         assertEquals(mapOf(Booster.WALL to 2), repository.eventually { Booster.BOMB !in it.boosters }.boosters)
         session.close()
 
         val again = Session(file())
         assertEquals(mapOf(Booster.WALL to 2), again.repository.progress.first().boosters)
+        again.close()
+    }
+
+    @Test
+    fun `a level's own boosters are spent once, come back with an undo, and stay spent after a restart`() = runBlocking {
+        val session = Session(file())
+        val repository = session.repository
+        val level = level("2-1") // wall 2, undo 1
+
+        repository.spent(game = 1, level, UsedBoosters(own = mapOf(Booster.WALL to 1)))
+        repository.spent(game = 1, level, UsedBoosters(own = mapOf(Booster.WALL to 1))) // reported again on resume
+        repository.eventually { it.spent(level) == mapOf(Booster.WALL to 1) }
+        repository.spent(game = 1, level, UsedBoosters(own = mapOf(Booster.UNDO to 1))) // an undo took the wall's turn back
+        repository.eventually { it.spent(level) == mapOf(Booster.UNDO to 1) }
+        repository.spent(game = 1, level, UsedBoosters(own = mapOf(Booster.WALL to 1, Booster.UNDO to 1)))
+
+        // The level's end is saved after every booster its game reported.
+        repository.finished(level, LevelResult(MissionStatus(Outcome.FAILED, Reason.GAME_OVER, 0, 1, null), 0, null))
+        assertEquals(mapOf(Booster.WALL to 1, Booster.UNDO to 1), repository.progress.first().spent(level))
+
+        repository.spent(game = 2, level, UsedBoosters(own = mapOf(Booster.WALL to 1))) // the retry uses the last wall
+        repository.eventually { it.spent(level) == mapOf(Booster.WALL to 2, Booster.UNDO to 1) }
+        session.close()
+
+        val again = Session(file())
+        val progress = again.repository.progress.first()
+        assertEquals(mapOf(Booster.WALL to 2, Booster.UNDO to 1), progress.spent(level))
+        assertEquals(mapOf(Booster.WALL to 0, Booster.UNDO to 0), progress.boostersFor(level))
+        assertEquals(0, progress.game(level).start().boostersLeft(level.human, Booster.WALL))
+        assertEquals(mapOf(Booster.WALL to 1, Booster.UNDO to 1), progress.boostersFor(level("2-2")), "other levels keep theirs")
         again.close()
     }
 }

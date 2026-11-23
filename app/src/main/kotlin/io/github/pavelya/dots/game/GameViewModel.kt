@@ -9,6 +9,7 @@ import dots.campaign.CampaignMap
 import dots.campaign.Level
 import dots.campaign.LevelRecord
 import dots.campaign.MissionStatus
+import dots.campaign.Progress
 import dots.campaign.Strength
 import dots.campaign.Tutorial
 import dots.daily.DailyAttempt
@@ -36,6 +37,7 @@ import io.github.pavelya.dots.data.DailyJournal
 import io.github.pavelya.dots.data.GameJournal
 import io.github.pavelya.dots.data.LevelEnd
 import io.github.pavelya.dots.data.PlacingMethod
+import io.github.pavelya.dots.data.UsedBoosters
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -196,8 +198,9 @@ data class BoosterAim(
  *   touches and dots it took, so that `cli placing-report` can compare methods (A-13)
  * @param hintFor the Hint booster's point for a position of the level being played (null outside
  *   the campaign), found on [computerDispatcher]: in a level, the move that serves its mission
- * @param ownedFor the player's own boosters a new game of a level takes (decision 0027); a game
- *   reports the ones it uses to [campaign]
+ * @param progress the player's progress as last read, for a new game of a level: the level's own
+ *   boosters left (decision 0040) and the player's own (decision 0027); a game reports the
+ *   boosters it uses to [campaign]
  * @param daily where a daily attempt's end is saved
  * @param analytics where the game reports a level's end, each booster used and a daily attempt's
  *   end, as they happen (decision 0033); a finished game opened again (View result) reports
@@ -215,7 +218,7 @@ class GameViewModel(
     private val clock: () -> Long = System::currentTimeMillis,
     private val placing: () -> PlacingMethod = { PlacingMethod.TWO_TAPS },
     private val hintFor: (GameState, Level?) -> Action.Hint? = { state, level -> if (level != null) level.hint(state) else Hints.hint(state) },
-    private val ownedFor: (Level) -> Map<Booster, Int> = { emptyMap() },
+    private val progress: () -> Progress = { Progress.NONE },
     private val daily: DailyJournal? = null,
     private val analytics: Analytics = Analytics.NONE,
     private val holdFor: (MoveResult) -> Long = { 0L },
@@ -248,8 +251,8 @@ class GameViewModel(
      */
     private var shownGuide: Tutorial.Step? = null
 
-    /** The player's own boosters this game last reported as used ([reportOwned]). */
-    private var ownedReported: Map<Booster, Int> = emptyMap()
+    /** The boosters this game last reported as used ([reportSpent]). */
+    private var spentReported: UsedBoosters = UsedBoosters.NONE
 
     /** The last dot's moment, and how many dots have landed on this screen. */
     private var moment: BoardMoment? = null
@@ -293,7 +296,7 @@ class GameViewModel(
 
     init {
         // A resumed level may have been closed before the boosters it used, or its stars, were saved.
-        reportOwned(resumed = true)
+        reportSpent(resumed = true)
         if (game.isOver) levelOver()
         letComputerMove() // a resumed game may have been closed while the computer was to move
     }
@@ -624,8 +627,7 @@ class GameViewModel(
      */
     fun retryWith(booster: Booster) {
         val level = level ?: return playAgain()
-        val owned = if (entry.practice) emptyMap() else ownedFor(level)
-        begin(levelGame(level, entry.threatHighlight, clock(), gift = mapOf(booster to 1), owned = owned, practice = entry.practice))
+        begin(levelGame(level, entry.threatHighlight, clock(), progress(), gift = mapOf(booster to 1), practice = entry.practice))
     }
 
     private fun begin(next: GameLogEntry) {
@@ -635,7 +637,7 @@ class GameViewModel(
         computer = computerFor(entry)
         levelEnd = null
         dailyEnd = null
-        ownedReported = emptyMap()
+        spentReported = UsedBoosters.NONE
         shownGuide = null
         chosen = null
         still()
@@ -700,7 +702,7 @@ class GameViewModel(
             placing = placing().key,
         )
         lastActive = now
-        reportOwned()
+        reportSpent()
         if (over) {
             journal?.finish(entry)
             reportEnd()
@@ -713,22 +715,23 @@ class GameViewModel(
     /** Reports the end of a level or a daily attempt that has just been played to its end. */
     private fun reportEnd() {
         val state = game.state
-        level?.takeIf { !entry.practice }?.let { analytics.log(Events.levelEnd(it, it.result(state))) }
+        (entry.record as? LevelRecord)?.takeIf { !entry.practice }?.let { analytics.log(Events.levelEnd(it.level, it.result(state))) }
         puzzle?.let { analytics.log(Events.dailyPuzzleDone(it, it.isPassed(state))) }
     }
 
     /**
-     * Tells [campaign] how many of the player's own boosters this game has used, when that changed
-     * (a booster, or an undo that gave one back). A [resumed] game reports what it has used so far,
-     * in case the app closed before it was saved; the report is the same, so nothing changes twice.
+     * Tells [campaign] how many boosters this game has used, the player's own and the level's,
+     * when that changed (a booster, or an undo that gave one back). A [resumed] game reports what
+     * it has used so far, in case the app closed before it was saved; the report is the same, so
+     * nothing changes twice. A practice game spends nothing.
      */
-    private fun reportOwned(resumed: Boolean = false) {
+    private fun reportSpent(resumed: Boolean = false) {
         val record = entry.record as? LevelRecord ?: return
-        if (record.owned.isEmpty() || entry.practice) return
-        val used = record.ownedUsed(game.state)
-        if (used == ownedReported && !resumed) return
-        ownedReported = used
-        campaign?.spent(entry.startedAt, used)
+        if (entry.practice) return
+        val used = UsedBoosters.of(record, game.state)
+        if (used == spentReported && !resumed) return
+        spentReported = used
+        campaign?.spent(entry.startedAt, record.level, used)
     }
 
     /**
@@ -737,8 +740,10 @@ class GameViewModel(
      */
     private fun levelOver() {
         puzzle?.let { return dailyOver(it) }
-        val level = level ?: return
-        val result = level.result(game.state)
+        val record = entry.record as? LevelRecord ?: return
+        val level = record.level
+        // The record's result: boosters used on earlier attempts cost no stars (decision 0040).
+        val result = record.result(game.state)
         val thisRound = round
         val practice = entry.practice
         viewModelScope.launch {

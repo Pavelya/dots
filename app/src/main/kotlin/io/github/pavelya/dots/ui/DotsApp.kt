@@ -278,7 +278,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             val opening = openingRoute(progress, app.games.saved(GameMode.CAMPAIGN))
                             if (opening != Routes.MAP && app.games.saved(GameMode.CAMPAIGN) == null) {
                                 val settings = app.settings.settings.first()
-                                app.journal.start(levelGame(Campaign.levels.first(), settings.threatHighlight, now = System.currentTimeMillis()))
+                                app.journal.start(levelGame(Campaign.levels.first(), settings.threatHighlight, now = System.currentTimeMillis(), progress = progress))
                             }
                             snapshotFlow { drawn }.first { it }
                             navController.navigate(opening) { popUpTo(Routes.LOADING) { inclusive = true } }
@@ -323,7 +323,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             LevelCard(
                                 level = level,
                                 saved = campaignGame?.levelCode == level.code,
-                                owned = progress?.owned(level).orEmpty(),
+                                boosters = progress?.boostersFor(level) ?: level.boosters,
                                 // Start asks first when it would end another level's unfinished game.
                                 replaces = campaignGame?.takeIf { it.levelCode != level.code && it.record.actions.isNotEmpty() }?.levelOrPractice,
                                 // Resume plays the saved game of this level; Start writes a new one to the
@@ -333,8 +333,8 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         app.games.loaded.first { it }
                                         if (app.games.saved(GameMode.CAMPAIGN)?.levelCode != level.code) {
                                             val settings = app.settings.settings.first()
-                                            val owned = app.progress.progress.first().owned(level)
-                                            app.journal.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis(), owned = owned))
+                                            val latest = app.progress.progress.first()
+                                            app.journal.start(levelGame(level, settings.threatHighlight, now = System.currentTimeMillis(), progress = latest))
                                         }
                                         navController.navigate(Routes.game(GameMode.CAMPAIGN)) { popUpTo(Routes.MAP) }
                                     }
@@ -486,7 +486,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                             val level = (start.record as? LevelRecord)?.level
                                             val puzzle = (start.record as? DailyRecord)?.puzzle
                                             when {
-                                                level != null -> levelGame(level, chosen.threatHighlight, now, owned = app.progress.owned(level))
+                                                level != null -> levelGame(level, chosen.threatHighlight, now, app.progress.current())
                                                 // Retry plays the same day's puzzle again, also after midnight.
                                                 puzzle != null -> dailyGame(puzzle, chosen.threatHighlight, now)
                                                 else -> freeGameLike(start, chosen.threatHighlight, now)
@@ -496,7 +496,7 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         journal = app.journal,
                                         campaign = app.progress,
                                         placing = { settings.value?.placing ?: AppSettings().placing },
-                                        ownedFor = app.progress::owned,
+                                        progress = app.progress::current,
                                         daily = app.daily,
                                         analytics = app.analytics,
                                         // The computer answers once the player's capture has played (motion.md, rule 2).
