@@ -156,8 +156,8 @@ over the map or the board, which stay visible around it.
 | Loading | App start | The app icon on paper, as on Android's own start-up screen, with its red ring drawing itself as the game loads, and a one-line tip. No buttons. Then the map; until Level 1 is finished, Level 1 instead. | A-01, A-06, A-18 |
 | World map (home) | Loading; Back from Rules, Stats, Shop or Settings; leaving a game | One scrolling map with a section per world. Finished levels with their stars, the next level circled and marked "next", boss levels as fortresses, a chest every 10 levels, locked worlds with the stars they need. No Play buttons: a level opens its Level card. Labelled icons for Today's puzzle, Play a game, How to play, Stats, Shop and Settings; the player's title and stars. | A-01, A-02, A-04 |
 | Level card | A level on the map, Next on Result | Over the map: the mission in one line, a small picture of the board, the computer's face for its strength, its head start, allowed boosters and star targets. A boss level adds the boss's name, face and rule. One button: Start, or Resume when the level's game is saved. Tapping a booster opens Boosters. | A-03 |
-| Boosters | A booster on the Level card | Wall, Hint, Bomb, Double dot and Undo: how many the player has, what each does, how to earn more. Close returns to where it opened. | A-05 |
-| Chest | Next on the Result of every 10th level | Over the map: one or two rewards. Pick one of two; one reward shows alone with **Keep it**. When both of two are boosters, an ad offer can keep both ([`money.md`](money.md)). | A-04, C-03, G-32 |
+| Boosters | A booster on the Level card | Wall, Hint, Bomb, Double dot and Undo: how many the player has, what each does, how to earn more. A kind the player owns but this level doesn't allow shows, in pencil, "You have 2. Levels allow it from 3-1." in place of ×0. Close returns to where it opened. | A-05, A-27 |
+| Chest | Next on the Result of every 10th level | Over the map: one or two rewards. Pick one of two; one reward shows alone with **Keep it**. A reward the very next level can't use says "from level 2-1" under it, in pencil. When both of two are boosters, an ad offer can keep both ([`money.md`](money.md)). | A-04, C-03, G-32, A-27 |
 | Game board | Start, Play, Resume, Retry, Play again | The opponent above the board, with a face and a tally; the player below it, with a tally and the tool bar. Whose turn, dots left, the last move (A-14), the mission note, special points and any boss countdown. In the campaign, the boosters sit in the tool bar, Undo among them (decision 0023). In free play, the tool bar holds an Undo button with no count; two players and the daily puzzle have no undo. An open-ended game adds Stop, and after a stop the side that collects gets Done (see [Free play and two players](#free-play-and-two-players)). A pause icon opens Pause. | A-03, A-05, A-13, A-14 |
 | Booster preview | A booster on a campaign board | Over the board: one line on what the booster does, the points it can act on, and its effect at the chosen point. Confirm or Cancel. One booster per turn. Undo has no point: its preview shows the turn it takes back, pale in dashed rings, and does not count as the turn's booster. | A-05 |
 | Pause | Pause icon or Back on the board | Over the board: Resume, Restart (asks first, where the mode allows it) and To the map. Small icons for sound on or off and How to play. | A-01 |
@@ -387,7 +387,8 @@ The first tap a new player makes is a move on the board.
   The boss's face sits above the board, with a countdown to its special turn (G-05).
 - **Chests.** After every 10th level, Next opens a chest over the map. It holds one or two
   rewards, each a kind that a level before the next chest allows (decision 0038). The player picks
-  one of two, or keeps the only one with **Keep it** (A-04, G-32).
+  one of two, or keeps the only one with **Keep it** (A-04, G-32). A reward that waits for a later
+  level says from which one, and Boosters keeps showing it until then (A-27).
 
 ## Back and interruptions
 

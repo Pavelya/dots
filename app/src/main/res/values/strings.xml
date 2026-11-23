@@ -43,6 +43,7 @@
     <string name="chest_keep">Keep it</string>
     <string name="chest_reward">%1$s ×%2$d</string>
     <string name="chest_a_booster">a booster</string>
+    <string name="chest_from">from level %1$s</string>
     <!-- The player's title on Stats (the wireframes' Stats). -->
     <string name="stats_your_title">YOUR TITLE</string>
     <string name="stats_title_next">%1$s next</string>
@@ -424,6 +425,22 @@
         <item quantity="one">%1$s, you have %2$d. %3$s</item>
         <item quantity="other">%1$s, you have %2$d. %3$s</item>
     </plurals>
+    <plurals name="boosters_waiting">
+        <item quantity="one">You have %1$d. Levels allow it from %2$s.</item>
+        <item quantity="other">You have %1$d. Levels allow it from %2$s.</item>
+    </plurals>
+    <plurals name="boosters_waiting_none">
+        <item quantity="one">You have %1$d. No later level allows it.</item>
+        <item quantity="other">You have %1$d. No later level allows it.</item>
+    </plurals>
+    <plurals name="boosters_row_waiting">
+        <item quantity="one">%1$s, you have %2$d. Levels allow it from %3$s. %4$s</item>
+        <item quantity="other">%1$s, you have %2$d. Levels allow it from %3$s. %4$s</item>
+    </plurals>
+    <plurals name="boosters_row_waiting_none">
+        <item quantity="one">%1$s, you have %2$d. No later level allows it. %3$s</item>
+        <item quantity="other">%1$s, you have %2$d. No later level allows it. %3$s</item>
+    </plurals>
     <plurals name="double_dot_left">
         <item quantity="one">%1$d more dot this turn</item>
         <item quantity="other">%1$d dots this turn</item>
@@ -463,6 +480,14 @@
     <plurals name="chest_single_reward">
         <item quantity="one">%1$s, %2$d booster.</item>
         <item quantity="other">%1$s, %2$d boosters.</item>
+    </plurals>
+    <plurals name="chest_choice_later">
+        <item quantity="one">%1$s, %2$d booster, from level %3$s. Keep it.</item>
+        <item quantity="other">%1$s, %2$d boosters, from level %3$s. Keep it.</item>
+    </plurals>
+    <plurals name="chest_single_reward_later">
+        <item quantity="one">%1$s, %2$d booster, from level %3$s.</item>
+        <item quantity="other">%1$s, %2$d boosters, from level %3$s.</item>
     </plurals>
     <plurals name="map_world_stars">
         <item quantity="one">%1$d of %2$d star</item>

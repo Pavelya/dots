@@ -218,6 +218,10 @@ class ProgressTest {
         assertEquals(emptyMap(), progress.owned(level("1-11")), "World 1 allows only undo")
         assertEquals(mapOf(Booster.WALL to 2), progress.owned(level("2-1")))
         assertEquals(mapOf(Booster.WALL to 2, Booster.BOMB to 1), progress.owned(level("4-3")))
+        // What a level leaves out waits for a later level, and still counts as the player's.
+        assertEquals(mapOf(Booster.WALL to 2, Booster.BOMB to 1), progress.waiting(level("1-11")))
+        assertEquals(mapOf(Booster.BOMB to 1), progress.waiting(level("2-1")))
+        assertEquals(emptyMap(), progress.waiting(level("4-3")))
 
         val spent = progress.spend(mapOf(Booster.WALL to 1, Booster.BOMB to 1))
         assertEquals(mapOf(Booster.WALL to 1), spent.boosters)

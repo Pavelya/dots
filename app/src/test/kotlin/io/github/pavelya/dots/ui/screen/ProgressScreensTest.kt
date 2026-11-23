@@ -10,6 +10,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import dots.campaign.Campaign
 import dots.campaign.Chest
+import dots.campaign.Level
 import dots.campaign.Progress
 import dots.campaign.Reward
 import dots.engine.Booster
@@ -97,7 +99,8 @@ class ProgressScreensTest {
         compose.onNodeWithContentDescription("Wall, 2 boosters. Keep it.").assertIsDisplayed()
         capture("chest")
 
-        compose.onNodeWithContentDescription("Bomb, 2 boosters. Keep it.").performClick()
+        // 2-16 allows walls; bombs wait for World 3.
+        compose.onNodeWithContentDescription("Bomb, 2 boosters, from level 3-1. Keep it.").performClick()
         assertEquals(listOf(Reward(Booster.BOMB, 2)), picked)
     }
 
@@ -123,7 +126,7 @@ class ProgressScreensTest {
     @Config(qualifiers = "w320dp-h568dp-xhdpi")
     fun `the chest on a small phone`() {
         chestOverMap()
-        compose.onNodeWithContentDescription("Bomb, 2 boosters. Keep it.").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Bomb, 2 boosters, from level 3-1. Keep it.").assertIsDisplayed()
         capture("chest_small_phone")
     }
 
@@ -135,8 +138,9 @@ class ProgressScreensTest {
         compose.onNodeWithText("Ten levels done!").assertIsDisplayed()
         compose.onNodeWithText("For the levels ahead.").assertIsDisplayed()
         compose.onNodeWithText("Pick one to keep.").assertDoesNotExist()
-        // The reward is shown, not a button: Keep it is the only way to keep it.
-        compose.onNodeWithContentDescription("Wall, 2 boosters.").assertIsDisplayed().assertHasNoClickAction()
+        // The reward is shown, not a button: Keep it is the only way to keep it. 1-11 to 1-15
+        // allow no walls, so it says from which level they can be used.
+        compose.onNodeWithContentDescription("Wall, 2 boosters, from level 2-1.").assertIsDisplayed().assertHasNoClickAction()
         capture("chest_single")
 
         compose.onNodeWithText("Keep it").performClick()
@@ -155,6 +159,54 @@ class ProgressScreensTest {
         chestOverMap(shown = single)
         compose.onNodeWithText("Keep it").assertIsDisplayed()
         capture("chest_single_small_phone")
+    }
+
+    /** Levels 1-1 to 1-10 passed, and two bombs from a chest. */
+    private val twoBombs = passedTen.copy(boosters = mapOf(Booster.BOMB to 2))
+
+    /** The Boosters note for [level] over the map, as the app opens it from the Level card. */
+    private fun boostersOverMap(level: Level, dark: Boolean = false) = show(dark) {
+        Box {
+            MapScreen(Campaign.map(twoBombs), noActions)
+            BoostersNote(left = boostersLeft(level, twoBombs), waiting = boostersWaiting(level, twoBombs), onClose = {})
+        }
+    }
+
+    @Test
+    fun `on a level that doesn't allow them, owned boosters show how many and from which level`() {
+        boostersOverMap(Campaign.level(1, 11))
+
+        // 1-11 allows only undo: the two bombs wait for 3-1, and the row says so instead of ×0.
+        compose.onNodeWithContentDescription(
+            "Bomb, you have 2. Levels allow it from 3-1. Removes the computer’s dots in a + of 5 points.",
+        ).assertIsDisplayed()
+        compose.onNode(hasContentDescription("Wall, you have 0.", substring = true)).assertExists()
+        compose.onNode(hasContentDescription("Undo, you have 1.", substring = true)).assertExists()
+        capture("boosters_waiting")
+    }
+
+    @Test
+    fun `on a level that allows them, owned boosters count with the level's own`() {
+        val level = Campaign.level(3, 1)
+        assertEquals(mapOf(Booster.BOMB to 3, Booster.DOUBLE_DOT to 1, Booster.UNDO to 1), boostersLeft(level, twoBombs))
+        assertTrue(boostersWaiting(level, twoBombs).isEmpty())
+
+        boostersOverMap(level)
+        compose.onNode(hasContentDescription("Bomb, you have 3.", substring = true)).assertExists()
+        compose.onNode(hasContentDescription("Levels allow it", substring = true)).assertDoesNotExist()
+    }
+
+    @Test
+    fun `owned boosters waiting for a later level, dark`() {
+        boostersOverMap(Campaign.level(1, 11), dark = true)
+        capture("boosters_waiting_dark")
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun `owned boosters waiting for a later level on a small phone`() {
+        boostersOverMap(Campaign.level(1, 11))
+        capture("boosters_waiting_small_phone")
     }
 
     @Test

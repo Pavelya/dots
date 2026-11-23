@@ -93,4 +93,55 @@ class ChestTest {
         val longer = levels + levels.take(Chest.CHOICES.size * Chest.EVERY + 1)
         assertFailsWith<IllegalStateException> { Chest.of(longer) }
     }
+
+    @Test
+    fun `each chest reward is first usable on these levels`() {
+        val firstUse = Campaign.chests.associate { chest ->
+            chest.after.code to chest.choices.associate { it.booster to Campaign.firstUse(chest, it.booster)?.code }
+        }
+        assertEquals(
+            mapOf(
+                "1-10" to mapOf(Booster.WALL to "2-1"),
+                "2-5" to mapOf(Booster.WALL to "2-6"),
+                "2-15" to mapOf(Booster.WALL to "2-16", Booster.BOMB to "3-1"),
+                "3-5" to mapOf(Booster.BOMB to "3-6", Booster.DOUBLE_DOT to "3-6"),
+                "3-15" to mapOf(Booster.DOUBLE_DOT to "3-16", Booster.HINT to "4-1"),
+                "4-5" to mapOf(Booster.HINT to "4-6", Booster.BOMB to "4-6"),
+                "4-15" to mapOf(Booster.WALL to "4-16", Booster.HINT to "4-17"),
+            ),
+            firstUse,
+        )
+    }
+
+    /**
+     * Reads the `boosters:` line of each level file itself, not the parsed level: the first use of
+     * every chest reward is the first file after the chest that lists its kind.
+     */
+    @Test
+    fun `the first use of every chest reward matches the level files`() {
+        val listed = levels.associate { level ->
+            val text = Campaign::class.java.getResourceAsStream("/${Campaign.FOLDER}/${Campaign.fileName(level.world, level.number)}")!!
+                .use { it.readBytes().toString(Charsets.UTF_8) }
+            val line = text.lines().single { it.trim().startsWith("boosters:") }
+            level.code to line.substringAfter(':').split(',').map { it.trim().substringBefore(' ') }.toSet()
+        }
+        for (chest in Campaign.chests) {
+            for (reward in chest.choices) {
+                val name = reward.booster.text
+                val expected = levels.drop(levels.indexOf(chest.after) + 1).first { name in listed.getValue(it.code) }
+                assertEquals(expected, Campaign.firstUse(chest, reward.booster), "$name from the chest after ${chest.after.code}")
+            }
+        }
+    }
+
+    @Test
+    fun `the first level that allows a kind counts the level itself`() {
+        val bombs = Booster.BOMB
+        assertEquals("3-1", Campaign.firstAllowing(bombs, Campaign.level(1, 11))?.code)
+        assertEquals("3-1", Campaign.firstAllowing(bombs, Campaign.level(3, 1))?.code, "3-1 allows bombs itself")
+        assertEquals("3-3", Campaign.firstAllowing(bombs, Campaign.level(3, 2))?.code)
+        assertNull(Campaign.firstAllowing(bombs, Campaign.level(1, 1).copy(world = 9)), "a level not in the campaign")
+        assertEquals("2-1", Campaign.after(Campaign.level(1, 15))?.code, "across worlds")
+        assertNull(Campaign.after(Campaign.levels.last()))
+    }
 }

@@ -50,6 +50,9 @@ data class Progress(
     /** The owned boosters a game of [level] takes: those of the kinds the level allows. */
     fun owned(level: Level): Map<Booster, Int> = boosters.filterKeys { it in level.boosters }
 
+    /** The owned boosters a game of [level] leaves out, as the level does not allow their kinds: they wait for a later level. */
+    fun waiting(level: Level): Map<Booster, Int> = boosters.filterKeys { it !in level.boosters }
+
     /** True once [chest] has been opened. */
     fun isOpened(chest: Chest): Boolean = chest.after.code in chests
 

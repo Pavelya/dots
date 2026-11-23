@@ -1,5 +1,7 @@
 package dots.campaign
 
+import dots.engine.Booster
+
 /**
  * The level ladder, read from the level files in the engine's resources (`levels/`). A level's
  * file is named after its world and number: `1-03.level` is level 3 of world 1. Worlds and levels
@@ -22,6 +24,22 @@ object Campaign {
 
     /** The chest on the path right after [level], if there is one. */
     fun chestAfter(level: Level): Chest? = chests.firstOrNull { it.after.code == level.code }
+
+    /** The level after [level] in the campaign, across worlds; null after the last. */
+    fun after(level: Level): Level? = indexOf(level)?.let { levels.getOrNull(it + 1) }
+
+    /**
+     * The first level from [from] on, [from] itself included, that allows [booster], in campaign
+     * order; null if none does. A player's own boosters of a kind wait for that level (decision 0027).
+     */
+    fun firstAllowing(booster: Booster, from: Level): Level? =
+        indexOf(from)?.let { i -> levels.drop(i).firstOrNull { booster in it.boosters } }
+
+    /** The first level after [chest] that allows [booster], one of its rewards: where the reward can first be used. */
+    fun firstUse(chest: Chest, booster: Booster): Level? = after(chest.after)?.let { firstAllowing(booster, it) }
+
+    /** Where [level] stands in [levels], found by its code; null for a level that is not in the campaign. */
+    private fun indexOf(level: Level): Int? = levels.indexOfFirst { it.code == level.code }.takeIf { it >= 0 }
 
     /** What the world map shows for [progress]. */
     fun map(progress: Progress): CampaignMap = CampaignMap.of(worlds, progress, chests)
