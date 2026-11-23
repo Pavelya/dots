@@ -53,10 +53,9 @@ It prints the table, the charts below and the checks, as Markdown for this page.
   be deliberate: its level file's `note` starts with `Wall:`, saying why.
 - **No world has two walls in a row.**
 
-The bench prints both checks and whether they pass. Today the wall check fails on one level:
-3-8 Owl (28 of 200) is a wall that is not noted (see "Outliers"). The noted walls are 2-10 Rose
-Bush (20 of 200), 3-13 Reflection (0 of 200) and 4-20 Kraken (27 of 200). No two walls are next
-to each other.
+The bench prints both checks and whether they pass. Today both pass. The walls are 2-10 Rose
+Bush (20 of 200), 3-13 Reflection (0 of 200) and 4-20 Kraken (27 of 200), all noted. No two
+walls are next to each other.
 
 ## What the curve shows
 
@@ -96,7 +95,7 @@ puzzles (every level that is not a whole game):
 | --- | ---: | ---: | ---: | ---: |
 | 1 | 10 | 84.9% | 94.4% | 99.6% |
 | 2 | 16 | 80.8% | 89.3% | 100.0% |
-| 3 | 16 | 65.3% | 83.9% | 100.0% |
+| 3 | 16 | 65.1% | 85.9% | 100.0% |
 | 4 | 16 | 54.9% | 81.9% | 100.0% |
 
 - **The climb comes from the hard puzzles,** and each world has more of them: for the average
@@ -125,8 +124,6 @@ earns 0.2 to 1.6 stars a game, and the strong one 0.5 to 2.5; the bosses give th
   which reads three moves ahead, passes every game. Both levels offer a booster the stand-ins do
   not use (a wall in 2-10, a double dot in 3-13). They are noted as walls; if the play-tests find
   them too hard, give them an answer the player can read in two moves.
-- **3-8 Owl (average 14%) is a wall that is not noted,** so the wall check fails. Its only
-  first move closes above the marked dot, not beside it; the strong stand-in passes every game.
 - **2-13 Greenhouse (average 33%)** is hard on purpose: its note says the block right next to the
   marked dot fails.
 - **The Mole (2-20) and the Comet (3-20) are set by their double move, not their dots.** The
@@ -158,6 +155,12 @@ earns 0.2 to 1.6 stars a game, and the strong one 0.5 to 2.5; the bosses give th
 - **The hard puzzles of Worlds 3 and 4 are tuned against the stand-ins:** each board is set so
   that the stand-in's own step prefers a wrong first move. Whether that move tempts a person too
   is for the play-tests (Q-04).
+- **The hard puzzles move when the computer reads threats differently,** because the stand-ins
+  play like the computer's steps and a new threat changes their first move. One dot can decide
+  it: if the computer's group in 3-8 Owl touched the lake, its marked dot would hang off a safe
+  group by a diagonal step only, the average stand-in would attack it from the side, and it
+  would pass 14% of games instead of 46% (`world-3.md`, 3-8). After any change to how the
+  computer plays, re-run the bench.
 - **The stand-ins do not use boosters and do not retry,** so puzzles are harder for them than for
   a person who does both.
 
@@ -225,8 +228,8 @@ xychart-beta
     title "World 3: games passed (%)"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "passed (%)" 0 --> 100
-    line [100, 100, 100, 100, 100, 38, 100, 5, 24, 16, 100, 28, 0, 1, 100, 100, 0, 21, 100, 17]
-    line [100, 100, 100, 100, 100, 71, 100, 14, 100, 100, 100, 42, 0, 100, 100, 100, 29, 54, 100, 23]
+    line [100, 100, 100, 100, 100, 38, 100, 2, 24, 16, 100, 28, 0, 1, 100, 100, 0, 21, 100, 17]
+    line [100, 100, 100, 100, 100, 71, 100, 46, 100, 100, 100, 42, 0, 100, 100, 100, 29, 54, 100, 23]
     line [100, 100, 100, 100, 100, 97, 100, 100, 100, 100, 100, 73, 100, 100, 100, 100, 100, 80, 100, 53]
     line [20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20]
 ```
@@ -237,8 +240,8 @@ xychart-beta
     title "World 3: average stars per game"
     x-axis ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
     y-axis "stars" 0 --> 3
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 0.63, 3.00, 0.08, 0.55, 0.34, 3.00, 0.50, 0.00, 0.01, 3.00, 3.00, 0.00, 0.35, 3.00, 0.34]
-    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.22, 3.00, 0.35, 3.00, 3.00, 3.00, 0.58, 0.00, 3.00, 3.00, 3.00, 0.85, 0.95, 3.00, 0.38]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 0.63, 3.00, 0.02, 0.55, 0.34, 3.00, 0.50, 0.00, 0.01, 3.00, 3.00, 0.00, 0.35, 3.00, 0.34]
+    line [3.00, 3.00, 3.00, 3.00, 3.00, 1.22, 3.00, 1.36, 3.00, 3.00, 3.00, 0.58, 0.00, 3.00, 3.00, 3.00, 0.85, 0.95, 3.00, 0.38]
     line [3.00, 3.00, 3.00, 3.00, 3.00, 2.23, 3.00, 3.00, 3.00, 3.00, 3.00, 1.55, 3.00, 3.00, 3.00, 3.00, 3.00, 1.83, 3.00, 1.00]
 ```
 
@@ -316,7 +319,7 @@ Stars: the average stars per game, a failed game counting 0.
 | 3-5 | Lantern | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
 | 3-6 | Full Moon | win | steady | 38% | 71% | 97% | 0.6 | 1.2 | 2.2 |
 | 3-7 | Fireflies | survive 3 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |
-| 3-8 | Owl | target f6 | steady | 5% | 14% | 100% | 0.1 | 0.4 | 3.0 |
+| 3-8 | Owl | target f6 | steady | 2% | 46% | 100% | 0.0 | 1.4 | 3.0 |
 | 3-9 | Crater Rim | capture 2 in 5 moves | steady | 24% | 100% | 100% | 0.5 | 3.0 | 3.0 |
 | 3-10 | Telescope | capture 1 in 4 moves | steady | 16% | 100% | 100% | 0.3 | 3.0 | 3.0 |
 | 3-11 | Shooting Star | survive 4 moves | steady | 100% | 100% | 100% | 3.0 | 3.0 | 3.0 |

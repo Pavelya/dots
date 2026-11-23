@@ -77,11 +77,13 @@ stand-in, which read the mission, each play the level 200 times against its own 
 stand-ins are computers, not people: the numbers say which levels are hard compared with the
 others, and the play-tests say how they feel.
 
-- **The whole games get harder** for a weak player: it passes 74%, 53%, 53%, 45% and 32% of
-  games in levels 11 to 15. The mini-boss, 1-15, is the hardest of them for the weak and the
-  average stand-in (32% and 35%).
+- **The whole games end with the hardest:** the weak stand-in passes 73%, 50%, 54%, 47% and
+  32% of games in levels 11 to 15, the average one 78%, 95%, 69%, 71% and 35%. The mini-boss,
+  1-15, is the hardest of them for both. In between the climb is not step by step: for the weak
+  stand-in 1-12, 1-13 and 1-14 are about equally hard, and for the average one 1-12 is the
+  easiest whole game of the world.
 - **The average stand-in passes nearly every puzzle;** the hardest is 1-9 Three in a Row (71%).
-  The weak one fails 1-4 Door in most games (13%).
+  The weak one fails 1-4 Door in most games (12%).
 - **Border-only play passes no level of the world** (`cli bench levels 40 border`), so every
   level asks the player to fight.
 
