@@ -105,11 +105,11 @@ class BossCountdownTest {
     }
 
     @Test
-    fun `2-20 and 3-20 have their own schedule, every 4 and every 3 turns`() {
-        for ((level, every) in listOf(Campaign.level(2, 20) to 4, Campaign.level(3, 20) to 3)) {
+    fun `2-20 and 3-20 have their own schedule, every 5 and every 4 turns`() {
+        for ((level, every) in listOf(Campaign.level(2, 20) to 5, Campaign.level(3, 20) to 4)) {
             val game = play(level)
             // Each turn takes one from the budget (decision 0039), so every double move up to the
-            // boss's last turn comes: 5 on 2-20 (22 turns), 8 on 3-20 (26 turns).
+            // boss's last turn comes: 4 on 2-20 (21 turns), 6 on 3-20 (25 turns).
             assertEquals(level.code, level.dotsPerPlayer, game.bossTurns.size)
             assertEquals(level.code, List(level.dotsPerPlayer / every) { (it + 1) * every }, game.doubleTurns)
             assertEquals("${level.code}: from the first move", 0 to every, game.playerTurns.first())

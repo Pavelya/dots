@@ -113,7 +113,7 @@ class BossLevelTest {
     @Test
     fun `on every boss level the budgets count turns and the boss's two-dot turns come on schedule`() {
         // The boss's dots: its budget plus one for each of its two-dot turns.
-        val bossDots = mapOf("1-15" to 18 + 3, "2-20" to 22 + 5, "3-20" to 26 + 8, "4-20" to 30 + 30)
+        val bossDots = mapOf("1-15" to 18 + 3, "2-20" to 21 + 4, "3-20" to 25 + 6, "4-20" to 30 + 30)
         val bosses = Campaign.levels.filter { it.rule?.turnRule != null }
         assertEquals(bossDots.keys, bosses.map { it.code }.toSet())
         for (level in bosses) {

@@ -19,7 +19,7 @@ the [README](../../README.md#level-files).
 | 13 to 17 | Puzzles again: a target whose answer is a step away, a stepping stone, the longest survive. |
 | 18 | A whole game with fewer dots than the computer. |
 | 19 | A short survive. |
-| 20 | The Mole, World 2's boss: a double move every fourth turn and two more dots than you. |
+| 20 | The Mole, World 2's boss: a double move every fifth turn and one more dot than you. |
 
 The difficulty is a saw-tooth: levels 3, 6, 9, 12, 15 and 18 are the hard ones, and the two
 after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; levels 3, 9 and
@@ -35,8 +35,8 @@ after each are easier. Levels 6, 12 and 18 are whole games and 20 is the boss; l
   the boosters left (`stars: boosters 2 3`): three stars without a booster, two with one used,
   one with two or more used. Every survive level
   can be passed without them; the solver never uses a booster.
-- **The computer is the steady step** for every level but the last boss of World 4, so the
-  difficulty comes from the boards, the missions and the dot budgets.
+- **The computer is the steady step** for every level of Worlds 2 to 4, so the difficulty
+  comes from the boards, the missions, the dot budgets and the boss rules.
 - **Every level file has a one-line `note`,** repeated in italics below.
 - **Most puzzles started from the computer's own games or from random small positions,** and were
   kept only when the solver proved them and found one or two winning first moves. Their names
@@ -50,11 +50,14 @@ stand-in, which read the mission, each play the level 200 times against its own 
 stand-ins are computers, not people: the numbers say which levels are hard compared with the
 others, and the play-tests say how they feel.
 
-- **Whole games get harder through the world:** the average stand-in passes 75%, 61%, 39% and
-  14% of games in Flower Beds, Hedge, Few Seeds and the Mole; the weak one 49%, 34%, 28% and
-  9%. The Mole is under the wall line (20%) without being meant as a wall. Flower Beds is easier
-  than World 1's mini-boss, 1-15 (35% and 32%), so the world opens with a dip.
-- **Two puzzles are hard:** 2-10 Rose Bush, a deliberate wall (the average stand-in passes 11%),
+- **Whole games get harder through the world:** the average stand-in passes 76%, 65%, 41% and
+  28% of games in Flower Beds, Hedge, Few Seeds and the Mole; the weak one 46%, 39%, 28% and
+  21%. Flower Beds is easier than World 1's mini-boss, 1-15 (35% and 32%), so the world opens
+  with a dip.
+- **The Mole's double move comes every 5th turn, as on 1-15;** its extra dot makes it the harder
+  boss. With a double move every 4th turn it would be a wall whatever the dots on either side:
+  the average stand-in passes at most 16% of games.
+- **Two puzzles are hard:** 2-10 Rose Bush, a deliberate wall (the average stand-in passes 10%),
   and 2-13 Greenhouse (33%). The strong stand-in passes both every time; each answer is three
   moves deep.
 - **Survive and rescue puzzles are passed every time** by all three stand-ins. They are the easy
@@ -473,9 +476,9 @@ computer's replies in brackets, as `check-levels` prints them.
 
 ### 2-20 Mole
 
-`win with 20 dots` · computer: steady · 22 dots each · boosters: `wall 2, undo 1` · rule: double move every 4 turns · stars: `margin 2 5`
+`win with 20 dots` · computer: steady · 21 dots each · boosters: `wall 2, undo 1` · rule: double move every 5 turns · stars: `margin 2 5`
 
-*World 2's boss: every fourth turn it places two dots, and it has 22 dots to your 20.*
+*World 2's boss: every fifth turn it places two dots, and it has 21 dots to your 20.*
 
 ```
     a b c d e f g h i j k l m n
@@ -495,4 +498,4 @@ computer's replies in brackets, as `check-levels` prints them.
  14 . . . . . . . . . . . . . .
 ```
 
-The computer's 22 turns each take one dot from its budget, and every fourth has an extra second dot (decision 0039): 27 dots against the player's 20. After the player's last dot it places its last two turns with no reply.
+The computer's 21 turns each take one dot from its budget, and every fifth has an extra second dot (decision 0039): 25 dots against the player's 20. After the player's last dot it places its last turn with no reply.
