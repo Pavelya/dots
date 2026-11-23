@@ -822,19 +822,19 @@ game is "ok":
 1-12 Two Crosses     margin 2 4   116   165   409   110
 1-13 Head Start      margin 2 4   275   242   213    70
 1-14 Four Crosses    margin 2 4   198   194   292   116
-1-15 Ink Bottle      margin 2 5   260   123   350    67
+1-15 Ink Bottle      margin 2 5   371   147   262    20
 2-6  Flower Beds     margin 2 4   181   183   294   142
 2-12 Hedge           margin 2 4   262   165   268   105
 2-18 Few Seeds       margin 2 4   376   155   199    70
-2-20 Mole            margin 2 5   429   151   195    25
+2-20 Mole            margin 2 5   571    82   138     9
 3-6  Full Moon       margin 2 5   207   170   313   110
 3-12 Crater          margin 2 4   360   168   216    56
 3-18 Twin Stars      margin 2 4   341   142   213   104
-3-20 Comet           margin 2 5   425    99   199    77
+3-20 Comet           margin 2 5   638    49   102    11
 4-6  Rocky Shore     margin 2 4   298   186   206   110
 4-12 Pearls          margin 3 5   313   274   122    91
 4-18 Reef            margin 2 4   476    97   158    69
-4-20 Kraken          margin 3 8   418   104   205    73
+4-20 Kraken          margin 3 8   741    46    12     1
 ```
 
 The puzzles are meant to give three stars more often. Three stars mean the shortest answer: a
