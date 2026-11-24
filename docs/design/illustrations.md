@@ -142,6 +142,11 @@ turn. Each is about as wide as it is tall, so it fills the square photo above th
 Ink Bottle does. The faces go where the Ink Bottle's go: above the board on the boss level and on
 its level card.
 
+The Kraken places two dots on every turn, so it would attack all game long. It attacks only on a
+turn that can capture: from the player's dot that leaves some of the player's dots one Kraken dot
+from capture until the Kraken's second dot. On its other turns it is smug, or beaten when the
+player captures.
+
 **Prompt 12: `boss-world-2`, the mole**
 
 > A character sheet of one cartoon creature, drawn three times side by side, each one separate

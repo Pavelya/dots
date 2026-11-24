@@ -2,11 +2,13 @@ package io.github.pavelya.dots.game
 
 import dots.engine.GameState
 import dots.engine.Player
+import dots.engine.TurnRule
 
 /**
  * The computer's six moods (docs/design/illustrations.md, "The computer"), and a boss's
- * [ATTACKING] while it places the two dots of its special turn (G-05). [DETERMINED] is the
- * computer's plain look, which shows how strong it plays.
+ * [ATTACKING] while it places the two dots of its special turn (G-05), or for the Kraken, while it
+ * places two dots that can capture (V-29). [DETERMINED] is the computer's plain look, which shows
+ * how strong it plays.
  */
 enum class Mood { HAPPY, SMUG, WORRIED, UPSET, SURPRISED, DETERMINED, SULKY, ATTACKING }
 
@@ -55,6 +57,7 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
             // It stopped in an open-ended game: it cannot lose, and it says so while the player collects (D-16).
             state.stopper == human.opponent -> OpponentLook(Mood.SMUG, Bubble.STOPPED)
             bossTurn(state, human.opponent) -> OpponentLook(Mood.ATTACKING)
+            krakenAttacks(state, human.opponent, lastCapture, humanInDanger) -> OpponentLook(Mood.ATTACKING)
             humanInDanger && state.toMove == human -> OpponentLook(Mood.SMUG, Bubble.YOUR_MOVE)
             state.dotsPlaced(human) == 0 -> OpponentLook(Mood.HAPPY, Bubble.GOOD_LUCK)
             // Its own dots in danger worry it, while it thinks and on the player's move, unless the
@@ -70,6 +73,17 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
          */
         fun bossTurn(state: GameState, boss: Player): Boolean =
             state.toMove == boss && bossCountdown(state, boss) == 0
+
+        /**
+         * True while the Kraken ([boss] of 4-20, which places two dots on every turn and has no
+         * countdown) places a turn's two dots that can capture: from the player's dot that leaves
+         * some of the player's dots one Kraken dot from capture ([humanInDanger]) until its second
+         * dot. A first dot that captures ends the danger, so the [lastCapture] it made keeps the
+         * attack until the second.
+         */
+        fun krakenAttacks(state: GameState, boss: Player, lastCapture: LastCapture?, humanInDanger: Boolean): Boolean =
+            state.turnRule(boss) == TurnRule.TwoHalves && state.toMove == boss && !state.isOver &&
+                (humanInDanger || lastCapture?.by == boss)
 
         /** How a finished game ended for [human] by the score; null while it goes on. */
         fun endingOf(state: GameState, human: Player): Ending? = when {
