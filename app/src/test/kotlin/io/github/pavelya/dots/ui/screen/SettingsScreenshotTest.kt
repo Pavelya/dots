@@ -6,7 +6,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isToggleable
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
@@ -15,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.github.takahirom.roborazzi.captureRoboImage
 import io.github.pavelya.dots.data.AppSettings
 import io.github.pavelya.dots.ui.theme.DotsTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -97,9 +102,28 @@ class SettingsScreenshotTest {
         capture("settings_licences_end")
     }
 
+    /** The wireframes' Settings details: Privacy (D-28): Show ad offers, on by default. */
     @Test
     fun privacy() {
-        show { SettingsDetailsScreen(SettingsPage.PRIVACY, onPage = {}, onBack = {}) }
+        val changes = mutableListOf<Boolean>()
+        show { SettingsDetailsScreen(SettingsPage.PRIVACY, onPage = {}, onBack = {}, onShowAdOffers = { changes += it }) }
+        compose.onNodeWithText("Ad choices").assertDoesNotExist()
+        compose.onNode(hasText("Show ad offers") and isToggleable()).assertIsOn()
         capture("settings_privacy")
+
+        compose.onNodeWithText("Show ad offers").performClick()
+        assertEquals(listOf(false), changes)
+    }
+
+    /** Where the law gives the choice (the EU, the UK): Ad choices opens Google's form again. */
+    @Test
+    fun `privacy with Ad choices`() {
+        var opened = 0
+        show { SettingsDetailsScreen(SettingsPage.PRIVACY, onPage = {}, onBack = {}, adChoices = true, onAdChoices = { opened++ }, showAdOffers = false) }
+        compose.onNode(hasText("Show ad offers") and isToggleable()).assertIsOff()
+        capture("settings_privacy_ad_choices")
+
+        compose.onNodeWithText("Ad choices").performClick()
+        assertEquals(1, opened)
     }
 }

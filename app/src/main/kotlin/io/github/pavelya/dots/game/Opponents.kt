@@ -66,8 +66,9 @@ fun freeGameLike(game: GameLogEntry, threatHighlight: Boolean, now: Long, seed: 
  * A new game of [level], before its first move, against the computer at the level's strength.
  * The player's [progress] gives its boosters ([Progress.game]): the level's own left after earlier
  * attempts (decision 0040) and the player's own (decision 0027). [gift] gives boosters for this
- * game only (the free Hint after three failures). Every way into a level comes here: Start,
- * Retry, Next and the free Hint's retry.
+ * game only (the free Hint after three failures), and [ad] the one booster a rewarded ad gave for
+ * this retry (decision 0030). Every way into a level comes here: Start, Retry, Next and the free
+ * Hint's retry.
  * Threats show when [threatHighlight] is on, and always in the tutorial's levels (A-06). A
  * [practice] game, such as a replay of the tutorial, changes no campaign progress: it has the
  * level's full allowance and none of the player's own.
@@ -79,8 +80,9 @@ fun levelGame(
     progress: Progress = Progress.NONE,
     gift: Map<Booster, Int> = emptyMap(),
     practice: Boolean = false,
+    ad: Booster? = null,
 ): GameLogEntry = GameLogEntry.start(
-    (if (practice) Progress.NONE else progress).game(level, gift),
+    (if (practice) Progress.NONE else progress).game(level, gift, ad),
     level.strength.text,
     threatHighlight = threatHighlight || Tutorial.lesson(level) != null,
     now = now,

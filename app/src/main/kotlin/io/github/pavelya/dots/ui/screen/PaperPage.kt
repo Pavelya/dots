@@ -189,16 +189,26 @@ internal fun VolumeRow(label: String, volume: Int, max: Int, onChange: (Int) -> 
     }
 }
 
-/** A setting that is on or off: its [label], and a hand-drawn switch on the right. The whole row toggles. */
+/**
+ * A setting that is on or off: its [label], a [detail] in grey under it if any, and a hand-drawn
+ * switch on the right. The whole row toggles.
+ */
 @Composable
-internal fun SwitchRow(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
+internal fun SwitchRow(label: String, on: Boolean, detail: String? = null, onChange: (Boolean) -> Unit) {
     val style = Palette.current
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
         modifier = Modifier.fillMaxWidth().heightIn(min = 52.dp).toggleable(value = on, role = Role.Switch, onValueChange = onChange),
     ) {
-        Text(label, style = ROW_TEXT, color = style.pencil, modifier = Modifier.weight(1f))
+        if (detail == null) {
+            Text(label, style = ROW_TEXT, color = style.pencil, modifier = Modifier.weight(1f))
+        } else {
+            Column(Modifier.weight(1f).padding(vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                Text(label, style = ROW_TEXT, color = style.pencil)
+                Text(detail, style = NoteText.small, color = style.graphite)
+            }
+        }
         Box(
             Modifier
                 .size(width = 48.dp, height = 28.dp)

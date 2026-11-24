@@ -31,6 +31,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             prefs.remove(OLD_PLACING)
             prefs[TUTORIAL_SKIPPED] = next.tutorialSkipped
             prefs[DAILY_AHEAD] = next.dailyAhead
+            prefs[SHOW_AD_OFFERS] = next.showAdOffers
+            prefs[ADS_IN_EU] = next.adsInEu
         }
     }
 
@@ -63,6 +65,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
             placing = enumOrNull<PlacingMethod>(prefs[PLACING]) ?: defaults.placing,
             tutorialSkipped = prefs[TUTORIAL_SKIPPED] ?: defaults.tutorialSkipped,
             dailyAhead = prefs[DAILY_AHEAD] ?: defaults.dailyAhead,
+            showAdOffers = prefs[SHOW_AD_OFFERS] ?: defaults.showAdOffers,
+            adsInEu = prefs[ADS_IN_EU] ?: defaults.adsInEu,
         )
     }
 
@@ -90,6 +94,8 @@ class SettingsRepository(private val store: DataStore<Preferences>) {
         val OLD_PLACING = stringPreferencesKey("placing")
         val TUTORIAL_SKIPPED = booleanPreferencesKey("tutorial_skipped")
         val DAILY_AHEAD = booleanPreferencesKey("developer_daily_ahead")
+        val SHOW_AD_OFFERS = booleanPreferencesKey("show_ad_offers")
+        val ADS_IN_EU = booleanPreferencesKey("developer_ads_in_eu")
 
         /** When the review prompt was last asked for, in milliseconds since 1970 ([askReview]). */
         val REVIEW_ASKED = longPreferencesKey("review_asked_at")

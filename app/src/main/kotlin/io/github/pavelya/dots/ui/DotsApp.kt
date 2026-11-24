@@ -115,7 +115,10 @@ import io.github.pavelya.dots.ui.screen.RingsScreen
 import io.github.pavelya.dots.ui.screen.Unlock
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.GameTheme
+import io.github.pavelya.dots.ads.AdPlaces
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -387,6 +390,22 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         val chest = remember(world, number) { Campaign.chests.firstOrNull { it.after.world == world && it.after.number == number } }
                         val progress by app.progress.saved.collectAsStateWithLifecycle()
                         var picked by remember { mutableStateOf(false) }
+                        // After an ad kept both rewards: both marked Kept until the next level's card opens.
+                        var kept by remember { mutableStateOf(false) }
+                        var saving by remember { mutableStateOf<Job?>(null) }
+                        val adInputs by app.offers.inputs.collectAsStateWithLifecycle()
+                        val canOffer = remember(adInputs) { app.offers.canOffer() }
+                        val adOffer = chest != null && AdPlaces.chest(chest) && canOffer
+                        LaunchedEffect(chest) { if (chest != null && AdPlaces.chest(chest)) app.offers.prepare() }
+                        // Saved, then the next level's card opens over the map, as after a pick (flows.md, "Around the board").
+                        val openNext = {
+                            appScope.launch {
+                                val next = Campaign.map(app.progress.progress.first()).next
+                                toMap()
+                                if (next != null && unlock == null) navController.navigate(Routes.level(next.world, next.number))
+                            }
+                            Unit
+                        }
                         when {
                             chest == null -> LaunchedEffect(Unit) { back() }
                             // Opened already (or not yet ready): nothing to pick.
@@ -409,8 +428,37 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                             }
                                         }
                                     },
-                                    onClose = close,
+                                    // Once both are kept, the note stays until the next level's card opens.
+                                    onClose = if (kept) ({}) else close,
                                     motion = motion,
+                                    adOffer = adOffer && !picked,
+                                    kept = kept,
+                                    // The ad (money.md, "Rewarded ads"): both rewards once it is watched,
+                                    // then a moment to see them marked Kept. Closed early, the chest stays open.
+                                    onWatchAd = {
+                                        activity?.let { over ->
+                                            app.offers.watch(
+                                                over,
+                                                reward = {
+                                                    if (!picked) {
+                                                        picked = true
+                                                        kept = true
+                                                        saving = appScope.launch { app.progress.open(chest, chest.choices) }
+                                                    }
+                                                },
+                                                closed = { rewarded ->
+                                                    if (rewarded) {
+                                                        audio.play(Effect.REWARD)
+                                                        appScope.launch {
+                                                            saving?.join()
+                                                            delay(BOTH_KEPT_MILLIS)
+                                                            openNext()
+                                                        }
+                                                    }
+                                                },
+                                            )
+                                        }
+                                    },
                                 )
                             }
                         }
@@ -533,6 +581,13 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                 DisposableEffect(Unit) { onDispose { gameTrack = null } }
                                 val scope = rememberCoroutineScope()
                                 val context = LocalContext.current
+                                // A rewarded ad's offer on the Result of a failed level from World 2 (money.md):
+                                // an ad is made ready while the level is played, and offered only when ready.
+                                val retryAd = shown.level?.let { AdPlaces.retry(it, shown.practice) }
+                                LaunchedEffect(retryAd) { if (retryAd != null) app.offers.prepare() }
+                                val adInputs by app.offers.inputs.collectAsStateWithLifecycle()
+                                val canOffer = remember(adInputs, shown.round, shown.levelEnd) { app.offers.canOffer() }
+                                val failed = shown.levelEnd?.result?.isPassed == false
                                 DotsTheme(
                                     GameTheme.of(themeInUse),
                                     dark = GameTheme.isDark,
@@ -556,6 +611,9 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                                         onLevelResult = { level, end, practice ->
                                             activity?.let { over -> appScope.launch { askForReview(app, over, level, end, practice, System.currentTimeMillis()) } }
                                         },
+                                        adOffer = retryAd?.takeIf { failed && canOffer },
+                                        // The booster waits for the retry once the ad is watched; closed early, the offer stays.
+                                        onWatchAd = { activity?.let { over -> app.offers.watch(over, reward = game::adWatched) } },
                                         // Next goes back to the map, which plays the level's unlock and opens the
                                         // next level's card. A chest the level made ready opens at once, and the
                                         // unlock plays behind it; the card then waits until the chest closes.
@@ -686,7 +744,17 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                         if (page == null) {
                             LaunchedEffect(Unit) { back() }
                         } else {
-                            SettingsDetailsScreen(page, onPage = { navController.navigate(Routes.settingsDetails(it)) }, onBack = back)
+                            val ads by app.ads.state.collectAsStateWithLifecycle()
+                            SettingsDetailsScreen(
+                                page,
+                                onPage = { navController.navigate(Routes.settingsDetails(it)) },
+                                onBack = back,
+                                adChoices = ads.choices,
+                                onAdChoices = { activity?.let { app.ads.choices(it) } },
+                                showAdOffers = appSettings?.showAdOffers ?: AppSettings().showAdOffers,
+                                // Saved in the app's scope, like every setting, so Back never cuts the change short.
+                                onShowAdOffers = { on -> appScope.launch { app.settings.update { it.copy(showAdOffers = on) } } },
+                            )
                         }
                     }
                     composable(Routes.THEME) {
@@ -736,6 +804,10 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             dailyAhead = appSettings?.dailyAhead ?: false,
                             onDailyAhead = { on -> appScope.launch { app.settings.update { it.copy(dailyAhead = on) } } },
                             onClearDaily = { appScope.launch { app.daily.clear() } },
+                            ads = app.debugBuild,
+                            adsInEu = appSettings?.adsInEu ?: false,
+                            onAdsInEu = { on -> appScope.launch { app.settings.update { it.copy(adsInEu = on) } } },
+                            onForgetConsent = { app.ads.forgetConsent() },
                             loggedGames = loggedGames,
                             onShareLog = { scope.launch { shareLog(context, app) } },
                             onBack = back,
@@ -892,3 +964,6 @@ private fun NoteWindow(back: () -> Unit, content: @Composable (motion: NoteMotio
     }
     content(motion, close)
 }
+
+/** How long the chest shows both rewards marked Kept, after the ad, before the next level's card opens. */
+private const val BOTH_KEPT_MILLIS = 1_200L

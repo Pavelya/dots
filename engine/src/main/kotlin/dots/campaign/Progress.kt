@@ -110,13 +110,19 @@ data class Progress(
      * This progress after [chest] was opened and [reward], one of its choices, kept. A chest opens
      * once: opening it again changes nothing.
      */
-    fun open(chest: Chest, reward: Reward): Progress {
-        require(reward in chest.choices) { "$reward is not in the chest after ${chest.after.code}" }
+    fun open(chest: Chest, reward: Reward): Progress = open(chest, listOf(reward))
+
+    /**
+     * This progress after [chest] was opened and every one of [rewards] kept: one choice, or both
+     * of a chest of two when a rewarded ad keeps both (decision 0030). A chest opens once: opening
+     * it again changes nothing.
+     */
+    fun open(chest: Chest, rewards: List<Reward>): Progress {
+        require(rewards.isNotEmpty()) { "a chest keeps at least one reward" }
+        for (reward in rewards) require(reward in chest.choices) { "$reward is not in the chest after ${chest.after.code}" }
         if (isOpened(chest)) return this
-        return copy(
-            boosters = boosters + (reward.booster to (boosters[reward.booster] ?: 0) + reward.count),
-            chests = chests + chest.after.code,
-        )
+        val kept = rewards.distinct().fold(boosters) { owned, reward -> owned + (reward.booster to (owned[reward.booster] ?: 0) + reward.count) }
+        return copy(boosters = kept, chests = chests + chest.after.code)
     }
 
     /**

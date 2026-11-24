@@ -10,6 +10,16 @@ plugins {
     alias(libs.plugins.firebase.crashlytics)
 }
 
+/*
+ * AdMob's IDs for the rewarded ads (docs/release.md, AdMob). Not secrets: every copy of the app
+ * holds them. Until the game's own AdMob app exists they are Google's sample IDs, which show test ads.
+ */
+val ADMOB_APP_ID = "ca-app-pub-3940256099942544~3347511713"
+val REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
+
+/** Google's rewarded test ad unit, for every debug build. */
+val TEST_REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
+
 android {
     namespace = "io.github.pavelya.dots"
     compileSdk = 37
@@ -24,6 +34,9 @@ android {
         // build installs over an older one. Store builds on a v* tag: from the tag (decision 0031).
         versionCode = providers.environmentVariable("VERSION_CODE").map(String::toInt).getOrElse(1)
         versionName = providers.environmentVariable("VERSION_NAME").getOrElse("0.1-poc")
+        // The game's app in AdMob (docs/release.md, AdMob). Every build uses it, so Google's consent
+        // form (C-03) shows on test builds too; it is not a secret, as every copy of the app holds it.
+        manifestPlaceholders["admobAppId"] = ADMOB_APP_ID
     }
 
     // The POC test key signs the debug builds testers install, so a new test build installs over
@@ -63,6 +76,8 @@ android {
     buildTypes {
         debug {
             signingConfigs.findByName("pocTest")?.let { signingConfig = it }
+            // Google's test ad: debug builds never show a real ad, so testers can't earn or cost money.
+            buildConfigField("String", "REWARDED_AD_UNIT", "\"$TEST_REWARDED_AD_UNIT\"")
         }
         release {
             // R8 removes unused code and renames what is left; resource shrinking then drops unused
@@ -72,6 +87,7 @@ android {
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"))
             signingConfigs.findByName("upload")?.let { signingConfig = it }
+            buildConfigField("String", "REWARDED_AD_UNIT", "\"$REWARDED_AD_UNIT\"")
             // Crashlytics needs the same mapping file. Only the release workflow sends it, for a
             // tagged build (CRASHLYTICS_MAPPING_UPLOAD=true); pull requests and dry runs don't.
             configure<CrashlyticsExtension> {
@@ -120,6 +136,8 @@ dependencies {
     implementation(libs.datastore.preferences)
     implementation(libs.play.review) // Google Play's in-app review prompt
     implementation(libs.play.billing) // Google Play Billing: the Shop's purchases (C-02)
+    implementation(libs.play.services.ads) // AdMob: the rewarded ads (C-03)
+    implementation(libs.ump) // Google's consent form for ads in the EU and the UK (C-03)
     // Crash reports (decision 0032) and analytics (decision 0033) from store builds only. Debug
     // builds, which testers of GitHub builds and the tests use, don't contain Firebase and send
     // nothing; src/debug and src/release each give the game its `buildAnalytics`.

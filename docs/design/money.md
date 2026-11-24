@@ -150,7 +150,8 @@ its kind were used up on earlier attempts. On every other level, a game that
 uses it earns 1 star, a pass, whatever the stars count. It counts as used once the game has used
 every booster of its kind, the ad's one too; one given back by an undo is not used. So ads can help
 a player pass a level, but never raise the stars that the total-star leaderboard counts once it
-ships after the launch (O-02, decision 0037). The booster offered is the first kind the level
+ships after the launch (O-02, decision 0037). When a passed game earned 1 star this way, Result
+shows its stars and its count with no "stars need" line (decision 0041). The booster offered is the first kind the level
 allows, in the order a level file lists them: wall, hint, bomb, double dot. Levels that allow no
 booster but Undo show no offer.
 
@@ -168,8 +169,13 @@ booster but Undo show no offer.
 **How an offer behaves** (`flows.md`, "Shop and rewarded ads"): it names its reward before the
 player chooses. The reward is given once, only after the ad has finished. Declining, closing the
 ad early or an ad that fails to load never blocks play; an offer whose ad isn't ready is simply
-not shown. Players in the EU and the UK first answer Google's consent form, and players under the
-age the rating allows see no ads (C-03).
+not shown. An ad closed early still counts toward the day's 3.
+
+**Consent and age** (decision 0041). Players in the EU, the EEA and the UK first answer Google's
+consent form, when the app opens; Settings > Privacy > Ad choices opens it again. No ad is asked
+for before the answer. The game asks no age: its audience on Google Play is teens and adults
+(R-04), and every ad is limited to content rated PG, so no player sees an ad meant for adults. The
+game sends no advertising ID.
 
 ### Not used
 

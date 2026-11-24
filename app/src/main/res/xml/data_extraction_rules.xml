@@ -3,8 +3,9 @@
      player's own boosters, chests opened and cosmetics they gave (ProgressRepository), the daily
      puzzles solved (DailyRepository), the totals on Stats (StatsRepository), the theme in use
      (ThemeRepository) and the Shop's New marks (ShopMarks). Other settings, saved games, the test
-     log and the purchases Google Play last confirmed (StoredPurchases; Google Play brings them back
-     itself) stay on the phone: an <include> leaves out everything it does not name. -->
+     log, the purchases Google Play last confirmed (StoredPurchases; Google Play brings them back
+     itself) and the rewarded ads watched today (StoredAdLog) stay on the phone: an <include> leaves
+     out everything it does not name. -->
 <data-extraction-rules>
     <cloud-backup>
         <include domain="file" path="datastore/progress.preferences_pb" />

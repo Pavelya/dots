@@ -10,3 +10,7 @@ import android.util.Log
  */
 @Suppress("UNUSED_PARAMETER") // the release build's version needs the context
 fun buildAnalytics(context: Context): Analytics = Analytics { event -> Log.d("Analytics", "${event.name} ${event.params}") }
+
+/** Debug builds collect nothing, so the consent form's answer changes nothing here. */
+@Suppress("UNUSED_PARAMETER") // the release build's version needs the context
+fun allowAnalytics(context: Context) = Unit

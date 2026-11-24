@@ -22,3 +22,13 @@ fun buildAnalytics(context: Context): Analytics {
         firebase.logEvent(event.name, params)
     }
 }
+
+/**
+ * Lets Google Analytics collect, once Google's consent form has the player's answer or has said
+ * none is needed (C-03). Until then this build's `AndroidManifest.xml` keeps collection off, so
+ * nothing leaves the phone before the answer. Firebase remembers it for the next starts; where the
+ * player declined, the consent form's answer (consent mode) still keeps analytics storage off.
+ */
+fun allowAnalytics(context: Context) {
+    FirebaseAnalytics.getInstance(context).setAnalyticsCollectionEnabled(true)
+}

@@ -4,8 +4,11 @@ import android.app.Activity
 import com.android.billingclient.api.BillingClient.BillingResponseCode
 import dots.campaign.Cosmetic
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -66,6 +69,9 @@ class PlayStore(
 ) : Store {
     private val shown = MutableStateFlow(StoreState())
     override val state: StateFlow<StoreState> = shown.asStateFlow()
+
+    private val payments = MutableSharedFlow<Cosmetic>(extraBufferCapacity = PRODUCTS_COUNT)
+    override val paid: Flow<Cosmetic> = payments.asSharedFlow()
 
     /** One talk with Google Play at a time, so answers are applied in order. */
     private val talking = Mutex()
@@ -137,12 +143,15 @@ class PlayStore(
         val paid = purchases.filter { it.paid }
         val bought = paid.cosmetics()
         val pending = purchases.filter { it.pending }.cosmetics() - bought
+        // A pending purchase that Google Play now lists as paid: the player has just paid for it.
+        val nowPaid = bought.filter { shown.value.outcomes[it] == BuyOutcome.PENDING }
         cache.save(bought)
         shown.update { state ->
             // A pending purchase no longer listed was declined: its item is for sale again, with no message.
             val kept = state.outcomes.filter { (item, outcome) -> item !in bought && outcome != BuyOutcome.PENDING }
             state.copy(bought = bought, outcomes = kept + pending.associateWith { BuyOutcome.PENDING })
         }
+        nowPaid.forEach { payments.tryEmit(it) }
         acknowledge(paid)
     }
 
@@ -154,8 +163,10 @@ class PlayStore(
                 val added = paid.cosmetics()
                 val pending = purchases.filter { it.pending }.cosmetics() - added
                 val all = shown.value.bought + added
+                val fresh = added - shown.value.bought
                 if (added.isNotEmpty()) cache.save(all)
                 shown.update { it.copy(bought = all, outcomes = it.outcomes - added + pending.associateWith { BuyOutcome.PENDING }) }
+                fresh.forEach { payments.tryEmit(it) }
                 acknowledge(paid)
             }
             BillingResponseCode.USER_CANCELED -> buying?.let { outcome(it, BuyOutcome.CANCELLED) }
@@ -179,6 +190,9 @@ class PlayStore(
     companion object {
         /** Every item the Shop sells, by product ID. */
         val PRODUCTS: List<String> = Cosmetic.entries.map { it.productId }
+
+        /** Room for every item at once in [paid], so a slow listener misses none. */
+        private val PRODUCTS_COUNT = Cosmetic.entries.size
 
         /** Where Google Play takes no payments (money.md, "Prices by country"): Russia and Belarus. */
         val NO_SALES = setOf("RU", "BY")

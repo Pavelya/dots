@@ -11,6 +11,7 @@ This page has:
 - [Make a release](#make-a-release): the three commands, when to release, which number to use.
 - [Crash reports](#crash-reports): where crashes show up, what a report holds, a test crash.
 - [Analytics](#analytics): what the game reports, the funnel to level 10, checking events.
+- [Ads](#ads): the rewarded ads, Google's consent form, and checking them on a phone.
 - [What is set up](#what-is-set-up): what exists in Play Console, Google Cloud and GitHub, and
   which rights each account has. Tasks that work in those consoles build on it.
 - [If something goes wrong](#if-something-goes-wrong) and [Keys and secrets](#keys-and-secrets).
@@ -180,9 +181,58 @@ but what the table above says. Then turn debug mode off again:
 adb shell setprop debug.firebase.analytics.app .none.
 ```
 
+**Nothing before the consent form's answer.** A store build collects nothing until Google's
+consent form (C-03) has the player's answer, or Google has said no answer is needed where the
+player is: the manifest keeps collection off, and the game turns it on then. In the EU, the EEA
+and the UK the answer also decides whether Analytics may keep its ID on the phone (consent mode).
+To check it, see [Ads](#ads).
+
 **For the Data safety form (R-03),** besides what crash reports need: app interactions (under
 App activity) and device or other IDs, collected, not shared, encrypted in transit, used for
 analytics. The privacy policy names Google Analytics for Firebase.
+
+## Ads
+
+Rewarded ads come from AdMob (C-03, decision 0041), in the two places of
+`docs/design/money.md`: the Result of a failed level from World 2, and a chest of two boosters.
+At most 3 a day, none for 24 hours after a purchase, and none with Show ad offers off (Settings >
+Privacy). Players in the EU, the EEA and the UK first answer Google's consent form, which opens
+over the loading screen the first time and again from Settings > Privacy > Ad choices.
+
+| Build | Ads | Consent form |
+| --- | --- | --- |
+| Debug (GitHub, POC tests) | Google's test ads, marked "Test Ad": they earn and cost nothing. | Shown where the law needs it; anywhere with the developer menu's **Ads as in the EU**. |
+| Store | Real ads from the ad unit in `app/build.gradle.kts`. | Shown where the law needs it. |
+
+The game sends no advertising ID: the app has no permission to read it, and every ad is limited
+to content rated PG. The IDs of the AdMob app and the ad unit are in `app/build.gradle.kts`; they
+are not secrets.
+
+**Checking ads and the consent form on a debug build.** Install the newest `dots-debug-apk` from a
+CI run.
+
+1. Settings > tap the version line 7 times > developer menu > **Ads as in the EU** on > **Forget
+   the consent answer**. Close the game (swipe it away) and open it. *Worked when:* Google's
+   consent form opens over the loading screen.
+2. Answer it. Settings > Privacy. *Worked when:* **Ad choices** is listed, opens the same form, and
+   **Show ad offers** is on.
+3. Developer menu > Campaign progress > **Halfway through World 2**. Lose a level of World 2. *Worked when:*
+   Result offers "Watch an ad for one … on your retry" below Retry. Watch the test ad to its end:
+   the offer turns into "One … ready for your retry", and Retry starts with one more of that booster.
+4. Lose again and close the ad early. *Worked when:* the offer stays, and nothing is given.
+5. Watch two more ads (3 in all today). Lose again. *Worked when:* no offer.
+6. Show ad offers off, or a level of World 1: *Worked when:* no offer.
+
+**Checking that nothing leaves the phone before the answer, on a store build.** Uninstall the
+game. Turn on DebugView's debug mode ([Analytics](#analytics)), install the newest internal
+release from Google Play and open it in the EU. *Worked when:* DebugView shows nothing from the
+phone while the consent form is open, and events (`first_open`, then `level_start`) once it is
+answered.
+
+**For the Data safety form (R-03):** AdMob collects device or other IDs (an app set ID, no
+advertising ID), app interactions and diagnostics for advertising and fraud prevention, shared
+with Google, encrypted in transit. The privacy policy names Google AdMob and Google's consent
+form. Play Console > App content > Ads: **Yes, my app contains ads**.
 
 ## What is set up
 
@@ -836,5 +886,83 @@ the phone and open it again, and open the Shop.
 **39. Tell Claude.** Say "Shop products done", with anything that looked different from these
 steps, any country whose price you had to work out yourself (step 36.4), and what each check in
 steps 37 and 38 showed.
+
+### Part 9: ads
+
+The rewarded ads (C-03) need an AdMob account with the game's app, one ad unit, and Google's
+consent form for the EU and the UK. This part makes them. It takes about 30 minutes and costs
+nothing. It needs the Mac's browser and the game's Google account; no credit card, no password,
+no GitHub secret. AdMob's pages change their look from time to time: if a button has a slightly
+different name, pick the one that means the same thing. If a page asks something these steps
+don't mention, stop and tell Claude what it asks.
+
+**40. Make the AdMob account.**
+
+1. Open [admob.google.com](https://admob.google.com/) and sign in with the game's Google account.
+   Check the round picture in the top right.
+2. Click **Get started** (or **Sign up**). **Country:** where you live. **Time zone:** yours.
+   **Billing currency:** your currency. Accept the terms. If it asks about emails with tips,
+   answer as you like.
+3. AdMob may ask for payment details now; you can skip them until there is money to pay out.
+
+*Worked when:* AdMob shows its home page with **Apps** in the left menu.
+
+**41. Add the game.**
+
+1. **Apps** > **Add app** (it may say **Add your first app**).
+2. **Platform:** Android. **Is the app listed on a supported app store?** **No**: Pinfold is on
+   internal testing only. AdMob links the store listing later, once the game is public (its app
+   page then offers **Add app store details**).
+3. **App name:** `Pinfold`. **User metrics:** off (Pinfold has its own analytics, decision 0033).
+   **Add app**.
+4. The next page shows the **App ID**, which looks like `ca-app-pub-1234567890123456~1234567890`.
+   Copy it into a note.
+
+*Worked when:* **Apps** lists Pinfold, and you have its App ID.
+
+**42. Make the ad unit.**
+
+1. Pinfold > **Ad units** > **Add ad unit** > **Rewarded** > **Select**.
+2. **Ad unit name:** `Booster`. **Reward settings:** amount `1`, item `booster`. Leave
+   server-side verification off, and leave every advanced setting as AdMob suggests.
+3. **Create ad unit**. The page shows the **Ad unit ID**, which looks like
+   `ca-app-pub-1234567890123456/1234567890` (a slash, not a tilde). Copy it into the note.
+4. **Done**. Don't follow AdMob's steps to add code: Claude does that.
+
+*Worked when:* Pinfold's **Ad units** lists `Booster`, Rewarded.
+
+**43. Only ads for everyone up to PG.** **Blocking controls** in the left menu > **All apps** (or
+**Content**) > **Maximum ad content rating:** **PG**. **Save**. The game asks for the same with
+every ad.
+
+*Worked when:* the page shows PG after it reloads.
+
+**44. The consent form for the EU, the EEA and the UK.**
+
+1. **Privacy & messaging** in the left menu > **European regulations** (it may say **GDPR**) >
+   **Create message**.
+2. **Apps:** Pinfold. **Languages:** English. **Consent options:** **Consent** and **Manage
+   options** (the default). Turn on **Close (do not consent)** if it is offered, so a player can
+   say no as easily as yes.
+3. **Privacy policy URL:** `https://pavelya.github.io/dots/privacy/`. The page goes up with R-03;
+   tell Claude if AdMob refuses the address.
+4. **Ad partners:** leave Google's commonly used ad technology providers as suggested.
+5. **Publish**.
+6. On the European regulations page, open **Settings** (a gear or a tab). If there is a switch
+   about **consent mode** or **Google Analytics for Firebase**, turn it **on**: it lets the
+   player's answer reach Analytics. Save.
+
+*Worked when:* the European regulations page lists a published message for Pinfold.
+
+**45. Don't link AdMob to Firebase.** If AdMob offers to link the app to Firebase or Google
+Analytics, skip it (decision 0033: no AdMob link).
+
+**46. Tell Claude.** Say "AdMob done", with the App ID and the Ad unit ID from your note (they
+are not secrets: every copy of the game holds them), and anything that looked different from these
+steps. Claude puts them in `app/build.gradle.kts` and adds AdMob to [What is set up](#what-is-set-up).
+
+**47. Later, on the phone: the checks.** Once Claude's change is merged, follow [Ads](#ads): the
+checks on a debug build, and after the next release the check that nothing leaves the phone
+before the answer.
 
 The setup is finished; from now on, [Make a release](#make-a-release).

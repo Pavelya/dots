@@ -57,6 +57,16 @@ data class AppSettings(
      * ([PuzzleClock.shiftDays]), since the puzzles start on 1 January 2027. Players never see it.
      */
     val dailyAhead: Boolean = false,
+    /**
+     * Show ad offers, in Settings, Privacy: the rewarded ad offers after a lost level and at a chest
+     * (docs/design/money.md, "Rewarded ads"). On by default; off hides every offer.
+     */
+    val showAdOffers: Boolean = true,
+    /**
+     * The developer menu's "Ads as in the EU": Google's consent form treats the phone as in the
+     * EEA, so the form can be checked from anywhere. Debug builds only; players never see it.
+     */
+    val adsInEu: Boolean = false,
 ) {
     /** Each player's dots, or null for an open-ended game. */
     val dotsPerPlayer: Int? get() = dotsFor(boardSize, length)
