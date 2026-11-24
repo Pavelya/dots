@@ -101,6 +101,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
       - name: Release bundle
         run: ./gradlew :app:bundleRelease
+      - name: Constructors that libraries call by reflection
+        # v0.2.1 crashed on start because R8 removed one (Q-09).
+        run: python3 .github/scripts/check-release-dex.py app/build/outputs/bundle/release/app-release.aab
       - name: Reports, when something failed
         # R8 writes the keep rules it was missing to missing_rules.txt.
         if: failure()
