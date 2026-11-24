@@ -69,6 +69,29 @@ edge. After a stop, only dots in groups like that can still be captured.
 | **Two players: Red stopped, Blue collects.** The same position after Red stopped. The chip sits beside Red, the pen stroke under Blue, and Red's three open dots are circled. "Blue, capture what is left, then tap Done." No Undo between two people. | <img src="game-two-done-light.png" width="180" alt="Light: two players, Red stopped, Blue collects"> | <img src="game-two-done-dark.png" width="180" alt="Dark: two players, Red stopped, Blue collects"> |
 | **Small phone: the setup.** At 320 x 568 the note keeps every choice and both cards, with smaller choices and cards. The map's top shows behind it. | <img src="small-play-setup-light.png" width="160" alt="Light: the setup on a small phone"> | <img src="small-play-setup-dark.png" width="160" alt="Dark: the setup on a small phone"> |
 
+## The face when the photo doesn't fit
+
+How the opponent keeps its face when the full photo does not fit above the board
+([game-screens.md, "When the photo doesn't fit"](../game-screens.md#when-the-photo-doesnt-fit)).
+Unlike the other frames, these are the app's own height, the space between the status bar and the
+navigation bar, and use the app's sizes: a 56 dp top row, the board at the largest whole-dp spacing
+that fits the width, a 56 dp player line and a 64 dp tool bar. Each shows a level as it opens, its
+board from the level file, and the face is the app's own picture, not a doodle. They sit at the end
+of the two Notebook rows on the canvas.
+
+| Frame | Light | Dark |
+| --- | --- | --- |
+| **1-06 at 360 x 640: the photo beside the line.** 104 dp of room: a 62 dp photo with a 56 dp face at the left, the computer's line beside it. No speech bubble, no board touches. | <img src="fit-1-06-360x640-light.png" width="160" alt="Light: 1-06 at 360 x 640: the photo beside the line"> | <img src="fit-1-06-360x640-dark.png" width="160" alt="Dark: 1-06 at 360 x 640: the photo beside the line"> |
+| **Boss 1-15 at 360 x 640: the counter beside the photo.** The same 104 dp. The counter moves into the photo's row, above the computer's line, so it costs no room. | <img src="fit-1-15-360x640-light.png" width="160" alt="Light: Boss 1-15 at 360 x 640: the counter beside the photo"> | <img src="fit-1-15-360x640-dark.png" width="160" alt="Dark: Boss 1-15 at 360 x 640: the counter beside the photo"> |
+| **1-06 at 360 x 720: a smaller photo.** 184 dp of room, 8 dp short of the full photo: a 116 dp photo with the bubble beside it. The board touches go. | <img src="fit-1-06-360x720-light.png" width="160" alt="Light: 1-06 at 360 x 720: a smaller photo"> | <img src="fit-1-06-360x720-dark.png" width="160" alt="Dark: 1-06 at 360 x 720: a smaller photo"> |
+| **4-06 at 360 x 720: the full photo.** The largest ordinary board, 14 x 14 at 25 dp, leaves 194 dp: the full photo, the bubble and World 4's board touches. | <img src="fit-4-06-360x720-light.png" width="160" alt="Light: 4-06 at 360 x 720: the full photo"> | <img src="fit-4-06-360x720-dark.png" width="160" alt="Dark: 4-06 at 360 x 720: the full photo"> |
+| **Boss 1-15 at 360 x 720: a smaller photo over the counter.** 184 dp, less 28 dp for the counter: an 88 dp photo. The counter sits right above the computer's line. | <img src="fit-1-15-360x720-light.png" width="160" alt="Light: Boss 1-15 at 360 x 720: a smaller photo over the counter"> | <img src="fit-1-15-360x720-dark.png" width="160" alt="Dark: Boss 1-15 at 360 x 720: a smaller photo over the counter"> |
+| **Boss 2-20, the Mole, at 360 x 720.** 194 dp with the counter: a 98 dp photo. The two-line mission note stays clear of the counter and the bubble. | <img src="fit-2-20-360x720-light.png" width="160" alt="Light: Boss 2-20, the Mole, at 360 x 720"> | <img src="fit-2-20-360x720-dark.png" width="160" alt="Dark: Boss 2-20, the Mole, at 360 x 720"> |
+| **Boss 3-20, the Comet, at 360 x 720.** The same 98 dp photo, over a board with holes along its edges. | <img src="fit-3-20-360x720-light.png" width="160" alt="Light: Boss 3-20, the Comet, at 360 x 720"> | <img src="fit-3-20-360x720-dark.png" width="160" alt="Dark: Boss 3-20, the Comet, at 360 x 720"> |
+| **Boss 4-20, the Kraken, at 360 x 720: the full photo.** The Kraken has no counter, so its 194 dp holds the full photo and the board touches. | <img src="fit-4-20-360x720-light.png" width="160" alt="Light: Boss 4-20, the Kraken, at 360 x 720: the full photo"> | <img src="fit-4-20-360x720-dark.png" width="160" alt="Dark: Boss 4-20, the Kraken, at 360 x 720: the full photo"> |
+| **1-06 at 412 x 800: the full photo.** 216 dp of room: the full photo, with the board touches kept to the screen's edges. | <img src="fit-1-06-412x800-light.png" width="160" alt="Light: 1-06 at 412 x 800: the full photo"> | <img src="fit-1-06-412x800-dark.png" width="160" alt="Dark: 1-06 at 412 x 800: the full photo"> |
+| **Boss 1-15 at 412 x 800: almost full.** 216 dp less the counter: a 120 dp photo, the bubble, no board touches. | <img src="fit-1-15-412x800-light.png" width="160" alt="Light: Boss 1-15 at 412 x 800: almost full"> | <img src="fit-1-15-412x800-dark.png" width="160" alt="Dark: Boss 1-15 at 412 x 800: almost full"> |
+
 ## Star chart
 
 Gold stars for you, ice-blue comets for the computer, on a chart with a small point at every
@@ -135,7 +158,8 @@ Rings tabs, each item on its small board, as on the D-27 wireframe.
 
 Every frame is 360 x 800 dp, the screen of a common Android phone. The board is 15 x 15 points at
 24 dp spacing, edge to edge, and all text uses the theme's sizes. The small-phone frames are
-320 x 568 dp with 21 dp spacing (a 315 dp board), as on the wireframes. The PNGs are 3 px per dp
+320 x 568 dp with 21 dp spacing (a 315 dp board), as on the wireframes. The `fit-*` frames are
+360 x 640, 360 x 720 and 412 x 800 dp, without the system bars. The PNGs are 3 px per dp
 (1080 x 2400 px, and 960 x 1704 px for a small phone).
 
 **On a phone.** Open a PNG on the phone and fit it to the screen width. On a phone about 360 dp
@@ -198,7 +222,8 @@ These choices are new here. They are proposals for the owner to accept or change
 ## Art
 
 The opponent's face and the map's trees, pond, house, mountains, castle and chest are simple ink
-doodles drawn in code. They show where the illustrations go and how big they are. The prompts for
+doodles drawn in code. They show where the illustrations go and how big they are. The `fit-*` frames
+show the app's own faces instead, because they are about how small a face can get. The prompts for
 the illustrations are on [Illustrations](../illustrations.md).
 
 ## Redrawing
@@ -211,9 +236,14 @@ python3 docs/design/canvas/draw.py                  # the PNGs on this page
 python3 docs/design/canvas/draw.py --canvas DIR     # also the canvas files, in DIR/project/
 python3 docs/design/canvas/draw.py --only neon-arcade   # one theme: notebook, star-chart or neon-arcade
 python3 docs/design/canvas/draw.py --only cosmetics     # the piece styles, ring effects and Shop
+python3 docs/design/canvas/draw.py --only fit           # the face when the photo doesn't fit
 ```
 
 It needs Python 3, Google Chrome and a network connection (the fonts come from Google Fonts). The
+`fit-*` frames take their faces from the app's pictures in `app/src/main/res/drawable-nodpi/`. The
+canvas does not take pictures written into a page, so before the `fit-*` canvas files go up, each
+face is uploaded to the canvas and its `data:` address in the file is replaced by the upload's
+address. The
 Reef and Rocky Shore frames take their board from the level files,
 [`4-18.level`](../../../engine/src/main/resources/levels/4-18.level) and
 [`4-06.level`](../../../engine/src/main/resources/levels/4-06.level). A
