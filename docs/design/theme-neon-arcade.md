@@ -99,7 +99,10 @@ board.
 | Element | Size at 24 dp spacing | Other spacings | Colour |
 | --- | --- | --- | --- |
 | Grid line | 1 dp | always 1 dp | Grid |
-| Board edge (outermost grid lines) | 1.5 dp | always 1.5 dp | Grid |
+| Board edge (outermost grid lines, and the lines round each hole) | 1.5 dp | always 1.5 dp | Grid |
+| Hole (a place with no point) | no grid line reaches it; plain paper | always the same | Paper |
+| Rock (blocked point): the wall's mark | a 16.8 dp square round the point, 1.8 dp line; five hatch lines rising to the right, 1.08 dp | square 0.7 of the spacing; line 0.075 of the spacing, at least 1.5 dp; hatch lines 0.6 of the line | Square: Main text; hatching: Dim text |
+| Pearl (bonus point) | a circle 16.8 dp across, 1.8 dp line; a shine inside its upper left, an arc 9.6 dp across from 195° to 255°, 1.44 dp, round ends | circle 0.7 of the spacing, line as the rock's; shine 0.4 of the spacing across, 0.8 of the line | Circle: Main text; shine: Dim text |
 | Dot size (a disc across) | 12 dp | half the spacing, at least 9 dp, at most 20 dp | (sets the pieces' sizes) |
 | Magenta disc | 12 dp across | the dot size | Magenta ink |
 | Cyan triangle | corners 7.9 dp from its centre; sides 13.7 dp | corners 0.66 dot sizes from the centre | Cyan ink |
@@ -118,10 +121,10 @@ board.
 Paper fills the board and half a spacing around its outermost points, and the screen around it,
 as Notebook.
 
-**Drawing order**, from the back: paper, washes, hatching, grid lines, links, drag's guides, the
-glows round live pieces (or, with high-contrast pieces, the bands round all pieces), the tubes'
-glows, the tubes, the tubes' cores, threat rings, pieces, last-move pinhole and captured cuts,
-closing points, preview. It is Notebook's order with the glows drawn where the high-contrast bands
+**Drawing order**, from the back: paper, washes, hatching, grid lines, rocks and pearls, links,
+drag's guides, the glows round live pieces (or, with high-contrast pieces, the bands round all
+pieces), the tubes' glows, the tubes, the tubes' cores, threat rings, pieces, last-move pinhole and
+captured cuts, closing points, preview. It is Notebook's order with the glows drawn where the high-contrast bands
 go, and each ring drawn in three passes. Every ring's glow is drawn before any tube, so a glow
 never lies over another ring's tube.
 
@@ -137,6 +140,16 @@ their centres, so a tube's glow never touches a piece it doesn't run through.
 **Links**, **drag's guides** and **captured pieces** work as Notebook: links only where Notebook
 draws them, guides as four dashed arms from the preview ring to the board's edge, and captured
 pieces in full ink with a cut.
+
+**Holes, rocks and pearls** work as Notebook's
+([Holes, rocks and pearls](theme-notebook.md#holes-rocks-and-pearls)), in Main text and Dim text
+where Notebook uses Pencil and Graphite. They are not lit: no glow, since they belong to neither
+side. A triangle's corners on a pearl just touch the circle's line; the piece and its glow lie on
+top. The Main text outline is at least 3:1 everywhere it can lie: 15.88 light and 17.91 dark on
+paper, at least 13.70 and 12.05 on either wash, and at least 10.56 and 9.75 on a hatch line. The Dim
+text hatching and shine are detail inside it.
+
+<img src="canvas/game-reef-neon-arcade-light.png" width="180" alt="Neon arcade, light: Reef mid-game with holes, rocks and pearls"> <img src="canvas/game-reef-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: the same moment">
 
 ## The pieces
 

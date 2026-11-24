@@ -60,7 +60,10 @@ smaller or larger spacing.
 | Element | Size at 24 dp spacing | Other spacings | Colour |
 | --- | --- | --- | --- |
 | Grid line | 1 dp | always 1 dp | Grid |
-| Board edge (outermost grid lines) | 1.5 dp | always 1.5 dp | Grid |
+| Board edge (outermost grid lines, and the lines round each hole) | 1.5 dp | always 1.5 dp | Grid |
+| Hole (a place with no point) | no grid line reaches it; plain paper | always the same | Paper |
+| Rock (blocked point): the wall's mark | a 16.8 dp square round the point, 1.8 dp line; five hatch lines rising to the right, 1.08 dp | square 0.7 of the spacing; line 0.075 of the spacing, at least 1.5 dp; hatch lines 0.6 of the line | Square: Pencil; hatching: Graphite |
+| Pearl (bonus point) | a circle 16.8 dp across, 1.8 dp line; a shine inside its upper left, an arc 9.6 dp across from 195° to 255°, 1.44 dp, round ends | circle 0.7 of the spacing, line as the rock's; shine 0.4 of the spacing across, 0.8 of the line | Circle: Pencil; shine: Graphite |
 | Dot size (red dot across) | 12 dp | half the spacing, at least 9 dp, at most 20 dp | Red ink |
 | Blue diamond, corner to corner | 14 dp | 7/6 of the dot size | Blue ink |
 | Ring (capture outline) | 2 dp | 1/12 of the spacing, at least 1.5 dp, at most 3 dp | Ink of the side that captured |
@@ -76,7 +79,7 @@ smaller or larger spacing.
 Paper fills the board and half a spacing around its outermost points. Outside the board the screen
 is plain paper without a grid, so the board's edge is clear.
 
-**Drawing order**, from the back: paper, washes, hatching, grid, links, drag's guides, the bands
+**Drawing order**, from the back: paper, washes, hatching, grid, rocks and pearls, links, drag's guides, the bands
 round the pieces (only with high-contrast pieces; [Piece shapes](pieces.md#high-contrast)), rings,
 threat rings, pieces, last-move pinhole and captured cuts, closing points, preview. The grid lies on
 top of the washes, so the squared paper shows through a captured area.
@@ -96,6 +99,59 @@ each captured piece marks it too.
 
 **Piece shapes, the last-move pinhole, the captured cut and the preview** are on
 [Piece shapes](pieces.md).
+
+**Holes, rocks and pearls** have [their own section](#holes-rocks-and-pearls).
+
+## Holes, rocks and pearls
+
+World 3's boards have holes, places with no point. World 4 adds rocks, points where nobody may
+place a dot, and pearls, points where a dot captured counts 2; its level Reef (4-18) has all three. The README's
+[Board shapes and special points](../../README.md#board-shapes-and-special-points) gives the rules.
+
+<img src="canvas/game-reef-light.png" width="180" alt="Light: Reef mid-game, a board with an open hole in the middle, two single holes, four rocks and four pearls; a red ring round a hole, a red ring round a blue dot on a pearl, a blue ring over a rock"> <img src="canvas/game-reef-dark.png" width="180" alt="Dark: the same moment"> <img src="canvas/level-card-holes-light.png" width="180" alt="Light: Reef's level card with the line Holes are open under the board picture">
+
+The canvas frames "Game: Reef, holes, rocks and pearls" and "Level card: Reef, a board with holes"
+show them, each in the dark version too.
+
+- **A hole is a gap in the board.** It has no point, so no grid line reaches it. The board's edge
+  line, 1.5 dp, runs round the board's outline and round each hole inside it, so a hole looks like
+  the paper outside the board. A single hole leaves a gap of 2 x 2 squares; a 2 x 2 hole leaves
+  3 x 3.
+- **Safe and open holes look the same** (decision 0034). The level card says which one the level
+  uses; the board does not.
+- **A capture round an open hole** covers it with the wash and the hatching, since the hole is
+  inside the captured area. The grid lies on top of washes, so the hole's edge lines still show
+  there, very faintly.
+- **A rock carries the wall's mark,** the square a wall booster leaves. A rock and a wall play the
+  same, so they look the same. A ring passes over a rock, and a rock inside a captured area stays
+  drawn on the wash.
+- **A pearl is a Pencil circle** with a short Graphite shine, the same size and line as the rock's
+  square. A piece placed on a pearl sits inside the circle, clear of its line, and the circle
+  stays round a captured piece, so the player sees it counted 2. An empty pearl inside a captured area
+  stays drawn; it is out of play.
+- **In Pencil, under the pieces.** Rocks and pearls belong to neither side, so they take Pencil,
+  as the booster guides do. They lie on the grid and under the links, the rings and the pieces.
+- **Not taken for other marks.** A threat ring is Highlighter, 0.84 of the spacing across, and
+  lies over the rings; a pearl is Pencil, 0.7 across, under them. The preview ring is in the ink of
+  the side to move, and the closing point is a third of the spacing.
+- **The level card's picture** draws holes, rocks and pearls by the same rules at its own spacing.
+  The rock's and the pearl's line stays at least 1.5 dp, so at about 8.6 dp spacing they show as
+  small dark marks.
+
+**The holes line on the level card.** A level with holes adds one line under the row with the
+board picture, above the star targets, in Body (Nunito 500, 16 sp) in Pencil, its first words in
+Nunito 700:
+
+- **Holes are safe:** a dot next to a hole can never be captured.
+- **Holes are open:** a ring can go round a hole, so a dot next to one can be captured.
+
+A level without holes has no line.
+
+**Contrast.** The square's and the circle's Pencil outline carries each mark: 12.80 light and 14.10
+dark on paper, at least 10.43 and 11.83 on either wash, and at least 8.15 and 8.22 where it crosses
+a hatch line. The Graphite hatching and shine are detail inside the outline: 6.46 and 6.85 on
+paper, at least 5.26 and 5.75 on a wash. The hole's edge is Grid, a quiet 1.27 and 1.45 on paper:
+the gap in the grid shows the hole, not its line.
 
 ## Drag's guides
 

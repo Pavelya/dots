@@ -45,6 +45,8 @@ one frame shows them turned on in Settings.
 | **Game: World 2's board touches.** The threat, with Garden's pencil doodles beside the opponent: a flower, a leaf, a butterfly and a tulip. The board itself is the same in every world. | <img src="game-world-2-light.png" width="180" alt="Light: a game in World 2"> | <img src="game-world-2-dark.png" width="180" alt="Dark: a game in World 2"> |
 | **Game: World 3's board touches.** The threat, with Night sky's pencil doodles beside the opponent: a crescent moon, a star, a comet and a twinkle. The board itself is the same in every world. | <img src="game-world-3-light.png" width="180" alt="Light: a game in World 3"> | <img src="game-world-3-dark.png" width="180" alt="Dark: a game in World 3"> |
 | **Game: World 4's board touches.** The threat, with Sea's pencil doodles beside the opponent: a fish, a shell, a boat and a wave. The board itself is the same in every world. | <img src="game-world-4-light.png" width="180" alt="Light: a game in World 4"> | <img src="game-world-4-dark.png" width="180" alt="Dark: a game in World 4"> |
+| **Game: Reef, holes, rocks and pearls.** Not Level 7: Reef (4-18), a 14 x 14 board at 25 dp with open holes, mid-game. Red's ring at the top right goes round a single hole and the blue dot beside it; its small ring in the middle took a blue dot on a pearl, which counts 2; blue's ring on the left goes over a rock. A red dot sits live on a pearl. The [theme page](../theme-notebook.md#holes-rocks-and-pearls) gives the rules. | <img src="game-reef-light.png" width="180" alt="Light: Reef mid-game with holes, rocks and pearls"> | <img src="game-reef-dark.png" width="180" alt="Dark: Reef mid-game with holes, rocks and pearls"> |
+| **Level card: a board with holes.** Reef's card over the World 4 map: the board picture shows the holes, rocks and pearls, the five boosters wrap onto three rows, and one line under them says the holes are open, before the star targets. | <img src="level-card-holes-light.png" width="180" alt="Light: Reef's level card with the line Holes are open"> | <img src="level-card-holes-dark.png" width="180" alt="Dark: Reef's level card with the line Holes are open"> |
 
 ## Free play and two players
 
@@ -82,6 +84,7 @@ the tool bar, the fonts and their shapes stay Notebook's, as the theme page says
 | **Result.** | <img src="result-win-star-chart-light.png" width="180" alt="Star chart, light: result with two stars"> | <img src="result-win-star-chart-dark.png" width="180" alt="Star chart, dark: result with two stars"> |
 | **Small phone: a threat.** | <img src="small-game-threat-star-chart-light.png" width="160" alt="Star chart, light: a threat on a small phone"> | <img src="small-game-threat-star-chart-dark.png" width="160" alt="Star chart, dark: a threat on a small phone"> |
 | **Game: a threat, high-contrast pieces.** The same moment with High-contrast pieces on in Settings: bigger pieces, each in a band of the surface under it. | <img src="game-threat-contrast-star-chart-light.png" width="180" alt="Star chart, light: a threat with high-contrast pieces"> | <img src="game-threat-contrast-star-chart-dark.png" width="180" alt="Star chart, dark: a threat with high-contrast pieces"> |
+| **Game: Reef, holes, rocks and pearls.** | <img src="game-reef-star-chart-light.png" width="180" alt="Star chart, light: Reef with holes, rocks and pearls"> | <img src="game-reef-star-chart-dark.png" width="180" alt="Star chart, dark: Reef with holes, rocks and pearls"> |
 
 ## Neon arcade
 
@@ -101,6 +104,7 @@ notes, the tool bar, the fonts and their shapes stay Notebook's, as the theme pa
 | **Result.** | <img src="result-win-neon-arcade-light.png" width="180" alt="Neon arcade, light: result with two stars"> | <img src="result-win-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: result with two stars"> |
 | **Small phone: a threat.** | <img src="small-game-threat-neon-arcade-light.png" width="160" alt="Neon arcade, light: a threat on a small phone"> | <img src="small-game-threat-neon-arcade-dark.png" width="160" alt="Neon arcade, dark: a threat on a small phone"> |
 | **Game: a threat, high-contrast pieces.** The same moment with High-contrast pieces on in Settings: bigger pieces, each in a band of the surface under it. | <img src="game-threat-contrast-neon-arcade-light.png" width="180" alt="Neon arcade, light: a threat with high-contrast pieces"> | <img src="game-threat-contrast-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: a threat with high-contrast pieces"> |
+| **Game: Reef, holes, rocks and pearls.** | <img src="game-reef-neon-arcade-light.png" width="180" alt="Neon arcade, light: Reef with holes, rocks and pearls"> | <img src="game-reef-neon-arcade-dark.png" width="180" alt="Neon arcade, dark: Reef with holes, rocks and pearls"> |
 
 ## Piece styles and ring effects
 
@@ -202,5 +206,7 @@ python3 docs/design/canvas/draw.py --only neon-arcade   # one theme: notebook, s
 python3 docs/design/canvas/draw.py --only cosmetics     # the piece styles, ring effects and Shop
 ```
 
-It needs Python 3, Google Chrome and a network connection (the fonts come from Google Fonts). A
+It needs Python 3, Google Chrome and a network connection (the fonts come from Google Fonts). The
+Reef frames take their board from the level file,
+[`4-18.level`](../../../engine/src/main/resources/levels/4-18.level). A
 change made by hand on the canvas does not reach the script, so change the script and redraw.
