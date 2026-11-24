@@ -325,8 +325,7 @@ The [rules for all sound](#rules-for-all-sound) hold. These come on top:
    of an old game console.
 4. **Made in code.** Both themes are drawn in code from their theme pages, and their sounds are
    what code makes well: glass bells and synth tones. Every run of the script gives the same files.
-   They need no Suno month and no new licence. The Suno terms the owner saved do not yet show that
-   they cover Sounds (V-14).
+   They need no Suno month and no new licence.
 
 The building blocks below are described like Notebook's [sounds made in code](#sounds-made-in-code).
 The script holds the exact values.
@@ -444,8 +443,11 @@ to half its volume and comes back after.
    rights, and upgrading later does not change that.
 2. On the same day, before generating, save Suno's terms and its "Does Suno own the music I make?"
    help page as PDF, named `suno-terms-YYYY-MM-DD.pdf` and `suno-ownership-YYYY-MM-DD.pdf` with
-   that day's date. They go in the licence copies folder (V-14). Check that they cover Sounds as
-   well as songs; if they do not, record the three source sounds with the phone instead.
+   that day's date. Save the whole page: scroll to the end first, or print it, so the copy does not
+   stop after the first screen. They go in [`docs/licences/`](../licences/README.md). Check that
+   they cover Sounds as well as songs; if they do not, record the three source sounds with the
+   phone instead. The terms in force on 2026-11-09 do cover them
+   ([Suno: Sounds as well as songs](../licences/README.md#suno-sounds-as-well-as-songs)).
 3. Keep the receipt or a screenshot of the plan and its dates privately. It shows personal details,
    so it never enters the repository, which is public.
 
