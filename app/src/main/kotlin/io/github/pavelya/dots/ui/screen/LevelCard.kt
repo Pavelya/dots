@@ -72,6 +72,12 @@ import io.github.pavelya.dots.ui.theme.Palette
 private val CHIP_SHAPE = RoundedCornerShape(24.dp)
 
 /**
+ * Up to this many booster chips sit in one row beside the board picture. More share one row of their
+ * own under the picture and the computer, like the game's tool bar (canvas frame `level-card-five`, D-33).
+ */
+private const val CHIPS_BESIDE = 2
+
+/**
  * The Level card, over the map (canvas frame `level-card`; the wireframes' Level card and Boss
  * card): a page torn from the notebook with the level's name, its mission in one line, a small
  * picture of the board at the start, the computer's face for its strength and its head start, the
@@ -112,11 +118,15 @@ fun LevelCard(
             .dim(style.scrim) { motion.up }
             .semantics { paneTitle = "$title, ${level.name}" },
     ) {
-        val picture = if (maxHeight < 700.dp) 96.dp else 120.dp
+        // A small phone (canvas frames `small-level-card-*`): a smaller picture and face, and less room between the parts.
+        val small = maxHeight < 700.dp
+        val picture = if (small) 96.dp else 120.dp
+        val gap = if (small) 10.dp else 12.dp
+        val shared = boosters.size > CHIPS_BESIDE
         // A tap on the map around the card closes it; the card above takes its own taps.
         Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { onClose() } })
         Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(gap),
             modifier = Modifier
                 .slideUp { motion.up }
                 .padding(start = 10.dp, end = 10.dp, bottom = 16.dp, top = 24.dp)
@@ -126,7 +136,7 @@ fun LevelCard(
                 .background(style.card)
                 .tornTop(style.card)
                 .verticalScroll(rememberScrollState())
-                .padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 16.dp),
+                .padding(start = 16.dp, end = 16.dp, top = if (small) 10.dp else 14.dp, bottom = 16.dp),
         ) {
             Row(verticalAlignment = Alignment.Top) {
                 Column(Modifier.weight(1f).semantics(mergeDescendants = true) { heading() }) {
@@ -158,13 +168,21 @@ fun LevelCard(
                 }
             }
             MissionLine(level, style)
-            Row(horizontalArrangement = Arrangement.spacedBy(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                BoardPicture(level, Modifier.width(picture))
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    Opponent(level, style)
-                    Allowance(level, style)
-                    BoosterChips(boosters, style, onBooster)
+            // Three or more chips share a row under the picture; the column beside it then ends with
+            // "Boosters:" just above them, so it sits at the picture's foot.
+            Column(verticalArrangement = Arrangement.spacedBy(if (small) 6.dp else 8.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(if (small) 12.dp else 14.dp),
+                    verticalAlignment = if (shared) Alignment.Bottom else Alignment.CenterVertically,
+                ) {
+                    BoardPicture(level, Modifier.width(picture))
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Opponent(level, style, small)
+                        Allowance(level, style)
+                        if (!shared) BoosterChips(boosters, style, onBooster)
+                    }
                 }
+                if (shared) BoosterRow(boosters, style, small, onBooster)
             }
             HolesLine(level, style)
             StarTargets(level, style)
@@ -262,7 +280,7 @@ private fun HolesLine(level: Level, style: Palette) {
 
 /** The computer's face for its strength, its name, how it plays and its head start; a boss's name in red. */
 @Composable
-private fun Opponent(level: Level, style: Palette) {
+private fun Opponent(level: Level, style: Palette, small: Boolean) {
     val boss = level.rule != null
     val name = if (boss) level.name else stringResource(R.string.player_computer)
     // A boss is sure of itself on its card; the computer shows how strong it plays.
@@ -271,11 +289,12 @@ private fun Opponent(level: Level, style: Palette) {
     val headStart = headStartText(level)
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(if (small) 6.dp else 8.dp),
         modifier = Modifier.clearAndSetSemantics { contentDescription = "$name, $strength, $headStart" },
     ) {
         // The level card is a note on the map, which stays Notebook's in every theme (decision 0028).
-        Face(face, 48.dp, inks = FaceInks.NOTEBOOK)
+        // On a small phone a 40 dp face leaves the head start room for one line.
+        Face(face, if (small) 40.dp else 48.dp, inks = FaceInks.NOTEBOOK)
         Column {
             Text(name, style = NoteText.label, color = if (boss) style.red else style.blue)
             Text(strength, style = NoteText.small, color = style.graphite)
@@ -293,8 +312,9 @@ private fun Allowance(level: Level, style: Palette) {
 }
 
 /**
- * The boosters the level allows, as dashed chips with a count; each opens Boosters. A kind used up
- * on earlier attempts shows ×0 in grey, as Boosters and the tool bar show none left.
+ * One or two boosters the level allows, as dashed chips with a count beside the picture; each opens
+ * Boosters. A kind used up on earlier attempts shows ×0 in grey, as Boosters and the tool bar show
+ * none left.
  */
 @Composable
 private fun BoosterChips(boosters: Map<Booster, Int>, style: Palette, onBooster: (Booster) -> Unit) {
@@ -308,23 +328,45 @@ private fun BoosterChips(boosters: Map<Booster, Int>, style: Palette, onBooster:
     }
 }
 
+/**
+ * Three to five boosters, as the same chips in one row under the picture, in the tool bar's order:
+ * each takes an equal share of the card's width, about 55 dp on a 360 dp phone and 49 dp on a 320 dp
+ * one, with its icon and count in the middle.
+ */
 @Composable
-private fun BoosterChip(booster: Booster, count: Int, style: Palette, onClick: () -> Unit) {
+private fun BoosterRow(boosters: Map<Booster, Int>, style: Palette, small: Boolean, onBooster: (Booster) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(if (small) 6.dp else 8.dp), modifier = Modifier.fillMaxWidth()) {
+        for ((booster, count) in boosters.entries.sortedBy { it.key }) {
+            BoosterChip(booster, count, style, Modifier.weight(1f), shared = true, small = small) { onBooster(booster) }
+        }
+    }
+}
+
+@Composable
+private fun BoosterChip(
+    booster: Booster,
+    count: Int,
+    style: Palette,
+    modifier: Modifier = Modifier,
+    shared: Boolean = false,
+    small: Boolean = false,
+    onClick: () -> Unit,
+) {
     val label = pluralStringResource(R.plurals.booster_chip, count, boosterName(booster), count)
     val ink = if (count > 0) style.blue else style.graphite
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = Modifier
+        horizontalArrangement = if (shared) Arrangement.spacedBy(if (small) 3.dp else 4.dp, Alignment.CenterHorizontally) else Arrangement.spacedBy(4.dp),
+        modifier = modifier
             .height(48.dp)
             .clip(CHIP_SHAPE)
             .toolOutline(ink, dashed = true, CHIP_SHAPE)
             .clickable(role = Role.Button, onClick = onClick)
             .clearAndSetSemantics { contentDescription = label }
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = if (shared) 0.dp else 12.dp),
     ) {
         BoosterIcon(booster, ink, Modifier.size(20.dp))
-        Text("×$count", style = NoteText.label, color = ink)
+        Text("×$count", style = NoteText.label, color = ink, maxLines = 1, softWrap = false)
     }
 }
 

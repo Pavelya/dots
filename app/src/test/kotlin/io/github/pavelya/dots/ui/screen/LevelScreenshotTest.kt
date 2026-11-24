@@ -7,6 +7,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.hasAnyDescendant
+import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -198,6 +201,36 @@ class LevelScreenshotTest {
     fun levelCardOnASmallPhone() {
         card(Campaign.level(1, 7))
         capture("level_card_small_phone")
+    }
+
+    /** Rocky Shore (4-6) allows all five boosters: they share one row under the picture, in the tool bar's order. */
+    @Test
+    fun cardWithFiveBoosters() {
+        card(Campaign.level(4, 6))
+        capture("level_card_five")
+    }
+
+    @Test
+    fun cardWithFiveBoostersDark() {
+        card(Campaign.level(4, 6), dark = true)
+        capture("level_card_five_dark")
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun cardWithFiveBoostersOnASmallPhone() {
+        card(Campaign.level(4, 6))
+        capture("level_card_five_small_phone")
+    }
+
+    /** Reef (4-18), the tallest card: five boosters and the holes line. On a small phone Start shows without scrolling. */
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun cardWithOpenHolesOnASmallPhone() {
+        card(Campaign.level(4, 18))
+        capture("level_card_holes_open_small_phone")
+        val scroll = compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("Start"))).fetchSemanticsNode()
+        assertEquals("how far Reef's card scrolls, in px", 0f, scroll.config[SemanticsProperties.VerticalScrollAxisRange].maxValue(), 0f)
     }
 
     /** The computer places on the first free point, the top row, far from the ring of Level 1-1. */
