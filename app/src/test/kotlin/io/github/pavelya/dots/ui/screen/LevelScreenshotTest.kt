@@ -223,14 +223,19 @@ class LevelScreenshotTest {
         capture("level_card_five_small_phone")
     }
 
-    /** Reef (4-18), the tallest card: five boosters and the holes line. On a small phone Start shows without scrolling. */
+    /**
+     * Reef (4-18), the tallest card: five boosters and the holes line. A small phone's card gets about
+     * 532 dp, under the status and gesture bars, so it scrolls a little: the owner chose that over a
+     * smaller holes line (A-29). It must stay under 30 dp.
+     */
     @Test
     @Config(qualifiers = "w320dp-h568dp-xhdpi")
     fun cardWithOpenHolesOnASmallPhone() {
         card(Campaign.level(4, 18))
         capture("level_card_holes_open_small_phone")
         val scroll = compose.onNode(hasScrollAction() and hasAnyDescendant(hasText("Start"))).fetchSemanticsNode()
-        assertEquals("how far Reef's card scrolls, in px", 0f, scroll.config[SemanticsProperties.VerticalScrollAxisRange].maxValue(), 0f)
+        val scrollsBy = scroll.config[SemanticsProperties.VerticalScrollAxisRange].maxValue() / compose.density.density
+        assertTrue("Reef's card scrolls by $scrollsBy dp", scrollsBy < 30f)
     }
 
     /** The computer places on the first free point, the top row, far from the ring of Level 1-1. */

@@ -1982,8 +1982,8 @@ def booster_chip(t, name, ic, n, shared=False, small=False):
 
 def level_card(t, uid, card="siege", small=False):
     """The card itself, at the bottom of the screen. A small phone (under 700 dp tall) gets a 96 dp picture, a 40 dp
-    face, 10 dp above the title and between the card's parts, so the head start keeps to one line and Reef's card fits under the
-    map's top 40 dp without scrolling."""
+    face, 10 dp above the title and between the card's parts, so the head start keeps to one line. In the app, under the
+    status and gesture bars, Reef's card still scrolls by about 25 dp on a 320 x 568 phone (A-29)."""
     k = CARDS[card]
     torn = svg(340, 10, el("path", d="M0 10 L0 4 " + " ".join(f"L{x} {4 + (3 if (x // 10) % 2 else -2)}" for x in range(10, 341, 10)) + " L340 10 Z",
                            fill=t["card"]), view="0 0 340 10", style="position: absolute; left: 0; top: -9px; width: 100%")
