@@ -334,7 +334,7 @@ box finds it). Play shows a list of what is missing on the Dashboard.
 | ⬜ | **Target audience and content**: 13–15, 16–17 and 18 and over; not designed for children. | R-04 |
 | ⬜ | **The short questions**: see [App content: the short answers](#app-content-the-short-answers). | R-04 |
 | ⬜ | **Store listing** in English: name, short and full description, icon, feature graphic, screenshots. Store settings: category Games > Puzzle (or Board), contact email, website `https://pavelya.github.io/dots/` (C-07 needs it). | R-05 |
-| ⬜ | **Your public details.** Because Pinfold sells, Google Play shows your name and **full address** to players. In the EU, Play also asks whether you are a **trader** under the Digital Services Act; selling items and showing ads makes you one, and then your email and phone are shown too. The address comes from the payments profile. If you don't want a home address shown, settle that before step 34. | you, Play Console > Developer account > About you |
+| ⬜ | **Your public details and trader status**: your address becomes public once Pinfold sells, and the trader question is separate. Read [Your public details](#your-public-details-and-trader-status) before step 34. | you, Play Console > Developer account > About you |
 
 **4. The closed test** (wave 4)
 
@@ -374,6 +374,39 @@ The answers that follow from how Pinfold is built. R-03 and R-04 fill in the lon
 | News app | No | |
 | Target audience | 13–15, 16–17, 18 and over | Decision 0041; a younger group brings Google's Families rules. |
 
+### Your public details and trader status
+
+Two separate rules decide what players see about you. Neither one gives or takes away the right to
+sell: any developer account with a payments profile can sell items and show ads.
+
+**1. Your address, because you sell.** For a personal developer account, Google Play shows your
+legal name, your country and your developer email. Once the account sells (it has a payments
+profile and products, from [step 34](#part-8-the-shops-products) on), Google Play shows your
+**full address** too. The trader answer below doesn't change this. The address is your legal
+address, from the payments profile.
+
+**2. Trader or non-trader, under EU law.** The EU's Digital Services Act makes app stores tell
+players whether an app comes from a *trader* (someone acting for a business or profession) or a
+private person. You don't choose it freely and it is not a licence: it describes what you do.
+Google lists signs of a trader, among them earning from **in-app purchases or ads** "on a regular
+or commercial basis", but it says it can't decide for you. Ads count the same as sales here.
+
+| | Non-trader | Trader |
+| --- | --- | --- |
+| Can sell items and show ads | yes | yes |
+| Players in the EU and UK are told | their consumer protection rights don't apply to deals with you | you are a trader, with your self-certification |
+| Shown to players | name, country, email (plus the address of rule 1) | from 1 March 2027 also your phone and address, to players everywhere |
+| Needs | nothing more | a link to terms of service for each app |
+| Risk | if Google thinks you are a trader, it asks you to confirm; a false non-trader answer can get the apps removed everywhere | |
+
+Every developer answers by 1 February 2027, and the answer can change at any time: Play Console >
+Developer account > About you. A game that sells and shows ads every day looks like a trader's.
+If you are unsure, ask a local accountant or lawyer. Never enter an address that isn't yours.
+
+**Keeping a home address private** means registering a business with its own address, opening an
+organization developer account (it needs a D-U-N-S number, up to 30 days) and transferring Pinfold
+to it. Decide this before step 34: once the Shop sells, the address is shown.
+
 ### The rules behind it (November 2026)
 
 Google changes these from time to time. Each links to its source; if a console says something
@@ -396,8 +429,8 @@ different, the console is right, and this page needs fixing.
   [app-ads.txt](https://support.google.com/admob/answer/9363762)).
 - **Your public address** when a personal account sells
   ([account information](https://support.google.com/googleplay/android-developer/answer/13628312)),
-  and the **EU trader status**
-  ([Google Play in the EEA](https://support.google.com/googleplay/android-developer/answer/14659200)).
+  and the **EU trader status**, a separate question
+  ([trader status](https://support.google.com/googleplay/android-developer/answer/17594752)).
 - **Closed test:** 12 testers for 14 days for new personal accounts
   ([testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465)).
 - **Consent form:** Google's form writes IAB TCF v2.3 answers, required since March 2026; the game's
@@ -1011,7 +1044,7 @@ Console lets you make products only once it has seen a build that can sell.
    of apps (not inside Pinfold), click **Settings** > **Payments profile**.
 2. If it shows a profile already, skip to step 35. Otherwise click **Create payments profile** and
    fill in your legal name and address. Players will see this address on Google Play (see
-   [Your public details](#every-step-in-order)). The bank account and the US tax form come in
+   [Your public details](#your-public-details-and-trader-status)). The bank account and the US tax form come in
    [Part 10](#part-10-payouts-and-taxes).
 
 *Worked when:* Pinfold > **Monetize with Play** > **Products** > **One-time products** shows a
