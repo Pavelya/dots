@@ -762,13 +762,13 @@ internal object CanvasGame {
         val state = move.state
         val dangers = Player.entries.flatMap { Hints.dangers(state, it) }
         val capture = move.captures.takeIf { it.isNotEmpty() }?.let { LastCapture(it.first().by, it.sumOf { c -> c.points }) }
-        val inDanger = dangers.any { it.dotsNeeded <= 1 && state.ownerAt(it.group.first()) == human }
+        fun inDanger(player: Player) = dangers.any { it.dotsNeeded <= 1 && state.ownerAt(it.group.first()) == player }
         return GameUiState(
             state = state,
             lastMove = lastMove,
             vsComputer = true,
             dangers = dangers,
-            opponent = OpponentLook.of(state, human, capture, inDanger),
+            opponent = OpponentLook.of(state, human, capture, inDanger(human), computerInDanger = inDanger(human.opponent)),
             strength = level.strength,
         )
     }
