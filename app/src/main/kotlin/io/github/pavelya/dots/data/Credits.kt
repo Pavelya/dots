@@ -20,6 +20,12 @@ object Credits {
          * as the in-app review prompt; not an open-source licence. The text starts with the full name.
          */
         PLAY_CORE_TERMS("Play Core SDK Terms", "licences/play-core-terms.txt"),
+
+        /**
+         * The Android Software Development Kit License Agreement, under which Google ships the Play
+         * Billing Library; not an open-source licence. The text is the one the library carries.
+         */
+        ANDROID_SDK("Android SDK License", "licences/android-sdk-license.txt"),
     }
 
     /**
@@ -108,6 +114,7 @@ object Credits {
         Library("AndroidX Navigation", Licence.APACHE_2, listOf("androidx.navigation")),
         Library("AndroidX DataStore", Licence.APACHE_2, listOf("androidx.datastore")),
         Library("Google Play In-App Review", Licence.PLAY_CORE_TERMS, listOf("com.google.android.play")),
+        Library("Google Play Billing Library", Licence.ANDROID_SDK, listOf("com.android.billingclient")),
     )
 
     /** Every licence something in the app relies on, each once. */

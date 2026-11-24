@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dots.campaign.Campaign
 import dots.campaign.ChestState
+import dots.campaign.Cosmetic
 import dots.campaign.Level
 import dots.campaign.LevelResult
 import dots.campaign.MissionStatus
@@ -220,5 +221,17 @@ class ProgressRepositoryTest {
         assertEquals(0, progress.game(level).start().boostersLeft(level.human, Booster.WALL))
         assertEquals("other levels keep theirs", mapOf(Booster.WALL to 1, Booster.UNDO to 1), progress.boostersFor(level("2-2")))
         again.close()
+    }
+
+    @Test
+    fun `a pass whose stars reach a cosmetic's count names it, once`() = runBlocking {
+        val session = Session(file())
+        val levels = Campaign.levels.take(15)
+        // 39 stars: Hearts and clubs needs 40 (docs/design/money.md).
+        session.repository.replace(Progress(levels.take(13).associate { it.code to 3 }))
+        assertEquals(listOf(Cosmetic.HEARTS_AND_CLUBS), session.repository.finished(levels[13], passed(3)).earned)
+        assertEquals("nothing new at 45", emptyList<Cosmetic>(), session.repository.finished(levels[14], passed(3)).earned)
+        assertEquals("a replay that adds no stars earns nothing", emptyList<Cosmetic>(), session.repository.finished(levels[13], passed(3)).earned)
+        session.close()
     }
 }

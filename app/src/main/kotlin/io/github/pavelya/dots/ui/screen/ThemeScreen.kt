@@ -27,7 +27,7 @@ fun themeName(id: ThemeId): Int = when (id) {
 
 /** The theme's one line on its card. */
 @StringRes
-private fun themeLine(id: ThemeId): Int = when (id) {
+internal fun themeLine(id: ThemeId): Int = when (id) {
     ThemeId.NOTEBOOK -> R.string.theme_notebook_line
     ThemeId.STAR_CHART -> R.string.theme_star_chart_line
     ThemeId.NEON_ARCADE -> R.string.theme_neon_arcade_line
@@ -54,7 +54,7 @@ internal val THEME_SAMPLE: GameState = GameState.fromAscii(
  * light or dark version the phone picks. The page itself is on Notebook paper, like Settings. The
  * theme [inUse] has a tick and "In use". Tapping another card plays that theme's first placing
  * sound and puts it in use at once ([onUse]); tapping the theme in use does nothing. A debug build
- * says so at the top ([debugNote]). [onShop], once the Shop exists, adds a link to it under the
+ * says so at the top ([debugNote]). [onShop], when given, adds a link to the Shop under the
  * cards when the player lacks a theme.
  */
 @Composable

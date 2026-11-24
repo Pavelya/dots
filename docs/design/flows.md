@@ -69,7 +69,7 @@ flowchart TD
     settings -->|"Replay tutorial"| board
     settings --> details
     settings -->|"Theme, when there is a choice"| theme
-    theme -->|"More themes, once the Shop exists"| shop
+    theme -->|"More themes in the Shop"| shop
     settings -->|"Pieces, when there is a choice"| pieces
     settings -->|"Rings, when there is a choice"| rings
     pieces -->|"More piece styles"| shop
@@ -209,12 +209,13 @@ to the map.
 ## Choosing a theme
 
 A theme sets how the board is drawn and how it sounds (decision 0028). Notebook is the default.
-Until the Shop exists, only debug builds offer the other themes (decision 0029).
+A release build offers the themes the player owns, bought or earned; a debug build offers every
+one (decision 0029).
 
 - **Where.** Settings has a **Theme** row at the top of Board, with the theme in use on its right.
   It opens the Theme page. The row shows only when more than one theme can be chosen: always on a
-  debug build, and on a release build once the Shop exists and the player owns a second theme. A release build
-  before the Shop has no row, so players never see Star chart or Neon arcade.
+  debug build, and on a release build once the player owns a second theme. Until then a player
+  meets Star chart and Neon arcade only in the Shop.
 - **The Theme page** is a full screen on Notebook paper, like Settings. The map, Settings and the
   Shop are drawn the Notebook way in every theme (decision 0028). It shows one card per theme the
   player can choose, in the order Notebook, Star chart, Neon arcade. Each card has a small sample
@@ -227,16 +228,15 @@ Until the Shop exists, only debug builds offer the other themes (decision 0029).
   sound-effects volume. Tapping the theme in use does nothing. Back returns to Settings. Every
   board from then on, a resumed game included, is drawn in the new theme.
 - **A theme the player can't choose is not on the page.** It is not shown locked or greyed out.
-  Before the Shop exists, nothing on the page points anywhere else. Once the Shop exists, if the
-  player lacks a theme, the page ends with a link, **More themes in the Shop**, which opens the
-  Shop.
+  If the player lacks a theme, the page ends with a link, **More themes in the Shop**, which opens
+  the Shop at its Themes.
 - **One choice, two ways to make it.** The game keeps one saved value: the theme in use. The
   Theme page and the Shop's Cosmetic preview (its Use it button, and In use) both read and set
   it, so they always agree. If the theme in use can no longer be chosen, the game goes back to
   Notebook without a message. That happens after a refund, or when a backup made on a debug build
   is restored on a release build.
-- **Debug builds** show a dashed note at the top of the Theme page, so a tester knows players
-  won't see the other themes yet.
+- **Debug builds** show a dashed note at the top of the Theme page, so a tester knows players see
+  only the themes they own.
 
 The words:
 
@@ -249,8 +249,8 @@ The words:
 | Neon arcade card | **Neon arcade**. Magenta and cyan pieces, with rings of neon light. |
 | The card in use | A tick and **In use** |
 | Under the cards | Light or dark follows your phone's dark theme. |
-| Link, once the Shop exists | **More themes in the Shop** |
-| Note on debug builds | Debug build: every theme is here. Players get only Notebook until the Shop opens. |
+| Link, when the player lacks a theme | **More themes in the Shop** |
+| Note on debug builds | Debug build: every theme is here. Players see only the ones they own. |
 
 For TalkBack the cards are one group of choices named Theme. Each card is read as its name and
 its line, then selected or not selected; the sample board is not read.
@@ -264,8 +264,7 @@ or ring, so Standard changes with the theme.
 - **Where.** Settings has a **Pieces** row and a **Rings** row below Theme, in that order, each
   with the item in use on its right. Each row opens its page, and each shows only when the player
   can choose more than Standard: always on a debug build, and on a release build once the player
-  owns a piece style (or a ring effect). Before the Shop exists, release builds have neither row
-  ([`money.md`](money.md), Owning an item).
+  owns a piece style (or a ring effect) ([`money.md`](money.md), Owning an item).
 - **The Pieces page and the Rings page** are built like the Theme page: a full screen on
   Notebook paper, one card per item the player can choose, Standard first, then the others in the
   Shop's order (Hearts and clubs, Flame and frost; Lasso, Rubber stamp). Each card has the Shop's
@@ -282,8 +281,9 @@ or ring, so Standard changes with the theme.
   does nothing. Back returns to Settings. Every board from then on, a resumed game included, uses
   the new item.
 - **An item the player can't choose is not on the page,** not even locked or greyed out. If the
-  player lacks one, the page ends with a link to the Shop: **More piece styles in the Shop** or
-  **More ring effects in the Shop**. A debug build lists every item and has no link.
+  player lacks one, the page ends with a link to the Shop, open at that kind: **More piece styles
+  in the Shop** or **More ring effects in the Shop**. A debug build lists every item and has no
+  link.
 - **One choice, two ways to make it.** The game keeps one saved value for each kind: the piece
   style in use and the ring effect in use. The page and the Shop's Cosmetic preview (its Use it
   button, and In use) both read and set it, so they always agree. Changing the theme keeps both.
@@ -486,6 +486,9 @@ The words (the booster, the prices and the star counts are examples):
 | Cosmetic preview, for sale | Or earn it with 150 stars. You have 112. **Buy for $2.99** |
 | Cosmetic preview, earned | Earned with 150 stars, New. **Use it** |
 | Cosmetic preview, earn only | Earn it with 150 stars from the campaign. You have 112: 38 to go. No button. |
+| Cosmetic preview, payment pending | Chip **Payment pending**. Google Play is waiting for the payment. The item is yours once it goes through. No button. |
+| Cosmetic preview, purchase cancelled | Purchase cancelled. **Buy for $2.99** |
+| Cosmetic preview, purchase failed | The purchase didn’t go through. **Retry** |
 | Settings details, Privacy | **Show ad offers**, a switch, on. A booster for a short ad, after a lost level or at a chest. Never during a game. |
 
 ## Online after launch

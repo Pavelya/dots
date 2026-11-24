@@ -66,6 +66,8 @@ class CreditsTest {
         for (font in Credits.fonts) assertTrue("${font.name}'s copyright line", ofl.contains("The ${font.name} Project Authors"))
         val play = main.resolve("assets").resolve(Credits.Licence.PLAY_CORE_TERMS.file).readText()
         assertTrue(play.contains("Play Core Software Development Kit Terms of Service"))
+        val sdk = main.resolve("assets").resolve(Credits.Licence.ANDROID_SDK.file).readText()
+        assertTrue(sdk.contains("This is the Android Software Development Kit License Agreement."))
     }
 
     @Test

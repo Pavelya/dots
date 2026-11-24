@@ -208,9 +208,11 @@ class NavigationTest {
         back()
         at(Routes.MAP)
 
+        // The Shop opens on its Themes; an item opens its preview, and Back returns to the Shop.
         tap("Shop")
         at(Routes.SHOP)
-        visit("A sample item", Routes.COSMETIC, returnTo = Routes.SHOP)
+        waitFor("Star chart")
+        visit("Star chart", Routes.COSMETIC, returnTo = Routes.SHOP)
         back()
         at(Routes.MAP)
 

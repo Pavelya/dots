@@ -58,7 +58,7 @@ import io.github.pavelya.dots.ui.motion.slideUp
 import io.github.pavelya.dots.ui.theme.Palette
 
 /** The canvas's hand-cut shape of a big button. */
-private val BIG_BUTTON_SHAPE = RoundedCornerShape(topStart = 16.dp, topEnd = 20.dp, bottomEnd = 14.dp, bottomStart = 22.dp)
+internal val BIG_BUTTON_SHAPE = RoundedCornerShape(topStart = 16.dp, topEnd = 20.dp, bottomEnd = 14.dp, bottomStart = 22.dp)
 
 /**
  * Pause, as the wireframes draw it: a taped note over the dimmed board with Resume as the one big

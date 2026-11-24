@@ -2,6 +2,7 @@ package io.github.pavelya.dots.data
 
 import dots.campaign.CampaignMap
 import dots.campaign.Chest
+import dots.campaign.Cosmetic
 import dots.campaign.Level
 import dots.campaign.LevelRecord
 import dots.campaign.LevelResult
@@ -13,7 +14,8 @@ import dots.engine.GameState
  * and levels the pass [opened], how many times in a row the level has now been [failed] (0 after a
  * pass), the level [next] opens over the map, if it is open, and the [chest] the pass made ready,
  * which Next opens first. [starsBefore] is the level's stars before this game: the map's unlock
- * plays the new ones (motion.md, "Level unlock").
+ * plays the new ones (motion.md, "Level unlock"). [earned] are the cosmetics the new stars earn
+ * (docs/design/money.md), cheapest first, which Result names.
  */
 data class LevelEnd(
     val result: LevelResult,
@@ -22,6 +24,7 @@ data class LevelEnd(
     val next: Level?,
     val chest: Chest? = null,
     val starsBefore: Int = 0,
+    val earned: List<Cosmetic> = emptyList(),
 ) {
     companion object {
         /** After this many failures in a row, Result offers help (docs/design/flows.md, Campaign). */

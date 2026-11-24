@@ -5,7 +5,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dots.campaign.Cosmetic
+import io.github.pavelya.dots.shop.Owned
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /**
@@ -70,31 +73,41 @@ sealed interface LookPart {
 }
 
 /**
- * Which cosmetics the player can choose (decision 0029): themes, piece styles and ring effects
- * alike. The default of each kind needs no rule. C-02 replaces [beforeShop] with "the player owns
- * this cosmetic"; nothing else needs to change.
+ * Which cosmetics the player can choose: themes, piece styles and ring effects alike. The default
+ * of each kind needs no rule.
  */
 fun interface CosmeticRule {
     fun canChoose(cosmetic: Cosmetic): Boolean
 
     companion object {
-        /** Before the Shop exists: every cosmetic on a debug build ([debug]), none on a release build. */
-        fun beforeShop(debug: Boolean): CosmeticRule = CosmeticRule { debug }
+        /**
+         * The cosmetics the player owns, bought or earned ([owned]; decision 0029 as C-02 settles
+         * it). A debug build ([debug]) offers every one, so testers can check them on a phone.
+         */
+        fun owned(debug: Boolean, owned: Owned): CosmeticRule = CosmeticRule { debug || owned.owns(it) }
     }
 }
 
 /**
  * The game screen's look (docs/design/flows.md, "Choosing a theme"; cosmetics.md, Rules): the
- * theme, the piece style and the ring effect in use, three saved values chosen apart. The Theme
- * page and, once they exist, the Shop's Use it and the Settings pages of D-30 read and set them.
+ * theme, the piece style and the ring effect in use, three saved values chosen apart. The Theme,
+ * Pieces and Rings pages in Settings and the Shop's Use it read and set them, so they always agree.
  * They are kept in the progress store, beside the stars and chests that earn cosmetics, so
- * Android's backup brings them back with them. [rule] says which cosmetics the player can choose;
- * a saved one the player can no longer choose (after a refund, or a debug build's backup restored
- * on a release build) reads as the default of its kind, without a message.
+ * Android's backup brings them back with them. [rule] says which cosmetics the player can choose,
+ * and the values are read again each time [changes] says the rule's answer may have changed (a
+ * purchase, a refund, new stars). A saved one the player can no longer choose (after a refund, or
+ * a debug build's backup restored on a release build) reads as the default of its kind, without a
+ * message.
  */
-class ThemeRepository(private val store: DataStore<Preferences>, private val rule: () -> CosmeticRule) {
+class ThemeRepository(
+    private val store: DataStore<Preferences>,
+    changes: Flow<*> = flowOf(Unit),
+    private val rule: () -> CosmeticRule,
+) {
+    private val read: Flow<Preferences> = combine(store.data, changes) { prefs, _ -> prefs }
 
-    private fun canChoose(part: LookPart): Boolean = part.cosmetic?.let(rule()::canChoose) ?: true
+    /** Whether the player can put [part] in use: a default always, a cosmetic as the rule says. */
+    fun canChoose(part: LookPart): Boolean = part.cosmetic?.let(rule()::canChoose) ?: true
 
     /** The themes the player can choose, in the Theme page's order: Notebook, Star chart, Neon arcade. */
     val choices: List<ThemeId> get() = ThemeId.entries.filter(::canChoose)
@@ -106,17 +119,17 @@ class ThemeRepository(private val store: DataStore<Preferences>, private val rul
     val ringChoices: List<RingEffectId> get() = RingEffectId.entries.filter(::canChoose)
 
     /** The theme the game screen is drawn in. */
-    val inUse: Flow<ThemeId> = store.data.map { prefs ->
+    val inUse: Flow<ThemeId> = read.map { prefs ->
         ThemeId.of(prefs[THEME])?.takeIf(::canChoose) ?: ThemeId.DEFAULT
     }
 
     /** The pieces the game screen draws, in the theme's inks. */
-    val pieces: Flow<PieceStyleId> = store.data.map { prefs ->
+    val pieces: Flow<PieceStyleId> = read.map { prefs ->
         PieceStyleId.of(prefs[PIECES])?.takeIf(::canChoose) ?: PieceStyleId.DEFAULT
     }
 
     /** The rings the game screen draws, and how its captures move. */
-    val rings: Flow<RingEffectId> = store.data.map { prefs ->
+    val rings: Flow<RingEffectId> = read.map { prefs ->
         RingEffectId.of(prefs[RINGS])?.takeIf(::canChoose) ?: RingEffectId.DEFAULT
     }
 

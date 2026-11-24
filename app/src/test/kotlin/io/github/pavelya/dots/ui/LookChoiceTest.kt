@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicReference
  * Choosing pieces and rings on the whole app (docs/design/flows.md, "Choosing pieces and rings"):
  * on a debug build Settings opens the Pieces and Rings pages, a tap puts an item in use, and the
  * choice is kept across a restart in the value the game screen draws with (V-28). A release build
- * before the Shop has neither row.
+ * that owns no piece style or ring effect has neither row.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(qualifiers = "w400dp-h900dp")

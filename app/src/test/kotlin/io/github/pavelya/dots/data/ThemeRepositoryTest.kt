@@ -4,7 +4,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import dots.campaign.Campaign
 import dots.campaign.Cosmetic
+import io.github.pavelya.dots.shop.Owned
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
@@ -18,7 +23,8 @@ import java.io.File
 
 /**
  * The theme in use (docs/design/flows.md, "Choosing a theme"): Notebook by default, kept across a
- * restart and a backup restore, and only ever a theme the player can choose (decision 0029). The
+ * restart and a backup restore, and only ever a theme the player owns, bought or earned, or any on
+ * a debug build (decision 0029; docs/design/money.md, "Owning an item"). The
  * piece style and ring effect in use (docs/design/cosmetics.md) are kept the same way, beside it.
  */
 class ThemeRepositoryTest {
@@ -33,7 +39,7 @@ class ThemeRepositoryTest {
         private val job = SupervisorJob()
         private val scope = CoroutineScope(Dispatchers.IO + job)
         val store = ProgressRepository.store(scope) { file }
-        val themes = ThemeRepository(store) { CosmeticRule.beforeShop(debug) }
+        val themes = ThemeRepository(store) { CosmeticRule.owned(debug, Owned.NONE) }
         val progress = ProgressRepository(store, scope)
 
         suspend fun close() = job.cancelAndJoin()
@@ -230,6 +236,41 @@ class ThemeRepositoryTest {
         }
         assertEquals(PieceStyleId.STANDARD, session.themes.pieces.first())
         assertEquals(RingEffectId.STANDARD, session.themes.rings.first())
+        session.close()
+    }
+
+    @Test
+    fun `a refund takes away only the purchase, so a theme also earned stays in use`() = runBlocking {
+        val session = Session(file())
+        val starChart = ThemeId.STAR_CHART.cosmetic!!
+        val neonArcade = ThemeId.NEON_ARCADE.cosmetic!!
+        val owned = MutableStateFlow(Owned(earned = setOf(starChart), bought = setOf(starChart, neonArcade)))
+        val themes = ThemeRepository(session.store, owned) { CosmeticRule.owned(debug = false, owned.value) }
+        assertEquals(listOf(ThemeId.NOTEBOOK, ThemeId.STAR_CHART, ThemeId.NEON_ARCADE), themes.choices)
+        themes.use(ThemeId.STAR_CHART)
+
+        // Both purchases refunded: Star chart is still earned.
+        owned.value = Owned(earned = setOf(starChart), bought = emptySet())
+        assertEquals(ThemeId.STAR_CHART, themes.inUse.first())
+        assertEquals(listOf(ThemeId.NOTEBOOK, ThemeId.STAR_CHART), themes.choices)
+        session.close()
+    }
+
+    @Test
+    fun `a refunded theme in use goes back to Notebook at once, without a restart`() = runBlocking {
+        val session = Session(file())
+        val neonArcade = ThemeId.NEON_ARCADE.cosmetic!!
+        val owned = MutableStateFlow(Owned(earned = emptySet(), bought = setOf(neonArcade)))
+        val themes = ThemeRepository(session.store, owned) { CosmeticRule.owned(debug = false, owned.value) }
+        themes.use(ThemeId.NEON_ARCADE)
+        assertEquals(ThemeId.NEON_ARCADE, themes.inUse.first())
+
+        // The game screen keeps reading the theme in use; a refund reaches it as it happens.
+        val notebook = async(start = CoroutineStart.UNDISPATCHED) { withTimeout(5_000) { themes.inUse.first { it == ThemeId.NOTEBOOK } } }
+        owned.value = Owned.NONE
+        assertEquals(ThemeId.NOTEBOOK, notebook.await())
+        themes.use(ThemeId.NEON_ARCADE)
+        assertEquals("one no longer owned is not put in use", ThemeId.NOTEBOOK, themes.inUse.first())
         session.close()
     }
 }

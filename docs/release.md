@@ -203,10 +203,12 @@ from what really exists.
 | Internal testing track | Every tag lands here, released at once to the testers. |
 | Internal testers | Email list `Pinfold internal`: the owner's Google account. Testers join through the link on the Testers tab. |
 | Users and permissions | The owner (account owner). The service account below, with one app permission on Pinfold: **Release apps to testing tracks**. Nothing else. |
+| Payments profile | The owner's, made in [Part 8](#part-8-the-shops-products) (C-02), so Pinfold can sell. |
+| One-time products | Six, one per cosmetic of `docs/design/money.md`: `star_chart`, `neon_arcade`, `hearts_and_clubs`, `flame_and_frost`, `lasso`, `rubber_stamp`. Each has one purchase option, `buy`, at the base price ($2.99 for a theme, $0.99 for the others) with the prices of money.md's two lower-price groups set by hand, and is not sold in Russia or Belarus. The game finds them by these IDs (`Cosmetic.productId`). |
+| License testing | The owner's Google account, so its purchases use Google's test cards and cost nothing. |
 
 Anything else in Play Console (store listing, app content declarations, closed testing,
-production, the payments profile, in-app products, Play Games) is set up by the task that needs it,
-which then adds a row here.
+production, Play Games) is set up by the task that needs it, which then adds a row here.
 
 ### Google Cloud
 
@@ -742,5 +744,97 @@ level, and watch the events arrive in DebugView.
 
 *Worked when:* DebugView shows `level_start` and `level_end` with the parameters of the table in
 [Analytics](#analytics), and nothing else of yours.
+
+
+### Part 8: the Shop's products
+
+The Shop (C-02) sells six cosmetics through Google Play Billing. Google Play needs to know each
+one: its ID, its name, its price in every country. This part makes them, and then checks a test
+purchase, a refund and a restore on the phone. It takes about an hour, most of it typing prices.
+It needs the Mac's browser, the game's Google account and the phone.
+
+**Before you start.** A release with the Shop must already be on the internal testing track: tag
+a release after the Shop's pull request is merged ([Make a release](#make-a-release)). Play
+Console lets you make products only once it has seen a build that can sell.
+
+**34. Make a payments profile.** It tells Google who gets the money.
+
+1. Open [play.google.com/console](https://play.google.com/console). In the left menu of the list
+   of apps (not inside Pinfold), click **Settings** > **Payments profile**.
+2. If it shows a profile already, skip to step 35. Otherwise click **Create payments profile** and
+   fill in your legal name and address. Google asks for a bank account for payouts later, when
+   there is money to pay out.
+
+*Worked when:* Pinfold > **Monetize with Play** > **Products** > **One-time products** shows a
+**Create one-time product** button instead of a request for a payments profile.
+
+**35. Make your account a license tester.** Purchases by a license tester use Google's test cards
+and cost nothing.
+
+1. Same left menu of the list of apps: **Settings** > **License testing**.
+2. Tick the email list **Pinfold internal** (or add the game's Google account by hand).
+3. **License response:** `RESPOND_NORMALLY`. **Save changes**.
+
+*Worked when:* the list is ticked after the page reloads.
+
+**36. Make the six products.** Pinfold > **Monetize with Play** > **Products** > **One-time
+products** > **Create one-time product**. Make one for each row, one after the other. The product
+ID can never change or be used again, so copy it exactly.
+
+| Product ID | Name | Description | Base price |
+| --- | --- | --- | --- |
+| `star_chart` | Star chart | A theme: gold stars and ice-blue comets on a chart of the sky. | 2.99 USD |
+| `neon_arcade` | Neon arcade | A theme: magenta and cyan pieces, with rings of neon light. | 2.99 USD |
+| `hearts_and_clubs` | Hearts and clubs | Pieces: hearts for one side, clubs for the other. | 0.99 USD |
+| `flame_and_frost` | Flame and frost | Pieces: flames for one side, snowflakes for the other. | 0.99 USD |
+| `lasso` | Lasso | Rings: a rope thrown round the area and pulled tight. | 0.99 USD |
+| `rubber_stamp` | Rubber stamp | Rings: a double line, and the area stamped down at once. | 0.99 USD |
+
+For each product:
+
+1. **Product ID**, **Name** and **Description** from the table. Leave any tax or category
+   settings as Play Console suggests (a digital game item).
+2. Under **Purchase options**, add one: ID `buy`, type **Buy** (a one-time purchase, not a rent).
+   If it offers **Backwards compatible**, tick it.
+3. **Set prices** (it may say **Price** or **Set price**): the default price in US dollars from the
+   table. Play Console fills in every country from it.
+4. Change the countries of money.md's two lower-price groups by hand: open
+   `docs/design/money.md`, section "Prices by country", and type each country's price from the
+   "set" columns (the theme columns for the two themes, the others for the four others). That is
+   18 countries per product. If Play Console shows a currency other than the table's for a
+   country, or a price of its own far from the table's "Google Play's price", type the group's
+   share of what Play Console shows (70% for central Europe, 40% for the lower prices) and write
+   down the country; Claude fixes the table.
+5. **Availability** (or **Countries / regions**): Russia and Belarus not available. They may be
+   unavailable already; leave them so.
+6. **Save**, then **Activate**.
+
+*Worked when:* the One-time products page lists six products, each **Active**.
+
+**37. Buy, use and restore on the phone.** Install the newest internal release from Google Play
+(the testers' link on the Testers tab) and open the game with the game's Google account.
+
+1. Open the Shop. *Worked when:* Star chart shows a price in your currency and "Or earn".
+2. Open Star chart, **Buy for …**. Google Play's purchase screen says it is a test; choose **Test
+   card, always approves**. *Worked when:* the preview says **Owned** and offers **Use it**. Tap it:
+   the board is drawn in Star chart.
+3. Open Neon arcade, **Buy for …**, choose **Test card, always declines**. *Worked when:* the
+   preview says the purchase didn't go through and offers **Retry**.
+4. Buy Lasso with **Slow test card, approves after a few minutes**. *Worked when:* the preview
+   says **Payment pending**, and a few minutes later (reopen the Shop) Lasso is **Owned**.
+5. Uninstall the game and install it again from Google Play. Open the Shop. *Worked when:* Star
+   chart and Lasso are still **Owned** (the saved progress came back with Android's backup; the
+   purchases came back from Google Play).
+
+**38. Refund one.** Play Console > **Order management**. Find the test order for Lasso, open it,
+**Refund**, and tick **Remove entitlement** (it may say "revoke access"). Then close the game on
+the phone and open it again, and open the Shop.
+
+*Worked when:* Lasso shows its price again, and if Lasso was in use, the rings are Standard again.
+(With 70 stars or more from the campaign, Lasso stays: it is earned as well.)
+
+**39. Tell Claude.** Say "Shop products done", with anything that looked different from these
+steps, any country whose price you had to work out yourself (step 36.4), and what each check in
+steps 37 and 38 showed.
 
 The setup is finished; from now on, [Make a release](#make-a-release).
