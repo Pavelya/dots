@@ -46,7 +46,10 @@ one frame shows them turned on in Settings.
 | **Game: World 3's board touches.** The threat, with Night sky's pencil doodles beside the opponent: a crescent moon, a star, a comet and a twinkle. The board itself is the same in every world. | <img src="game-world-3-light.png" width="180" alt="Light: a game in World 3"> | <img src="game-world-3-dark.png" width="180" alt="Dark: a game in World 3"> |
 | **Game: World 4's board touches.** The threat, with Sea's pencil doodles beside the opponent: a fish, a shell, a boat and a wave. The board itself is the same in every world. | <img src="game-world-4-light.png" width="180" alt="Light: a game in World 4"> | <img src="game-world-4-dark.png" width="180" alt="Dark: a game in World 4"> |
 | **Game: Reef, holes, rocks and pearls.** Not Level 7: Reef (4-18), a 14 x 14 board at 25 dp with open holes, mid-game. Red's ring at the top right goes round a single hole and the blue dot beside it; its small ring in the middle took a blue dot on a pearl, which counts 2; blue's ring on the left goes over a rock. A red dot sits live on a pearl. The [theme page](../theme-notebook.md#holes-rocks-and-pearls) gives the rules. | <img src="game-reef-light.png" width="180" alt="Light: Reef mid-game with holes, rocks and pearls"> | <img src="game-reef-dark.png" width="180" alt="Dark: Reef mid-game with holes, rocks and pearls"> |
-| **Level card: a board with holes.** Reef's card over the World 4 map: the board picture shows the holes, rocks and pearls, the five boosters wrap onto three rows, and one line under them says the holes are open, before the star targets. | <img src="level-card-holes-light.png" width="180" alt="Light: Reef's level card with the line Holes are open"> | <img src="level-card-holes-dark.png" width="180" alt="Dark: Reef's level card with the line Holes are open"> |
+| **Level card: a board with holes.** Reef's card over the World 4 map: the board picture shows the holes, rocks and pearls, the five boosters sit in one row under the picture, and one line under them says the holes are open, before the star targets. | <img src="level-card-holes-light.png" width="180" alt="Light: Reef's level card with the line Holes are open"> | <img src="level-card-holes-dark.png" width="180" alt="Dark: Reef's level card with the line Holes are open"> |
+| **Level card: five boosters.** Rocky Shore (4-6), the first level that allows all five. Three or more chips leave the column beside the picture and share one row under it, in the tool bar's order, each about 55 dp wide; the picture sits level with the computer and the dots line. The card is about 50 dp taller than Level 7's. | <img src="level-card-five-light.png" width="180" alt="Light: Rocky Shore's level card with five boosters in one row"> | <img src="level-card-five-dark.png" width="180" alt="Dark: Rocky Shore's level card with five boosters in one row"> |
+| **Small phone: Level card, five boosters.** The same card at 320 x 568: a 96 dp picture, a 40 dp face, 10 dp between the parts, and five chips of about 49 dp. The map's top still shows. | <img src="small-level-card-five-light.png" width="160" alt="Light: the five-booster level card on a small phone"> | <img src="small-level-card-five-dark.png" width="160" alt="Dark: the five-booster level card on a small phone"> |
+| **Small phone: Reef's card.** The tallest card: five boosters and the holes line. It fits under the top 24 dp the app keeps free, so Start shows without scrolling. | <img src="small-level-card-holes-light.png" width="160" alt="Light: Reef's level card on a small phone"> | <img src="small-level-card-holes-dark.png" width="160" alt="Dark: Reef's level card on a small phone"> |
 
 ## Free play and two players
 
@@ -169,6 +172,10 @@ These choices are new here. They are proposals for the owner to accept or change
   booster (decision 0023).
 - **On a small phone** the opponent is a small photo beside its name, and the speech bubble has no
   room.
+- **Boosters on the Level card.** One or two chips sit beside the board picture, under the dots
+  line. Three, four or five share one row under the picture, like the game's tool bar, each chip
+  centring its icon and count; the column beside the picture then ends with "Boosters:" just above
+  them. A count up to ×99 fits a chip on a 320 dp phone.
 - **Drag's guides** are dashed lines in the ink of the side to move; the
   [theme page](../theme-notebook.md#drags-guides) gives their values. The thumb on the drag frames
   is not part of the game. It is drawn a little see-through, so the preview under it shows.
@@ -207,6 +214,7 @@ python3 docs/design/canvas/draw.py --only cosmetics     # the piece styles, ring
 ```
 
 It needs Python 3, Google Chrome and a network connection (the fonts come from Google Fonts). The
-Reef frames take their board from the level file,
-[`4-18.level`](../../../engine/src/main/resources/levels/4-18.level). A
+Reef and Rocky Shore frames take their board from the level files,
+[`4-18.level`](../../../engine/src/main/resources/levels/4-18.level) and
+[`4-06.level`](../../../engine/src/main/resources/levels/4-06.level). A
 change made by hand on the canvas does not reach the script, so change the script and redraw.
