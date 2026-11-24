@@ -37,8 +37,9 @@ data class FacePicture(val notebook: Picture, val starChart: Picture, val neonAr
 }
 
 /**
- * The opponent's faces, cut from the owner's sheets (docs/design/illustrations.md, "The computer"
- * and "The World 1 boss"): the computer's moods, its three strengths and the World 1 boss.
+ * The opponent's faces, cut from the owner's sheets (docs/design/illustrations.md, "The computer",
+ * "The World 1 boss" and "The bosses of Worlds 2 to 4"): the computer's moods, its three strengths
+ * and the four bosses.
  *
  * The computer's plain look ([Mood.DETERMINED]) is its strength's face: sleepy for the beginner
  * and easy steps, calm for steady and normal, sharp with glasses for hard and expert. A boss with
@@ -101,12 +102,79 @@ object Faces {
         ),
     )
 
+    /** World 2's boss, the Mole. */
+    val MOLE = BossFaces(
+        smug = FacePicture(
+            Picture(R.drawable.boss_world_2_smug, R.drawable.boss_world_2_smug_dark),
+            Picture(R.drawable.boss_world_2_smug_star_chart, R.drawable.boss_world_2_smug_star_chart_dark),
+            Picture(R.drawable.boss_world_2_smug_neon_arcade, R.drawable.boss_world_2_smug_neon_arcade_dark),
+        ),
+        attacking = FacePicture(
+            Picture(R.drawable.boss_world_2_attacking, R.drawable.boss_world_2_attacking_dark),
+            Picture(R.drawable.boss_world_2_attacking_star_chart, R.drawable.boss_world_2_attacking_star_chart_dark),
+            Picture(R.drawable.boss_world_2_attacking_neon_arcade, R.drawable.boss_world_2_attacking_neon_arcade_dark),
+        ),
+        beaten = FacePicture(
+            Picture(R.drawable.boss_world_2_beaten, R.drawable.boss_world_2_beaten_dark),
+            Picture(R.drawable.boss_world_2_beaten_star_chart, R.drawable.boss_world_2_beaten_star_chart_dark),
+            Picture(R.drawable.boss_world_2_beaten_neon_arcade, R.drawable.boss_world_2_beaten_neon_arcade_dark),
+        ),
+    )
+
+    /** World 3's boss, the Comet. */
+    val COMET = BossFaces(
+        smug = FacePicture(
+            Picture(R.drawable.boss_world_3_smug, R.drawable.boss_world_3_smug_dark),
+            Picture(R.drawable.boss_world_3_smug_star_chart, R.drawable.boss_world_3_smug_star_chart_dark),
+            Picture(R.drawable.boss_world_3_smug_neon_arcade, R.drawable.boss_world_3_smug_neon_arcade_dark),
+        ),
+        attacking = FacePicture(
+            Picture(R.drawable.boss_world_3_attacking, R.drawable.boss_world_3_attacking_dark),
+            Picture(R.drawable.boss_world_3_attacking_star_chart, R.drawable.boss_world_3_attacking_star_chart_dark),
+            Picture(R.drawable.boss_world_3_attacking_neon_arcade, R.drawable.boss_world_3_attacking_neon_arcade_dark),
+        ),
+        beaten = FacePicture(
+            Picture(R.drawable.boss_world_3_beaten, R.drawable.boss_world_3_beaten_dark),
+            Picture(R.drawable.boss_world_3_beaten_star_chart, R.drawable.boss_world_3_beaten_star_chart_dark),
+            Picture(R.drawable.boss_world_3_beaten_neon_arcade, R.drawable.boss_world_3_beaten_neon_arcade_dark),
+        ),
+    )
+
+    /** World 4's boss, the Kraken. */
+    val KRAKEN = BossFaces(
+        smug = FacePicture(
+            Picture(R.drawable.boss_world_4_smug, R.drawable.boss_world_4_smug_dark),
+            Picture(R.drawable.boss_world_4_smug_star_chart, R.drawable.boss_world_4_smug_star_chart_dark),
+            Picture(R.drawable.boss_world_4_smug_neon_arcade, R.drawable.boss_world_4_smug_neon_arcade_dark),
+        ),
+        attacking = FacePicture(
+            Picture(R.drawable.boss_world_4_attacking, R.drawable.boss_world_4_attacking_dark),
+            Picture(R.drawable.boss_world_4_attacking_star_chart, R.drawable.boss_world_4_attacking_star_chart_dark),
+            Picture(R.drawable.boss_world_4_attacking_neon_arcade, R.drawable.boss_world_4_attacking_neon_arcade_dark),
+        ),
+        beaten = FacePicture(
+            Picture(R.drawable.boss_world_4_beaten, R.drawable.boss_world_4_beaten_dark),
+            Picture(R.drawable.boss_world_4_beaten_star_chart, R.drawable.boss_world_4_beaten_star_chart_dark),
+            Picture(R.drawable.boss_world_4_beaten_neon_arcade, R.drawable.boss_world_4_beaten_neon_arcade_dark),
+        ),
+    )
+
     /** The pictures are cut at 4 pixels per dp for a face 108 dp tall (make_pictures.py). */
     const val PX_PER_DP = 4f
     val FULL_SIZE = 108.dp
 
     /** The faces of [level]'s boss, if it is a boss level and its boss has them. */
-    fun boss(level: Level?): BossFaces? = if (level?.rule != null && level.world == 1) INK_BOTTLE else null
+    fun boss(level: Level?): BossFaces? = if (level?.rule != null) {
+        when (level.world) {
+            1 -> INK_BOTTLE
+            2 -> MOLE
+            3 -> COMET
+            4 -> KRAKEN
+            else -> null
+        }
+    } else {
+        null
+    }
 
     /** The computer's face for how strong it plays; calm when the strength is not known. */
     fun strength(strength: Strength?): FacePicture = when {

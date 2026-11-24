@@ -57,7 +57,9 @@ from the pictures in the app. `make_pictures.py check` checks the pictures in th
 
 A sheet cuts cleanly when its drawings stand apart, with clear paper between them, as the prompts
 ask. Pale paper shut inside a drawing becomes transparent, so a pond or a window shows the page
-behind it. Only a patch big enough to be an eyeball becomes white, on the sheets with faces.
+behind it. Only a patch big enough to be an eyeball becomes white, on the sheets with faces. When
+a drawing reaches over the next one's box (the Mole's flying clod), the sheet's `splits` in the
+script draw a line between them that no drawing crosses.
 
 ## The computer
 
@@ -70,7 +72,7 @@ face shows how strong it plays and how the game is going.
   moment shows them yet.
 - **Its strength** is its plain look, between those moments, and its face on the level card:
   sleepy for the beginner and easy steps, calm for steady and normal, sharp for hard and expert.
-- **A boss without its own faces** (Worlds 2 to 4 for now) keeps the computer's.
+- **Every boss has its own faces** (below), in place of the computer's.
 
 **Prompt 1: `opponent-moods`, six moods**
 
@@ -346,7 +348,7 @@ crisp at any size. The canvas frames `game-world-2` to `game-world-4` show them;
 | --- | --- | --- |
 | The computer's moods | Above the board in every game; the face changes with the moment | 108 dp |
 | The computer's strengths | On the level card, next to the opponent's name; above the board between moods | 48 dp; 108 dp |
-| The World 1 boss | Above the board on the boss level; on the boss's level card | 108 dp; 48 dp |
+| The bosses of Worlds 1 to 4 | Above the board on the boss level; on the boss's level card | 108 dp; 48 dp |
 | Landscape doodles | Beside the path on the World 1 map page; `MapPages` in the app lists where each one sits | 17 to 84 dp wide |
 | Castle, chest, flag | On the path: the boss level (the castle beaten once it is passed), the chest after level 10 (open once it is opened), the start at the foot of World 1's path | 48 to 68 dp |
 | Cottage | Beside the start of World 1's path | 54 dp |

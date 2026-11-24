@@ -33,6 +33,9 @@ import org.robolectric.annotation.GraphicsMode
  * and the World 1 boss at 108 dp, as above the board, then all of them at 48 dp, as on the level
  * card, where the eyes and the mouth must still read.
  *
+ * The bosses of Worlds 2 to 4 (the Mole, the Comet and the Kraken) have their own gallery, a row
+ * each, the same way.
+ *
  * Then the same faces in the Star chart and Neon arcade inks, at 108 dp on the theme's Card, the
  * colour of the opponent's photo (theme-star-chart.md and theme-neon-arcade.md, "The faces"). Only
  * the game screen draws them; the level card stays Notebook's. The Card colours come from the
@@ -49,18 +52,23 @@ class FacesScreenshotTest {
         listOf(Strength.BEGINNER, Strength.STEADY, Strength.EXPERT).map { Faces.strength(it) } +
         Faces.INK_BOTTLE.let { listOf(it.smug, it.attacking, it.beaten) }
 
-    private fun gallery(dark: Boolean) {
+    /** The Mole, the Comet and the Kraken: smug, attacking and beaten. */
+    private val bosses: List<FacePicture> =
+        listOf(Faces.MOLE, Faces.COMET, Faces.KRAKEN).flatMap { listOf(it.smug, it.attacking, it.beaten) }
+
+    /** [set] at 108 dp three to a row, then at 48 dp [small] to a row. */
+    private fun gallery(dark: Boolean, set: List<FacePicture> = faces, name: String = "faces", small: Int = 5) {
         compose.setContent {
             DotsTheme(GameTheme.NOTEBOOK, dark) {
                 Surface(Modifier.fillMaxSize()) {
                     Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Rows(faces.chunked(3), 108.dp)
-                        Rows(faces.chunked(5), 48.dp)
+                        Rows(set.chunked(3), 108.dp)
+                        Rows(set.chunked(small), 48.dp)
                     }
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/faces${if (dark) "_dark" else ""}.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/$name${if (dark) "_dark" else ""}.png")
     }
 
     @Composable
@@ -73,18 +81,18 @@ class FacesScreenshotTest {
     }
 
     /** The faces in [inks] on the theme's [card] colour, light or [dark], as in the opponent's photo. */
-    private fun themeGallery(inks: FaceInks, name: String, card: Color, dark: Boolean) {
+    private fun themeGallery(inks: FaceInks, name: String, card: Color, dark: Boolean, set: List<FacePicture> = faces, prefix: String = "faces") {
         compose.setContent {
             DotsTheme(GameTheme.NOTEBOOK.copy(faceInks = inks), dark) {
                 Column(
                     Modifier.fillMaxSize().background(card).padding(12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Rows(faces.chunked(3), 108.dp)
+                    Rows(set.chunked(3), 108.dp)
                 }
             }
         }
-        compose.onRoot().captureRoboImage("src/test/screenshots/faces_$name${if (dark) "_dark" else ""}.png")
+        compose.onRoot().captureRoboImage("src/test/screenshots/${prefix}_$name${if (dark) "_dark" else ""}.png")
     }
 
     @Test
@@ -104,4 +112,22 @@ class FacesScreenshotTest {
 
     @Test
     fun neonArcadeDark() = themeGallery(FaceInks.NEON_ARCADE, "neon_arcade", Color(0xFF1A1730), dark = true)
+
+    @Test
+    fun bossesLight() = gallery(dark = false, bosses, "faces_bosses", small = 3)
+
+    @Test
+    fun bossesDark() = gallery(dark = true, bosses, "faces_bosses", small = 3)
+
+    @Test
+    fun bossesStarChartLight() = themeGallery(FaceInks.STAR_CHART, "star_chart", Color(0xFFFFFFFF), dark = false, bosses, "faces_bosses")
+
+    @Test
+    fun bossesStarChartDark() = themeGallery(FaceInks.STAR_CHART, "star_chart", Color(0xFF1A2448), dark = true, bosses, "faces_bosses")
+
+    @Test
+    fun bossesNeonArcadeLight() = themeGallery(FaceInks.NEON_ARCADE, "neon_arcade", Color(0xFFFFFFFF), dark = false, bosses, "faces_bosses")
+
+    @Test
+    fun bossesNeonArcadeDark() = themeGallery(FaceInks.NEON_ARCADE, "neon_arcade", Color(0xFF1A1730), dark = true, bosses, "faces_bosses")
 }

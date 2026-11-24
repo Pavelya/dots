@@ -65,7 +65,7 @@ import zlib
 from collections import deque
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 REPO = Path(__file__).resolve().parents[3]
 DRAWABLES = Path("app/src/main/res/drawable-nodpi")
@@ -120,6 +120,10 @@ class Sheet:
     eyes: bool = False  # big pale patches inside a drawing are white eyeballs
     themed: bool = False  # the game screen shows it, so every theme in THEMES gets its own version
     gap: float = 0.02  # pieces closer than this share of the sheet's shorter side are one drawing
+    # Upright lines, as shares of the sheet's width, that no drawing crosses: pieces whose middles
+    # lie on either side never join. For drawings whose boxes overlap (a clod flying over the next
+    # drawing's heap), which the gap alone would join.
+    splits: Tuple[float, ...] = ()
     pictures: Optional[Dict[str, List[int]]] = None  # name: numbers from `preview`; None until cut
 
 
@@ -137,11 +141,11 @@ SHEETS: Dict[str, Sheet] = {
     "boss-world-1": Sheet(f"Prompt 3 {ON_PAGE}", "The World 1 boss, the ink bottle, above the board and on its level card", 108, eyes=True,
                           themed=True, pictures={"smug": [1], "attacking": [2], "beaten": [3]}),
     "boss-world-2": Sheet(f"Prompt 12 {ON_PAGE}", "The World 2 boss, the mole, above the board and on its level card", 108, eyes=True,
-                          themed=True),
+                          themed=True, splits=(0.69,), pictures={"smug": [1], "attacking": [2], "beaten": [3]}),
     "boss-world-3": Sheet(f"Prompt 13 {ON_PAGE}", "The World 3 boss, the comet, above the board and on its level card", 108, eyes=True,
-                          themed=True),
+                          themed=True, pictures={"smug": [1], "attacking": [2], "beaten": [3]}),
     "boss-world-4": Sheet(f"Prompt 14 {ON_PAGE}", "The World 4 boss, the kraken, above the board and on its level card", 108, eyes=True,
-                          themed=True),
+                          themed=True, splits=(0.665,), pictures={"smug": [1], "attacking": [2], "beaten": [3]}),
     "map-world-1-nature": Sheet(f"Prompt 4 {ON_PAGE}", "World 1 map page: landscape doodles beside the path", 84,
                                 pictures={"pines": [1], "tree": [2], "pond": [3], "hill": [4], "mountains": [5],
                                           "cloud": [6], "rock": [7], "grass_short": [8], "grass_tall": [9],
@@ -269,6 +273,7 @@ class Clean:
     ink: list  # per pixel: the index of its ink (WHITE_INK for white)
     cover: list  # per pixel: 0.0 (paper) to 1.0
     pieces: list = field(default_factory=list)  # numbered drawings: (x0, y0, x1, y1), x1 and y1 included
+    drawn: list = field(default_factory=list)  # per pixel: the number of the drawing whose ink it is, or 0
 
 
 def snap(c, paper, cache):
@@ -327,7 +332,7 @@ def survives(region, w, radius):
 
 
 def merge(boxes, gap):
-    """Joins boxes (x0, y0, x1, y1, pixels) closer than gap, round after round, until none are."""
+    """Joins boxes (x0, y0, x1, y1, pixels, pieces) closer than gap, round after round, until none are."""
     while True:
         parent = list(range(len(boxes)))
 
@@ -350,7 +355,7 @@ def merge(boxes, gap):
         for i, b in enumerate(boxes):
             groups.setdefault(root(i), []).append(b)
         joined = [(min(b[0] for b in g), min(b[1] for b in g), max(b[2] for b in g), max(b[3] for b in g),
-                   sum(b[4] for b in g)) for g in groups.values()]
+                   sum(b[4] for b in g), [i for b in g for i in b[5]]) for g in groups.values()]
         if len(joined) == len(boxes):
             return joined
         boxes = joined
@@ -389,12 +394,16 @@ def clean(w, h, px, sheet):
             cover[i] = 0.0
     result = Clean(w, h, ink, cover)
     # Drawings: pieces of ink merged while they are closer than the gap; then lone specks go.
-    boxes = []
-    for region in regions(w, h, [a >= DRAWN_FROM for a in cover], diagonal=True):
+    boxes, found = [], regions(w, h, [a >= DRAWN_FROM for a in cover], diagonal=True)
+    for n, region in enumerate(found):
         xs, ys = [i % w for i in region], [i // w for i in region]
-        boxes.append((min(xs), min(ys), max(xs), max(ys), len(region)))
+        boxes.append((min(xs), min(ys), max(xs), max(ys), len(region), [n]))
     speck = max(8, w * h // 50000)
-    boxes = [b[:4] for b in merge(boxes, max(1, round(min(w, h) * sheet.gap))) if b[4] >= speck]
+    columns = {}
+    for b in boxes:
+        columns.setdefault(sum((b[0] + b[2]) / 2 > x * w for x in sheet.splits), []).append(b)
+    gap = max(1, round(min(w, h) * sheet.gap))
+    boxes = [b for column in columns.values() for b in merge(column, gap) if b[4] >= speck]
     # Reading order: rows from the top, each row from the left.
     boxes.sort(key=lambda b: (b[1] + b[3]) / 2)
     rows = []
@@ -404,7 +413,13 @@ def clean(w, h, px, sheet):
             rows[-1].append(b)
         else:
             rows.append([b])
-    result.pieces = [b for row in rows for b in sorted(row, key=lambda b: b[0])]
+    drawings = [b for row in rows for b in sorted(row, key=lambda b: b[0])]
+    result.pieces = [b[:4] for b in drawings]
+    result.drawn = [0] * (w * h)
+    for number, b in enumerate(drawings, start=1):
+        for n in b[5]:
+            for i in found[n]:
+                result.drawn[i] = number
     return result
 
 
@@ -490,10 +505,22 @@ def cut_sheet(root, name, sheet, source, date):
         if not re.fullmatch(r"_?[a-z0-9_]+", title):
             sys.exit(f"{name}: picture name {title!r} must be lower case letters, digits and _")
     owner = [0] * (w * h)  # the drawing number of each pixel near a drawing
+    shared = set()  # pixels in more than one drawing's box
     for n, b in enumerate(sheet_clean.pieces, start=1):
         for y in range(max(0, b[1] - PAD), min(h, b[3] + PAD + 1)):
             for x in range(max(0, b[0] - PAD), min(w, b[2] + PAD + 1)):
+                if owner[y * w + x]:
+                    shared.add(y * w + x)
                 owner[y * w + x] = n
+    # Where boxes overlap (a sheet with `splits`), a pixel goes to the drawing whose ink it is, or
+    # whose ink is nearest within PAD; a faint pixel with no ink near keeps the later box's number.
+    drawn = sheet_clean.drawn
+    for i in shared:
+        x, y = i % w, i // w
+        near = [(max(abs(dx), abs(dy)), drawn[(y + dy) * w + x + dx]) for dy in range(-PAD, PAD + 1)
+                for dx in range(-PAD, PAD + 1) if 0 <= x + dx < w and 0 <= y + dy < h and drawn[(y + dy) * w + x + dx]]
+        if near:
+            owner[i] = min(near)[1]
     kept = {title: numbers for title, numbers in sheet.pictures.items() if not title.startswith("_")}
 
     def union(numbers):
@@ -810,12 +837,25 @@ def doodles_sheet(path):
     write_png(path, d.w, d.h, d.pixels())
 
 
+def overlap_sheet(path):
+    """Two blue blots; the left one's ink drop reaches into the right one's box, far from its ink."""
+    d = Drawing(400, 200, (1, 1, 1))
+    blue = LIGHT[1]
+    d.disc(100, 110, 60, blue)
+    d.line(150, 80, 240, 60, 4, blue)
+    d.disc(245, 60, 8, blue)
+    d.disc(300, 120, 60, blue)
+    write_png(path, d.w, d.h, d.pixels(transparent_paper=True))
+
+
 def self_test():
     sheets = {
         "test-faces": Sheet("A sheet drawn in code", "Test faces", 20, eyes=True, themed=True,
                             pictures={"plain": [1], "capped": [2]}),
         "test-doodles": Sheet("A sheet drawn in code", "Test doodles", 200,
                               pictures={"tree": [1], "pond": [2], "grass": [3, 4, 5], "cloud": [6], "hill": [7]}),
+        "test-overlap": Sheet("A sheet drawn in code", "Test blots", 200, splits=(0.6,),
+                              pictures={"left": [1], "right": [2]}),
     }
     with tempfile.TemporaryDirectory() as tmp:
         root, sources = Path(tmp) / "repo", Path(tmp) / "sheets"
@@ -826,6 +866,7 @@ def self_test():
         sources.mkdir()
         faces_sheet(sources / "test-faces.png")
         doodles_sheet(sources / "test-doodles.png")
+        overlap_sheet(sources / "test-overlap.png")
         failures = []
 
         def expect(ok, what):
@@ -841,12 +882,15 @@ def self_test():
             expect(len(doodles.pieces) == 7, "the doodles sheet has 7 drawings (three tufts apart, no speck)")
             xs = [round((b[0] + b[2]) / 2) for b in doodles.pieces]
             expect(xs[:5] == sorted(xs[:5]) and xs[5] < xs[6], "drawings are numbered row by row, left to right")
+            unsplit = clean(*read_png(sources / "test-overlap.png"), Sheet("", "", 200))
+            expect(len(unsplit.pieces) == 1, "without splits, blots whose boxes overlap are one drawing")
+            expect(len(preview(sources / "test-overlap.png", tmp).pieces) == 2, "a split keeps them apart")
             for _ in range(2):  # twice: a second cut replaces the files and the row
                 for name in sheets:
                     cut_sheet(root, name, sheets[name], sources / f"{name}.png", "2026-11-17")
             files = sorted(p.name for p in (root / DRAWABLES).glob("*.png"))
-            expect(len(files) == 2 * (2 + 2 * len(THEMES)) + 5 * 2,
-                   f"22 files: light and dark, and the faces in each theme ({len(files)})")
+            expect(len(files) == 2 * (2 + 2 * len(THEMES)) + 5 * 2 + 2 * 2,
+                   f"26 files: light and dark, and the faces in each theme ({len(files)})")
             expect(check(root, sheets) == [], "check passes: only the inks, dark versions swapped, rows there")
             _, _, plain = read_png(root / DRAWABLES / "test_faces_plain.png")
             expect(any(p[:3] == WHITE and p[3] == 255 for p in plain), "the eyes are opaque white")
@@ -863,7 +907,13 @@ def self_test():
             gw, gh, _ = read_png(root / DRAWABLES / "test_doodles_grass.png")
             expect(gw > 3 * gh, f"the three tufts are one picture ({gw}x{gh})")
             rows = [l for l in (root / REGISTER).read_text().split("\n") if l.startswith("| `")]
-            expect(len(rows) == 2 + len(THEMES), "one register row per sheet and theme, after cutting twice")
+            expect(len(rows) == 3 + len(THEMES), "one register row per sheet and theme, after cutting twice")
+            lw, lh, left = read_png(root / DRAWABLES / "test_overlap_left.png")
+            # The drop's middle (245, 60) is inside the right blot's box; the left picture starts at (40, 50) less PAD.
+            expect(left[(60 - 50 + PAD) * lw + 245 - 40 + PAD][3] == 255, "the left blot keeps its drop in the overlap")
+            rw, rh, right = read_png(root / DRAWABLES / "test_overlap_right.png")
+            expect(not any(right[y * rw + x][3] for y in range(12) for x in range(16)),
+                   "the right blot gets none of the left one's drop")
             _, _, plain_dark = read_png(root / DRAWABLES / "test_faces_plain_neon_arcade_dark.png")
             inks_dark = {q[:3] for q in plain_dark if q[3]}
             expect(THEMES["neon_arcade"].dark[1] == THEMES["neon_arcade"].light[1] and

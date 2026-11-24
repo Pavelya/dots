@@ -6,7 +6,6 @@ import io.github.pavelya.dots.game.Mood
 import io.github.pavelya.dots.ui.theme.FaceInks
 import io.github.pavelya.dots.ui.theme.GameTheme
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -43,24 +42,31 @@ class FacesTest {
     }
 
     @Test
-    fun `only World 1's boss has faces of its own so far`() {
+    fun `each world's boss has faces of its own, and a level without a boss has none`() {
         assertNull(Faces.boss(Campaign.level(1, 7)))
+        assertNull(Faces.boss(Campaign.level(2, 19)))
         assertNull(Faces.boss(null))
-        for (world in 2..4) {
-            val boss = Campaign.levels.last { it.world == world && it.rule != null }
-            assertNull(boss.name, Faces.boss(boss))
+        val bosses = Campaign.levels.filter { it.rule != null }
+        assertEquals(listOf("1-15", "2-20", "3-20", "4-20"), bosses.map { it.code })
+        assertEquals(
+            listOf(Faces.INK_BOTTLE, Faces.MOLE, Faces.COMET, Faces.KRAKEN),
+            bosses.map { Faces.boss(it) },
+        )
+        for (boss in listOf(Faces.MOLE, Faces.COMET, Faces.KRAKEN)) {
+            assertEquals(boss.smug, Faces.of(Mood.DETERMINED, Strength.STEADY, boss))
+            assertEquals(boss.attacking, Faces.of(Mood.ATTACKING, Strength.STEADY, boss))
+            assertEquals(boss.beaten, Faces.of(Mood.SULKY, Strength.STEADY, boss))
         }
-        assertNotEquals(null, Faces.boss(Campaign.levels.first { it.rule != null }))
     }
 
     @Test
     fun `every face has its own picture in each theme's inks, light and dark`() {
         val faces = listOf(Mood.HAPPY, Mood.SMUG, Mood.UPSET, Mood.SULKY).map { Faces.of(it, null) } +
             Strength.entries.map { Faces.strength(it) }.distinct() +
-            Faces.INK_BOTTLE.let { listOf(it.smug, it.attacking, it.beaten) }
-        assertEquals(10, faces.size)
+            listOf(Faces.INK_BOTTLE, Faces.MOLE, Faces.COMET, Faces.KRAKEN).flatMap { listOf(it.smug, it.attacking, it.beaten) }
+        assertEquals(19, faces.size)
         val drawables = faces.flatMap { face -> FaceInks.entries.flatMap { face.of(it).let { p -> listOf(p.light, p.dark) } } }
-        assertEquals(10 * 3 * 2, drawables.distinct().size)
+        assertEquals(19 * 3 * 2, drawables.distinct().size)
     }
 
     @Test
