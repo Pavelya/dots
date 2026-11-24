@@ -131,9 +131,8 @@ ON_PAGE = "on docs/design/illustrations.md"
 
 # Every sheet, by its prompt's name. `pictures` is filled in when the owner's sheet arrives.
 SHEETS: Dict[str, Sheet] = {
-    # Worried and surprised wait for a moment of the game that shows them.
     "opponent-moods": Sheet(f"Prompt 1 {ON_PAGE}", "The computer's moods, above the board", 108, eyes=True, themed=True,
-                            pictures={"happy": [1], "smug": [2], "_worried": [3], "upset": [4], "_surprised": [5],
+                            pictures={"happy": [1], "smug": [2], "worried": [3], "upset": [4], "surprised": [5],
                                       "sulky": [6]}),
     # The strengths are also the computer's face above the board between moods, so they are cut for 108 dp.
     "opponent-strengths": Sheet(f"Prompt 2 {ON_PAGE}", "The computer's three strengths, on the level card and above the board", 108, eyes=True,

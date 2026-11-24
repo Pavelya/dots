@@ -889,10 +889,10 @@ class GameViewModel(
             val lastCapture = captured?.captures?.takeIf { it.isNotEmpty() }?.let { captures ->
                 LastCapture(captures.first().by, captures.sumOf { c -> c.points })
             }
-            val inDanger = if (entry.threatHighlight) {
-                dangers.any { it.dotsNeeded <= 1 && state.ownerAt(it.group.first()) == human }
+            fun inDanger(player: Player) = if (entry.threatHighlight) {
+                dangers.any { it.dotsNeeded <= 1 && state.ownerAt(it.group.first()) == player }
             } else {
-                !over && Hints.dangers(state, human, maxDots = 1).isNotEmpty()
+                !over && Hints.dangers(state, player, maxDots = 1).isNotEmpty()
             }
             val ending = when {
                 !over -> null
@@ -900,7 +900,7 @@ class GameViewModel(
                 mission.outcome == MissionOutcome.PASSED -> Ending.WON
                 else -> Ending.LOST
             }
-            if (aim?.booster == Booster.UNDO) OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK) else OpponentLook.of(state, human, lastCapture, inDanger, ending)
+            if (aim?.booster == Booster.UNDO) OpponentLook(Mood.SMUG, Bubble.TAKE_IT_BACK) else OpponentLook.of(state, human, lastCapture, inDanger(human), ending, inDanger(human.opponent))
         }
         val inPlay = if (computer != null && over) {
             val lastCapture = captured?.captures?.takeIf { it.isNotEmpty() }?.let { captures -> LastCapture(captures.first().by, captures.sumOf { c -> c.points }) }

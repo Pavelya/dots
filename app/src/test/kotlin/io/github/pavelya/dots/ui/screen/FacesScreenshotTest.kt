@@ -29,7 +29,7 @@ import org.robolectric.annotation.GraphicsMode
 
 /**
  * Every face of the opponent as the app draws it (docs/design/illustrations.md, "Where each picture
- * goes"), so the owner can check the set in one picture: the computer's moods, its three strengths
+ * goes"), so the owner can check the set in one picture: the computer's six moods in the sheet's order, its three strengths
  * and the World 1 boss at 108 dp, as above the board, then all of them at 48 dp, as on the level
  * card, where the eyes and the mouth must still read.
  *
@@ -48,7 +48,7 @@ class FacesScreenshotTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val faces: List<FacePicture> = listOf(Mood.HAPPY, Mood.SMUG, Mood.UPSET, Mood.SULKY).map { Faces.of(it, null) } +
+    private val faces: List<FacePicture> = listOf(Mood.HAPPY, Mood.SMUG, Mood.WORRIED, Mood.UPSET, Mood.SURPRISED, Mood.SULKY).map { Faces.of(it, null) } +
         listOf(Strength.BEGINNER, Strength.STEADY, Strength.EXPERT).map { Faces.strength(it) } +
         Faces.INK_BOTTLE.let { listOf(it.smug, it.attacking, it.beaten) }
 

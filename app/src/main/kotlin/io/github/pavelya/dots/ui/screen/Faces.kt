@@ -44,7 +44,7 @@ data class FacePicture(val notebook: Picture, val starChart: Picture, val neonAr
  * The computer's plain look ([Mood.DETERMINED]) is its strength's face: sleepy for the beginner
  * and easy steps, calm for steady and normal, sharp with glasses for hard and expert. A boss with
  * its own faces is sure of itself until the player captures or wins, then beaten, and attacks on
- * its special turn. A boss without them keeps the computer's faces.
+ * its special turn; it is never worried. A boss without them keeps the computer's faces.
  */
 object Faces {
     private val HAPPY = FacePicture(
@@ -56,6 +56,16 @@ object Faces {
         Picture(R.drawable.opponent_moods_smug, R.drawable.opponent_moods_smug_dark),
         Picture(R.drawable.opponent_moods_smug_star_chart, R.drawable.opponent_moods_smug_star_chart_dark),
         Picture(R.drawable.opponent_moods_smug_neon_arcade, R.drawable.opponent_moods_smug_neon_arcade_dark),
+    )
+    private val WORRIED = FacePicture(
+        Picture(R.drawable.opponent_moods_worried, R.drawable.opponent_moods_worried_dark),
+        Picture(R.drawable.opponent_moods_worried_star_chart, R.drawable.opponent_moods_worried_star_chart_dark),
+        Picture(R.drawable.opponent_moods_worried_neon_arcade, R.drawable.opponent_moods_worried_neon_arcade_dark),
+    )
+    private val SURPRISED = FacePicture(
+        Picture(R.drawable.opponent_moods_surprised, R.drawable.opponent_moods_surprised_dark),
+        Picture(R.drawable.opponent_moods_surprised_star_chart, R.drawable.opponent_moods_surprised_star_chart_dark),
+        Picture(R.drawable.opponent_moods_surprised_neon_arcade, R.drawable.opponent_moods_surprised_neon_arcade_dark),
     )
     private val UPSET = FacePicture(
         Picture(R.drawable.opponent_moods_upset, R.drawable.opponent_moods_upset_dark),
@@ -187,15 +197,17 @@ object Faces {
     /** The face for [mood], against the computer at [strength] or a [boss] with its own faces. */
     fun of(mood: Mood, strength: Strength?, boss: BossFaces? = null): FacePicture = if (boss != null) {
         when (mood) {
-            Mood.UPSET, Mood.SULKY -> boss.beaten
+            Mood.UPSET, Mood.SURPRISED, Mood.SULKY -> boss.beaten
             Mood.ATTACKING -> boss.attacking
-            Mood.HAPPY, Mood.SMUG, Mood.DETERMINED -> boss.smug
+            Mood.HAPPY, Mood.SMUG, Mood.WORRIED, Mood.DETERMINED -> boss.smug
         }
     } else {
         when (mood) {
             Mood.HAPPY -> HAPPY
             Mood.SMUG, Mood.ATTACKING -> SMUG
+            Mood.WORRIED -> WORRIED
             Mood.UPSET -> UPSET
+            Mood.SURPRISED -> SURPRISED
             Mood.SULKY -> SULKY
             Mood.DETERMINED -> strength(strength)
         }

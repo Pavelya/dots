@@ -301,6 +301,37 @@ class GameViewModelTest {
         assertTrue(play(showThreats = false).ui.value.dangers.isEmpty())
     }
 
+    @Test
+    fun `the computer is worried while one more dot would capture its own, and surprised when the player does`() = runTest(dispatcher) {
+        val settings = GameSettings(width = 5, height = 5, dotsPerPlayer = 10, opening = Opening.EMPTY)
+        // Blue plays these in order, skipping taken points: the centre first, then far from it.
+        val blue = listOf(Pos(2, 2), Pos(4, 4), Pos(0, 4), Pos(4, 0))
+        val script = {
+            object : Ai {
+                override fun choose(state: GameState): Action = Action.Place(blue.first { state.ownerAt(it) == null })
+            }
+        }
+        for (showThreats in listOf(false, true)) {
+            val vm = gameViewModel(newSettings = { settings }, newComputer = script, computerDispatcher = dispatcher, showThreats = showThreats)
+            // Red builds three sides of a diamond around Blue's dot at the centre.
+            vm.place(Pos(2, 1))
+            advanceUntilIdle()
+            vm.place(Pos(1, 2))
+            advanceUntilIdle()
+            assertEquals("two sides: not yet", OpponentLook(Mood.DETERMINED), vm.ui.value.opponent)
+
+            vm.place(Pos(3, 2))
+            assertTrue(vm.ui.value.thinking)
+            assertEquals("while it thinks", OpponentLook(Mood.WORRIED), vm.ui.value.opponent)
+            advanceUntilIdle()
+            assertEquals("on the player's move", OpponentLook(Mood.WORRIED), vm.ui.value.opponent)
+
+            vm.place(Pos(2, 3))
+            assertEquals("the player captured one dot", OpponentLook(Mood.SURPRISED, Bubble.HEY), vm.ui.value.opponent)
+            advanceUntilIdle()
+        }
+    }
+
     private val openEnded = GameSettings(width = 5, height = 5, dotsPerPlayer = null, opening = Opening.EMPTY)
 
     @Test

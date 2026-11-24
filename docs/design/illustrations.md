@@ -66,10 +66,15 @@ script draw a line between them that no drawing crosses.
 The opponent in every campaign level that has no boss. It is drawn the same in every world; its
 face shows how strong it plays and how the game is going.
 
-- **Its moods** come with the moments of the game: happy as the level opens, smug when the
-  player's dots are in danger or it captures, upset when the player captures, sulky when the
-  player wins, and smug again when the player loses. Worried and surprised are on the sheet but no
-  moment shows them yet.
+- **Its moods** come with the moments of the game:
+  - **happy** as the level opens;
+  - **smug** when the player's dots are in danger, on the player's move, and when it captures;
+  - **worried** when one more of the player's dots would capture some of its own, while it
+    thinks and on the player's move, from the player's first dot. If the player's dots are in
+    danger too, it is smug instead;
+  - **surprised** when the player captures 1 to 4 dots ("Hey!");
+  - **upset** when the player captures 5 or more at once, a big capture ("Ouch!");
+  - **sulky** when the player wins, and smug again when the player loses.
 - **Its strength** is its plain look, between those moments, and its face on the level card:
   sleepy for the beginner and easy steps, calm for steady and normal, sharp for hard and expert.
 - **Every boss has its own faces** (below), in place of the computer's.
