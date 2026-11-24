@@ -223,6 +223,25 @@ class LevelScreensTest {
     }
 
     @Test
+    fun `five boosters share one row under the picture, and each chip opens Boosters`() {
+        val level = Campaign.level(4, 6)
+        val opened = mutableListOf<Booster>()
+        compose.setContent { DotsTheme { LevelCard(level, saved = false, onStart = {}, onBooster = { opened += it }, onClose = {}) } }
+
+        val picture = compose.onNodeWithContentDescription("The board at the start").fetchSemanticsNode().boundsInRoot
+        val names = listOf("Wall", "Hint", "Bomb", "Double dot", "Undo")
+        val chips = names.map { compose.onNodeWithContentDescription("$it, 1. What it does").fetchSemanticsNode().boundsInRoot }
+        // The card is turned by -0.8°, so a row's right end sits a few dp higher than its left.
+        for (chip in chips) {
+            assertTrue("a chip sits under the picture", chip.center.y > picture.bottom)
+            assertTrue("every chip on one row", chip.top < chips[0].bottom && chip.bottom > chips[0].top)
+        }
+        assertTrue("chips in the tool bar's order", chips.zipWithNext().all { (a, b) -> a.right <= b.left })
+        for (name in names) compose.onNodeWithContentDescription("$name, 1. What it does").performClick()
+        assertEquals(listOf(Booster.WALL, Booster.HINT, Booster.BOMB, Booster.DOUBLE_DOT, Booster.UNDO), opened)
+    }
+
+    @Test
     fun `the Level card shows the mission, the computer, the boosters and the star targets, with one button`() {
         val level = Campaign.level(2, 1)
         var started = 0
