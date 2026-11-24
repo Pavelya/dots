@@ -178,6 +178,14 @@ POSITIONS["reef"] = dict(
     areas=[REEF_R1, REEF_R2, REEF_B1], last=(12, 4), **REEF_BOARD)
 
 
+# Rocky Shore, 4-6 (D-33): World 4's first whole game, every booster, rocks and pearls but no holes.
+ROCKY_MAP = level_map("4-06")
+POSITIONS["rocky-shore"] = dict(red=marked(ROCKY_MAP, "R"), blue=marked(ROCKY_MAP, "B"), areas=[], last=None,
+                                n=len(ROCKY_MAP), holes=marked(ROCKY_MAP, "-"), rocks=marked(ROCKY_MAP, "#"),
+                                pearls=marked(ROCKY_MAP, "+"))
+FIVE_BOOSTERS = (("Wall", "wall", 1), ("Hint", "hint", 1), ("Bomb", "bomb", 1), ("Double dot", None, 1), ("Undo", "undo", 1))
+
+
 # Free play and two players in an open-ended game (decision 0025, D-16): one position on a 15 x 15 board.
 # Red leads 4 to 1. Straight chains join its two rings to the top and right edges, a chain runs straight
 # in from the left edge, and one group of three in the lower middle is not joined to the edge. After a
@@ -1938,67 +1946,98 @@ def map_frame(t, uid, extra="", done=3, world=1):
     return root(t, "".join(parts) + extra, grid=True, margin=True)
 
 
-# The level cards: Level 7, Siege, and Reef, 4-18, whose board has holes (D-32).
+# The level cards: Level 7, Siege; Reef, 4-18, whose board has holes (D-32); and Rocky Shore, 4-6, the first
+# level with all five boosters (D-33).
 CARDS = {
     "siege": dict(world=1, level=7, name="Siege", mission="Capture 8 dots", board="opening", plays="plays sharp",
-                  ahead=6, dots=30, boosters=(("Wall", "wall", 2), ("Hint", "hint", 1)), holes=None,
+                  start="starts 6 dots ahead", dots=30, boosters=(("Wall", "wall", 2), ("Hint", "hint", 1)), holes=None,
                   stars=("Win", "Win with 8 dots to spare", "Win with 14 dots to spare")),
     "reef": dict(world=4, level=18, name="Reef", mission="Win with only 19 dots", board="reef-start", plays="plays steady",
-                 ahead=3, dots=19, boosters=(("Wall", "wall", 1), ("Hint", "hint", 1), ("Bomb", "bomb", 1),
-                                             ("Double dot", None, 1), ("Undo", "undo", 1)),
+                 start="starts 3 dots ahead", dots=19, boosters=FIVE_BOOSTERS,
                  holes="open", stars=("Win with only 19 dots", "Win by 2 dots", "Win by 4 dots")),
+    "rocky-shore": dict(world=4, level=6, name="Rocky Shore", mission="Win", board="rocky-shore", plays="plays steady",
+                        start="starts level with you", dots=26, boosters=FIVE_BOOSTERS, holes=None,
+                        stars=("Win", "Win by 2 dots", "Win by 4 dots")),
 }
 # The line a level with holes adds under the board picture (decision 0034), bold words first.
 HOLES_LINES = {
     "border": ("Holes are safe:", "a dot next to a hole can never be captured."),
     "open": ("Holes are open:", "a ring can go round a hole, so a dot next to one can be captured."),
 }
+# Up to this many chips sit in one row beside the board picture. More go in one row of their own under
+# the picture and the computer, sharing the card's width like the game's tool bar (D-33).
+CHIPS_BESIDE = 2
 
 
-def level_card_frame(t, uid, card="siege"):
+def booster_chip(t, name, ic, n, shared=False, small=False):
+    """A dashed chip, 48 dp tall: the booster's icon and how many are left. In the shared row every chip takes
+    an equal share of the width and centres its icon and count; a 320 dp phone leaves each about 49 dp."""
+    size = (f'flex: 1 1 0; min-width: 0; justify-content: center; padding: 0; gap: {3 if small else 4}px'
+            if shared else 'padding: 0 12px; gap: 4px')
+    return (f'<button type="button" aria-label="{name}, {n}: what it does" style="height: 48px; box-sizing: border-box; '
+            f'border: 1.5px dashed {t["blue"]}; border-radius: 24px; background: transparent; display: flex; '
+            f'align-items: center; {size}; font-family: inherit; {LABEL}; color: {t["blue"]}; white-space: nowrap">'
+            f'{icon(ICONS[ic], t["blue"], 20, 2) if ic else booster_pic(t, ic, t["blue"], 20)}×{n}</button>')
+
+
+def level_card(t, uid, card="siege", small=False):
+    """The card itself, at the bottom of the screen. A small phone (under 700 dp tall) gets a 96 dp picture, a 40 dp
+    face, 10 dp above the title and between the card's parts, so the head start keeps to one line and Reef's card fits under the
+    map's top 40 dp without scrolling."""
     k = CARDS[card]
     torn = svg(340, 10, el("path", d="M0 10 L0 4 " + " ".join(f"L{x} {4 + (3 if (x // 10) % 2 else -2)}" for x in range(10, 341, 10)) + " L340 10 Z",
                            fill=t["card"]), view="0 0 340 10", style="position: absolute; left: 0; top: -9px; width: 100%")
-    chips = "".join(
-        f'<button type="button" aria-label="{name}, {n}: what it does" style="height: 48px; box-sizing: border-box; '
-        f'border: 1.5px dashed {t["blue"]}; border-radius: 24px; background: transparent; display: flex; '
-        f'align-items: center; gap: 4px; padding: 0 12px; font-family: inherit; {LABEL}; color: {t["blue"]}">'
-        f'{icon(ICONS[ic], t["blue"], 20, 2) if ic else booster_pic(t, ic, t["blue"], 20)}×{n}</button>'
-        for name, ic, n in k["boosters"])
+    shared = len(k["boosters"]) > CHIPS_BESIDE
+    chips = "".join(booster_chip(t, name, ic, n, shared, small) for name, ic, n in k["boosters"])
     rows = "".join(
         f'<div style="display: flex; align-items: center; gap: 8px"><span style="display: flex">'
         f'{"".join(star(t, 16, i < j) for i in range(3))}</span><span style="{BODY}">{text}</span></div>'
         for j, text in enumerate(k["stars"], 1))
     pos = POSITIONS[k["board"]]
     n = pos.get("n", 15)
-    picture = (theme_board_svg(dict(t, style="notebook"), k["board"], uid + "m", size=120, sp=120 / n, mini=True)
-               if "holes" in pos else board_svg(t, k["board"], uid + "m", size=120, sp=8, mini=True))
+    px = 96 if small else 120
+    picture = (theme_board_svg(dict(t, style="notebook"), k["board"], uid + "m", size=px, sp=px / n, mini=True)
+               if "holes" in pos else board_svg(t, k["board"], uid + "m", size=px, sp=px / n, mini=True))
     holes = ""
     if k["holes"]:
         bold, rest = HOLES_LINES[k["holes"]]
         holes = f'<div style="{BODY}"><b style="font-weight: 700">{bold}</b> {rest}</div>'
-    card = (f'<div role="dialog" aria-label="Level {k["level"]}, {k["name"]}" style="position: absolute; left: 10px; right: 10px; bottom: 16px; '
-            f'box-sizing: border-box; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; '
-            f'{note_style(t, -0.8)}">{torn}'
+    beside = "" if shared else f'<div style="display: flex; flex-wrap: wrap; gap: 8px">{chips}</div>'
+    under = f'<div style="display: flex; gap: {6 if small else 8}px; margin-top: -4px">{chips}</div>' if shared else ""
+    return (f'<div role="dialog" aria-label="Level {k["level"]}, {k["name"]}" style="position: absolute; left: 10px; right: 10px; bottom: 16px; '
+            f'box-sizing: border-box; padding: {10 if small else 14}px 16px 16px; display: flex; flex-direction: column; gap: {10 if small else 12}px; '
+            f'font-family: Nunito, system-ui, sans-serif; {note_style(t, -0.8)}">{torn}'
             f'<div style="display: flex; align-items: flex-start">'
             f'<div style="flex: 1"><div style="{LABEL}; color: {t["graphite"]}">World {k["world"]} · Level {k["level"]}</div>'
             f'<div style="{DISPLAY}; color: {t["blue"]}">{k["name"]}</div></div>'
             f'{icon_button(t, "close", "Close", style="margin: -6px -8px 0 0")}</div>'
             f'<div style="display: flex; align-items: center; gap: 8px; margin-top: -6px">{icon(ICONS["target"], t["red"], 24)}'
             f'<span style="{TITLE}">{k["mission"]}</span></div>'
-            f'<div style="display: flex; gap: 14px; align-items: center">'
+            f'<div style="display: flex; gap: {12 if small else 14}px; align-items: {"flex-end" if shared else "center"}">'
             f'<div style="border: 1px solid {t["grid"]}; flex-shrink: 0; display: flex">{picture}</div>'
             f'<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">'
-            f'<div style="display: flex; align-items: center; gap: 8px">{face(t, "determined", 48)}'
+            f'<div style="display: flex; align-items: center; gap: {6 if small else 8}px">{face(t, "determined", 40 if small else 48)}'
             f'<div><div style="{LABEL}; color: {t["blue"]}">Computer</div>'
-            f'<div style="{SMALL}; color: {t["graphite"]}">{k["plays"]}<br>starts {k["ahead"]} dots ahead</div></div></div>'
+            f'<div style="{SMALL}; color: {t["graphite"]}">{k["plays"]}<br>{k["start"]}</div></div></div>'
             f'<div style="{SMALL}; color: {t["graphite"]}">You have {k["dots"]} dots. Boosters:</div>'
-            f'<div style="display: flex; flex-wrap: wrap; gap: 8px">{chips}</div></div></div>'
+            f'{beside}</div></div>{under}'
             f'{holes}'
             f'<div style="display: flex; flex-direction: column; gap: 2px">{rows}</div>'
             f'{main_button(t, "Start")}</div>')
+
+
+def level_card_frame(t, uid, card="siege"):
     scrim = f'<div aria-hidden="true" style="position: absolute; inset: 0; background: {t["scrim"]}"></div>'
-    return map_frame(t, uid, scrim + card, world=k["world"])
+    return map_frame(t, uid, scrim + level_card(t, uid, card), world=CARDS[card]["world"])
+
+
+def small_level_card_frame(t, uid, card="rocky-shore"):
+    """The card at 320 x 568: the map's top shows behind, as on the small setup frame."""
+    scrim = f'<div aria-hidden="true" style="position: absolute; inset: 0; background: {t["scrim"]}"></div>'
+    return (f'<div style="position: relative; width: 320px; height: 568px; overflow: hidden; background: {t["paper"]}; '
+            f'font-family: Nunito, system-ui, sans-serif; color: {t["pencil"]}">'
+            f'<div style="position: absolute; left: -20px; top: 0">{map_frame(t, uid, world=CARDS[card]["world"])}</div>'
+            f'{scrim}{level_card(t, uid, card, small=True)}</div>')
 
 
 # ---------------------------------------------------- the Shop's small boards ----
@@ -2066,6 +2105,12 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
     ("level-card", "LevelCard", "Level card", lambda t, u: level_card_frame(t, u), (W, H)),
     ("level-card-holes", "LevelCardHoles", "Level card: Reef, a board with holes",
      lambda t, u: level_card_frame(t, u, "reef"), (W, H)),
+    ("level-card-five", "LevelCardFive", "Level card: Rocky Shore, five boosters",
+     lambda t, u: level_card_frame(t, u, "rocky-shore"), (W, H)),
+    ("small-level-card-five", "SmallLevelCardFive", "Small phone: Level card, five boosters",
+     lambda t, u: small_level_card_frame(t, u), SMALL_PHONE),
+    ("small-level-card-holes", "SmallLevelCardHoles", "Small phone: Level card, Reef, five boosters and holes",
+     lambda t, u: small_level_card_frame(t, u, "reef"), SMALL_PHONE),
     ("game-reef", "GameReef", "Game: Reef, holes, rocks and pearls", lambda t, u: game_frame(t, "reef", u), (W, H)),
     ("game-undo", "GameUndo", "Game: Undo's preview", lambda t, u: game_frame(t, "undo", u), (W, H)),
     ("boosters", "Boosters", "Boosters", lambda t, u: boosters_frame(t, u), (W, H)),
