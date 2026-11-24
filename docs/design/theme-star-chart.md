@@ -75,8 +75,11 @@ board.
 | Element | Size at 24 dp spacing | Other spacings | Colour |
 | --- | --- | --- | --- |
 | Grid line | 1 dp | always 1 dp | Grid |
-| Board edge (outermost grid lines) | 1.5 dp | always 1.5 dp | Grid |
+| Board edge (outermost grid lines, and the lines round each hole) | 1.5 dp | always 1.5 dp | Grid |
 | Chart point (at every crossing) | 2 dp across | always 2 dp | Chart point |
+| Hole (a place with no point) | no grid line and no chart point; plain paper | always the same | Paper |
+| Rock (blocked point): the wall's mark | a 16.8 dp square round the point, 1.8 dp line; five hatch lines rising to the right, 1.08 dp | square 0.7 of the spacing; line 0.075 of the spacing, at least 1.5 dp; hatch lines 0.6 of the line | Square: Starlight; hatching: Dust |
+| Pearl (bonus point) | a circle 16.8 dp across, 1.8 dp line; a shine inside its upper left, an arc 9.6 dp across from 195° to 255°, 1.44 dp, round ends | circle 0.7 of the spacing, line as the rock's; shine 0.4 of the spacing across, 0.8 of the line | Circle: Starlight; shine: Dust |
 | Dot size | 12 dp | half the spacing, at least 9 dp, at most 20 dp | (sets the pieces' sizes) |
 | Gold star | 16.8 dp across its points | 1.4 dot sizes | Gold ink |
 | Ice comet | head 9 dp across; tail to 16.8 dp from the head's centre | see [The pieces](#the-pieces) | Ice ink |
@@ -97,14 +100,24 @@ are 2.5:1 against Paper, darker than the grid lines but far paler than the piece
 they are a sixth of a piece across, so they are never taken for one. A piece covers the point it
 stands on.
 
-**Drawing order**, from the back: paper, hazes, hatching, grid lines, chart points, links, drag's
-guides, the bands round the pieces (high contrast only), rings, threat rings, pieces, last-move
-pinhole and captured cuts, closing points, preview. It is Notebook's order with the chart points
-added after the grid.
+**Drawing order**, from the back: paper, hazes, hatching, grid lines, chart points, rocks and
+pearls, links, drag's guides, the bands round the pieces (high contrast only), rings, threat rings,
+pieces, last-move pinhole and captured cuts, closing points, preview. It is Notebook's order with
+the chart points added after the grid.
 
 **Links**, **drag's guides** and **captured pieces** work as Notebook: links only where Notebook
 draws them, guides as four dashed arms from the preview ring to the board's edge, and captured
 pieces in full ink with a cut.
+
+**Holes, rocks and pearls** work as Notebook's
+([Holes, rocks and pearls](theme-notebook.md#holes-rocks-and-pearls)), in Starlight and Dust where
+Notebook uses Pencil and Graphite. A hole has no chart point either. A gold star on a pearl reaches
+the circle's line with its points, and a comet's tail runs out past it; the piece lies on top, and
+the circle still reads round the star or the comet's head. The Starlight outline is at least 3:1
+everywhere it can lie: 14.29 light and 14.67 dark on paper, at least 12.42 and 11.57 on either haze,
+and at least 9.48 and 5.44 on a hatch line. The Dust hatching and shine are detail inside it.
+
+<img src="canvas/game-reef-star-chart-light.png" width="180" alt="Star chart, light: Reef mid-game with holes, rocks and pearls"> <img src="canvas/game-reef-star-chart-dark.png" width="180" alt="Star chart, dark: the same moment">
 
 **The comet's tail and the rings.** At 24 dp spacing the tail reaches 16.8 dp from the point, past
 the threat ring (10.1 dp) and the preview ring (10.8 dp). The tail lies on top of a threat ring,

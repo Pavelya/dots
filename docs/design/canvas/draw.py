@@ -150,6 +150,34 @@ for _key, _aim in (("wall-aim", dict(booster="wall", point=(9, 9))), ("bomb-aim"
     POSITIONS[_key] = dict(red=THREAT_RED, blue=THREAT_BLUE, areas=[R1, B1], last=(7, 7), aim=_aim, **THREAT_MARKS)
 
 
+# Holes, rocks and pearls (D-32), on Reef, level 4-18: a 14 x 14 board with open holes (decision 0034).
+# The start comes from the level file, so the frames follow the level.
+def level_map(name):
+    path = os.path.join(HERE, "..", "..", "..", "engine", "src", "main", "resources", "levels", f"{name}.level")
+    with open(path) as fh:
+        lines = fh.read().splitlines()
+    return [row for row in lines[lines.index("map:") + 1:] if row.strip()]
+
+
+def marked(rows, ch):
+    return [(x, y) for y, row in enumerate(rows) for x, c in enumerate(row) if c == ch]
+
+
+REEF_MAP = level_map("4-18")
+REEF_BOARD = dict(n=len(REEF_MAP), holes=marked(REEF_MAP, "-"), rocks=marked(REEF_MAP, "#"), pearls=marked(REEF_MAP, "+"))
+POSITIONS["reef-start"] = dict(red=marked(REEF_MAP, "R"), blue=marked(REEF_MAP, "B"), areas=[], last=None, **REEF_BOARD)
+# Mid-game, red to move, 11 dots placed by each side. Red's ring at the top right goes round the open hole
+# and the blue dot beside it; its small ring in the middle took a blue dot on a pearl, which counts 2. Blue's
+# ring on the left goes over a rock. A red dot sits live on a pearl. Red leads 3 to 1.
+REEF_R1 = area("red", [(10, 2), (11, 1), (12, 2), (12, 3), (11, 4), (10, 3)], [(11, 3)])
+REEF_R2 = area("red", [(8, 4), (9, 5), (8, 6), (7, 5)], [(8, 5)])
+REEF_B1 = area("blue", [(2, 6), (3, 6), (4, 7), (3, 8), (2, 8), (1, 7)], [(3, 7)])
+POSITIONS["reef"] = dict(
+    red=marked(REEF_MAP, "R") + [(10, 2), (11, 1), (12, 2), (12, 3), (11, 4), (8, 4), (9, 5), (8, 6), (7, 5), (5, 8), (3, 7)],
+    blue=marked(REEF_MAP, "B") + [(11, 3), (8, 5), (2, 6), (3, 6), (4, 7), (3, 8), (2, 8), (1, 7), (7, 4), (5, 7), (12, 4)],
+    areas=[REEF_R1, REEF_R2, REEF_B1], last=(12, 4), **REEF_BOARD)
+
+
 # Free play and two players in an open-ended game (decision 0025, D-16): one position on a 15 x 15 board.
 # Red leads 4 to 1. Straight chains join its two rings to the top and right edges, a chain runs straight
 # in from the left edge, and one group of three in the lower middle is not joined to the edge. After a
@@ -285,6 +313,50 @@ def wall_mark(t, x, y, sp, dashed=False):
     out.append(el("rect", x=f(x - h), y=f(y - h), width=f(2 * h), height=f(2 * h), fill="none", stroke=t["pencil"],
                   stroke_width=f(w), stroke_dasharray="3 2" if dashed else None))
     return "".join(out)
+
+
+def pearl_mark(t, x, y, sp):
+    """A pearl, the mark of a bonus point: a circle in Pencil, 0.7 of the spacing across, in the wall's line,
+    with a short Graphite shine inside its upper left, 0.2 of the spacing from the point, from 195° to 255°."""
+    r, s = 0.35 * sp, 0.2 * sp
+    w = max(0.075 * sp, 1.5)
+    a, b = math.radians(195), math.radians(255)
+    shine = f"M{f(x + s * math.cos(a))} {f(y + s * math.sin(a))} A{f(s)} {f(s)} 0 0 1 {f(x + s * math.cos(b))} {f(y + s * math.sin(b))}"
+    return (el("circle", cx=f(x), cy=f(y), r=f(r), fill="none", stroke=t["pencil"], stroke_width=f(w)) +
+            el("path", d=shine, fill="none", stroke=t["graphite"], stroke_width=f(w * 0.8), stroke_linecap="round"))
+
+
+def holed_grid(t, pos, c, n, line=1.0, edge=1.5):
+    """The grid lines between the board's points. A hole has no point, so no line reaches it, and a line
+    is drawn in the edge's width where a square beside it is not inside the board: round the outline and
+    round each hole inside it (theme-notebook.md, Holes, rocks and pearls)."""
+    holes = set(pos.get("holes", ()))
+    point = lambda x, y: 0 <= x < n and 0 <= y < n and (x, y) not in holes  # noqa: E731
+    inside = lambda x, y: point(x, y) and point(x + 1, y) and point(x, y + 1) and point(x + 1, y + 1)  # noqa: E731
+    out = []
+
+    def runs(count, drawn, inner, draw):
+        i = 0
+        while i < count:
+            if not drawn(i):
+                i += 1
+                continue
+            kind, j = inner(i), i + 1
+            while j < count and drawn(j) and inner(j) == kind:
+                j += 1
+            draw(i, j, kind)
+            i = j
+
+    def line_el(a, b, inner):
+        (x1, y1), (x2, y2) = c(a), c(b)
+        return el("line", x1=f(x1), y1=f(y1), x2=f(x2), y2=f(y2), stroke=t["grid"], stroke_width=f(line if inner else edge))
+
+    for i in range(n):  # column i, then row i
+        runs(n - 1, lambda y: point(i, y) and point(i, y + 1), lambda y: inside(i - 1, y) and inside(i, y),
+             lambda a, b, k: out.append(line_el((i, a), (i, b), k)))
+        runs(n - 1, lambda x: point(x, i) and point(x + 1, i), lambda x: inside(x, i - 1) and inside(x, i),
+             lambda a, b, k: out.append(line_el((a, i), (b, i), k)))
+    return out
 
 DRAG_DASH = (4, 3)  # drag's guides: dashes and gaps along each arm, dp
 
@@ -698,13 +770,16 @@ def part_of(sides, share):
     return out
 
 
-def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False):
+def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False, mini=False):
     """The board of moment key (or a position) in a board theme, in its page's drawing order. Notebook
-    draws here too when a piece style or a ring effect is in use."""
+    draws here too when a piece style or a ring effect is in use, or on a board with holes. A mini board
+    (the level card's picture) has thinner grid lines and pieces 0.62 of the spacing, as board_svg's."""
     pos = POSITIONS[key] if isinstance(key, str) else key
     n = round(size / sp)
     c = lambda p: (sp / 2 + p[0] * sp, sp / 2 + p[1] * sp)  # noqa: E731
     d, w, star = theme_dot(sp, contrast), theme_ring(sp), t["style"] == "star"
+    if mini:
+        d = sp * 0.62
     nb, neon, effect = t["style"] == "notebook", t["style"] == "neon", t.get("rings")
     hatch = 5 if nb else HATCH
     captured = {p: a["captor"] for a in pos["areas"] for p in a["inside"]}
@@ -759,15 +834,14 @@ def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False)
                            stroke_linejoin="round") + "</mask>")
             tubes.append(el("path", d=outline, fill="none", stroke=ink, stroke_width=f(2 * g + iw),
                             stroke_linejoin="round", mask=f"url(#m{uid}{i})"))
-    grid = []
-    for i in range(n):
-        x = sp / 2 + i * sp
-        sw = 1.5 if i in (0, n - 1) else 1
-        grid.append(el("line", x1=f(x), y1=f(sp / 2), x2=f(x), y2=f(size - sp / 2), stroke=t["grid"], stroke_width=sw))
-        grid.append(el("line", x1=f(sp / 2), y1=f(x), x2=f(size - sp / 2), y2=f(x), stroke=t["grid"], stroke_width=sw))
-    if star:  # a chart point at every crossing; a piece covers its own
+    grid = holed_grid(t, pos, c, n, *((0.5, 0.75) if mini else (1.0, 1.5)))
+    holes = set(pos.get("holes", ()))
+    if star:  # a chart point at every crossing but a hole's; a piece covers its own
         grid += [el("circle", cx=f(sp / 2 + i * sp), cy=f(sp / 2 + j * sp), r=1, fill=t["point"])
-                 for i in range(n) for j in range(n)]
+                 for i in range(n) for j in range(n) if (i, j) not in holes]
+    # Rocks and pearls lie on the grid, under the links, the rings and the pieces.
+    grid += [wall_mark(t, *c(p), sp) for p in pos.get("rocks", ())]
+    grid += [pearl_mark(t, *c(p), sp) for p in pos.get("pearls", ())]
     link_lines = []
     if links:
         for side in ("red", "blue"):
@@ -796,14 +870,14 @@ def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False)
             elif neon and p not in captured or neon and p not in pos.get("cuts", captured):
                 bands.append(band(t, side, x, y, d, t[side + "_pale"], GLOW))
             pieces.append(el("path", d=piece_d(t, side, x, y, d), fill=t[side]))
-            if p in captured and p in pos.get("cuts", captured):
+            if p in captured and p in pos.get("cuts", captured) and not mini:
                 L = d * 0.75 / math.sqrt(2)
                 if side == "red":  # in blue's area: the cut falls, along blue's hatching
                     cut, col = f"M{f(x - L)} {f(y - L)}L{f(x + L)} {f(y + L)}", t["blue_wash"]
                 else:
                     cut, col = f"M{f(x - L)} {f(y + L)}L{f(x + L)} {f(y - L)}", t["red_wash"]
                 pieces.append(el("path", d=cut, stroke=col, stroke_width=f(d / 6), fill="none"))
-            if p == pos["last"]:
+            if p == pos["last"] and not mini:
                 pieces.append(el("circle", cx=f(x), cy=f(y), r=f(d * 0.15), fill=t["paper"]))
     marks = [el("circle", cx=f(c(p)[0]), cy=f(c(p)[1]), r=f(0.42 * sp), fill="none", stroke=t["hi_faint"],
                 stroke_width=1.5) for p in pos.get("far", [])]
@@ -828,12 +902,12 @@ def theme_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False)
         pieces.extend(burst(t, pos, c))
     body = (f"<defs>{''.join(defs)}</defs>" + el("rect", width=size, height=size, fill=t["paper"]) +
             "".join(fills + grid + link_lines + drag + bands + glows + tubes + cores + marks + pieces))
-    return svg(size, size, body, label=f"The board, {n} by {n} points")
+    return svg(size, size, body, label=None if mini else f"The board, {n} by {n} points")
 
 
 def any_board_svg(t, key, uid, size=360, sp=24.0, links=False, contrast=False):
-    """Notebook's board, or a board theme's, or any board with a piece style or a ring effect."""
-    if t.get("style") or t.get("pieces") or t.get("rings"):
+    """Notebook's board, or a board theme's, or any board with a piece style, a ring effect or holes."""
+    if t.get("style") or t.get("pieces") or t.get("rings") or "holes" in POSITIONS.get(key, {}):
         t = dict(t, style=t.get("style", "notebook"))
         return theme_board_svg(t, key, uid, size, sp, links, contrast)
     return board_svg(t, key, uid, size, sp, links=links)
@@ -989,6 +1063,9 @@ MOMENTS = {
     "drag": dict(mood="happy", bubble="Good luck!", you=0, opp=0, left=30, mission=0),
     "wall-aim": dict(mood="smug", bubble="Your move…", you=2, opp=1, left=13, mission=2),
     "bomb-aim": dict(mood="smug", bubble="Your move…", you=2, opp=1, left=13, mission=2),
+    # Reef, 4-18 (D-32): a mission without boxes, one of each booster, World 4's board touches.
+    "reef": dict(mood="determined", bubble="Hmm…", you=3, opp=1, left=8, mission="Win with only 19 dots",
+                 level="Level 18", world=4, counts=(1, 1, 1, 1, 1)),
 }
 NOTES = {  # a booster preview's note: icon, name, its one line, the main button
     "undo": ("undo", "Undo", "takes back the pale dots.", "Take back"),
@@ -999,6 +1076,10 @@ BOARD_TOP = 308
 
 
 def mission_note(t, done, right=12, top=30):
+    if isinstance(done, str):  # a mission with nothing to tick: its line only
+        return (f'<div style="position: absolute; right: {right}px; top: {top}px; width: 136px; box-sizing: border-box; '
+                f'padding: 8px 10px 9px; {note_style(t, 2)}">{tape(t, 44, -8, 44, -4)}'
+                f'<div style="{SMALL}; color: {t["graphite"]}">Mission</div><div style="{LABEL}">{done}</div></div>')
     boxes = []
     for i in range(8):
         tick = el("path", d="M2.5 6.5 l2.5 2.5 l5 -6", fill="none", stroke=t["paper"], stroke_width=1.8,
@@ -1052,10 +1133,11 @@ def booster_pic(t, ic, ink, size=28):
                el("path", d="M23 1 L30 8 L23 15 L16 8 Z", fill=t["red"] if ink != t["graphite"] else ink), view="0 0 30 16")
 
 
-def toolbar(t, top=730, side=12, gap=10, undo_ready=True):
+def toolbar(t, top=730, side=12, gap=10, undo_ready=True, counts=None):
     """The tool bar under the player's line. Undo waits, grey with its count, until there is a turn to take back."""
     out = []
-    for name, ic, n, _ in BOOSTERS:
+    for i, (name, ic, n, _) in enumerate(BOOSTERS):
+        n = counts[i] if counts else n
         waiting = name == "Undo" and not undo_ready
         ink = t["blue"] if n and not waiting else t["graphite"]
         border = f"2px solid {t['blue_pale']}" if n else f"2px dashed {t['graphite']}"
@@ -1163,11 +1245,12 @@ def margin_doodles(t, world=1):
 
 def game_frame(t, key, uid, links=False, world=1, contrast=False):
     m = MOMENTS[key]
+    world = m.get("world", world)
     parts = [margin_doodles(t, world)]
     if key != "win":
         parts.append(f'<div style="position: absolute; left: 4px; top: 28px">{icon_button(t, "pause", "Pause", isize=30)}</div>')
     parts.append(f'<div style="position: absolute; left: 0; right: 0; top: 40px; text-align: center; {LABEL}; '
-                 f'color: {t["graphite"]}">Level 7</div>')
+                 f'color: {t["graphite"]}">{m.get("level", "Level 7")}</div>')
     if key != "opening":
         parts.append(mission_note(t, m["mission"]))
     # The opponent, above the board.
@@ -1177,9 +1260,13 @@ def game_frame(t, key, uid, links=False, world=1, contrast=False):
     parts.append(bubble(t, m["bubble"], 198, 132))
     parts.append(f'<div style="position: absolute; left: 0; right: 0; top: 242px">'
                  f'{side_row(t, "blue", "Computer", m["opp"], False, "center")}</div>')
-    parts.append(f'<div style="position: absolute; left: 0; top: {BOARD_TOP}px">{any_board_svg(t, key, uid, links=links, contrast=contrast)}</div>')
+    # The board at the largest whole-dp spacing that fits its points across the width, centred.
+    n = POSITIONS[key].get("n", 15)
+    sp = W // n
+    parts.append(f'<div style="position: absolute; left: {(W - n * sp) // 2}px; top: {BOARD_TOP + (W - n * sp) // 2}px">'
+                 f'{any_board_svg(t, key, uid, size=n * sp, sp=sp, links=links, contrast=contrast)}</div>')
     # The player, below the board.
-    you_turn = key in ("opening", "threat", "drag") + NOTED
+    you_turn = key in ("opening", "threat", "drag", "reef") + NOTED
     row_top = 682 if key != "win" else -200
     parts.append(f'<div style="position: absolute; left: 16px; right: 16px; top: {row_top}px; display: flex; '
                  f'align-items: center; justify-content: space-between">'
@@ -1187,7 +1274,7 @@ def game_frame(t, key, uid, links=False, world=1, contrast=False):
                  f'<div style="display: flex; align-items: baseline; gap: 6px"><span style="{SCORE}">{m["left"]}</span>'
                  f'<span style="{LABEL}; color: {t["graphite"]}">dots left</span></div></div>')
     if key != "win" and key not in NOTED:
-        parts.append(toolbar(t, undo_ready=key not in ("opening", "drag")))
+        parts.append(toolbar(t, undo_ready=key not in ("opening", "drag"), counts=m.get("counts")))
     if key in NOTED:
         parts.append(undo_note(t, key=key))
     if key in DRAGGED:
@@ -1851,40 +1938,67 @@ def map_frame(t, uid, extra="", done=3, world=1):
     return root(t, "".join(parts) + extra, grid=True, margin=True)
 
 
-def level_card_frame(t, uid):
+# The level cards: Level 7, Siege, and Reef, 4-18, whose board has holes (D-32).
+CARDS = {
+    "siege": dict(world=1, level=7, name="Siege", mission="Capture 8 dots", board="opening", plays="plays sharp",
+                  ahead=6, dots=30, boosters=(("Wall", "wall", 2), ("Hint", "hint", 1)), holes=None,
+                  stars=("Win", "Win with 8 dots to spare", "Win with 14 dots to spare")),
+    "reef": dict(world=4, level=18, name="Reef", mission="Win with only 19 dots", board="reef-start", plays="plays steady",
+                 ahead=3, dots=19, boosters=(("Wall", "wall", 1), ("Hint", "hint", 1), ("Bomb", "bomb", 1),
+                                             ("Double dot", None, 1), ("Undo", "undo", 1)),
+                 holes="open", stars=("Win with only 19 dots", "Win by 2 dots", "Win by 4 dots")),
+}
+# The line a level with holes adds under the board picture (decision 0034), bold words first.
+HOLES_LINES = {
+    "border": ("Holes are safe:", "a dot next to a hole can never be captured."),
+    "open": ("Holes are open:", "a ring can go round a hole, so a dot next to one can be captured."),
+}
+
+
+def level_card_frame(t, uid, card="siege"):
+    k = CARDS[card]
     torn = svg(340, 10, el("path", d="M0 10 L0 4 " + " ".join(f"L{x} {4 + (3 if (x // 10) % 2 else -2)}" for x in range(10, 341, 10)) + " L340 10 Z",
                            fill=t["card"]), view="0 0 340 10", style="position: absolute; left: 0; top: -9px; width: 100%")
     chips = "".join(
         f'<button type="button" aria-label="{name}, {n}: what it does" style="height: 48px; box-sizing: border-box; '
         f'border: 1.5px dashed {t["blue"]}; border-radius: 24px; background: transparent; display: flex; '
         f'align-items: center; gap: 4px; padding: 0 12px; font-family: inherit; {LABEL}; color: {t["blue"]}">'
-        f'{icon(ICONS[ic], t["blue"], 20, 2)}×{n}</button>'
-        for name, ic, n in (("Wall", "wall", 2), ("Hint", "hint", 1)))
+        f'{icon(ICONS[ic], t["blue"], 20, 2) if ic else booster_pic(t, ic, t["blue"], 20)}×{n}</button>'
+        for name, ic, n in k["boosters"])
     rows = "".join(
         f'<div style="display: flex; align-items: center; gap: 8px"><span style="display: flex">'
-        f'{"".join(star(t, 16, i < k) for i in range(3))}</span><span style="{BODY}">{text}</span></div>'
-        for k, text in ((1, "Win"), (2, "Win with 8 dots to spare"), (3, "Win with 14 dots to spare")))
-    card = (f'<div role="dialog" aria-label="Level 7, Siege" style="position: absolute; left: 10px; right: 10px; bottom: 16px; '
+        f'{"".join(star(t, 16, i < j) for i in range(3))}</span><span style="{BODY}">{text}</span></div>'
+        for j, text in enumerate(k["stars"], 1))
+    pos = POSITIONS[k["board"]]
+    n = pos.get("n", 15)
+    picture = (theme_board_svg(dict(t, style="notebook"), k["board"], uid + "m", size=120, sp=120 / n, mini=True)
+               if "holes" in pos else board_svg(t, k["board"], uid + "m", size=120, sp=8, mini=True))
+    holes = ""
+    if k["holes"]:
+        bold, rest = HOLES_LINES[k["holes"]]
+        holes = f'<div style="{BODY}"><b style="font-weight: 700">{bold}</b> {rest}</div>'
+    card = (f'<div role="dialog" aria-label="Level {k["level"]}, {k["name"]}" style="position: absolute; left: 10px; right: 10px; bottom: 16px; '
             f'box-sizing: border-box; padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 12px; '
             f'{note_style(t, -0.8)}">{torn}'
             f'<div style="display: flex; align-items: flex-start">'
-            f'<div style="flex: 1"><div style="{LABEL}; color: {t["graphite"]}">World 1 · Level 7</div>'
-            f'<div style="{DISPLAY}; color: {t["blue"]}">Siege</div></div>'
+            f'<div style="flex: 1"><div style="{LABEL}; color: {t["graphite"]}">World {k["world"]} · Level {k["level"]}</div>'
+            f'<div style="{DISPLAY}; color: {t["blue"]}">{k["name"]}</div></div>'
             f'{icon_button(t, "close", "Close", style="margin: -6px -8px 0 0")}</div>'
             f'<div style="display: flex; align-items: center; gap: 8px; margin-top: -6px">{icon(ICONS["target"], t["red"], 24)}'
-            f'<span style="{TITLE}">Capture 8 dots</span></div>'
+            f'<span style="{TITLE}">{k["mission"]}</span></div>'
             f'<div style="display: flex; gap: 14px; align-items: center">'
-            f'<div style="border: 1px solid {t["grid"]}; flex-shrink: 0">{board_svg(t, "opening", uid + "m", size=120, sp=8, mini=True)}</div>'
+            f'<div style="border: 1px solid {t["grid"]}; flex-shrink: 0; display: flex">{picture}</div>'
             f'<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">'
             f'<div style="display: flex; align-items: center; gap: 8px">{face(t, "determined", 48)}'
             f'<div><div style="{LABEL}; color: {t["blue"]}">Computer</div>'
-            f'<div style="{SMALL}; color: {t["graphite"]}">plays sharp<br>starts 6 dots ahead</div></div></div>'
-            f'<div style="{SMALL}; color: {t["graphite"]}">You have 30 dots. Boosters:</div>'
-            f'<div style="display: flex; gap: 8px">{chips}</div></div></div>'
+            f'<div style="{SMALL}; color: {t["graphite"]}">{k["plays"]}<br>starts {k["ahead"]} dots ahead</div></div></div>'
+            f'<div style="{SMALL}; color: {t["graphite"]}">You have {k["dots"]} dots. Boosters:</div>'
+            f'<div style="display: flex; flex-wrap: wrap; gap: 8px">{chips}</div></div></div>'
+            f'{holes}'
             f'<div style="display: flex; flex-direction: column; gap: 2px">{rows}</div>'
             f'{main_button(t, "Start")}</div>')
     scrim = f'<div aria-hidden="true" style="position: absolute; inset: 0; background: {t["scrim"]}"></div>'
-    return map_frame(t, uid, scrim + card)
+    return map_frame(t, uid, scrim + card, world=k["world"])
 
 
 # ---------------------------------------------------- the Shop's small boards ----
@@ -1950,6 +2064,9 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
     ("result-win", "ResultWin", "Result: won, two stars", lambda t, u: game_frame(t, "win", u), (W, H)),
     ("map", "Map", "World map (home)", lambda t, u: map_frame(t, u), (W, H)),
     ("level-card", "LevelCard", "Level card", lambda t, u: level_card_frame(t, u), (W, H)),
+    ("level-card-holes", "LevelCardHoles", "Level card: Reef, a board with holes",
+     lambda t, u: level_card_frame(t, u, "reef"), (W, H)),
+    ("game-reef", "GameReef", "Game: Reef, holes, rocks and pearls", lambda t, u: game_frame(t, "reef", u), (W, H)),
     ("game-undo", "GameUndo", "Game: Undo's preview", lambda t, u: game_frame(t, "undo", u), (W, H)),
     ("boosters", "Boosters", "Boosters", lambda t, u: boosters_frame(t, u), (W, H)),
     ("small-game-threat", "SmallGameThreat", "Small phone: a threat", lambda t, u: small_game_frame(t, "threat", u),
@@ -1987,7 +2104,7 @@ FRAMES = [  # file stem, canvas name, title, drawer, size
 
 
 # The board themes draw the game frames only, plus the threat with high-contrast pieces.
-THEME_STEMS = ("game-start", "game-threat", "game-big-capture", "game-drag", "result-win", "small-game-threat")
+THEME_STEMS = ("game-start", "game-threat", "game-big-capture", "game-drag", "result-win", "small-game-threat", "game-reef")
 THEME_FRAMES = [fr for stem in THEME_STEMS for fr in FRAMES if fr[0] == stem] + [
     ("game-threat-contrast", "GameThreatContrast", "Game: a threat, high-contrast pieces",
      lambda t, u: game_frame(t, "threat", u, contrast=True), (W, H)),
