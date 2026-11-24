@@ -138,6 +138,10 @@ dependencies {
     implementation(libs.play.billing) // Google Play Billing: the Shop's purchases (C-02)
     implementation(libs.play.services.ads) // AdMob: the rewarded ads (C-03)
     implementation(libs.ump) // Google's consent form for ads in the EU and the UK (C-03)
+    // The ads SDK brings WorkManager 2.7.0, whose Room 2.2 lets R8 remove the constructor that
+    // Room calls by reflection: v0.2.1 crashed on start (Q-09). A current WorkManager brings a Room
+    // whose rules keep it. The release build's check-release-dex step watches for it.
+    implementation(libs.work.runtime)
     // Crash reports (decision 0032) and analytics (decision 0033) from store builds only. Debug
     // builds, which testers of GitHub builds and the tests use, don't contain Firebase and send
     // nothing; src/debug and src/release each give the game its `buildAnalytics`.

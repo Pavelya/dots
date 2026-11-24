@@ -114,6 +114,7 @@ object Credits {
         Library("AndroidX Lifecycle", Licence.APACHE_2, listOf("androidx.lifecycle")),
         Library("AndroidX Navigation", Licence.APACHE_2, listOf("androidx.navigation")),
         Library("AndroidX DataStore", Licence.APACHE_2, listOf("androidx.datastore")),
+        Library("AndroidX WorkManager", Licence.APACHE_2, listOf("androidx.work")),
         Library("Google Play In-App Review", Licence.PLAY_CORE_TERMS, listOf("com.google.android.play")),
         Library("Google Play Billing Library", Licence.ANDROID_SDK, listOf("com.android.billingclient")),
         Library("Google Mobile Ads SDK", Licence.ANDROID_SDK, listOf("com.google.android.gms")),

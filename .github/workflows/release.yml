@@ -76,6 +76,9 @@ jobs:
           # show the real code names (decision 0032). A dry run sends nothing.
           CRASHLYTICS_MAPPING_UPLOAD: ${{ env.DRY_RUN != 'true' }}
         run: ./gradlew --continue :engine:test :cli:test :app:verifyRoborazziDebug :app:lintDebug :app:bundleRelease
+      - name: Constructors that libraries call by reflection
+        # v0.2.1 crashed on start because R8 removed one (Q-09). Nothing is uploaded if this fails.
+        run: python3 .github/scripts/check-release-dex.py app/build/outputs/bundle/release/app-release.aab
       - name: Signing certificate
         # Fails on an unsigned bundle, the standard debug key and the old test key, which was public
         # in this repository's history (decision 0017). The upload key's certificate is printed for
