@@ -542,6 +542,66 @@ class BoosterViewModelTest {
         assertEquals(1, fromMap.boostersLeft(Player.RED, Booster.BOMB))
     }
 
+    /** Places the player's dots on the last free points until the level is over and its end saved. */
+    private fun kotlinx.coroutines.test.TestScope.playOut(vm: GameViewModel) {
+        while (!vm.ui.value.isOver) {
+            vm.place(vm.state.legalMoves().last())
+            advanceUntilIdle()
+        }
+        advanceUntilIdle()
+    }
+
+    @Test
+    fun `an ad watched on a failed level's Result gives its booster to the next attempt only`() = runTest(dispatcher) {
+        val ad = level.adBooster!!
+        val last = LastEntry()
+        val vm = game(journal = last)
+        vm.adWatched()
+        assertNull("not while the game goes on", vm.ui.value.adForRetry)
+
+        playOut(vm)
+        assertFalse(vm.ui.value.levelEnd!!.result.isPassed)
+        vm.adWatched()
+        vm.adWatched()
+        assertEquals("one booster, however often it is called", ad, vm.ui.value.adForRetry)
+
+        vm.playAgain()
+        assertEquals(ad, vm.ui.value.adInPlay)
+        assertNull(vm.ui.value.adForRetry)
+        assertEquals("the level's own and the ad's", 2, vm.left(ad))
+        assertEquals(ad, (last.entry?.record as LevelRecord).ad)
+
+        // The attempt after it has the level's own only.
+        playOut(vm)
+        vm.playAgain()
+        assertNull(vm.ui.value.adInPlay)
+        assertEquals(1, vm.left(ad))
+
+        // With the free Hint too, after the third failure.
+        playOut(vm)
+        vm.adWatched()
+        vm.retryWith(Booster.HINT)
+        assertEquals(ad, vm.ui.value.adInPlay)
+        assertEquals(2, vm.left(ad))
+        assertEquals(2, vm.left(Booster.HINT))
+    }
+
+    @Test
+    fun `no booster from an ad in a practice game`() = runTest(dispatcher) {
+        val practice = levelGame(level, threatHighlight = false, now = 0, practice = true)
+        val vm = GameViewModel(
+            start = practice,
+            nextGame = { practice },
+            computerFor = { TopRow() },
+            computerDispatcher = dispatcher,
+            replyDelayMillis = 0,
+            clock = { 0L },
+        )
+        playOut(vm)
+        vm.adWatched()
+        assertNull(vm.ui.value.adForRetry)
+    }
+
     @Test
     fun `a practice game neither spends nor misses the level's boosters`() = runTest(dispatcher) {
         val saved = Saved(Progress.NONE.spendOn(level, mapOf(Booster.WALL to 1)))

@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Store builds only: what Google Analytics for Firebase may collect (decision 0033). -->
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
-
-    <!-- No advertising ID: Firebase Analytics adds this permission; the game's analytics don't use it. -->
-    <uses-permission
-        android:name="com.google.android.gms.permission.AD_ID"
-        tools:node="remove" />
+<!-- Store builds only: what Google Analytics for Firebase may collect (decision 0033). The
+     advertising ID permission is removed for every build, in the main AndroidManifest.xml. -->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <application>
+        <!--
+            Nothing is collected until Google's consent form has its answer, or has said that no
+            answer is needed here (C-03): the game then turns collection on (allowAnalytics).
+        -->
+        <meta-data
+            android:name="firebase_analytics_collection_enabled"
+            android:value="false" />
         <!-- No advertising ID and no Android ID (SSAID) with the events, even once ads come. -->
         <meta-data
             android:name="google_analytics_adid_collection_enabled"

@@ -82,11 +82,63 @@ class ProgressScreensTest {
         picked: MutableList<Reward> = mutableListOf(),
         closed: () -> Unit = {},
         shown: Chest = chest,
+        adOffer: Boolean = false,
+        kept: Boolean = false,
+        watched: () -> Unit = {},
     ) = show(dark) {
         Box {
             MapScreen(Campaign.map(passedTen), noActions)
-            ChestNote(shown, onPick = { picked += it }, onClose = closed)
+            ChestNote(shown, onPick = { picked += it }, onClose = closed, adOffer = adOffer, onWatchAd = watched, kept = kept)
         }
+    }
+
+    /** The wireframes' Chest: keep both (D-28): a rewarded ad's offer under the two boosters (C-03). */
+    @Test
+    fun `a chest of two boosters offers an ad to keep both`() {
+        var watched = 0
+        val picked = mutableListOf<Reward>()
+        chestOverMap(picked = picked, adOffer = true, watched = { watched++ })
+        compose.onNodeWithText("Pick one to keep.").assertIsDisplayed()
+        compose.onNodeWithText("Watch an ad to keep both").assertIsDisplayed()
+        capture("chest_ad_offer")
+
+        compose.onNodeWithText("Watch an ad to keep both").performClick()
+        assertEquals(1, watched)
+        assertTrue("watching keeps nothing by itself", picked.isEmpty())
+    }
+
+    @Test
+    fun `the chest's ad offer, dark`() {
+        chestOverMap(dark = true, adOffer = true)
+        capture("chest_ad_offer_dark")
+    }
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun `the chest's ad offer on a small phone`() {
+        chestOverMap(adOffer = true)
+        compose.onNodeWithText("Watch an ad to keep both").performSemanticsAction(SemanticsActions.OnClick)
+        capture("chest_ad_offer_small_phone")
+    }
+
+    /** The wireframes' Chest: after the ad (D-28): both kept, and the next level's card is on its way. */
+    @Test
+    fun `after the ad both rewards are kept`() {
+        val picked = mutableListOf<Reward>()
+        chestOverMap(picked = picked, adOffer = true, kept = true)
+        compose.onNodeWithText("Both are yours!").assertIsDisplayed()
+        compose.onNodeWithText("Opening the next level…").assertIsDisplayed()
+        compose.onNodeWithText("Watch an ad to keep both").assertDoesNotExist()
+        compose.onNodeWithContentDescription("Wall, 2 boosters. Kept.").assertIsDisplayed().assertHasNoClickAction()
+        compose.onNodeWithContentDescription("Bomb, 2 boosters, from level 3-1. Kept.").assertHasNoClickAction()
+        capture("chest_both_kept")
+    }
+
+    @Test
+    fun `a chest of one reward never offers an ad`() {
+        chestOverMap(shown = single, adOffer = true)
+        compose.onNodeWithText("Keep it").assertIsDisplayed()
+        compose.onNodeWithText("Watch an ad to keep both").assertDoesNotExist()
     }
 
     @Test

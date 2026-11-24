@@ -66,6 +66,15 @@ object Doodles {
         fill(ellipse(18f, 22f, 1.8f) + " " + ellipse(30f, 22f, 1.8f), ink)
     }
 
+    /**
+     * A rewarded ad's mark, 26 x 22 (the wireframes' ad offers): a small screen in [ink] with a
+     * play triangle in it and a stand under it.
+     */
+    fun ad(ink: Color): ImageVector = vector(26f, 22f) {
+        stroke("M4.5 1.5 h17 a3 3 0 0 1 3 3 v9 a3 3 0 0 1 -3 3 h-17 a3 3 0 0 1 -3 -3 v-9 a3 3 0 0 1 3 -3z M8 20.5h10", ink, 1.8f)
+        fill("M10.5 5.5 v7 l6 -3.5z", ink)
+    }
+
     /** A play triangle, 16 x 16, on Play a game's cards. */
     fun play(ink: Color): ImageVector = vector(16f, 16f) {
         fill("M4 2.5 L13 8 L4 13.5 Z", ink)

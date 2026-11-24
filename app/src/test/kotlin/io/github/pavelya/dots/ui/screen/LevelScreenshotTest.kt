@@ -6,7 +6,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -18,6 +20,12 @@ import dots.campaign.Campaign
 import dots.campaign.CampaignMap
 import dots.campaign.Cosmetic
 import dots.campaign.Level
+import dots.campaign.LevelMap
+import dots.campaign.LevelRecord
+import dots.campaign.Mission
+import dots.campaign.StarMeasure
+import dots.campaign.Stars
+import dots.campaign.Strength
 import dots.campaign.LevelResult
 import dots.campaign.Progress
 import dots.engine.Action
@@ -33,6 +41,9 @@ import io.github.pavelya.dots.game.gameViewModel
 import io.github.pavelya.dots.game.levelGame
 import io.github.pavelya.dots.ui.theme.DotsTheme
 import io.github.pavelya.dots.ui.theme.GameTheme
+import dots.log.GameLogEntry
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import kotlinx.coroutines.Dispatchers
 import org.junit.Rule
 import org.junit.Test
@@ -170,7 +181,7 @@ class LevelScreenshotTest {
         override fun choose(state: GameState): Action = Action.Place(state.legalMoves().first())
     }
 
-    private fun level11(journal: CampaignJournal) = Campaign.level(1, 1).let { level ->
+    private fun level11(journal: CampaignJournal, level11: Level = Campaign.level(1, 1)) = level11.let { level ->
         GameViewModel(
             start = levelGame(level, threatHighlight = false, now = 0),
             nextGame = { levelGame(level, threatHighlight = false, now = 0) },
@@ -233,14 +244,36 @@ class LevelScreenshotTest {
     @Test
     fun resultWinNeonArcadeDark() = win("result_level_win_neon_arcade_dark", GameTheme.NEON_ARCADE, dark = true)
 
-    private fun loss(name: String, theme: GameTheme = GameTheme.NOTEBOOK) {
-        val journal = CampaignJournal { _: Level, result: LevelResult -> LevelEnd(result, CampaignMap.Opened.NOTHING, LevelEnd.HELP_AFTER_FAILURES, null) }
-        val vm = level11(journal)
-        show(theme) { GameScreen(vm, onToMap = {}, onRules = {}) }
+    /**
+     * Level 1-1 lost by one capture, in [theme], after the third failure in a row ([failed]): Retry
+     * with a free Hint, and a rewarded ad's offer of [adOffer] below it (D-28). With [watched], the
+     * ad has been watched: 1-1 here allows a Wall, so the Wall waits for the retry.
+     */
+    private fun loss(
+        name: String,
+        theme: GameTheme = GameTheme.NOTEBOOK,
+        failed: Int = LevelEnd.HELP_AFTER_FAILURES,
+        adOffer: Booster? = null,
+        watched: Boolean = false,
+    ) {
+        val journal = CampaignJournal { _: Level, result: LevelResult -> LevelEnd(result, CampaignMap.Opened.NOTHING, failed, null) }
+        val level = Campaign.level(1, 1).let { if (watched) it.copy(boosters = it.boosters + (Booster.WALL to 1)) else it }
+        val vm = level11(journal, level)
+        var watches = 0
+        show(theme) { GameScreen(vm, onToMap = {}, onRules = {}, adOffer = adOffer, onWatchAd = { watches++ }) }
         play(vm, Pos(0, 6))
         play(vm, Pos(1, 6))
         play(vm, Pos(2, 6))
         waitFor("So close!")
+        if (adOffer != null && !watched) {
+            compose.onNodeWithText("Watch an ad for one Wall on your retry").performSemanticsAction(SemanticsActions.OnClick)
+            assertEquals(1, watches)
+        }
+        if (watched) {
+            compose.runOnUiThread { vm.adWatched() }
+            waitFor("One Wall ready for your retry")
+            assertEquals(Booster.WALL, vm.ui.value.adForRetry)
+        }
         capture(name)
     }
 
@@ -252,6 +285,49 @@ class LevelScreenshotTest {
 
     @Test
     fun resultLossNeonArcade() = loss("result_level_loss_neon_arcade", GameTheme.NEON_ARCADE)
+
+    /** The wireframes' Result: loss, ad offer (D-28): from World 2, one booster for the retry. */
+    @Test
+    fun resultLossAdOffer() = loss("result_level_loss_ad_offer", failed = 1, adOffer = Booster.WALL)
+
+    /** The wireframes' Result: loss, third try and ad offer: the free Hint above the ad's offer. */
+    @Test
+    fun resultLossHintAndAdOffer() = loss("result_level_loss_hint_and_ad_offer", adOffer = Booster.WALL)
+
+    @Test
+    @Config(qualifiers = "w320dp-h568dp-xhdpi")
+    fun resultLossHintAndAdOfferSmallPhone() = loss("result_level_loss_hint_and_ad_offer_small_phone", adOffer = Booster.WALL)
+
+    /** The wireframes' Result: loss, after the ad: "One Wall ready for your retry" in its place. */
+    @Test
+    fun resultLossAfterTheAd() = loss("result_level_loss_after_the_ad", failed = 1, adOffer = Booster.WALL, watched = true)
+
+    /**
+     * A level passed with the ad's Wall used (G-29): 1 star, its margin, and no "Two stars need"
+     * line, as more stars can't come from a game with the ad's booster. A test level in World 2: red's d3
+     * encloses both blue dots, after a wall on each of two turns, the second the ad's.
+     */
+    @Test
+    fun resultWinWithTheAdsBooster() {
+        val map = LevelMap(listOf(".......", "..R.R..", ".RB.BR.", "..R.R..", "......."))
+        val level = Level(2, 1, "Test", Strength.EASY, 2, map, Mission.Win, mapOf(Booster.WALL to 1, Booster.UNDO to 1), stars = Stars(StarMeasure.MARGIN, two = 2, three = 3))
+        val record = LevelRecord(level, "wall:g1 b1 a1 wall:a5 d3 g5".split(' ').map(Action::parse), ad = Booster.WALL)
+        assertEquals("the same game without the ad earns 2", 2, level.result(record.replay()).stars)
+        val vm = GameViewModel(
+            start = GameLogEntry.start(record, level.strength.text, threatHighlight = false, now = 0).copy(record = record),
+            nextGame = { levelGame(level, threatHighlight = false, now = 0) },
+            computerFor = { firstFreePoint },
+            campaign = CampaignJournal { _: Level, result: LevelResult -> LevelEnd(result, CampaignMap.Opened.NOTHING, 0, null) },
+            computerDispatcher = Dispatchers.Unconfined,
+            replyDelayMillis = 0,
+        )
+        show { GameScreen(vm, onToMap = {}, onRules = {}) }
+        waitFor("You won!")
+        assertEquals(1, vm.ui.value.levelEnd?.result?.stars)
+        compose.onNodeWithContentDescription("1 of 3 stars").assertExists()
+        assertTrue(compose.onAllNodes(hasText("Two stars need", substring = true)).fetchSemanticsNodes().isEmpty())
+        capture("result_level_win_ad_capped")
+    }
 
     private fun freePlay(name: String, theme: GameTheme = GameTheme.NOTEBOOK) {
         val vm = gameViewModel(

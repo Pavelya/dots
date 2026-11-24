@@ -44,6 +44,11 @@
     <string name="chest_reward">%1$s ×%2$d</string>
     <string name="chest_a_booster">a booster</string>
     <string name="chest_from">from level %1$s</string>
+    <!-- A rewarded ad (C-03): a chest of two boosters, from World 2. -->
+    <string name="chest_ad_offer">Watch an ad to keep both</string>
+    <string name="chest_both">Both are yours!</string>
+    <string name="chest_opening_next">Opening the next level…</string>
+    <string name="chest_kept">Kept</string>
     <!-- The player's title on Stats (the wireframes' Stats). -->
     <string name="stats_your_title">YOUR TITLE</string>
     <string name="stats_title_next">%1$s next</string>
@@ -263,6 +268,9 @@
     <string name="result_next">Next</string>
     <string name="result_retry">Retry</string>
     <string name="result_free_hint">Retry with a free Hint</string>
+    <!-- A rewarded ad (C-03) on the Result of a failed level, from World 2: the booster's name. -->
+    <string name="result_ad_offer">Watch an ad for one %1$s on your retry</string>
+    <string name="result_ad_ready">One %1$s ready for your retry</string>
     <string name="result_progress">Captured %1$d of %2$d</string>
     <!-- How to play (the wireframes' Rules) -->
     <string name="rules_title">How to play</string>
@@ -373,7 +381,11 @@
     <string name="settings_privacy">Privacy</string>
     <string name="settings_backup">Play Games backup</string>
     <string name="back_to_settings">Back to settings</string>
-    <string name="privacy_intro">Your progress, settings and games stay on this phone. Pinfold sends nothing anywhere.</string>
+    <string name="privacy_intro">Your progress, settings and games stay on this phone. Pinfold sends Google crash reports and a few game events, never your name, and the ads you choose to watch come from Google AdMob.</string>
+    <string name="privacy_ad_choices">Ad choices</string>
+    <string name="privacy_ad_choices_detail">Google’s form</string>
+    <string name="privacy_show_ad_offers">Show ad offers</string>
+    <string name="privacy_show_ad_offers_detail">A booster for a short ad, after a lost level or at a chest. Never during a game.</string>
     <string name="credits_title">Credits</string>
     <string name="credits_made_by">Made by</string>
     <string name="credits_fonts">Fonts</string>
@@ -404,6 +416,10 @@
     <string name="developer_daily_note">The puzzles start on 1 January 2027. A year ahead moves the puzzle’s clock 365 days on, to try them now.</string>
     <string name="developer_daily_ahead">A year ahead</string>
     <string name="developer_daily_clear">Clear the streak and attempts</string>
+    <string name="developer_ads">Ads</string>
+    <string name="developer_ads_note">Debug builds show Google’s test ads. Ads as in the EU makes Google’s consent form treat this phone as in the EU; forget the answer, then close and open the app to see the form.</string>
+    <string name="developer_ads_in_eu">Ads as in the EU</string>
+    <string name="developer_ads_forget">Forget the consent answer</string>
     <string name="licences_intro">Pinfold is built with these libraries. Each may be used under the licence printed below.</string>
 
     <plurals name="preview_stars_of">

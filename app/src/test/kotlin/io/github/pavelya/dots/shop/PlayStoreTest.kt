@@ -6,6 +6,7 @@ import dots.campaign.Cosmetic
 import dots.campaign.Progress
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -108,6 +109,29 @@ class PlayStoreTest {
         val offline = store().apply { refresh() }
         assertEquals(setOf(Cosmetic.STAR_CHART), offline.state.value.bought)
         assertEquals(Selling.UNKNOWN, offline.state.value.selling)
+    }
+
+    @Test
+    fun `each payment made on this phone is reported once, and a restore or a pending purchase is not`() {
+        val payments = mutableListOf<Cosmetic>()
+        play.purchases = listOf(paid("lasso", acknowledged = true))
+        val store = store(Memory())
+        CoroutineScope(Dispatchers.Unconfined).launch { store.paid.collect { payments += it } }
+        store.refresh()
+        assertEquals("restored, not paid now", emptyList<Cosmetic>(), payments)
+
+        store.buy(activity, Cosmetic.STAR_CHART)
+        play.closes(BillingResponseCode.OK, listOf(pending("star_chart")))
+        assertEquals("pending: not paid yet", emptyList<Cosmetic>(), payments)
+        play.purchases = listOf(paid("lasso", acknowledged = true), paid("star_chart"))
+        store.refresh()
+        assertEquals("paid at the shop later", listOf(Cosmetic.STAR_CHART), payments)
+
+        store.buy(activity, Cosmetic.NEON_ARCADE)
+        play.closes(BillingResponseCode.OK, listOf(paid("neon_arcade")))
+        play.purchases = play.purchases + paid("neon_arcade", acknowledged = true)
+        store.refresh()
+        assertEquals(listOf(Cosmetic.STAR_CHART, Cosmetic.NEON_ARCADE), payments)
     }
 
     @Test

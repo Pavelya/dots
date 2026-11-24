@@ -145,6 +145,9 @@ private fun rememberEndTimeline(ui: GameUiState, moment: Timeline): Timeline {
  * The daily puzzle (A-07) opens with its mission, as a level does, and has no tool bar and no
  * Restart in Pause: a failed attempt has Retry on Result. Its Result shows the streak and the time
  * to the next puzzle ([toNextPuzzle]), and Share hands the share text to [onShare].
+ *
+ * The Result of a failed campaign level shows a rewarded ad's offer of [adOffer] for the retry,
+ * when the app allows one now (docs/design/money.md); a tap goes to [onWatchAd].
  */
 @Composable
 fun GameScreen(
@@ -161,6 +164,8 @@ fun GameScreen(
     onShare: (String) -> Unit = {},
     toNextPuzzle: () -> Long = { 0L },
     onLevelResult: (level: Level, end: LevelEnd, practice: Boolean) -> Unit = { _, _, _ -> },
+    adOffer: Booster? = null,
+    onWatchAd: () -> Unit = {},
 ) {
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val levelResult by rememberUpdatedState(onLevelResult)
@@ -347,6 +352,8 @@ fun GameScreen(
                 onShare = onShare,
                 toNextPuzzle = toNextPuzzle,
                 sounds = endedHere,
+                adOffer = adOffer,
+                onWatchAd = onWatchAd,
             )
         }
     }

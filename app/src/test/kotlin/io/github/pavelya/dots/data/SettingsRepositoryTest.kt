@@ -60,6 +60,8 @@ class SettingsRepositoryTest {
             placing = PlacingMethod.TWO_TAPS,
             tutorialSkipped = true,
             dailyAhead = true,
+            showAdOffers = false,
+            adsInEu = true,
         )
         for (property in AppSettings::class.java.declaredFields.filterNot { java.lang.reflect.Modifier.isStatic(it.modifiers) }) {
             property.isAccessible = true

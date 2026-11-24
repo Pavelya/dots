@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import dots.campaign.Level
 import dots.campaign.Mission
 import dots.campaign.MissionStatus
+import dots.campaign.StarMeasure
 import dots.campaign.Stars
 import dots.daily.DailyPuzzle
 import dots.daily.DailyShare
@@ -83,7 +84,9 @@ import io.github.pavelya.dots.ui.theme.Palette
  *
  * - Campaign win: Next ([onNext]), with a small Retry.
  * - Campaign failure or draw: Retry, with a small Map. After the third failure in a row, Retry
- *   with a free Hint ([onAgainWithHint]) as well.
+ *   with a free Hint ([onAgainWithHint]) as well. From World 2, below them, a rewarded ad's offer
+ *   of one booster for the retry ([adOffer], [onWatchAd]; docs/design/money.md). Once the ad is
+ *   watched, "One Wall ready for your retry" takes its place, and Retry plays with it.
  * - Free play and two players: Play again, with a small Map.
  * - Daily puzzle solved (the wireframes' Daily result): the moves against the fewest possible, the
  *   streak, what the share text shows, and the time to the next puzzle ([toNextPuzzle]); Share
@@ -111,6 +114,8 @@ internal fun ResultNote(
     onShare: (String) -> Unit = {},
     toNextPuzzle: () -> Long = { 0L },
     sounds: Boolean = false,
+    adOffer: Booster? = null,
+    onWatchAd: () -> Unit = {},
 ) {
     val style = Palette.current
     BackHandler(onBack = onMap)
@@ -141,7 +146,7 @@ internal fun ResultNote(
                 modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
             ) {
                 if (level != null && end != null) {
-                    LevelResult(level, end, style, onNext, onAgain, onAgainWithHint, onMap, reveal)
+                    LevelResult(level, end, ui, style, onNext, onAgain, onAgainWithHint, onMap, reveal, adOffer, onWatchAd)
                 } else if (daily != null && dailyEnd != null) {
                     DailyResult(daily, dailyEnd, ui.mission, style, toNextPuzzle, onShare, onAgain, onMap, reveal)
                 } else {
@@ -156,12 +161,15 @@ internal fun ResultNote(
 private fun LevelResult(
     level: Level,
     end: LevelEnd,
+    ui: GameUiState,
     style: Palette,
     onNext: () -> Unit,
     onAgain: () -> Unit,
     onAgainWithHint: () -> Unit,
     onMap: () -> Unit,
     reveal: Timeline,
+    adOffer: Booster?,
+    onWatchAd: () -> Unit,
 ) {
     val result = end.result
     val status = result.status
@@ -178,7 +186,10 @@ private fun LevelResult(
             modifier = Modifier.padding(top = 4.dp),
         )
         val targets = level.stars
-        if (targets != null && result.stars < Stars.MAX) {
+        // A game that used the ad's booster earns 1 star on most levels (G-29): no target is suggested then.
+        val ad = ui.adInPlay
+        val capped = ad != null && targets?.measure != StarMeasure.BOOSTERS && level.adBoosterUsed(ui.state, ad)
+        if (targets != null && result.stars < Stars.MAX && !capped) {
             val (need, target) = if (result.stars < 2) R.string.result_two_stars_need to targets.two else R.string.result_three_stars_need to targets.three
             Text(stringResource(need, starScoreText(level, target)), style = NoteText.small, color = style.graphite, textAlign = TextAlign.Center)
         }
@@ -199,6 +210,11 @@ private fun LevelResult(
             BigButton(stringResource(R.string.result_retry), style, onAgain, Modifier.weight(1f), before = Doodles.RETRY)
         }
         if (end.failed >= LevelEnd.HELP_AFTER_FAILURES) HelpOffer(style, onAgainWithHint)
+        val ready = ui.adForRetry
+        when {
+            ready != null -> AdReadyLine(ready, ui.round, style)
+            adOffer != null -> AdOfferButton(stringResource(R.string.result_ad_offer, boosterName(adOffer)), style, onWatchAd, booster = adOffer)
+        }
     }
 }
 

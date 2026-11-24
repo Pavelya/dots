@@ -157,8 +157,9 @@ fun SettingsScreen(
 
 /**
  * The developer menu, hidden from players: sample campaign progress, the daily puzzle a year
- * ahead ([dailyAhead]) and its streak cleared, and the game log to share. Opens from the version
- * line in Settings.
+ * ahead ([dailyAhead]) and its streak cleared, on debug builds ([ads]) Google's consent form as in
+ * the EU ([adsInEu]) and its answer forgotten ([onForgetConsent]), and the game log to share.
+ * Opens from the version line in Settings.
  */
 @Composable
 fun DeveloperScreen(
@@ -167,6 +168,10 @@ fun DeveloperScreen(
     dailyAhead: Boolean = false,
     onDailyAhead: (Boolean) -> Unit = {},
     onClearDaily: () -> Unit = {},
+    ads: Boolean = false,
+    adsInEu: Boolean = false,
+    onAdsInEu: (Boolean) -> Unit = {},
+    onForgetConsent: () -> Unit = {},
     onShareLog: () -> Unit,
     onBack: () -> Unit,
 ) {
@@ -199,6 +204,19 @@ fun DeveloperScreen(
         }
         OutlinedButton(onClick = onClearDaily, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.developer_daily_clear))
+        }
+
+        if (ads) {
+            HorizontalDivider(Modifier.padding(vertical = 8.dp))
+            Section(R.string.developer_ads)
+            Text(stringResource(R.string.developer_ads_note), style = MaterialTheme.typography.bodyMedium)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.developer_ads_in_eu), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                Switch(checked = adsInEu, onCheckedChange = onAdsInEu)
+            }
+            OutlinedButton(onClick = onForgetConsent, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.developer_ads_forget))
+            }
         }
 
         HorizontalDivider(Modifier.padding(vertical = 8.dp))

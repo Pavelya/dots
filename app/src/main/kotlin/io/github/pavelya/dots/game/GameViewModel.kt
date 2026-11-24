@@ -141,6 +141,14 @@ data class GameUiState(
      * turn"): from its first dot until the player's next dot or booster. Empty otherwise and at the end.
      */
     val bossDots: List<Pos> = emptyList(),
+    /**
+     * The booster a rewarded ad gave for the next attempt at this level (decision 0030), once the
+     * player has watched it on Result: Retry then plays with it. Null before an ad; gone once the
+     * next game starts, and when the player leaves the level.
+     */
+    val adForRetry: Booster? = null,
+    /** The booster a rewarded ad gave this game, if it was started with one ([LevelRecord.ad]). */
+    val adInPlay: Booster? = null,
 ) {
     /** True when Result can open: the game is over and, in a level or the daily puzzle, its end is saved. */
     val showsResult: Boolean get() = isOver && (level == null || levelEnd != null) && (daily == null || dailyEnd != null)
@@ -272,6 +280,9 @@ class GameViewModel(
 
     /** The dots of the boss's last turn of two; see [GameUiState.bossDots]. */
     private var bossDots: List<Pos> = emptyList()
+
+    /** The booster an ad gave for the next attempt; see [GameUiState.adForRetry]. */
+    private var adForRetry: Booster? = null
 
     /** The captured areas in the order they were captured, worked out once the game is over. */
     private var captureOrder: List<CapturedArea>? = null
@@ -605,7 +616,29 @@ class GameViewModel(
      */
     fun playAgain() {
         val level = level
-        begin(if (entry.practice && level != null) levelGame(level, entry.threatHighlight, clock(), practice = true) else nextGame())
+        val ad = adForRetry
+        begin(
+            when {
+                entry.practice && level != null -> levelGame(level, entry.threatHighlight, clock(), practice = true)
+                // The booster from the ad on Result, for this retry only.
+                level != null && ad != null -> levelGame(level, entry.threatHighlight, clock(), progress(), ad = ad)
+                else -> nextGame()
+            },
+        )
+    }
+
+    /**
+     * A rewarded ad has been watched on the Result of this failed level (docs/design/money.md): its
+     * booster, the level's [Level.adBooster], waits for the next attempt, which Retry starts. One per
+     * failed attempt; nothing outside a finished, failed campaign level.
+     */
+    fun adWatched() {
+        val level = level ?: return
+        val booster = level.adBooster ?: return
+        val end = levelEnd ?: return
+        if (entry.practice || end.result.isPassed || adForRetry != null) return
+        adForRetry = booster
+        _ui.value = _ui.value.copy(adForRetry = booster)
     }
 
     /** In a practice game of the tutorial, plays its next level, also as practice; else does nothing. */
@@ -627,7 +660,8 @@ class GameViewModel(
      */
     fun retryWith(booster: Booster) {
         val level = level ?: return playAgain()
-        begin(levelGame(level, entry.threatHighlight, clock(), progress(), gift = mapOf(booster to 1), practice = entry.practice))
+        val ad = adForRetry.takeIf { !entry.practice }
+        begin(levelGame(level, entry.threatHighlight, clock(), progress(), gift = mapOf(booster to 1), practice = entry.practice, ad = ad))
     }
 
     private fun begin(next: GameLogEntry) {
@@ -646,6 +680,7 @@ class GameViewModel(
         captureOrder = null
         askingStop = false
         stopMoment = null
+        adForRetry = null
         round++
         lastActive = clock()
         journal?.start(entry)
@@ -918,6 +953,8 @@ class GameViewModel(
             captureOrder = if (over) captureOrder() else emptyList(),
             opponentInPlay = inPlay,
             bossDots = if (over) emptyList() else bossDots,
+            adForRetry = adForRetry,
+            adInPlay = (entry.record as? LevelRecord)?.ad,
         )
     }
 }

@@ -116,8 +116,11 @@ class ProgressRepository(private val store: DataStore<Preferences>, scope: Corou
     }
 
     /** Opens [chest] and keeps [reward]; a chest already opened stays as it was. */
-    suspend fun open(chest: Chest, reward: Reward) {
-        store.edit { write(it, read(it).open(chest, reward)) }
+    suspend fun open(chest: Chest, reward: Reward) = open(chest, listOf(reward))
+
+    /** Opens [chest] and keeps every one of [rewards]: both, after a rewarded ad (decision 0030). */
+    suspend fun open(chest: Chest, rewards: List<Reward>) {
+        store.edit { write(it, read(it).open(chest, rewards)) }
     }
 
     override fun spent(game: Long, level: Level, used: UsedBoosters) {

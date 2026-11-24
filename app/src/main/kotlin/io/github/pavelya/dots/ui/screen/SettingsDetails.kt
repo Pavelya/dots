@@ -26,12 +26,27 @@ import kotlinx.coroutines.withContext
  * A page Settings opens, on the same paper (the wireframes' frame "Settings details"): Privacy,
  * Credits, the open-source licences, and a stand-in for the Play Games backup, which O-02 builds
  * and no row opens until then (decision 0037). Credits opens the licences with [onPage].
+ *
+ * Privacy (the wireframes' Settings details: Privacy, D-28): what the game keeps and sends; Ad
+ * choices, which opens Google's consent form again ([onAdChoices]), where the law gives the player
+ * that choice ([adChoices]); and the Show ad offers switch ([showAdOffers], [onShowAdOffers]).
+ * The privacy policy's row comes with the policy (R-03).
  */
 @Composable
-fun SettingsDetailsScreen(page: SettingsPage, onPage: (SettingsPage) -> Unit, onBack: () -> Unit) {
+fun SettingsDetailsScreen(
+    page: SettingsPage,
+    onPage: (SettingsPage) -> Unit,
+    onBack: () -> Unit,
+    adChoices: Boolean = false,
+    onAdChoices: () -> Unit = {},
+    showAdOffers: Boolean = true,
+    onShowAdOffers: (Boolean) -> Unit = {},
+) {
     when (page) {
         SettingsPage.PRIVACY -> PaperPage(stringResource(R.string.settings_privacy), onBack, stringResource(R.string.back_to_settings)) {
             IntroCard(stringResource(R.string.privacy_intro))
+            if (adChoices) LinkRow(stringResource(R.string.privacy_ad_choices), stringResource(R.string.privacy_ad_choices_detail), onClick = onAdChoices)
+            SwitchRow(stringResource(R.string.privacy_show_ad_offers), showAdOffers, stringResource(R.string.privacy_show_ad_offers_detail), onShowAdOffers)
         }
         SettingsPage.BACKUP -> PaperPage(stringResource(R.string.settings_backup), onBack, stringResource(R.string.back_to_settings)) {
             IntroCard(stringResource(R.string.stand_in, "O-02"))

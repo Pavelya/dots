@@ -212,6 +212,20 @@ class ProgressTest {
     }
 
     @Test
+    fun `an ad keeps both rewards of a chest of two, once`() {
+        val chest = Campaign.chests.first { !it.isSingle }
+        val passed = passedUpTo(chest.after.code)
+        val opened = passed.open(chest, chest.choices)
+        assertEquals(chest.choices.associate { it.booster to it.count }, opened.boosters)
+        assertTrue(opened.isOpened(chest))
+        assertEquals(opened, opened.open(chest, chest.choices), "a chest opens once")
+        assertEquals(opened, opened.open(chest, chest.choices.first()), "a chest opens once")
+        assertEquals(passed.open(chest, chest.choices.first()), passed.open(chest, listOf(chest.choices.first())))
+        assertFailsWith<IllegalArgumentException> { passed.open(chest, emptyList()) }
+        assertFailsWith<IllegalArgumentException> { passed.open(chest, chest.choices + Reward(Booster.UNDO, 1)) }
+    }
+
+    @Test
     fun `owned boosters go to the levels that allow them, are spent and given back`() {
         val progress = Progress(boosters = mapOf(Booster.WALL to 2, Booster.BOMB to 1))
 

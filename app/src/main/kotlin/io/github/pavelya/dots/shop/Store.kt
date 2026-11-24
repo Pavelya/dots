@@ -3,9 +3,11 @@ package io.github.pavelya.dots.shop
 import android.app.Activity
 import dots.campaign.Cosmetic
 import dots.campaign.Progress
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.emptyFlow
 
 /**
  * Where the Shop sells (docs/design/money.md): Google Play, or nowhere. The game reads what was
@@ -14,6 +16,13 @@ import kotlinx.coroutines.flow.asStateFlow
 interface Store {
     /** What Google Play has said so far. */
     val state: StateFlow<StoreState>
+
+    /**
+     * Each item the player has just paid for on this phone, as Google Play confirms the payment: at
+     * once, or later for a pending one. Never an item restored, or bought on another phone. Rewarded
+     * ads pause for 24 hours after one (money.md, "Rewarded ads").
+     */
+    val paid: Flow<Cosmetic>
 
     /**
      * Asks Google Play again for the prices and the purchases: when the app comes back on screen,
@@ -98,6 +107,8 @@ fun cosmeticOfProduct(productId: String): Cosmetic? = Cosmetic.entries.firstOrNu
  */
 object NoStore : Store {
     override val state: StateFlow<StoreState> = MutableStateFlow(StoreState(selling = Selling.EARN_ONLY)).asStateFlow()
+
+    override val paid: Flow<Cosmetic> = emptyFlow()
 
     override fun refresh() = Unit
 
