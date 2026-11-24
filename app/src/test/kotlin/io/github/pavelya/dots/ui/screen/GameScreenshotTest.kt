@@ -329,6 +329,38 @@ class GameScreenshotTest(private val case: ThemeCase) {
     @Test
     fun bossOpensInWorld4Dark() = bossOpens(4, dark = true)
 
+    /**
+     * The Kraken (4-20) to place two dots, one of which can capture (V-29): its attacking face. Red
+     * left its lone dot at (6, 11) with three Kraken dots round it; (6, 12) would close it in. With
+     * the threat highlight on, as the view model makes it. In Notebook, like [bossOpens].
+     */
+    private fun krakenAttacks(dark: Boolean) {
+        assumeTrue(case.isNotebook)
+        val level = Campaign.level(4, 20)
+        var move = MoveResult(level.newGame(), emptyList())
+        // Red, then the Kraken's two dots, one in each half; twice, then Red's third dot.
+        listOf(Pos(6, 11), Pos(5, 11), Pos(7, 11), Pos(2, 8), Pos(6, 10), Pos(11, 12), Pos(10, 2)).forEach { move = move.state.play(it) }
+        val ui = CanvasGame.ui(move, human).copy(strength = level.strength, level = level)
+        assertEquals(human.opponent, ui.state.toMove)
+        assertEquals(listOf(listOf(Pos(6, 11))), ui.dangers.filter { it.dotsNeeded == 1 }.map { it.group })
+        assertEquals(OpponentLook(Mood.ATTACKING), ui.opponent)
+        assertEquals(Faces.boss(level)!!.attacking, Faces.of(ui.opponent!!.mood, level.strength, Faces.boss(level)))
+        val parts = CampaignParts(
+            title = "Level 20",
+            mission = missionNote(level, level.status(ui.state)),
+            boosters = { BoosterBar(level.boosters.map { (booster, left) -> BoosterTool(booster, left, usable = true) }, Palette.current) {} },
+            world = level.world,
+        )
+        show(dark = dark) { Board(ui, campaign = parts) }
+        capture("game_kraken_attacks${if (dark) "_dark" else ""}")
+    }
+
+    @Test
+    fun krakenAttacks() = krakenAttacks(dark = false)
+
+    @Test
+    fun krakenAttacksDark() = krakenAttacks(dark = true)
+
     @Test
     fun reef() = reef(dark = false)
 

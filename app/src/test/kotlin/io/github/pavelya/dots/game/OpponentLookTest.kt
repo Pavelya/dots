@@ -1,5 +1,6 @@
 package io.github.pavelya.dots.game
 
+import dots.ai.Hints
 import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
@@ -75,10 +76,67 @@ class OpponentLookTest {
     }
 
     @Test
+    fun `the Kraken attacks while it places two dots that can capture, until its second dot`() {
+        // Blue, the Kraken, places one dot in each half every turn. Red's (1, 2) needs only (1, 3) to be captured.
+        val start = GameState.start(
+            6, 6, dotsPerPlayer = 9,
+            dots = mapOf(Pos(1, 2) to Player.RED, Pos(1, 1) to Player.BLUE, Pos(0, 2) to Player.BLUE, Pos(2, 2) to Player.BLUE),
+            turnRules = mapOf(Player.BLUE to TurnRule.TwoHalves),
+        )
+        fun inDanger(state: GameState) = Hints.dangers(state, human, maxDots = 1).isNotEmpty()
+
+        // On the player's move the threat makes it smug, as for any computer.
+        assertEquals(OpponentLook(Mood.SMUG, Bubble.YOUR_MOVE), look(start, inDanger = inDanger(start)))
+
+        // The player leaves it: the Kraken's turn starts with a capture to make.
+        val itsTurn = start.play(Pos(5, 5)).state
+        assertEquals(Player.BLUE, itsTurn.toMove)
+        assertEquals(true, inDanger(itsTurn))
+        assertEquals(OpponentLook(Mood.ATTACKING), look(itsTurn, inDanger = true))
+        // Its own danger does not stop the attack; a capture by the player still surprises it first.
+        assertEquals(Mood.ATTACKING, look(itsTurn, inDanger = true, computerInDanger = true).mood)
+        assertEquals(Mood.SURPRISED, look(itsTurn, LastCapture(human, 1), inDanger = true).mood)
+
+        // Its first dot captures: the danger is gone, and it attacks on until its second dot.
+        val first = itsTurn.play(Pos(1, 3))
+        assertEquals(1, first.captures.sumOf { it.points })
+        assertEquals(Player.BLUE, first.state.toMove)
+        assertEquals(false, inDanger(first.state))
+        assertEquals(OpponentLook(Mood.ATTACKING), look(first.state, LastCapture(Player.BLUE, 1)))
+
+        // After its second dot the player is to move, and its capture makes it smug.
+        val second = first.state.play(Pos(4, 0)).state
+        assertEquals(human, second.toMove)
+        assertEquals(OpponentLook(Mood.SMUG), look(second, LastCapture(Player.BLUE, 1)))
+    }
+
+    @Test
+    fun `the Kraken does not attack on a turn with nothing to capture`() {
+        var state = GameState.start(6, 6, dotsPerPlayer = 9, turnRules = mapOf(Player.BLUE to TurnRule.TwoHalves))
+        // Red, then Blue's two dots, one in each half, along the top row: nothing is in danger.
+        listOf(Pos(0, 0), Pos(1, 0), Pos(4, 0), Pos(5, 0), Pos(2, 0), Pos(3, 0)).forEach { dot ->
+            assertEquals(false, Hints.dangers(state, human, maxDots = 1).isNotEmpty())
+            assertNotEquals(Mood.ATTACKING, look(state).mood)
+            state = state.play(dot).state
+        }
+        assertEquals(6, state.dotsPlaced(human) + state.dotsPlaced(Player.BLUE))
+    }
+
+    @Test
+    fun `a boss that counts down attacks only on its turn of two, even with the player's dots in danger`() {
+        val state = GameState.start(7, 7, dotsPerPlayer = 9, turnRules = mapOf(Player.BLUE to TurnRule.DoubleMove(3)))
+            .play(Pos(0, 0)).state
+        assertEquals(Player.BLUE, state.toMove)
+        assertNotEquals(Mood.ATTACKING, look(state, inDanger = true).mood)
+        assertNotEquals(Mood.ATTACKING, look(state, LastCapture(Player.BLUE, 1)).mood)
+    }
+
+    @Test
     fun `a computer without a boss's rule never attacks`() {
         var state = empty
         repeat(6) { ply ->
             assertNotEquals(Mood.ATTACKING, look(state).mood)
+            assertNotEquals(Mood.ATTACKING, look(state, inDanger = true).mood)
             state = state.play(Pos(ply % 5, ply / 5)).state
         }
     }
