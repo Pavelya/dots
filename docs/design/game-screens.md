@@ -34,6 +34,44 @@ point names the research it comes from: the [references](references.md) (B, P, M
 The layout rules from D-06 still hold: touch targets at least 48 dp, the largest board that fits
 (24 dp spacing on a 360 dp phone), and main actions below the top third of the screen.
 
+### When the photo doesn't fit
+
+The board takes the screen's full width, so the paper left above it, the **room**, depends on the
+phone and the board. The room is what is left between the 56 dp top row and the board, after the
+56 dp player line and the 64 dp tool bar. On a 360 dp phone it is about 100 dp on a 640 dp screen
+and about 190 dp on a 720 dp screen. The opponent's face stays in every campaign level whenever the
+screen is at least 252 dp taller than it is wide: 360 × 640, 393 × 645 or 412 × 664 dp and up. It
+gets smaller in steps:
+
+| Step | Room it needs | What shows above the board |
+| --- | --- | --- |
+| 1. Full photo | 192 dp, 220 dp with a boss's counter | The 124 dp photo (108 dp face), the speech bubble beside it, the world's board touches, the opponent's line under it. |
+| 2. Smaller photo | 140 to 191 dp, 168 to 219 dp with a counter | The same layout with a smaller photo: as large as the room allows, from 72 dp (56 dp face) up to 123 dp. The bubble stays. The board touches go. |
+| 3. Photo beside the line | 76 dp | A 62 dp photo (56 dp face) at the left, with the opponent's line beside it. The bubble goes. A boss's counter moves into this row, above the line. |
+| 4. Line in the top row | less than 76 dp | No photo. The opponent's line moves into the top row in place of the level's name, and the mission note narrows to 120 dp. |
+
+- **What gives way, in order:** the board touches, then the photo's size, then the speech bubble,
+  then the photo itself. The board, the opponent's line, the boss's counter and the mission note
+  never give way.
+- **The boss's counter** always sits right above the opponent's line: under the photo in steps 1
+  and 2, beside the photo in step 3, above the board in step 4. Never at the top, where a two-line
+  mission note would cover it.
+- **The photo** keeps its 8 dp white border and its tape at every size, so the tape never covers the
+  face. The 62 dp photo of step 3 has a 3 dp border and thinner tape.
+- **Spare room** goes above the opponent, as now: everything sits on the board, with paper above.
+- **The tutorial's note** takes its 96 dp first. On a 640 dp screen a tutorial level then has the
+  opponent's line in the top row (step 4).
+
+The canvas frames `fit-*` show these steps on 1-06 (8 × 8), 4-06 (14 × 14, the largest ordinary
+board) and every boss as the level opens, light and dark ([canvas README](canvas/README.md#the-face-when-the-photo-doesnt-fit)).
+Their heights are the space between the status bar and the navigation bar.
+
+| Screen | 1-06 | 4-06 | Boss 1-15 (12 × 12) | Bosses 2-20, 3-20 (14 × 14) | Boss 4-20, the Kraken (14 × 14, no counter) |
+| --- | --- | --- | --- | --- | --- |
+| 360 × 640 dp | 3 | 3 | 3, counter beside the photo | 3, counter beside the photo | 3 |
+| 360 × 720 dp | 2, 116 dp photo | 1 | 2, 88 dp photo | 2, 98 dp photo | 1 |
+| 412 × 800 dp | 1 | 1 | 2, 120 dp photo | 2, 122 dp photo | 1 |
+
 ## Fidelity
 
 The wireframes are sketches in the Notebook theme: squared paper, red and blue ink, hand-drawn

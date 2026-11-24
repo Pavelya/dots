@@ -345,8 +345,9 @@ crisp at any size. The canvas frames `game-world-2` to `game-world-4` show them;
 - **Which:** World 1 a wave, a star, a spiral and a paper plane; World 2 a flower, a leaf, a
   butterfly and a tulip; World 3 a crescent moon, a star, a comet and a twinkle; World 4 a fish, a
   shell, a boat and a wave.
-- **When:** in every campaign level of the world, light and dark, while the opponent's photo shows.
-  On a small phone the photo makes way for the board, and the touches go with it. Free play, two
+- **When:** in every campaign level of the world, light and dark, while the full 124 dp photo shows.
+  They are the first thing to go when it does not fit: with a smaller photo, a photo beside the
+  opponent's line, or none ([game-screens.md, "When the photo doesn't fit"](game-screens.md#when-the-photo-doesnt-fit)). Free play, two
   players and the daily puzzle belong to no world and have none. The app's `BoardTouches` holds the
   canvas's paths.
 - **No paper tint.** The board's paper is the theme's in every world. A tint would change the
@@ -356,9 +357,9 @@ crisp at any size. The canvas frames `game-world-2` to `game-world-4` show them;
 
 | Picture | Where | Size on screen |
 | --- | --- | --- |
-| The computer's moods | Above the board in every game; the face changes with the moment | 108 dp |
-| The computer's strengths | On the level card, next to the opponent's name; above the board between moods | 48 dp; 108 dp |
-| The bosses of Worlds 1 to 4 | Above the board on the boss level; on the boss's level card | 108 dp; 48 dp |
+| The computer's moods | Above the board in every game; the face changes with the moment | 108 dp; 56 to 107 dp when the full photo doesn't fit |
+| The computer's strengths | On the level card, next to the opponent's name; above the board between moods | 48 dp; 108 dp, or 56 to 107 dp |
+| The bosses of Worlds 1 to 4 | Above the board on the boss level; on the boss's level card | 108 dp, or 56 to 107 dp; 48 dp |
 | Landscape doodles | Beside the path on the World 1 map page; `MapPages` in the app lists where each one sits | 17 to 84 dp wide |
 | Castle, chest, flag | On the path: the boss level (the castle beaten once it is passed), the chest after level 10 (open once it is opened), the start at the foot of World 1's path | 48 to 68 dp |
 | Cottage | Beside the start of World 1's path | 54 dp |
@@ -366,6 +367,14 @@ crisp at any size. The canvas frames `game-world-2` to `game-world-4` show them;
 | Garden, night-sky and seaside doodles | Beside the path on the World 2, 3 and 4 map pages; `MapPages` in the app lists where each one sits | 12 to 84 dp wide |
 | Shed, observatory, tower; gate, tent, pier | On the path: the boss level of Worlds 2, 3 and 4 (beaten once it is passed); the start at the foot of each world's path | 50 to 68 dp |
 | Board touches (drawn in code) | Beside the opponent in every game of the world | 20 to 30 dp |
+
+**Above the board** the face sits in a photo taped to the paper: 124 dp with a 108 dp face when
+there is room. When there is less, the photo shrinks to as little as 72 dp (a 56 dp face), then
+moves beside the opponent's line as a 62 dp photo with a 56 dp face. The face leaves the game
+screen only when less than 76 dp is left above the board, which happens only on a screen less
+than 252 dp taller than it is wide, or in a tutorial level, whose note takes that room first. [game-screens.md, "When the photo
+doesn't fit"](game-screens.md#when-the-photo-doesnt-fit) gives the steps; the canvas frames `fit-*`
+show them.
 
 At 48 dp a face is small: check that the eyes and the mouth still read at that size before
 keeping a picture.

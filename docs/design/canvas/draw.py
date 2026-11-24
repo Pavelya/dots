@@ -7,6 +7,7 @@ two Google Fonts):
     python3 docs/design/canvas/draw.py --canvas DIR     # also the design canvas files, in DIR/project/
     python3 docs/design/canvas/draw.py --only star-chart  # one theme: notebook, star-chart or neon-arcade
     python3 docs/design/canvas/draw.py --only cosmetics   # the piece styles, ring effects and Shop
+    python3 docs/design/canvas/draw.py --only fit         # the face when the photo doesn't fit (D-34)
 
 Every frame is 360 x 800 dp, the size of a common Android phone, or 320 x 568 dp for a small phone,
 drawn in the light and the dark
@@ -16,6 +17,7 @@ board theme, from docs/design/theme-star-chart.md and docs/design/theme-neon-arc
 use another Chrome binary.
 """
 
+import base64
 import math
 import os
 import random
@@ -1023,9 +1025,9 @@ def face(t, mood, size):
     return svg(size, size, "".join(parts), view="0 0 100 100")
 
 
-def tape(t, left, top, w=52, angle=-3):
+def tape(t, left, top, w=52, angle=-3, h=16):
     return (f'<span aria-hidden="true" style="position: absolute; left: {left}px; top: {top}px; width: {w}px; '
-            f'height: 16px; background: {t.get("tape", t["hi_faint"])}; transform: rotate({angle}deg)"></span>')
+            f'height: {h}px; background: {t.get("tape", t["hi_faint"])}; transform: rotate({angle}deg)"></span>')
 
 
 def note_style(t, angle):
@@ -1347,6 +1349,152 @@ def small_game_frame(t, key, uid):
     if key in DRAGGED:
         parts.append(drag_thumb(top, 21, key))
     return root(t, "".join(parts), w=sw, h=sh)
+
+
+# ------------------------------------------- the face when the photo doesn't fit ----
+# D-34: how the opponent keeps its face when the full photo does not fit above the board. These frames
+# are the app's own height, between the status bar and the navigation bar, and use the app's sizes
+# (GameBoard.kt): a 56 dp top row, the board at the largest whole-dp spacing that fits, a 56 dp player
+# line and a 64 dp tool bar. The paper left between the top row and the board is the room; the
+# opponent takes it in one of four steps (game-screens.md, "When the photo doesn't fit"). Each frame
+# shows a level as it opens, with the real faces from the app.
+
+TOP_ROW, PLAYER_LINE, TOOL_BAR = 56, 56, 64
+OPPONENT_LINE = 52          # the opponent's line, 40 dp, and 12 dp of paper under it
+FULL_PHOTO = 124            # the photo; 8 dp of tape above it, 8 dp of paper under it
+FULL_ROOM = 8 + FULL_PHOTO + 8 + OPPONENT_LINE                 # 192
+SMALLEST_PHOTO = 72         # below this the photo moves beside the line
+COUNTER, COUNTER_GAP = 24, 4  # the boss's counter, right above the opponent's line
+BESIDE_PHOTO = 62           # the photo beside the line: a 56 dp face in a 3 dp border, under thinner tape
+BESIDE_ROOM = 6 + BESIDE_PHOTO + 8                            # 76
+APP_FACES = os.path.join(HERE, "..", "..", "..", "app", "src", "main", "res", "drawable-nodpi")
+
+
+def face_step(room, counter):
+    """The step the opponent takes in this much room: (step, photo size). A boss's counter always sits
+    right above the opponent's line: under the photo in the first two steps, beside it in the third."""
+    left = room - (COUNTER + COUNTER_GAP if counter else 0)
+    if left >= FULL_ROOM:
+        return "full", FULL_PHOTO
+    if left >= FULL_ROOM - FULL_PHOTO + SMALLEST_PHOTO:
+        return "smaller", left - (FULL_ROOM - FULL_PHOTO)
+    if room >= BESIDE_ROOM:
+        return "beside", BESIDE_PHOTO
+    return "top row", 0
+
+
+def face_picture(t, name, size):
+    """One of the app's face pictures (illustrations.md), drawn as the app draws it: 4 px per dp at a
+    108 dp face, centred in a square of size."""
+    dark = t["paper"] == THEMES["dark"]["paper"]
+    with open(os.path.join(APP_FACES, name + ("_dark" if dark else "") + ".png"), "rb") as fh:
+        data = fh.read()
+    pw, ph = int.from_bytes(data[16:20], "big"), int.from_bytes(data[20:24], "big")
+    k = size / 108 / 4
+    src = "data:image/png;base64," + base64.b64encode(data).decode()
+    return (f'<div style="width: {size}px; height: {size}px; display: flex; align-items: center; justify-content: center">'
+            f'<img alt="" src="{src}" style="width: {f(pw * k)}px; height: {f(ph * k)}px; flex-shrink: 0"></div>')
+
+
+def level_position(name):
+    rows = level_map(name)
+    return dict(red=marked(rows, "R"), blue=marked(rows, "B"), areas=[], last=None, n=len(rows),
+                holes=marked(rows, "-"), rocks=marked(rows, "#"), pearls=marked(rows, "+"))
+
+
+FIT_LEVELS = {  # level: its title, mission, dots, face, the boss's counter, booster counts, world
+    "1-06": dict(title="Level 6", mission="Capture the circled dot", dots=4, face="opponent_moods_happy",
+                 counter=None, counts=(0, 0, 0, 0, 1), world=1),
+    "4-06": dict(title="Level 6", mission="Win", dots=26, face="opponent_moods_happy",
+                 counter=None, counts=(1, 1, 1, 1, 1), world=4),
+    "1-15": dict(title="Level 15", mission="Win", dots=18, face="boss_world_1_smug",
+                 counter="Boss: two dots in 5 turns", counts=(0, 0, 0, 0, 1), world=1),
+    "2-20": dict(title="Level 20", mission="Win with only 20 dots", dots=21, face="boss_world_2_smug",
+                 counter="Boss: two dots in 5 turns", counts=(2, 0, 0, 0, 1), world=2),
+    "3-20": dict(title="Level 20", mission="Win with only 23 dots", dots=25, face="boss_world_3_smug",
+                 counter="Boss: two dots in 4 turns", counts=(0, 0, 1, 1, 1), world=3),
+    "4-20": dict(title="Level 20", mission="Win", dots=30, face="boss_world_4_smug",
+                 counter=None, counts=(1, 1, 1, 1, 1), world=4),
+}
+
+
+def boss_counter(t, text, top):
+    return (f'<div style="position: absolute; left: 0; right: 0; top: {top}px; display: flex; justify-content: center">'
+            f'<span style="height: 24px; box-sizing: border-box; padding: 0 12px; border: 2px solid {t["blue"]}; '
+            f'border-radius: 12px; background: {t["card"]}; display: flex; align-items: center; '
+            f'font-family: Caveat, cursive; font-weight: 700; font-size: 18px; line-height: 20px; color: {t["blue"]}; '
+            f'white-space: nowrap">{text}</span></div>')
+
+
+def touches_at(t, world, w, row_top):
+    """A world's board touches beside the full photo, as the app places them: moved down with the photo's
+    row, the left ones kept to the left edge and the right ones to the right edge."""
+    out = []
+    for ink, d in TOUCHES[world]:
+        for part in ("M" + p for p in d.split("M") if p.strip()):
+            right = float(part[1:].split()[0]) > W / 2
+            dx = w - W if right else 0
+            out.append(el("path", d=part, fill="none", stroke=t[ink], stroke_width=1.6, stroke_linecap="round",
+                          stroke_linejoin="round", transform=f"translate({dx} {row_top - 92})"))
+    return svg(w, row_top + 200, "".join(out), style="position: absolute; left: 0; top: 0")
+
+
+def fit_frame(t, level, uid, w, h):
+    k = FIT_LEVELS[level]
+    pos = level_position(level)
+    n = pos["n"]
+    sp = math.floor(min(w / n, (h - TOP_ROW - PLAYER_LINE - TOOL_BAR) / n))
+    board_top = h - PLAYER_LINE - TOOL_BAR - n * sp
+    room = board_top - TOP_ROW
+    step, side = face_step(room, k["counter"] is not None)
+    parts = [f'<div style="position: absolute; left: 4px; top: 4px">{icon_button(t, "pause", "Pause", isize=30)}</div>',
+             f'<div style="position: absolute; left: 0; right: 0; top: 18px; text-align: center; {LABEL}; '
+             f'color: {t["graphite"]}">{k["title"]}</div>',
+             mission_note(t, k["mission"], right=12, top=6)]
+    line_box = 'height: 40px; display: flex; align-items: center'
+    if step in ("full", "smaller"):
+        line_top = board_top - OPPONENT_LINE
+        counter_top = line_top - COUNTER_GAP - COUNTER if k["counter"] else line_top
+        photo_top = counter_top - 8 - side
+        box_left = (w - 296) // 2
+        photo_left = box_left + 32 + FULL_PHOTO - side          # its right edge stays put, so the bubble does too
+        if step == "full":
+            parts.insert(0, touches_at(t, k["world"], w, photo_top - 8))
+        # The photo keeps its 8 dp border and its tape, so the tape never covers the face; only the face shrinks.
+        parts.append(f'<div style="position: absolute; left: {photo_left}px; top: {photo_top}px; width: {side}px; '
+                     f'height: {side}px; box-sizing: border-box; padding: 8px; {note_style(t, -3)}">'
+                     f'{tape(t, round(side * 36 / 124), -9, round(side * 52 / 124), 4)}{face_picture(t, k["face"], side - 16)}</div>')
+        parts.append(bubble(t, "Good luck!", box_left + 166, f(photo_top + side * 32 / 124)))
+        parts.append(f'<div style="position: absolute; left: 0; right: 0; top: {line_top}px; {line_box}; '
+                     f'justify-content: center">{side_row(t, "blue", "Computer", 0, False, "center")}</div>')
+        if k["counter"]:
+            parts.append(boss_counter(t, k["counter"], counter_top))
+    elif step == "beside":
+        row_top = board_top - BESIDE_ROOM
+        parts.append(f'<div style="position: absolute; left: 16px; top: {row_top + 6}px; width: {BESIDE_PHOTO}px; '
+                     f'height: {BESIDE_PHOTO}px; box-sizing: border-box; padding: 3px; {note_style(t, -3)}">'
+                     f'{tape(t, 15, -6, 32, 4, h=9)}{face_picture(t, k["face"], BESIDE_PHOTO - 6)}</div>')
+        column = 16 + BESIDE_PHOTO + 14
+        if k["counter"]:
+            parts.append(f'<div style="position: absolute; left: {column}px; top: {row_top}px; display: flex">'
+                         f'{boss_counter(t, k["counter"], 0).replace("position: absolute; left: 0; right: 0; top: 0px; ", "")}'
+                         f'</div>')
+            line_top = row_top + COUNTER + COUNTER_GAP
+        else:
+            line_top = row_top + 6 + (BESIDE_PHOTO - 40) // 2
+        parts.append(f'<div style="position: absolute; left: {column}px; top: {line_top}px; {line_box}">'
+                     f'{side_row(t, "blue", "Computer", 0, False, "flex-start")}</div>')
+    else:
+        raise ValueError(f"{level} at {w} x {h}: the opponent's line goes into the top row")
+    parts.append(f'<div style="position: absolute; left: {(w - n * sp) // 2}px; top: {board_top}px">'
+                 f'{theme_board_svg(dict(t, style="notebook"), pos, uid, size=n * sp, sp=sp)}</div>')
+    parts.append(f'<div style="position: absolute; left: 16px; right: 16px; top: {board_top + n * sp}px; height: 56px; '
+                 f'display: flex; align-items: center; justify-content: space-between">'
+                 f'{side_row(t, "red", "You", 0, True, "flex-start")}'
+                 f'<div style="display: flex; align-items: baseline; gap: 6px"><span style="{SCORE}">{k["dots"]}</span>'
+                 f'<span style="{LABEL}; color: {t["graphite"]}">dots left</span></div></div>')
+    parts.append(toolbar(t, top=h - TOOL_BAR, undo_ready=False, counts=k["counts"]))
+    return root(t, "".join(parts), w=w, h=h)
 
 
 def boosters_frame(t, uid):
@@ -2165,6 +2313,20 @@ COSMETICS = [  # file name, canvas name, title, piece style, ring effect, moment
     ("lasso", "Lasso", "Lasso", None, "lasso", "big", "star-chart"),
     ("rubber-stamp", "RubberStamp", "Rubber stamp", None, "stamp", "big", "neon-arcade"),
 ]
+# The face when the full photo doesn't fit (D-34): one level and one boss on three phone heights, and at
+# 360 x 720 the largest ordinary board and every boss. Sizes are the app's height between the system bars.
+FIT_FRAMES = [  # file stem, canvas name, title, level, size
+    ("fit-1-06-360x640", "Fit106At640", "1-06 at 360 x 640: the photo beside the line", "1-06", (360, 640)),
+    ("fit-1-15-360x640", "Fit115At640", "Boss 1-15 at 360 x 640: the photo and the counter beside the line", "1-15", (360, 640)),
+    ("fit-1-06-360x720", "Fit106At720", "1-06 at 360 x 720: a smaller photo", "1-06", (360, 720)),
+    ("fit-4-06-360x720", "Fit406At720", "4-06, 14 x 14, at 360 x 720: the full photo", "4-06", (360, 720)),
+    ("fit-1-15-360x720", "Fit115At720", "Boss 1-15 at 360 x 720: a smaller photo under the counter", "1-15", (360, 720)),
+    ("fit-2-20-360x720", "Fit220At720", "Boss 2-20 at 360 x 720: a smaller photo under the counter", "2-20", (360, 720)),
+    ("fit-3-20-360x720", "Fit320At720", "Boss 3-20 at 360 x 720: a smaller photo under the counter", "3-20", (360, 720)),
+    ("fit-4-20-360x720", "Fit420At720", "Boss 4-20, the Kraken, at 360 x 720: the full photo", "4-20", (360, 720)),
+    ("fit-1-06-412x800", "Fit106At800", "1-06 at 412 x 800: the full photo", "1-06", (412, 800)),
+    ("fit-1-15-412x800", "Fit115At800", "Boss 1-15 at 412 x 800: a smaller photo under the counter", "1-15", (412, 800)),
+]
 SHOP_FRAMES = [("shop-pieces", "ShopPieces", "Shop: piece styles", "pieces"),
                ("shop-rings", "ShopRings", "Shop: ring effects", "rings")]
 
@@ -2199,6 +2361,11 @@ def jobs(only=None):
             for version, t in THEMES.items():
                 out.append((f"{stem}-{version}", name + ("" if version == "light" else "Dark"), f"{title}, {version}",
                             lambda t, u, tab=tab: shop_frame(t, u, tab), (W, H), t, f"{name}{version[0]}"))
+    if only in (None, "fit"):
+        for stem, name, title, level, size in FIT_FRAMES:
+            for version, t in THEMES.items():
+                out.append((f"{stem}-{version}", name + ("" if version == "light" else "Dark"), f"{title}, {version}",
+                            lambda t, u, lv=level, sz=size: fit_frame(t, lv, u, *sz), size, t, f"{name}{version[0]}"))
     return out
 
 
