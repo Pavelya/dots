@@ -14,17 +14,15 @@ day it was saved (`name-YYYY-MM-DD`), and the register's Licence column links to
 | [`suno-copyrights-2026-11-09.pdf`](suno-copyrights-2026-11-09.pdf) | Suno help: "Do I have the copyrights to songs I made?" | 2026-11-09 | [help.suno.com/en/articles/2746945](https://help.suno.com/en/articles/2746945) | The same |
 | [`suno-commercial-use-2026-11-09.pdf`](suno-commercial-use-2026-11-09.pdf) | Suno help: "What is commercial use?" | 2026-11-09 | [help.suno.com/en/articles/9601985](https://help.suno.com/en/articles/9601985) | The same |
 | [`suno-paid-rights-2026-11-09.pdf`](suno-paid-rights-2026-11-09.pdf) | Suno help: "What rights do I have with a paid subscription?" | 2026-11-09 | [help.suno.com/en/articles/9601665](https://help.suno.com/en/articles/9601665) | The same |
-| [`openai-terms-2026-11-24.pdf`](openai-terms-2026-11-24.pdf) | OpenAI Terms of Use, for people who live outside the EEA, Switzerland and the UK: in force from 2026-01-01 | 2026-11-24 | [openai.com/policies/row-terms-of-use](https://openai.com/policies/row-terms-of-use/) | Every ChatGPT image: mood boards, icon drafts, map pictures, the computer's faces and the bosses, and the pictures recoloured from them |
-| [`openai-eu-terms-2026-11-24.pdf`](openai-eu-terms-2026-11-24.pdf) | OpenAI Europe Terms of Use, for people who live in the EEA, Switzerland or the UK: updated 2026-01-16 | 2026-11-24 | [openai.com/policies/eu-terms-of-use](https://openai.com/policies/eu-terms-of-use/) | The same |
+| [`openai-eu-terms-2026-11-24.pdf`](openai-eu-terms-2026-11-24.pdf) | OpenAI Europe Terms of Use, for people who live in the EEA, Switzerland or the UK: updated 2026-01-16 | 2026-11-24 | [openai.com/policies/eu-terms-of-use](https://openai.com/policies/eu-terms-of-use/) | Every ChatGPT image: mood boards, icon drafts, map pictures, the computer's faces and the bosses, and the pictures recoloured from them |
 | [`ofl-1.1-2026-11-24.txt`](ofl-1.1-2026-11-24.txt) | SIL Open Font License 1.1, with the copyright lines of Caveat and Nunito; the same text the app ships in `app/src/main/assets/licences/ofl-1.1.txt` | 2026-11-24 | [openfontlicense.org](https://openfontlicense.org/open-font-license-official-text/) | The fonts Caveat and Nunito, and every picture with letters set in them |
 
 **Dates.** A copy saved after the day we relied on a page still shows the right text when the
-page's own date is earlier. Both OpenAI versions were in force before the first ChatGPT image
+page's own date is earlier. OpenAI's Europe terms were in force before the first ChatGPT image
 (2026-11-07). The OFL 1.1 text has not changed since 2007.
 
-**Which OpenAI terms apply** depends on where the owner lives. Both versions say the same about
-images: the user owns the output, and OpenAI assigns to the user any rights it has in it
-("Ownership of content").
+**OpenAI's Europe terms apply** because the owner lives in the EU. They say the user owns the
+output, and OpenAI assigns to the user any rights it has in it ("Ownership of content").
 
 **The Suno help pages** speak only of songs. The Terms of Service are what count, and the help
 pages say so themselves.
@@ -48,9 +46,9 @@ cover them as they cover songs:
 - **No copyright promise.** Suno does not promise that copyright exists in any Output. The
   assignment and the commercial-use rights hold either way.
 
-So the dot, the ring and the bomb sounds can stay, on two conditions the owner confirms: they were
-made on 2026-11-09 while subscribed to Pro, and they were saved with Suno's download button. The
-same holds for the six music tracks.
+So the dot, the ring and the bomb sounds can stay, and so can the six music tracks. The owner
+confirms both conditions: every Suno file was made on 2026-11-09 while subscribed to Pro, and saved
+with Suno's download button.
 
 ## Kept privately
 
@@ -58,7 +56,7 @@ The repository is public, so personal proof stays out of it. The owner keeps the
 
 | What | Dates |
 | --- | --- |
-| Suno Pro receipt, and a screenshot of the plan with its dates | The Pro month that includes 2026-11-09, the day every Suno file was made |
+| Suno Pro receipt, and a screenshot of the plan with its dates | The Pro month started on or after 2026-09-06, the date of the terms copy, and includes 2026-11-09, the day every Suno file was made |
 
 ## Not here yet
 
