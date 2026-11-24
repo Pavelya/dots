@@ -300,7 +300,7 @@ class GameScreenshotTest(private val case: ThemeCase) {
             strength = level.strength,
             level = level,
         )
-        assertEquals(Faces.boss(level)!!.smug, Faces.of(ui.opponent.mood, level.strength, Faces.boss(level)))
+        assertEquals(Faces.boss(level)!!.smug, Faces.of(ui.opponent!!.mood, level.strength, Faces.boss(level)))
         val parts = CampaignParts(
             title = "Level 20",
             mission = missionNote(level, level.status(state)),
