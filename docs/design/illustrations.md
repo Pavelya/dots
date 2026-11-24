@@ -70,7 +70,8 @@ face shows how strong it plays and how the game is going.
   - **happy** as the level opens;
   - **smug** when the player's dots are in danger, on the player's move, and when it captures;
   - **worried** when one more of the player's dots would capture some of its own, while it
-    thinks and on the player's move. If the player's dots are in danger too, it is smug instead;
+    thinks and on the player's move, from the player's first dot. If the player's dots are in
+    danger too, it is smug instead;
   - **surprised** when the player captures 1 to 4 dots ("Hey!");
   - **upset** when the player captures 5 or more at once, a big capture ("Ouch!");
   - **sulky** when the player wins, and smug again when the player loses.

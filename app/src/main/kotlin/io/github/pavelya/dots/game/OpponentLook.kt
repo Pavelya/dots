@@ -56,10 +56,10 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
             state.stopper == human.opponent -> OpponentLook(Mood.SMUG, Bubble.STOPPED)
             bossTurn(state, human.opponent) -> OpponentLook(Mood.ATTACKING)
             humanInDanger && state.toMove == human -> OpponentLook(Mood.SMUG, Bubble.YOUR_MOVE)
-            // Its own dots in danger worry it, while it thinks and on the player's move, unless the
-            // player's are in danger too: then it is smug, as above.
-            computerInDanger -> OpponentLook(Mood.WORRIED)
             state.dotsPlaced(human) == 0 -> OpponentLook(Mood.HAPPY, Bubble.GOOD_LUCK)
+            // Its own dots in danger worry it, while it thinks and on the player's move, unless the
+            // player's are in danger too (smug, above) or the level has only just opened (happy).
+            computerInDanger -> OpponentLook(Mood.WORRIED)
             lastCapture != null -> OpponentLook(Mood.SMUG)
             else -> OpponentLook(Mood.DETERMINED)
         }

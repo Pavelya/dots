@@ -17,8 +17,9 @@ class OpponentLookTest {
         OpponentLook.of(state, human, capture, inDanger, computerInDanger = computerInDanger)
 
     @Test
-    fun `the level opens with a happy face and good luck`() {
+    fun `the level opens with a happy face and good luck, even with its own dots in danger`() {
         assertEquals(OpponentLook(Mood.HAPPY, Bubble.GOOD_LUCK), look(empty))
+        assertEquals(OpponentLook(Mood.HAPPY, Bubble.GOOD_LUCK), look(empty, computerInDanger = true))
     }
 
     @Test
