@@ -210,7 +210,7 @@ the game one notebook, as decision 0028 says, with the chart as the page in it.
 | The result note and the star reveal, the daily result | Card. Headlines in Gold ink where Notebook uses Red ink (a win), in Ice ink where it uses Blue ink (a loss). Earned stars in Gold ink, stars not earned in Dust outline. |
 | Two players' turn banner | The side's ink. |
 | The opponent's photo and speech bubble | Card, with Gold pale tape; the bubble's outline and words in Ice ink. |
-| The computer's faces and the World 1 boss | Recoloured by a script, not redrawn: see below. |
+| The computer's faces and the bosses' | Recoloured by a script, not redrawn: see below. |
 | Board touches | Drawn in code in the theme's pale inks, so Gold pale and Ice pale, as on every theme. World 3's star and comet doodles are outlines, beside the opponent, never next to the board, so they are not taken for pieces. |
 
 ### The faces
@@ -231,9 +231,8 @@ looking pasted in.
 
 Each recoloured picture is saved beside the Notebook one as `<sheet>_<name>_star_chart.png` and
 `<sheet>_<name>_star_chart_dark.png` (for example `opponent_moods_happy_star_chart.png`), for every
-face the game screen shows: the computer's moods and strengths and the World 1 boss faces
-(`opponent_moods_*`, `opponent_strengths_*`, `boss_world_1_*`). The faces of later bosses get the
-same two versions when they are made. [`make_pictures.py`](illustrations/make_pictures.py) makes
+face the game screen shows: the computer's moods and strengths and the four bosses' faces
+(`opponent_moods_*`, `opponent_strengths_*`, `boss_world_*`). [`make_pictures.py`](illustrations/make_pictures.py) makes
 them (`themes`, and `cut` for a new sheet), and the app picks them by the theme's `faceInks`.
 
 The lines inside a face (eyebrows, mouth, hatching) stay as clear as in Notebook: Ice pale on Ice

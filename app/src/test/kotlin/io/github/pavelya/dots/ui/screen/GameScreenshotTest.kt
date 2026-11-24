@@ -283,6 +283,52 @@ class GameScreenshotTest(private val case: ThemeCase) {
         capture("game_reef${if (dark) "_dark" else ""}")
     }
 
+    /**
+     * The boss level of [world] (2-20 the Mole, 3-20 the Comet, 4-20 the Kraken) before the first
+     * move: the boss's own face above the board. In Notebook; FacesScreenshotTest shows the faces in
+     * the other themes.
+     */
+    private fun bossOpens(world: Int, dark: Boolean) {
+        assumeTrue(case.isNotebook)
+        val level = Campaign.level(world, 20)
+        val state = level.newGame()
+        val ui = GameUiState(
+            state = state,
+            lastMove = null,
+            vsComputer = true,
+            opponent = OpponentLook.of(state, human, null, humanInDanger = false),
+            strength = level.strength,
+            level = level,
+        )
+        assertEquals(Faces.boss(level)!!.smug, Faces.of(ui.opponent!!.mood, level.strength, Faces.boss(level)))
+        val parts = CampaignParts(
+            title = "Level 20",
+            mission = missionNote(level, level.status(state)),
+            boosters = { BoosterBar(listOf(BoosterTool(Booster.UNDO, 1, usable = true)), Palette.current) {} },
+            world = level.world,
+        )
+        show(dark = dark) { Board(ui, campaign = parts) }
+        capture("game_boss_world_$world${if (dark) "_dark" else ""}")
+    }
+
+    @Test
+    fun bossOpensInWorld2() = bossOpens(2, dark = false)
+
+    @Test
+    fun bossOpensInWorld2Dark() = bossOpens(2, dark = true)
+
+    @Test
+    fun bossOpensInWorld3() = bossOpens(3, dark = false)
+
+    @Test
+    fun bossOpensInWorld3Dark() = bossOpens(3, dark = true)
+
+    @Test
+    fun bossOpensInWorld4() = bossOpens(4, dark = false)
+
+    @Test
+    fun bossOpensInWorld4Dark() = bossOpens(4, dark = true)
+
     @Test
     fun reef() = reef(dark = false)
 

@@ -147,6 +147,30 @@ class LevelScreenshotTest {
         capture("level_card_boss")
     }
 
+    /** The boss card of [world] (2-20 the Mole, 3-20 the Comet, 4-20 the Kraken): the boss's own smug face. */
+    private fun bossCard(world: Int, dark: Boolean) {
+        card(Campaign.level(world, 20), dark = dark)
+        capture("level_card_boss_world_$world${if (dark) "_dark" else ""}")
+    }
+
+    @Test
+    fun bossCardWorld2() = bossCard(2, dark = false)
+
+    @Test
+    fun bossCardWorld2Dark() = bossCard(2, dark = true)
+
+    @Test
+    fun bossCardWorld3() = bossCard(3, dark = false)
+
+    @Test
+    fun bossCardWorld3Dark() = bossCard(3, dark = true)
+
+    @Test
+    fun bossCardWorld4() = bossCard(4, dark = false)
+
+    @Test
+    fun bossCardWorld4Dark() = bossCard(4, dark = true)
+
     /** Full Moon (3-6), a round board whose corner holes count as border: the card says holes are safe (A-15). */
     @Test
     fun cardWithSafeHoles() {
