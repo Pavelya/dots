@@ -11,11 +11,11 @@ plugins {
 }
 
 /*
- * AdMob's IDs for the rewarded ads (docs/release.md, AdMob). Not secrets: every copy of the app
- * holds them. Until the game's own AdMob app exists they are Google's sample IDs, which show test ads.
+ * The game's app in AdMob and its rewarded ad unit, `Booster` (docs/release.md, Ads and "What is
+ * set up"). Not secrets: every copy of the app holds them. Store builds show real ads from the unit.
  */
-val ADMOB_APP_ID = "ca-app-pub-3940256099942544~3347511713"
-val REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
+val ADMOB_APP_ID = "ca-app-pub-3639439691153326~3889232280"
+val REWARDED_AD_UNIT = "ca-app-pub-3639439691153326/6766356268"
 
 /** Google's rewarded test ad unit, for every debug build. */
 val TEST_REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
