@@ -123,9 +123,10 @@ import kotlinx.coroutines.delay
  *   the mission note (right).
  * - **The opponent above the board:** against the computer, its face taped in like a photo, with a
  *   speech bubble; between two people, Blue's piece in the photo. Under it the opponent's piece,
- *   name, tally and score. On a boss level with a double move, the boss's counter sits above it all
- *   ([BossCounter], the wireframes' "Boss turn"); it takes its room before the photo. The boss's two
- *   dots of that turn are numbered 1 and 2 on the board until the player's next dot.
+ *   name, tally and score. On a boss level with a double move, the boss's counter sits right above
+ *   the opponent's line ([BossCounter], the wireframes' "Boss turn"); it takes its room before the
+ *   photo. The boss's two dots of that turn are numbered 1 and 2 on the board until the player's
+ *   next dot.
  * - **The board,** edge to edge, at the largest whole-dp spacing that fits ([boardSpacing]). Dots
  *   are placed by the [input]'s method ([PlayableBoard]).
  * - **The player below the board:** piece, name, tally and score, and the dots left.
@@ -150,9 +151,10 @@ import kotlinx.coroutines.delay
  * the player's name counts the dots still to place this turn.
  *
  * A pen stroke under a name marks the side to move. Between two people, a banner names the side to
- * play at each change of turn. Spare height goes to the opponent; when there is too little for the
- * photo, only the opponent's line stays, and on a small phone that line moves into the top row in
- * place of the game's name, as the wireframes' small frames show.
+ * play at each change of turn. Spare height goes to the opponent ([opponentFit]); when there is too
+ * little for the full photo, the board touches go and the photo gets smaller, then moves beside the
+ * opponent's line without its bubble, and on a small phone the line moves into the top row in place
+ * of the game's name (game-screens.md, "When the photo doesn't fit"; the canvas frames `fit-*`).
  *
  * Every ink, size and text style comes from the theme ([Palette], [BoardStyle], [NoteText]); the
  * opponent's face is a picture ([Faces]).
@@ -287,13 +289,13 @@ internal fun GameBoard(
         // The tutorial's note takes the space just above the board, when there is that much.
         val guideRoom = if (guided && spare >= GUIDE_ROOM) GUIDE_ROOM else 0.dp
         val room = spare - guideRoom
-        // On a small phone the opponent's line moves into the top row, and the mission note narrows to make room.
-        val compact = room < OPPONENT_LINE
-        // The boss's counter goes above the opponent's line when it fits there; the photo only if it fits under it.
         val countdown = if (ui.vsComputer && !ui.isOver) bossCountdown(state, above) else null
-        val counterGap = if (room >= OPPONENT_WITH_PHOTO + COUNTER + COUNTER_GAP_WIDE) COUNTER_GAP_WIDE else COUNTER_GAP
-        val counter = countdown?.takeIf { room >= (if (compact) 0.dp else OPPONENT_LINE) + COUNTER + counterGap }
-        val faceRoom = room - (if (counter != null) COUNTER + counterGap else 0.dp)
+        val fit = opponentFit(room, countdown != null)
+        // On a small phone the opponent's line moves into the top row, and the mission note narrows to make room.
+        val compact = fit == OpponentFit.TopRow
+        // The boss's counter sits right above the opponent's line; with the line in the top row, above the board when it fits.
+        val counter = countdown?.takeIf { !compact || room >= COUNTER + COUNTER_GAP }
+        val boss = Faces.boss(ui.level)
         val opponentLine = @Composable { inTopRow: Boolean ->
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 SideLine(above, names.of(above), shownScore(above), toMove = isToMove(ui, above), style, inTopRow, swell = { scoreSwell(above) }, onTally = { spots.tally[above] = it })
@@ -320,20 +322,36 @@ internal fun GameBoard(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Bottom,
             ) {
-                if (counter != null) {
-                    BossCounter(counter, style.ink(above), style)
-                    Spacer(Modifier.height(counterGap))
-                }
-                if (faceRoom >= OPPONENT_WITH_PHOTO) {
-                    // The world's board touches sit in the paper beside the photo, so they go when it does.
-                    Box(Modifier.fillMaxWidth().boardTouches(campaign?.world, style), contentAlignment = Alignment.TopCenter) {
-                        Photo(above, look, ui.strength, Faces.boss(ui.level), style)
+                when (fit) {
+                    is OpponentFit.Above -> {
+                        // The world's board touches sit in the paper beside the full photo; they are the first to go.
+                        val touches = if (fit.full) Modifier.boardTouches(campaign?.world, style) else Modifier
+                        Box(Modifier.fillMaxWidth().then(touches), contentAlignment = Alignment.TopCenter) {
+                            Photo(fit.photo, above, look, ui.strength, boss, style)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        if (counter != null) {
+                            BossCounter(counter, style.ink(above), style)
+                            Spacer(Modifier.height(COUNTER_GAP))
+                        }
+                        opponentLine(false)
+                        Spacer(Modifier.height(12.dp))
                     }
-                    Spacer(Modifier.height(8.dp))
-                }
-                if (room >= OPPONENT_LINE) {
-                    opponentLine(false)
-                    Spacer(Modifier.height(12.dp))
+                    OpponentFit.Beside -> Box(Modifier.fillMaxWidth().height(BESIDE_ROOM)) {
+                        SmallPhoto(above, look, ui.strength, boss, style, Modifier.offset(x = 16.dp, y = 6.dp))
+                        // With a counter it takes the row's top and the line sits under it; without, the line is level with the photo.
+                        Column(Modifier.padding(start = 16.dp + SMALL_PHOTO + 14.dp, top = if (counter != null) 0.dp else 6.dp + (SMALL_PHOTO - 40.dp) / 2)) {
+                            if (counter != null) {
+                                BossCounter(counter, style.ink(above), style)
+                                Spacer(Modifier.height(COUNTER_GAP))
+                            }
+                            opponentLine(false)
+                        }
+                    }
+                    OpponentFit.TopRow -> if (counter != null) {
+                        BossCounter(counter, style.ink(above), style)
+                        Spacer(Modifier.height(COUNTER_GAP))
+                    }
                 }
                 Spacer(Modifier.height(guideRoom))
             }
@@ -480,15 +498,54 @@ private val OPPONENT_LINE = 52.dp
 /** The boss's counter above the opponent ([BossCounter]). */
 private val COUNTER = 24.dp
 
-/** The paper between the boss's counter and what is under it, and more when the photo shows with room to spare. */
+/** The paper between the boss's counter and the opponent's line under it. */
 private val COUNTER_GAP = 4.dp
-private val COUNTER_GAP_WIDE = 12.dp
 
-/** The height the photo takes, with its tape. */
-private val PHOTO_HEIGHT = 132.dp
+/** The full photo: 124 dp with a 108 dp face. */
+private val FULL_PHOTO = 124.dp
 
-/** The opponent's line with the photo above it: below this much spare height, the photo goes. */
-private val OPPONENT_WITH_PHOTO = OPPONENT_LINE + PHOTO_HEIGHT + 8.dp
+/** The smallest photo above the opponent's line: 72 dp with a 56 dp face. */
+private val SMALLEST_PHOTO = 72.dp
+
+/** The room the photo above the line needs besides the photo itself: 8 dp of tape above it, 8 dp of paper under it, and the line. */
+private val AROUND_PHOTO = 8.dp + 8.dp + OPPONENT_LINE
+
+/** The photo beside the opponent's line: 62 dp with a 56 dp face. */
+private val SMALL_PHOTO = 62.dp
+
+/** The row of the photo beside the line: 6 dp of tape above the photo, 8 dp of paper under it. */
+private val BESIDE_ROOM = 6.dp + SMALL_PHOTO + 8.dp
+
+/**
+ * How the opponent sits in the [room] between the top row and the board (game-screens.md, "When the
+ * photo doesn't fit"; the canvas frames `fit-*`). The steps, from the most room to the least: the
+ * full photo above the opponent's line; a smaller photo, down to 72 dp; a 62 dp photo beside the
+ * line; the line in the top row. A boss's [counter] sits right above the line and takes its 28 dp
+ * before the photo above it; beside the photo it costs nothing.
+ */
+internal sealed interface OpponentFit {
+    /** The photo, [photo] dp across, above the opponent's line, with the speech bubble beside it. */
+    data class Above(val photo: Dp) : OpponentFit {
+        /** The full photo, which alone keeps the world's board touches beside it. */
+        val full: Boolean get() = photo >= FULL_PHOTO
+    }
+
+    /** The small photo at the left, the opponent's line beside it, and no speech bubble. */
+    data object Beside : OpponentFit
+
+    /** No photo: the opponent's line in the top row. */
+    data object TopRow : OpponentFit
+}
+
+internal fun opponentFit(room: Dp, counter: Boolean): OpponentFit {
+    val left = room - if (counter) COUNTER + COUNTER_GAP else 0.dp
+    return when {
+        left >= AROUND_PHOTO + FULL_PHOTO -> OpponentFit.Above(FULL_PHOTO)
+        left >= AROUND_PHOTO + SMALLEST_PHOTO -> OpponentFit.Above(floor((left - AROUND_PHOTO).value).dp)
+        room >= BESIDE_ROOM -> OpponentFit.Beside
+        else -> OpponentFit.TopRow
+    }
+}
 
 /**
  * The largest whole-dp spacing at which a [columns] x [rows] board fits [width] and [height]: 24 dp
@@ -653,34 +710,67 @@ private fun TopRow(showPause: Boolean, style: Palette, onPause: () -> Unit, leav
 }
 
 /**
- * The opponent taped in like a photo, 124 dp with a 108 dp face (illustrations.md, "Where each
- * picture goes"), and its speech bubble beside it: the computer's face for its [look] and
- * [strength], or the [boss]'s own. Between two people, the photo holds Blue's piece.
+ * The opponent taped in like a photo, [size] dp across: 124 dp with a 108 dp face when there is
+ * room, down to 72 dp (illustrations.md, "Where each picture goes"), and its speech bubble beside
+ * it: the computer's face for its [look] and [strength], or the [boss]'s own. Between two people,
+ * the photo holds Blue's piece. A smaller photo keeps its 8 dp border and its tape, scaled with it,
+ * so the tape never covers the face; its right edge stays put, and so does the bubble.
  */
 @Composable
-private fun Photo(player: Player, look: OpponentLook?, strength: Strength?, boss: BossFaces?, style: Palette) {
-    // The canvas places the photo 64 dp from the left of a 360 dp screen and the bubble at 198 dp.
-    Box(Modifier.width(296.dp).height(PHOTO_HEIGHT)) {
-        Box(Modifier.offset(x = 32.dp, y = 8.dp).rotate(-3f)) {
+private fun Photo(size: Dp, player: Player, look: OpponentLook?, strength: Strength?, boss: BossFaces?, style: Palette) {
+    val scale = size / FULL_PHOTO
+    // The canvas places the full photo 64 dp from the left of a 360 dp screen and the bubble at 198 dp.
+    Box(Modifier.width(296.dp).height(8.dp + size)) {
+        Box(Modifier.offset(x = 32.dp + FULL_PHOTO - size, y = 8.dp).rotate(-3f).testTag(OPPONENT_PHOTO_TAG)) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .size(124.dp)
+                    .size(size)
                     .shadow(4.dp, RectangleShape, clip = false)
                     .background(style.card)
                     .padding(8.dp),
             ) {
-                if (look != null) {
-                    Face(Faces.of(look.mood, strength, boss), Faces.FULL_SIZE)
-                } else {
-                    Piece(player, style, Modifier.size(56.dp))
-                }
+                PhotoContent(player, look, strength, boss, style, size - 16.dp)
             }
-            Tape(style, Modifier.offset(x = 36.dp, y = (-9).dp).rotate(4f).size(width = 52.dp, height = 16.dp))
+            Tape(style, Modifier.offset(x = 36.dp * scale, y = (-9).dp).rotate(4f).size(width = 52.dp * scale, height = 16.dp))
         }
-        look?.bubble?.let { SpeechBubble(bubbleText(it), style, Modifier.offset(x = 166.dp, y = 40.dp)) }
+        look?.bubble?.let { SpeechBubble(bubbleText(it), style, Modifier.offset(x = 166.dp, y = 8.dp + 32.dp * scale)) }
     }
 }
+
+/**
+ * The photo beside the opponent's line when the one above it doesn't fit: 62 dp with a 56 dp face,
+ * a 3 dp border and thinner tape (game-screens.md, "When the photo doesn't fit"). No speech bubble.
+ */
+@Composable
+private fun SmallPhoto(player: Player, look: OpponentLook?, strength: Strength?, boss: BossFaces?, style: Palette, modifier: Modifier) {
+    Box(modifier.rotate(-3f).testTag(OPPONENT_PHOTO_TAG)) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(SMALL_PHOTO)
+                .shadow(3.dp, RectangleShape, clip = false)
+                .background(style.card)
+                .padding(3.dp),
+        ) {
+            PhotoContent(player, look, strength, boss, style, SMALL_PHOTO - 6.dp)
+        }
+        Tape(style, Modifier.offset(x = 15.dp, y = (-6).dp).rotate(4f).size(width = 32.dp, height = 9.dp))
+    }
+}
+
+/** What a photo holds, [face] dp across: the computer's face, or between two people Blue's piece at about half that. */
+@Composable
+private fun PhotoContent(player: Player, look: OpponentLook?, strength: Strength?, boss: BossFaces?, style: Palette, face: Dp) {
+    if (look != null) {
+        Face(Faces.of(look.mood, strength, boss), face)
+    } else {
+        Piece(player, style, Modifier.size(face * 56f / 108f))
+    }
+}
+
+/** The opponent's photo above the board, in each of its sizes; tests find it by this tag. */
+const val OPPONENT_PHOTO_TAG = "opponent photo"
 
 @Composable
 private fun bubbleText(bubble: Bubble): String = stringResource(
