@@ -2,7 +2,7 @@
 
 Pinfold's characters live around the board, never on it (investigation, section 3): the
 opponent's face above the board, the boss faces, and the pictures on the world map. This page
-gives the prompts for the computer, the World 1 boss and the map pages of all four worlds, made
+gives the prompts for the computer, the four bosses and the map pages of all four worlds, made
 with ChatGPT image generation, and describes each world's board touches. The
 [canvas](canvas/README.md) shows where each one goes; its ink doodles mark the places and sizes.
 
@@ -124,6 +124,67 @@ the player captures or wins.
 > #BCCBEA, red ink #C0392B and pale red #ECBEB7 for the cork crown, and white for the eyeballs.
 > Transparent background. No paper texture, no letters, no numbers, no label on the bottle, no
 > signature.
+
+## The bosses of Worlds 2 to 4
+
+Each world's boss is drawn like the Ink Bottle (prompt 3): one creature in blue ink, three times,
+smug, attacking and beaten, with white eyeballs and thick angry eyebrows. Each wears something red
+on its head like a crown, as the Ink Bottle wears its cork; it slips off when the boss is beaten,
+as the flag falls on the map. Each attacks with two of something, for the two dots of its special
+turn. Each is about as wide as it is tall, so it fills the square photo above the board as the
+Ink Bottle does. The faces go where the Ink Bottle's go: above the board on the boss level and on
+its level card.
+
+**Prompt 12: `boss-world-2`, the mole**
+
+> A character sheet of one cartoon creature, drawn three times side by side, each one separate
+> with space around it. The creature is a plump round mole poking out of a small heap of earth up
+> to its waist, with a small flowerpot worn upside down on its head like a crown, a round nose,
+> two big front teeth, and two wide digging paws with short claws. Its face has two large round
+> eyes with white eyeballs and dark pupils and thick angry eyebrows. Left: smug, eyes half
+> closed, a wide grin showing its two front teeth, paws folded on the heap. Middle: attacking,
+> leaning forward, eyes wide, mouth open in a shout, both digging paws raised high, two clods of
+> earth flying up beside it. Right: beaten, sunk deeper into the heap and tilted to one side,
+> eyes closed in two small curved lines, the flowerpot slipping off its head. Drawn as clean
+> ballpoint pen lines with straight parallel hatching for shading. Use only these colours: blue
+> ink #1F4E9C for the mole, pale blue #BCCBEA for the heap of earth, the clods and the hatching,
+> red ink #C0392B and pale red #ECBEB7 for the flowerpot and the nose, and white for the eyeballs
+> and the teeth. Transparent background. No paper texture, no letters, no numbers, no signature.
+
+**Prompt 13: `boss-world-3`, the comet**
+
+> A character sheet of one cartoon creature, drawn three times side by side, each one separate
+> with space around it. The creature is a round comet: a ball of blue ink with a short, thick tail
+> of curved streaks sweeping up and back behind it, so the whole comet is about as wide as it is
+> tall, with a small five-pointed star worn on its head like a crown. Its face has two large round
+> eyes with white eyeballs and dark pupils and thick angry eyebrows. A small flat oval shadow of
+> pale blue hatching lies under it. Left: smug, eyes half closed, a wide toothy grin, the tail
+> curled lazily. Middle: attacking, rushing forward and down, eyes wide, mouth open in a shout,
+> the tail streaming straight behind it, two small sparks flying ahead of it. Right: beaten,
+> tilted to one side, eyes closed in two small curved lines, the tail drooping into a few short
+> limp wisps, the star crown slipping off. Each comet stands alone on the empty background, with
+> no dark sky and no other stars behind it. Drawn as clean ballpoint pen lines with straight
+> parallel hatching for shading. Use only these colours: blue ink #1F4E9C for the comet, pale blue
+> #BCCBEA for the tail's streaks, the shadow and the hatching, red ink #C0392B and pale red
+> #ECBEB7 for the star crown and the two sparks, and white for the eyeballs and the teeth.
+> Transparent background. No paper texture, no letters, no numbers, no signature.
+
+**Prompt 14: `boss-world-4`, the kraken**
+
+> A character sheet of one cartoon creature, drawn three times side by side, each one separate
+> with space around it. The creature is a squat round sea monster with a big dome-shaped head and
+> four short curling tentacles with round suckers, rising from a small ring of waves, with a
+> small branch of coral worn on its head like a crown with three points. Its face has two large
+> round eyes with white eyeballs and dark pupils and thick angry eyebrows. Left: smug, eyes half
+> closed, a wide toothy grin, two tentacles folded in front of it. Middle: attacking, leaning
+> forward, eyes wide, mouth open in a shout, two tentacles raised high on either side of its head,
+> two splashes of water flying up. Right: beaten, sinking into the waves and tilted to one side,
+> eyes closed in two small curved lines, the tentacles hanging limp, the coral crown slipping off.
+> Drawn as clean ballpoint pen lines with straight parallel hatching for shading. Use only these
+> colours: blue ink #1F4E9C for the sea monster, pale blue #BCCBEA for the suckers, the waves, the
+> splashes and the hatching, red ink #C0392B and pale red #ECBEB7 for the coral crown, and white
+> for the eyeballs and the teeth. Transparent background. No paper texture, no letters, no
+> numbers, no signature.
 
 ## The World 1 map page
 
