@@ -303,6 +303,19 @@ Online play (O-01) uses this project too, and adds rows here.
 | Product links | Firebase only. No Google Ads, AdMob or Play link. |
 | Custom definitions | Event-scoped custom dimensions `level_name`, `level_number`, `world`, `success`, `stars`, `booster` and `puzzle_number`, so reports and explorations can use them. |
 
+### AdMob
+
+[admob.google.com](https://admob.google.com/), the same Google account. Decision 0041,
+[Part 9](#part-9-ads).
+
+| What | How it is set |
+| --- | --- |
+| App | **Pinfold**, Android, added as not on an app store yet (no store details), user metrics off. App ID `ca-app-pub-3639439691153326~3889232280`, in `app/build.gradle.kts` for every build. Once Pinfold is public on Google Play, its app settings > **Add app store details** links the listing; until AdMob has reviewed it, few real ads are served. |
+| Ad unit | `Booster`, Rewarded, reward 1 `booster`, no server-side verification. ID `ca-app-pub-3639439691153326/6766356268`, used by store builds; debug builds use Google's test unit. |
+| Blocking controls | Maximum ad content rating PG. |
+| Privacy & messaging | A published European regulations (GDPR) message for Pinfold, in English, with the privacy policy URL `https://pavelya.github.io/dots/privacy/` (R-03 publishes the page). |
+| Links | None: no Firebase or Google Analytics link (decision 0033). |
+
 ### GitHub
 
 | What | Where |
