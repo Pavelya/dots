@@ -12,6 +12,9 @@ This page has:
 - [Crash reports](#crash-reports): where crashes show up, what a report holds, a test crash.
 - [Analytics](#analytics): what the game reports, the funnel to level 10, checking events.
 - [Ads](#ads): the rewarded ads, Google's consent form, and checking them on a phone.
+- [The money setup](#the-money-setup): **start here for anything about money.** How the money
+  reaches you, every console step for the Shop, the ads, payouts, taxes and the store forms, in
+  order, with what is set up and what is left.
 - [What is set up](#what-is-set-up): what exists in Play Console, Google Cloud and GitHub, and
   which rights each account has. Tasks that work in those consoles build on it.
 - [If something goes wrong](#if-something-goes-wrong) and [Keys and secrets](#keys-and-secrets).
@@ -234,6 +237,180 @@ advertising ID), app interactions and diagnostics for advertising and fraud prev
 with Google, encrypted in transit. The privacy policy names Google AdMob and Google's consent
 form. Play Console > App content > Ads: **Yes, my app contains ads**.
 
+## The money setup
+
+Pinfold earns money in two ways. The **Shop** sells six cosmetics through Google Play
+(`docs/design/money.md`). **Rewarded ads** come from AdMob. Each needs settings in a Google
+console, and Google Play also needs a few forms about the game before anyone outside the testers
+can install it. This section is the map: how the money reaches you, which console does what, and
+every step in order. The clicks for each step are in a numbered Part below, or in the task named.
+
+### How the money reaches you
+
+**The Shop.** A player pays Google Play. Google Play adds the country's sales tax or VAT and pays
+it to that country itself; the prices in money.md already include it. Google keeps its fee and
+pays you the rest once a month, around the 15th, for the month before, into the bank account of
+your payments profile.
+
+Google's fee for one-time purchases on your first $1 million a year:
+
+| Where the player is | Fee | Since |
+| --- | --- | --- |
+| US, UK, EU and the rest of the EEA | 10% service fee + 5% billing fee = **15%** | 30 June 2026 |
+| Australia, Japan | the same | 30 September 2026 |
+| South Korea, Türkiye, South Africa | the same | 31 December 2026 |
+| Everywhere else | **15%** if you are enrolled in the 15% service fee tier, 30% if not, until the new fees reach them | new fees from 30 September 2027 |
+
+Of each dollar a player pays, after the tax, you keep about 85 cents.
+[Step 50](#part-10-payouts-and-taxes) checks the enrolment for the last row.
+
+**The ads.** AdMob counts what the ads earn and pays once a month, around the 21st, when the
+balance is at least $100. Before its first payment, AdMob checks who you are and mails a PIN to
+your address when the balance reaches $10. [Part 10](#part-10-payouts-and-taxes) has the steps.
+
+**Taxes.** Two different things:
+
+- **US tax form.** Google Play and AdMob each ask for US tax information, even if you don't live
+  in the US. An individual outside the US fills in a **W-8BEN** online, inside each console; it
+  takes about 10 minutes. Without it, Google can hold back payments or keep up to 30% of US
+  earnings.
+- **Your own income tax** at home. Google does not handle it: what Google pays you is income in
+  your country. Ask a local accountant once, before the first payout, how to declare it.
+
+### The places
+
+| Place | What it does for money | Address |
+| --- | --- | --- |
+| **Play Console** | The app, the Shop's six products, refunds (Order management), the store forms (App content), the testing tracks and the launch. | [play.google.com/console](https://play.google.com/console) |
+| **Payments profile** | Who Google Play pays: your name and address, bank account, US tax form. Opened from Play Console > Settings > Payments profile. | [pay.google.com](https://pay.google.com/) |
+| **AdMob** | The ads, Google's consent form, and AdMob's own payments: identity, address PIN, bank, US tax form. | [admob.google.com](https://admob.google.com/) |
+| **Firebase and Google Analytics** | No money. They appear on the Data safety form. | [console.firebase.google.com](https://console.firebase.google.com/) |
+| **GitHub Pages** | The privacy policy page (R-03) and the `app-ads.txt` file AdMob checks (C-07). | `pavelya.github.io` |
+
+Play Console's and AdMob's payment settings are separate: fill in both.
+
+### Every step, in order
+
+✅ means it exists in the consoles today; [What is set up](#what-is-set-up) lists the details. ⬜
+means it is still to do, by the step or task named. The stages follow the road to launch: the
+Shop and the ads first, then the forms that start the closed test, then the launch.
+
+**1. Accounts and the game**
+
+| | Step | Where | Who, how |
+| --- | --- | --- | --- |
+| ✅ | Developer account, identity checked | Play Console | R-01 |
+| ✅ | The app Pinfold, Play App Signing, the internal testing track | Play Console | R-02, [Parts 1 to 5](#setting-it-up-from-nothing) |
+| ⬜ | Pinfold registered for Android developer verification: Play Console's Home page shows each app's state. Google registered almost every Play app by itself; if Pinfold is not, register it there. | Play Console | you, one look |
+| ✅ | Crash reports and analytics | Firebase | [Parts 6 and 7](#part-6-crash-reports) |
+| ✅ | AdMob account, the app, the rewarded ad unit `Booster`, ads up to PG, the EU and UK consent form | AdMob | C-03, [Part 9](#part-9-ads) |
+
+**2. The Shop can sell, and both can pay you** (wave 2, before v0.3.0)
+
+| | Step | Where | Who, how |
+| --- | --- | --- | --- |
+| ⬜ | Tag a release that holds the Shop (any after 24 November 2026). Play Console allows products only once it has seen a build that can sell. | GitHub | you, [Make a release](#make-a-release) |
+| ⬜ | Payments profile | Play Console | you, [step 34](#part-8-the-shops-products) |
+| ⬜ | License testers, so your test purchases cost nothing | Play Console | you, step 35 |
+| ⬜ | The six products and their prices by country | Play Console | you, step 36 |
+| ⬜ | Buy, decline, pending, restore and refund on the phone | phone, Play Console | you, steps 37 and 38 |
+| ⬜ | US tax form and bank account for Google Play | Payments profile | you, [steps 48 and 49](#part-10-payouts-and-taxes) |
+| ⬜ | The 15% service fee tier | Play Console | you, step 50 |
+| ⬜ | AdMob's payment details, identity and US tax form. AdMob keeps a new app at "Getting ready", with few ads, until these are done. | AdMob | you, step 51 |
+| ⬜ | Belarus: sell, or earn only? | decision | X-17 |
+| ⬜ | US state laws: app store age checks, and an opt-out of ad data for US players | decision | X-18 |
+
+**3. The store forms** (wave 3; Play reviews them, then the closed test can start)
+
+Everything here is in Play Console, mostly under **Policy and programs > App content** (the search
+box finds it). Play shows a list of what is missing on the Dashboard.
+
+| | Step | Who, how |
+| --- | --- | --- |
+| ⬜ | **Privacy policy**: a public page naming Crashlytics, Google Analytics, AdMob with Google's consent form, and Google Play Billing; its URL in App content. | R-03 |
+| ⬜ | **Data safety**: what the game and its libraries collect. The lines for each are already written above: [Crash reports](#crash-reports), [Analytics](#analytics), [Ads](#ads). | R-03 |
+| ⬜ | **Ads**: Yes, the app contains ads. | R-04 |
+| ⬜ | **Content rating**: the IARC questionnaire. It asks about violence, gambling, user chat, purchases; the certificate covers every country. | R-04 |
+| ⬜ | **Target audience and content**: 13–15, 16–17 and 18 and over; not designed for children. | R-04 |
+| ⬜ | **The short questions**: see [App content: the short answers](#app-content-the-short-answers). | R-04 |
+| ⬜ | **Store listing** in English: name, short and full description, icon, feature graphic, screenshots. Store settings: category Games > Puzzle (or Board), contact email, website `https://pavelya.github.io/dots/` (C-07 needs it). | R-05 |
+| ⬜ | **Your public details.** Because Pinfold sells, Google Play shows your name and **full address** to players. In the EU, Play also asks whether you are a **trader** under the Digital Services Act; selling items and showing ads makes you one, and then your email and phone are shown too. The address comes from the payments profile. If you don't want a home address shown, settle that before step 34. | you, Play Console > Developer account > About you |
+
+**4. The closed test** (wave 4)
+
+| | Step | Who, how |
+| --- | --- | --- |
+| ⬜ | Promote a build to the closed track; at least **12 testers opted in for 14 days in a row**. This rule applies to personal developer accounts made after 13 November 2023, which Pinfold's is. | R-06 |
+| ⬜ | Purchase and ad safety checks on two phones | C-04 |
+
+**5. The launch** (wave 5)
+
+| | Step | Who, how |
+| --- | --- | --- |
+| ⬜ | Apply for production access (Dashboard), then a staged rollout | R-07 |
+| ⬜ | Link AdMob to the public listing, put up `app-ads.txt`, and wait for AdMob's review (2 to 3 days). Until then few real ads show. | C-07, [Part 11](#part-11-after-the-launch-admob-sees-the-store) |
+
+**6. Every month after the launch**
+
+- Around the 15th, Google Play's payout; around the 21st, AdMob's, once it passes $100.
+- When AdMob's balance first passes $10, a PIN arrives by post (up to 3 weeks). Enter it within
+  4 months ([step 52](#part-10-payouts-and-taxes)), or AdMob stops the ads.
+- Refund requests and orders: Play Console > **Order management**.
+- Keep the monthly statements (Play Console > Download reports > Financial; AdMob > Payments) for
+  your tax return.
+
+### App content: the short answers
+
+The answers that follow from how Pinfold is built. R-03 and R-04 fill in the longer forms.
+
+| Question | Answer | Why |
+| --- | --- | --- |
+| App access | All functionality is available without special access | No sign-in. |
+| Ads | Yes, my app contains ads | Rewarded ads (C-03). |
+| Advertising ID | No, the app does not use it | The manifest removes the permission (decisions 0033 and 0041). |
+| Government apps | No | |
+| Financial features | My app doesn't provide any financial features | The Shop sells game items; that is not a financial feature. |
+| Health | My app does not have any health features | |
+| News app | No | |
+| Target audience | 13–15, 16–17, 18 and over | Decision 0041; a younger group brings Google's Families rules. |
+
+### The rules behind it (November 2026)
+
+Google changes these from time to time. Each links to its source; if a console says something
+different, the console is right, and this page needs fixing.
+
+- **Fees:** 10% service fee on the first $1M a year, plus 5% billing fee, in the US, the UK and the
+  EEA since 30 June 2026, other countries later
+  ([Google's blog](https://android-developers.googleblog.com/2026/06/play-expanded-billing.html),
+  [fees by country](https://support.google.com/googleplay/android-developer/answer/16954621),
+  [service fees](https://support.google.com/googleplay/android-developer/answer/112622)).
+- **US tax form** from outside the US: W-8BEN in the payments profile
+  ([Play](https://support.google.com/googleplay/android-developer/answer/7163598),
+  [AdMob payments](https://support.google.com/admob/answer/2772208)).
+- **AdMob payments:** $100 threshold, PIN at $10 by post, 4 months to enter it
+  ([thresholds](https://support.google.com/admob/answer/3001017),
+  [PIN](https://support.google.com/admob/answer/2772302)).
+- **AdMob for a new app:** limited ads until it is linked to its store listing and passes the
+  readiness review; `app-ads.txt` at the root of the listing's website
+  ([readiness](https://support.google.com/admob/answer/10564477),
+  [app-ads.txt](https://support.google.com/admob/answer/9363762)).
+- **Your public address** when a personal account sells
+  ([account information](https://support.google.com/googleplay/android-developer/answer/13628312)),
+  and the **EU trader status**
+  ([Google Play in the EEA](https://support.google.com/googleplay/android-developer/answer/14659200)).
+- **Closed test:** 12 testers for 14 days for new personal accounts
+  ([testing requirements](https://support.google.com/googleplay/android-developer/answer/14151465)).
+- **Consent form:** Google's form writes IAB TCF v2.3 answers, required since March 2026; the game's
+  UMP 4.0 does this by itself ([AdMob](https://support.google.com/admob/answer/9760862)).
+- **Build rules the game already meets:** target Android 16 (API 36) or newer since 31 August 2026
+  (the game targets 37) ([target API](https://developer.android.com/google/play/requirements/target-sdk));
+  Play Billing Library 8 or newer (the game uses 9.1, good until August 2028)
+  ([Billing deadlines](https://developer.android.com/google/play/billing/deprecation-faq)).
+- **Developer verification:** Play apps registered by 30 September 2026
+  ([Google's blog](https://android-developers.googleblog.com/2026/06/android-developer-verification.html)).
+- **US app store age laws** (Texas in force, others coming): X-18 decides
+  ([Google's page](https://support.google.com/googleplay/android-developer/answer/16569691)).
+
 ## What is set up
 
 All of it belongs to the game's Google account (B-05), the same one in Play Console
@@ -253,7 +430,13 @@ from what really exists.
 | Internal testing track | Every tag lands here, released at once to the testers. |
 | Internal testers | Email list `Pinfold internal`: the owner's Google account. Testers join through the link on the Testers tab. |
 | Users and permissions | The owner (account owner). The service account below, with one app permission on Pinfold: **Release apps to testing tracks**. Nothing else. |
-| Payments profile | The owner's, made in [Part 8](#part-8-the-shops-products) (C-02), so Pinfold can sell. |
+
+**Not set up yet: the Shop's side.** [Part 8](#part-8-the-shops-products) adds three rows here
+once it is done:
+
+| What | How it will be set |
+| --- | --- |
+| Payments profile | The owner's, with the US tax form and the bank account ([Part 10](#part-10-payouts-and-taxes)). |
 | One-time products | Six, one per cosmetic of `docs/design/money.md`: `star_chart`, `neon_arcade`, `hearts_and_clubs`, `flame_and_frost`, `lasso`, `rubber_stamp`. Each has one purchase option, `buy`, at the base price ($2.99 for a theme, $0.99 for the others) with the prices of money.md's two lower-price groups set by hand, and is not sold in Russia or Belarus. The game finds them by these IDs (`Cosmetic.productId`). |
 | License testing | The owner's Google account, so its purchases use Google's test cards and cost nothing. |
 
@@ -315,6 +498,8 @@ Online play (O-01) uses this project too, and adds rows here.
 | Blocking controls | Maximum ad content rating PG. |
 | Privacy & messaging | A published European regulations (GDPR) message for Pinfold, in English, with the privacy policy URL `https://pavelya.github.io/dots/privacy/` (R-03 publishes the page). |
 | Links | None: no Firebase or Google Analytics link (decision 0033). |
+| Payments | Not set up yet: [step 51](#part-10-payouts-and-taxes). |
+| Store link and app-ads.txt | Not yet: after the launch, [Part 11](#part-11-after-the-launch-admob-sees-the-store). |
 
 ### GitHub
 
@@ -825,8 +1010,9 @@ Console lets you make products only once it has seen a build that can sell.
 1. Open [play.google.com/console](https://play.google.com/console). In the left menu of the list
    of apps (not inside Pinfold), click **Settings** > **Payments profile**.
 2. If it shows a profile already, skip to step 35. Otherwise click **Create payments profile** and
-   fill in your legal name and address. Google asks for a bank account for payouts later, when
-   there is money to pay out.
+   fill in your legal name and address. Players will see this address on Google Play (see
+   [Your public details](#every-step-in-order)). The bank account and the US tax form come in
+   [Part 10](#part-10-payouts-and-taxes).
 
 *Worked when:* Pinfold > **Monetize with Play** > **Products** > **One-time products** shows a
 **Create one-time product** button instead of a request for a payments profile.
@@ -916,7 +1102,8 @@ don't mention, stop and tell Claude what it asks.
 2. Click **Get started** (or **Sign up**). **Country:** where you live. **Time zone:** yours.
    **Billing currency:** your currency. Accept the terms. If it asks about emails with tips,
    answer as you like.
-3. AdMob may ask for payment details now; you can skip them until there is money to pay out.
+3. AdMob may ask for payment details now; you can skip them here. [Step 51](#part-10-payouts-and-taxes)
+   fills them in, before the launch: AdMob serves few ads until they are done.
 
 *Worked when:* AdMob shows its home page with **Apps** in the left menu.
 
@@ -977,5 +1164,105 @@ steps. Claude puts them in `app/build.gradle.kts` and adds AdMob to [What is set
 **47. Later, on the phone: the checks.** Once Claude's change is merged, follow [Ads](#ads): the
 checks on a debug build, and after the next release the check that nothing leaves the phone
 before the answer.
+
+### Part 10: payouts and taxes
+
+Google Play and AdMob each need to know where to send money and get a US tax form from you. This
+part does both, in about 45 minutes. It needs the Mac's browser, the game's Google account, your
+bank account's details (IBAN and SWIFT/BIC outside the US), and your passport or ID card for
+AdMob's identity check. Do it before the launch, ideally right after Part 8.
+
+Both consoles ask questions in their own words. Answer them for yourself, an individual. If a
+question is about a company, you have none. If a question doesn't fit, stop and tell Claude what
+it asks. Nothing here is a secret Claude needs: never paste a bank number or a tax ID in a chat.
+
+**48. The US tax form for Google Play.**
+
+1. Play Console, the list of apps (not inside Pinfold): **Settings** > **Payments profile**. It
+   opens your payments profile (it may open pay.google.com in a new tab).
+2. Find **United States tax info** (it may be under **Settings**, or a card named **Tax info**).
+   Click **Manage tax info** (or **Add tax info**).
+3. Answer: **Individual**. **Are you a US person?** **No** (unless you are a US citizen, green card
+   holder or US resident). The form it chooses is the **W-8BEN**.
+4. Fill in your name, country of citizenship, your home address. **Foreign tax ID:** the tax
+   number your country gives you. If it asks about a **tax treaty**, answer for your country; the
+   form explains each choice.
+5. Check the summary, sign with your name, **Submit**.
+
+*Worked when:* the tax info shows **Approved** (it may say **Accepted** or **Verified**), maybe
+after a day.
+
+**49. The bank account for Google Play.** Same payments profile > **Payment methods** (or **How
+you get paid**) > **Add payment method** > **Bank account**. Type the account holder's name
+exactly as the bank has it, the IBAN and the SWIFT/BIC. **Save**. Google may send a small test
+deposit and ask for its amount a few days later; then enter it there.
+
+*Worked when:* the bank account is listed as the payment method, verified.
+
+**50. The 15% service fee tier.** In the countries where Google's new fees haven't started yet
+(see [How the money reaches you](#how-the-money-reaches-you)), the fee is 15% only for developers
+enrolled in this tier. Play Console's search box: type `service fee`. If a page offers to enrol in
+the 15% service fee tier (it may ask you to create an **account group**: Pinfold's account alone),
+do it. If the page says you are enrolled already, or no such page exists any more, there is
+nothing to do.
+
+*Worked when:* Play Console shows you enrolled, or has no enrolment to offer.
+
+**51. AdMob's payments.** [admob.google.com](https://admob.google.com/) > **Payments** in the left
+menu (or the gear > **Payments**).
+
+1. **Payments info**: account type **Individual**, the payee's name exactly as on the bank
+   account, and your address. The PIN of step 52 comes to this address.
+2. **Verify identity**, when AdMob asks: it shows its steps, usually a photo of your passport or ID
+   card. It can take a few days.
+3. **Add payment method** > **Bank transfer** (wire transfer): the same bank details as step 49.
+4. **Tax info** (under **Payments** > **Settings** > **Manage settings**, or a red notice at the
+   top): the same answers as step 48. AdMob makes its own W-8BEN.
+
+*Worked when:* **Payments** shows no red notice, except later the PIN. In **Apps**, Pinfold no
+longer says that payment details are missing.
+
+**52. Later: the PIN.** When AdMob's earnings reach $10, it mails a PIN to the address of step 51.
+It takes up to 3 weeks. AdMob > **Payments** > **Verify** > type the PIN.
+
+*Worked when:* the notice about address verification is gone. Enter it within 4 months, or AdMob
+stops showing ads.
+
+**53. Tell Claude.** Say "Payouts done", with anything that looked different from these steps.
+Claude adds the payments rows to [What is set up](#what-is-set-up).
+
+### Part 11: after the launch, AdMob sees the store
+
+AdMob shows a new app only a few real ads until it knows the app's public store listing and has
+reviewed it. This part does that once Pinfold is public on Google Play (R-07). It takes 15 minutes,
+then a few days of waiting. C-07 puts up the file of step 54 before the launch.
+
+**54. app-ads.txt.** It is a one-line text file that tells advertisers which AdMob account may
+sell ads in Pinfold. AdMob reads it at the root of the website named in Pinfold's store listing
+(Store settings > Website, R-05). For `https://pavelya.github.io/dots/` that is
+`https://pavelya.github.io/app-ads.txt`, not under `/dots/`. GitHub serves that address only from a
+repository named `pavelya.github.io`; C-07 makes it. The line:
+
+```text
+google.com, pub-3639439691153326, DIRECT, f08c47fec0942fa0
+```
+
+AdMob > **Apps** > **View all apps** > tab **app-ads.txt** shows the same line for the account.
+
+*Worked when:* opening `https://pavelya.github.io/app-ads.txt` in the browser shows the line.
+
+**55. Link the store listing.** Wait until Pinfold can be found on Google Play (a day or two after
+the launch, up to a week for AdMob to see it). AdMob > **Apps** > Pinfold > **App settings** >
+**Add app store details** (it may say **Add store**). Search for Pinfold, choose the one with the
+package `io.github.pavelya.pinfold`, **Add**. **User metrics** stays off.
+
+*Worked when:* Pinfold's App settings show the Google Play listing.
+
+**56. App verification and review.** Same page: if it shows **app-ads.txt** as not verified, click
+**Check for updates** (or **Verify app**). The readiness review then starts by itself and takes 2
+to 3 days.
+
+*Worked when:* Pinfold's status in **Apps** is **Ready**, and app-ads.txt shows as verified. Tell
+Claude, who updates [What is set up](#what-is-set-up).
 
 The setup is finished; from now on, [Make a release](#make-a-release).
