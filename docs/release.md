@@ -310,7 +310,7 @@ Shop and the ads first, then the forms that start the closed test, then the laun
 | | Step | Where | Who, how |
 | --- | --- | --- | --- |
 | ⬜ | Tag a release that holds the Shop (any after 24 November 2026). Play Console allows products only once it has seen a build that can sell. | GitHub | you, [Make a release](#make-a-release) |
-| ⬜ | Payments profile | Play Console | you, [step 34](#part-8-the-shops-products) |
+| ✅ | Payments profile | Play Console | you, [step 34](#part-8-the-shops-products) |
 | ⬜ | License testers, so your test purchases cost nothing | Play Console | you, step 35 |
 | ⬜ | The six products and their prices by country | Play Console | you, step 36 |
 | ⬜ | Buy, decline, pending, restore and refund on the phone | phone, Play Console | you, steps 37 and 38 |
@@ -463,13 +463,13 @@ from what really exists.
 | Internal testing track | Every tag lands here, released at once to the testers. |
 | Internal testers | Email list `Pinfold internal`: the owner's Google account. Testers join through the link on the Testers tab. |
 | Users and permissions | The owner (account owner). The service account below, with one app permission on Pinfold: **Release apps to testing tracks**. Nothing else. |
+| Payments profile | The owner's, personal ([step 34](#part-8-the-shops-products)). Its US tax form and bank account: [Part 10](#part-10-payouts-and-taxes). |
 
-**Not set up yet: the Shop's side.** [Part 8](#part-8-the-shops-products) adds three rows here
+**Not set up yet: the Shop's side.** [Part 8](#part-8-the-shops-products) adds two rows here
 once it is done:
 
 | What | How it will be set |
 | --- | --- |
-| Payments profile | The owner's, with the US tax form and the bank account ([Part 10](#part-10-payouts-and-taxes)). |
 | One-time products | Six, one per cosmetic of `docs/design/money.md`: `star_chart`, `neon_arcade`, `hearts_and_clubs`, `flame_and_frost`, `lasso`, `rubber_stamp`. Each has one purchase option, `buy`, at the base price ($2.99 for a theme, $0.99 for the others) with the prices of money.md's two lower-price groups set by hand, and is not sold in Russia or Belarus. The game finds them by these IDs (`Cosmetic.productId`). |
 | License testing | The owner's Google account, so its purchases use Google's test cards and cost nothing. |
 
