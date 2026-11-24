@@ -4,11 +4,11 @@ import dots.engine.GameState
 import dots.engine.Player
 
 /**
- * The computer's moods on the canvas game frames (docs/design/canvas/draw.py, `face`), and a
- * boss's [ATTACKING] while it places the two dots of its special turn (G-05). [DETERMINED] is the
- * computer's plain look, which shows how strong it plays (docs/design/illustrations.md).
+ * The computer's six moods (docs/design/illustrations.md, "The computer"), and a boss's
+ * [ATTACKING] while it places the two dots of its special turn (G-05). [DETERMINED] is the
+ * computer's plain look, which shows how strong it plays.
  */
-enum class Mood { HAPPY, SMUG, UPSET, DETERMINED, SULKY, ATTACKING }
+enum class Mood { HAPPY, SMUG, WORRIED, UPSET, SURPRISED, DETERMINED, SULKY, ATTACKING }
 
 /** What the computer says in its speech bubble (the canvas and the wireframes, D-06 and D-07). */
 enum class Bubble { GOOD_LUCK, YOUR_MOVE, HEY, OUCH, WELL_PLAYED, AGAIN, TAKE_IT_BACK, STOPPED }
@@ -32,8 +32,10 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
         /**
          * The look for [state], against a [human] who plays the other colour. [lastCapture] is what
          * the last move won, if anything; [humanInDanger] is true when one more computer dot would
-         * capture some of the human's dots. [ending] is how the game ended, or null while it goes
-         * on; by default it follows the score of a finished game, and a level passes it its mission.
+         * capture some of the human's dots, and [computerInDanger] when one more of the human's
+         * would capture some of the computer's. [ending] is how the game ended, or null while it
+         * goes on; by default it follows the score of a finished game, and a level passes it its
+         * mission.
          */
         fun of(
             state: GameState,
@@ -41,6 +43,7 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
             lastCapture: LastCapture?,
             humanInDanger: Boolean,
             ending: Ending? = endingOf(state, human),
+            computerInDanger: Boolean = false,
         ): OpponentLook = when {
             ending != null -> when (ending) {
                 Ending.WON -> OpponentLook(Mood.SULKY, Bubble.WELL_PLAYED)
@@ -48,11 +51,14 @@ data class OpponentLook(val mood: Mood, val bubble: Bubble? = null) {
                 Ending.LOST -> OpponentLook(Mood.SMUG, Bubble.AGAIN)
             }
             lastCapture?.by == human && lastCapture.points >= BIG_CAPTURE -> OpponentLook(Mood.UPSET, Bubble.OUCH)
-            lastCapture?.by == human -> OpponentLook(Mood.UPSET, Bubble.HEY)
+            lastCapture?.by == human -> OpponentLook(Mood.SURPRISED, Bubble.HEY)
             // It stopped in an open-ended game: it cannot lose, and it says so while the player collects (D-16).
             state.stopper == human.opponent -> OpponentLook(Mood.SMUG, Bubble.STOPPED)
             bossTurn(state, human.opponent) -> OpponentLook(Mood.ATTACKING)
             humanInDanger && state.toMove == human -> OpponentLook(Mood.SMUG, Bubble.YOUR_MOVE)
+            // Its own dots in danger worry it, while it thinks and on the player's move, unless the
+            // player's are in danger too: then it is smug, as above.
+            computerInDanger -> OpponentLook(Mood.WORRIED)
             state.dotsPlaced(human) == 0 -> OpponentLook(Mood.HAPPY, Bubble.GOOD_LUCK)
             lastCapture != null -> OpponentLook(Mood.SMUG)
             else -> OpponentLook(Mood.DETERMINED)

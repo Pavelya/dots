@@ -212,7 +212,7 @@ dot play at the same time, and their dots add up to one +N.
 | 500 to 800 | The wash and the hatching spread from the closing dot as a growing circle, kept inside the ring. | ease out |
 | 600 onwards | Each captured dot's cut is drawn across it in 100 ms, the nearest dot first, 40 ms apart. | linear |
 | 700 to 850 | "+N" grows in over the area, in the Score style and the captor's ink. | ease out |
-| 800 | The opponent's face changes: upset when the player captured, smug when the computer did. | |
+| 800 | The opponent's face changes: surprised when the player captured, smug when the computer did. | |
 | 850 to 1100 | +N flies along a curve to the captor's tally and shrinks to 55%. | ease in |
 | 1100 | The tally and the score take the N points, and the mission note ticks its boxes. | |
 | 1100 to 1250 | The score swells to 130% and back; the mission note to 106% and back. | |
@@ -239,7 +239,7 @@ full, then with a tap at 500 ms, which shows the end state at once.
 | 650 to 950 | The wash and the hatching spread. | ease out |
 | 700 onwards | The cuts, 30 ms apart. | linear |
 | 850 to 1000 | "+N" grows in below the area at 40 sp, with "Six at once!" under it (Caveat, the Headline size). The number of dots is a word there: Caveat is never used for figures. | ease out |
-| 900 | The opponent's face falls. | |
+| 900 | The opponent's face changes: it falls, upset, when the player captured; smug when the computer did. | |
 | 1000 to 1250 | +N flies to the tally. "Six at once!" stays. | ease in |
 | 1250 to 1400 | The tally, score and mission note take it and swell as in a capture. "Six at once!" shrinks away. | ease in |
 
@@ -262,7 +262,8 @@ circle. 0 ms is 200 ms after the dot that makes the threat lands, when that dot 
 
 - A faint ring (two moves from capture) draws in the same way but never pulses.
 - A new threat pulses only its own group. The others stay still.
-- When the player's group is in danger, the opponent's face turns smug.
+- When the player's group is in danger, the opponent's face turns smug. When only the computer's
+  group is, it turns worried.
 
 ## Dots running out
 

@@ -22,8 +22,8 @@ class FacesTest {
 
     @Test
     fun `each mood has its own face, and every face differs from the strengths`() {
-        val moods = listOf(Mood.HAPPY, Mood.SMUG, Mood.UPSET, Mood.SULKY).map { Faces.of(it, Strength.STEADY) }
-        assertEquals(4, moods.distinct().size)
+        val moods = listOf(Mood.HAPPY, Mood.SMUG, Mood.WORRIED, Mood.UPSET, Mood.SURPRISED, Mood.SULKY).map { Faces.of(it, Strength.STEADY) }
+        assertEquals(6, moods.distinct().size)
         for (s in Strength.entries) assertEquals(false, Faces.strength(s) in moods)
         // A boss without faces of its own looks smug on its special turn.
         assertEquals(Faces.of(Mood.SMUG, null), Faces.of(Mood.ATTACKING, null))
@@ -36,8 +36,10 @@ class FacesTest {
         assertEquals(ink!!.smug, Faces.of(Mood.HAPPY, Strength.STEADY, ink))
         assertEquals(ink.smug, Faces.of(Mood.SMUG, Strength.STEADY, ink))
         assertEquals(ink.smug, Faces.of(Mood.DETERMINED, Strength.STEADY, ink))
+        assertEquals(ink.smug, Faces.of(Mood.WORRIED, Strength.STEADY, ink))
         assertEquals(ink.attacking, Faces.of(Mood.ATTACKING, Strength.STEADY, ink))
         assertEquals(ink.beaten, Faces.of(Mood.UPSET, Strength.STEADY, ink))
+        assertEquals(ink.beaten, Faces.of(Mood.SURPRISED, Strength.STEADY, ink))
         assertEquals(ink.beaten, Faces.of(Mood.SULKY, Strength.STEADY, ink))
     }
 
@@ -61,12 +63,12 @@ class FacesTest {
 
     @Test
     fun `every face has its own picture in each theme's inks, light and dark`() {
-        val faces = listOf(Mood.HAPPY, Mood.SMUG, Mood.UPSET, Mood.SULKY).map { Faces.of(it, null) } +
+        val faces = listOf(Mood.HAPPY, Mood.SMUG, Mood.WORRIED, Mood.UPSET, Mood.SURPRISED, Mood.SULKY).map { Faces.of(it, null) } +
             Strength.entries.map { Faces.strength(it) }.distinct() +
             listOf(Faces.INK_BOTTLE, Faces.MOLE, Faces.COMET, Faces.KRAKEN).flatMap { listOf(it.smug, it.attacking, it.beaten) }
-        assertEquals(19, faces.size)
+        assertEquals(21, faces.size)
         val drawables = faces.flatMap { face -> FaceInks.entries.flatMap { face.of(it).let { p -> listOf(p.light, p.dark) } } }
-        assertEquals(19 * 3 * 2, drawables.distinct().size)
+        assertEquals(21 * 3 * 2, drawables.distinct().size)
     }
 
     @Test

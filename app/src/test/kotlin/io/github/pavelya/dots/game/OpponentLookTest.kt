@@ -13,8 +13,8 @@ class OpponentLookTest {
     private val empty = GameState.start(5, 5, dotsPerPlayer = 3)
     private val afterAMove = empty.play(Pos(0, 0)).state.play(Pos(4, 4)).state
 
-    private fun look(state: GameState, capture: LastCapture? = null, inDanger: Boolean = false) =
-        OpponentLook.of(state, human, capture, inDanger)
+    private fun look(state: GameState, capture: LastCapture? = null, inDanger: Boolean = false, computerInDanger: Boolean = false) =
+        OpponentLook.of(state, human, capture, inDanger, computerInDanger = computerInDanger)
 
     @Test
     fun `the level opens with a happy face and good luck`() {
@@ -27,9 +27,22 @@ class OpponentLookTest {
     }
 
     @Test
-    fun `a capture by the player upsets it, and a big one makes it say ouch`() {
-        assertEquals(OpponentLook(Mood.UPSET, Bubble.HEY), look(afterAMove, LastCapture(human, 2)))
+    fun `a capture by the player surprises it, and a big one upsets it and makes it say ouch`() {
+        assertEquals(OpponentLook(Mood.SURPRISED, Bubble.HEY), look(afterAMove, LastCapture(human, 1)))
+        assertEquals(OpponentLook(Mood.SURPRISED, Bubble.HEY), look(afterAMove, LastCapture(human, OpponentLook.BIG_CAPTURE - 1)))
         assertEquals(OpponentLook(Mood.UPSET, Bubble.OUCH), look(afterAMove, LastCapture(human, OpponentLook.BIG_CAPTURE)))
+        // Even with its own dots still in danger.
+        assertEquals(Mood.SURPRISED, look(afterAMove, LastCapture(human, 1), computerInDanger = true).mood)
+    }
+
+    @Test
+    fun `its own dots in danger worry it, without a word, unless the player's are in danger too on the player's move`() {
+        assertEquals(OpponentLook(Mood.WORRIED), look(afterAMove, computerInDanger = true))
+        assertEquals(OpponentLook(Mood.SMUG, Bubble.YOUR_MOVE), look(afterAMove, inDanger = true, computerInDanger = true))
+        // While it thinks, its own danger shows.
+        val itsMove = afterAMove.play(Pos(2, 2)).state
+        assertEquals(Player.BLUE, itsMove.toMove)
+        assertEquals(OpponentLook(Mood.WORRIED), look(itsMove, inDanger = true, computerInDanger = true))
     }
 
     @Test
@@ -49,8 +62,9 @@ class OpponentLookTest {
         val attacking = (0 until 10).filter { ply ->
             val mood = look(state).mood
             if (mood == Mood.ATTACKING) {
-                // A capture by the player still upsets it first.
-                assertEquals(Mood.UPSET, look(state, LastCapture(human, 1)).mood)
+                // A capture by the player still surprises it first; its own danger does not stop the attack.
+                assertEquals(Mood.SURPRISED, look(state, LastCapture(human, 1)).mood)
+                assertEquals(Mood.ATTACKING, look(state, computerInDanger = true).mood)
             }
             // Dots along the top rows, all touching the border: nothing is captured.
             state = state.play(Pos(ply % 7, ply / 7)).state
@@ -91,7 +105,8 @@ class OpponentLookTest {
     fun `once it has stopped it is smug and says so while the player collects, unless the player captures`() {
         val stopped = afterAMove.play(Pos(2, 2)).state.stop() // Blue stops; Red collects
         assertEquals(OpponentLook(Mood.SMUG, Bubble.STOPPED), look(stopped))
-        assertEquals(OpponentLook(Mood.UPSET, Bubble.HEY), look(stopped, LastCapture(human, 1)))
+        assertEquals(OpponentLook(Mood.SURPRISED, Bubble.HEY), look(stopped, LastCapture(human, 1)))
+        assertEquals(OpponentLook(Mood.SMUG, Bubble.STOPPED), look(stopped, computerInDanger = true))
         // The player's own stop changes nothing in its look.
         assertEquals(OpponentLook(Mood.DETERMINED), look(afterAMove.stop()))
     }
