@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pinfold privacy policy</title>
+<meta name="description" content="What the Pinfold game keeps on your phone, what it sends, to whom, and why.">
+<!--
+  Pinfold's privacy policy, served by GitHub Pages at https://pavelya.github.io/dots/privacy/
+  (.github/workflows/pages.yml). Google Play, AdMob and the game's Settings > Privacy link here.
+  It names every library in the store build that sends data; PrivacyPolicyTest (cli) fails when a
+  library is added or removed without changing this page. docs/release.md, "Privacy", holds the
+  Data safety answers that go with it: change both together.
+  No fonts, scripts or images from elsewhere, so reading the page sends nothing to anyone else.
+-->
+<style>
+:root {
+  --paper: #FBF8F1;
+  --grid: #D3DFEE;
+  --margin: #EBB2AA;
+  --ink: #2E2E2E;
+  --blue: #1F4E9C;
+  --grey: #5E5A53;
+  --card: #FFFFFF;
+  --rule: #D3DFEE;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #1C1D21;
+    --grid: #2A2E37;
+    --margin: #5A3A38;
+    --ink: #E8E4DA;
+    --blue: #9DB8EC;
+    --grey: #B3ADA2;
+    --card: #26282E;
+    --rule: #3A3F4A;
+  }
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: var(--ink);
+  font: 17px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+main {
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 32px 16px 64px 32px;
+  border-left: 1px solid var(--margin);
+}
+h1, h2, h3 { color: var(--blue); line-height: 1.25; }
+h1 { font-size: 2rem; margin: 0 0 4px; }
+h2 { font-size: 1.35rem; margin: 40px 0 8px; }
+h3 { font-size: 1.1rem; margin: 24px 0 4px; }
+p, ul { margin: 8px 0; }
+ul { padding-left: 1.3em; }
+li { margin: 4px 0; }
+a { color: var(--blue); }
+.updated { color: var(--grey); margin: 0 0 24px; }
+.card {
+  background: var(--card);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+.card > :first-child { margin-top: 0; }
+.card > :last-child { margin-bottom: 0; }
+dl { margin: 8px 0 0; }
+dt { font-weight: 700; margin-top: 10px; }
+dd { margin: 2px 0 0; }
+.service { border-bottom: 1px dashed var(--rule); padding-bottom: 16px; }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Pinfold privacy policy</h1>
+<p class="updated">Last updated: 25 November 2026</p>
+
+<p>Pinfold is a game of dots for Android phones, made by School 25, the developer named on Pinfold's
+Google Play page. This page says what the game keeps on your phone, what it sends, to whom, and why.
+If anything here is unclear, write to
+<a href="mailto:pinfoldsupport@gmail.com">pinfoldsupport@gmail.com</a>.</p>
+
+<div class="card">
+<h2 id="short">The short version</h2>
+<ul>
+<li>There is no account and no sign-in. The game never asks for your name, email address, contacts,
+photos or location.</li>
+<li>Your progress, settings and saved games stay on your phone.</li>
+<li>The game sends Google crash reports and a few game events, so we can fix bugs and see where the
+game is too hard. They carry a random number for the installation, never your name.</li>
+<li>Ads come from Google AdMob, and only when you choose to watch one for a booster.</li>
+<li>The game does not use your phone's advertising ID.</li>
+<li>We do not sell your data, and we give it to no one but Google, as described below.</li>
+</ul>
+</div>
+
+<h2 id="on-the-phone">What stays on your phone</h2>
+<p>Your campaign progress and stars, your boosters, the daily puzzles you solved, the totals on
+Stats, your settings, unfinished games, the Shop items Google Play says you own, how many ads you
+watched today, and your answer to Google's consent form. The game does not send any of this
+anywhere.</p>
+<p>One exception: if Android's backup is on for your phone, Android copies your campaign progress
+(nothing else) to your Google account, so a new phone can bring it back. Google does this under its
+own terms, and we cannot see the backup.</p>
+
+<h2 id="sent">What leaves your phone</h2>
+<p>Everything below goes to Google, through Google's own libraries inside the game. Each is
+encrypted on the way.</p>
+
+<section class="service" id="crash-reports">
+<h3>Crash reports: Firebase Crashlytics</h3>
+<dl>
+<dt>What</dt>
+<dd>When the game crashes: which part of the game failed (the stack trace), the game's state at that
+moment, facts about the phone such as its model, Android version and free memory, and a random ID
+for this installation of the game (the Crashlytics installation ID and the Firebase installation
+ID).</dd>
+<dt>Why</dt>
+<dd>To find and fix crashes.</dd>
+<dt>When</dt>
+<dd>In every country, from the first time the game starts, because a crash can't be fixed without its
+report.</dd>
+<dt>Who gets it</dt>
+<dd>Google, which processes it for us.</dd>
+<dt>Kept for</dt>
+<dd>90 days.</dd>
+</dl>
+</section>
+
+<section class="service" id="game-events">
+<h3>Game events: Google Analytics for Firebase</h3>
+<dl>
+<dt>What</dt>
+<dd>That the game was opened for the first time; how often and how long it is played; when a
+campaign level starts and ends, with the level, whether it was passed and the stars; when a booster
+is used, and which; when a daily puzzle ends, and whether it was solved; and purchases in the Shop
+(the item, its price and currency), which Google Play reports to Analytics by itself. With them go a
+random ID for this installation of the game (the app instance ID), the phone's model and Android
+version, and the country and region, which Google works out from the phone's internet address.</dd>
+<dt>Not sent</dt>
+<dd>No advertising ID, no Android ID, no name and no account. Google signals are off, and the data
+is not shared with Google's advertising products.</dd>
+<dt>Why</dt>
+<dd>To see where players get stuck or stop playing, and make those levels better.</dd>
+<dt>When</dt>
+<dd>In the EU, the EEA, the UK and Switzerland, nothing is sent until you have answered Google's
+consent form. If you decline, the events are still sent, but Analytics keeps no ID on your phone,
+so they can't be linked to each other or to you and only add to totals. Elsewhere, from the first
+time the game starts.</dd>
+<dt>Who gets it</dt>
+<dd>Google, which processes it for us.</dd>
+<dt>Kept for</dt>
+<dd>2 months. After that, only totals remain, such as how many players passed level 3.</dd>
+</dl>
+</section>
+
+<section class="service" id="ads">
+<h3>Ads: Google AdMob and Google's consent form</h3>
+<dl>
+<dt>What</dt>
+<dd>When the game asks Google for an ad and while one plays: the phone's internet address (from which
+Google estimates a rough location), the app set ID (a random ID Android gives the apps of one
+developer on a phone; it is not the advertising ID), how you interact with the ad (for example
+taps and how much of the video played), and technical facts such as how long the ad took to
+load.</dd>
+<dt>Why</dt>
+<dd>So Google can choose an ad and show it, count it so that the game is paid for it, and stop
+fraud. Every ad is limited to content rated PG.</dd>
+<dt>Who gets it</dt>
+<dd>Google, which uses it as described in
+<a href="https://policies.google.com/technologies/partner-sites">How Google uses information from sites or apps that use our services</a>
+and in <a href="https://policies.google.com/privacy">Google's privacy policy</a>.</dd>
+<dt>Your choices</dt>
+<dd>In the EU, the EEA, the UK and Switzerland, Google's consent form opens the first time the game
+starts. It asks what Google may do with your data for ads, for example whether ads may be
+personalised. You can change your answer at any time in Settings &gt; Privacy &gt; Ad choices. In
+every country, Settings &gt; Privacy &gt; Show ad offers turns off every offer to watch an ad.</dd>
+<dt>Kept for</dt>
+<dd>As long as Google's <a href="https://policies.google.com/technologies/retention">retention rules</a> allow.</dd>
+</dl>
+</section>
+
+<section class="service" id="purchases">
+<h3>Purchases: Google Play Billing</h3>
+<p>Shop items are bought through Google Play. Google Play takes the payment, under
+<a href="https://policies.google.com/privacy">Google's privacy policy</a>; the game never sees your
+card or other payment details. Google Play tells the game only which items you own, and the game
+keeps that on the phone. Google Analytics also counts each purchase, as said above.</p>
+</section>
+
+<section class="service" id="reviews">
+<h3>Reviews: Google Play In-App Review</h3>
+<p>Now and then, after a level won with three stars, the game asks Google Play to show its review
+card. If you rate or review the game there, the review goes to Google Play, which publishes it like
+any other review on Google Play.</p>
+</section>
+
+<section class="service" id="email">
+<h3>When you write to us</h3>
+<p>Settings &gt; Send feedback opens your email app with our address, the game's version, the
+Android version and the phone model filled in; you can change or delete any of it before sending.
+We use your email only to answer you, keep it only as long as we need it for that, and never add
+you to a mailing list.</p>
+</section>
+
+<h2 id="never">What the game never collects</h2>
+<p>Your name, email address, phone number, contacts, photos, files, messages, precise location,
+the advertising ID or the Android ID. The only permission the game asks Android for is
+vibration.</p>
+
+<h2 id="who">Who gets your data</h2>
+<p>Only Google, in the roles above. For crash reports and game events, Google processes the data for
+us and only we can see the reports. For ads, Google uses the data under its own policies. We do not
+sell, rent or give your data to anyone else.</p>
+
+<h2 id="basis">Why we may use it (EU, EEA, UK and Switzerland)</h2>
+<ul>
+<li><strong>Crash reports:</strong> our legitimate interest in a game that works.</li>
+<li><strong>Game events:</strong> your answer to Google's consent form. If you decline, our
+legitimate interest in counting, without any ID, how far players get.</li>
+<li><strong>Ads:</strong> your choices in Google's consent form.</li>
+<li><strong>Purchases:</strong> to carry out the purchase you asked for.</li>
+<li><strong>Email:</strong> to answer you.</li>
+</ul>
+
+<h2 id="security">Security</h2>
+<p>Everything the game sends is encrypted on the way. The reports are kept by Google and can be
+opened only through the game's own Google account.</p>
+
+<h2 id="rights">Your choices and rights</h2>
+<ul>
+<li><strong>Ad choices and Show ad offers</strong>, in Settings &gt; Privacy, as described above.</li>
+<li><strong>Uninstalling the game</strong> deletes everything it kept on your phone, and its random
+IDs with it. A new installation gets new IDs.</li>
+<li><strong>Asking us.</strong> Nothing we receive names you, so we usually can't tell which reports
+are yours. You can still ask us to show, correct or delete data about you, or object to how we use
+it: write to <a href="mailto:pinfoldsupport@gmail.com">pinfoldsupport@gmail.com</a>, and we answer
+within a month.</li>
+<li><strong>Complaining.</strong> If you live in the EU, the EEA, the UK or Switzerland, you can also
+complain to your country's data protection authority.</li>
+</ul>
+
+<h2 id="children">Children</h2>
+<p>Pinfold is made for teens and adults. It is not designed for children, and we do not knowingly
+collect data from children under 13. If you think a child has sent us data, write to us and we will
+delete it.</p>
+
+<h2 id="changes">Changes to this policy</h2>
+<p>When the game starts to collect something new, for example with sign-in to Google Play Games or
+online play, this page changes first and gets a new date above. Earlier versions are in
+<a href="https://github.com/Pavelya/dots/commits/main/site/privacy/index.html">the page's history</a>.</p>
+
+</main>
+</body>
+</html>

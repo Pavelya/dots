@@ -12,6 +12,7 @@ explains the rules and how the computer opponent works.
 | `engine/` | Pure Kotlin/JVM library: rules, computer opponent (`dots.ai`), campaign, daily puzzle, game log. No Android code. |
 | `cli/` | Terminal game, benchmarks, tester-log tools. Built on `engine`. |
 | `app/` | Android app (Jetpack Compose). Built on `engine`. Structure: `docs/poc/architecture.md`. |
+| `site/` | The web pages GitHub Pages publishes at `pavelya.github.io/dots/`: the privacy policy. `docs/release.md`, Privacy. |
 | `gradle/libs.versions.toml` | Every dependency version. Dependabot updates it; don't bump versions by hand unless the task asks for it. |
 | `docs/plan.md` | The plan: the game, phases, gates, tools and accounts. Task cards are issues. |
 | `docs/poc/` | The proof of concept: charter, architecture, test protocol. |

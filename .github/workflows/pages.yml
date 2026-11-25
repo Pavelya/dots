@@ -1,0 +1,38 @@
+name: pages
+
+# Publishes the folder site/ to GitHub Pages, at https://pavelya.github.io/dots/: the privacy policy
+# (site/privacy/) that Google Play, AdMob and the game link to. Runs when site/ changes on main,
+# or by hand (Actions > pages > Run workflow). docs/release.md, "Privacy", has the details.
+
+on:
+  push:
+    branches: [main]
+    paths: [site/**, .github/workflows/pages.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a newer push waits for the one running instead of cancelling it.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+      - id: deployment
+        uses: actions/deploy-pages@v5

@@ -745,10 +745,12 @@ fun DotsApp(navController: NavHostController = rememberNavController()) {
                             LaunchedEffect(Unit) { back() }
                         } else {
                             val ads by app.ads.state.collectAsStateWithLifecycle()
+                            val context = LocalContext.current
                             SettingsDetailsScreen(
                                 page,
                                 onPage = { navController.navigate(Routes.settingsDetails(it)) },
                                 onBack = back,
+                                onPrivacyPolicy = { openPrivacyPolicy(context) },
                                 adChoices = ads.choices,
                                 onAdChoices = { activity?.let { app.ads.choices(it) } },
                                 showAdOffers = appSettings?.showAdOffers ?: AppSettings().showAdOffers,
@@ -917,6 +919,23 @@ private fun sendFeedback(context: Context) {
         Toast.makeText(context, context.getString(R.string.feedback_no_email, address), Toast.LENGTH_LONG).show()
     }
 }
+
+/**
+ * Opens the privacy policy (`site/privacy/`, on GitHub Pages) in the phone's browser. Without a
+ * browser, says where the policy is.
+ */
+private fun openPrivacyPolicy(context: Context) {
+    try {
+        context.startActivity(privacyPolicyPage(context))
+    } catch (_: ActivityNotFoundException) {
+        val address = context.getString(R.string.privacy_policy_url)
+        Toast.makeText(context, context.getString(R.string.privacy_no_browser, address), Toast.LENGTH_LONG).show()
+    }
+}
+
+/** The privacy policy of [openPrivacyPolicy], for the phone's browser. */
+internal fun privacyPolicyPage(context: Context): Intent =
+    Intent(Intent.ACTION_VIEW, context.getString(R.string.privacy_policy_url).toUri()).addCategory(Intent.CATEGORY_BROWSABLE)
 
 /** The feedback email of [sendFeedback], for Android's email apps (`mailto:`). */
 internal fun feedbackEmail(context: Context): Intent = Intent(Intent.ACTION_SENDTO, "mailto:".toUri())

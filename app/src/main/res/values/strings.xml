@@ -382,6 +382,11 @@
     <string name="settings_backup">Play Games backup</string>
     <string name="back_to_settings">Back to settings</string>
     <string name="privacy_intro">Your progress, settings and games stay on this phone. Pinfold sends Google crash reports and a few game events, never your name, and the ads you choose to watch come from Google AdMob.</string>
+    <string name="privacy_policy">Privacy policy</string>
+    <string name="privacy_policy_detail">opens the browser</string>
+    <!-- The page in site/privacy/, on GitHub Pages; the same address is in Play Console and AdMob (docs/release.md, Privacy). -->
+    <string name="privacy_policy_url" translatable="false">https://pavelya.github.io/dots/privacy/</string>
+    <string name="privacy_no_browser">No browser found. The policy is at %1$s</string>
     <string name="privacy_ad_choices">Ad choices</string>
     <string name="privacy_ad_choices_detail">Google’s form</string>
     <string name="privacy_show_ad_offers">Show ad offers</string>

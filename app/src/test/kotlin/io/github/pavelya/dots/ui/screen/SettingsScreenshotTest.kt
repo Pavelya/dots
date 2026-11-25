@@ -102,17 +102,21 @@ class SettingsScreenshotTest {
         capture("settings_licences_end")
     }
 
-    /** The wireframes' Settings details: Privacy (D-28): Show ad offers, on by default. */
+    /** The wireframes' Settings details: Privacy (D-28): the privacy policy, and Show ad offers, on by default. */
     @Test
     fun privacy() {
         val changes = mutableListOf<Boolean>()
-        show { SettingsDetailsScreen(SettingsPage.PRIVACY, onPage = {}, onBack = {}, onShowAdOffers = { changes += it }) }
+        var policy = 0
+        show { SettingsDetailsScreen(SettingsPage.PRIVACY, onPage = {}, onBack = {}, onPrivacyPolicy = { policy++ }, onShowAdOffers = { changes += it }) }
         compose.onNodeWithText("Ad choices").assertDoesNotExist()
+        compose.onNodeWithText("opens the browser").assertExists()
         compose.onNode(hasText("Show ad offers") and isToggleable()).assertIsOn()
         capture("settings_privacy")
 
         compose.onNodeWithText("Show ad offers").performClick()
         assertEquals(listOf(false), changes)
+        compose.onNodeWithText("Privacy policy").performClick()
+        assertEquals(1, policy)
     }
 
     /** Where the law gives the choice (the EU, the UK): Ad choices opens Google's form again. */
