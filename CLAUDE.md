@@ -18,6 +18,7 @@ explains the rules and how the computer opponent works.
 | `docs/poc/` | The proof of concept: charter, architecture, test protocol. |
 | `docs/design/` | Design work: names, investigation, references, mood boards, the Notebook theme, the brand, the screens and flows (`flows.md`), and money: what is sold and where ads appear (`money.md`). |
 | `docs/decisions/` | One file per settled decision, `NNNN-short-title.md`. |
+| `docs/store/` | The Google Play listing: its text, alt texts and video plan (`README.md`), and the images `draw.py` makes from the app's screenshots. |
 | `docs/release.md` | Store releases: the `v*` tag, version numbers, signing keys. "What is set up" lists what exists in Play Console and Google Cloud and every account's rights; a task that changes them updates it. |
 
 ## Commands
