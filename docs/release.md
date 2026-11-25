@@ -12,6 +12,8 @@ This page has:
 - [Crash reports](#crash-reports): where crashes show up, what a report holds, a test crash.
 - [Analytics](#analytics): what the game reports, the funnel to level 10, checking events.
 - [Ads](#ads): the rewarded ads, Google's consent form, and checking them on a phone.
+- [Privacy](#privacy): the privacy policy page, what the store build sends, and the Data safety
+  answers.
 - [The money setup](#the-money-setup): **start here for anything about money.** How the money
   reaches you, every console step for the Shop, the ads, payouts, taxes and the store forms, in
   order, with what is set up and what is left.
@@ -97,9 +99,8 @@ task card (`Q-` letter) with its stack trace.
 
 **What a report holds.** Only what Crashlytics collects by itself: the stack trace, the app's
 state and the phone's model and Android version at the moment of the crash, and a random ID for the
-installation. The app adds no names, levels or IDs of its own. For the Data safety form (R-03):
-crash logs, diagnostics, and device or other IDs; collected, not shared, encrypted in transit,
-used for crash reporting.
+installation. The app adds no names, levels or IDs of its own. The privacy policy and the Data
+safety form describe it: [Privacy](#privacy).
 
 **A test crash.** To check that reports arrive, crash a store build on purpose. This needs the
 phone connected to the Mac by USB with USB debugging on (Settings > About phone > tap Build number
@@ -190,9 +191,9 @@ player is: the manifest keeps collection off, and the game turns it on then. In 
 and the UK the answer also decides whether Analytics may keep its ID on the phone (consent mode).
 To check it, see [Ads](#ads).
 
-**For the Data safety form (R-03),** besides what crash reports need: app interactions (under
-App activity) and device or other IDs, collected, not shared, encrypted in transit, used for
-analytics. The privacy policy names Google Analytics for Firebase.
+**The privacy policy and the Data safety form** describe what Analytics collects, the events
+above and what Firebase adds by itself: [Privacy](#privacy). A new event or parameter changes them
+too.
 
 ## Ads
 
@@ -232,10 +233,101 @@ release from Google Play and open it in the EU. *Worked when:* DebugView shows n
 phone while the consent form is open, and events (`first_open`, then `level_start`) once it is
 answered.
 
-**For the Data safety form (R-03):** AdMob collects device or other IDs (an app set ID, no
-advertising ID), app interactions and diagnostics for advertising and fraud prevention, shared
-with Google, encrypted in transit. The privacy policy names Google AdMob and Google's consent
-form. Play Console > App content > Ads: **Yes, my app contains ads**.
+**The privacy policy and the Data safety form** describe what AdMob and the consent form send:
+[Privacy](#privacy). Play Console > App content > Ads: **Yes, my app contains ads**.
+
+## Privacy
+
+The privacy policy is the page `site/privacy/index.html`, at
+[pavelya.github.io/dots/privacy/](https://pavelya.github.io/dots/privacy/). The workflow `pages`
+(`.github/workflows/pages.yml`) publishes the folder `site/` to GitHub Pages each time it changes
+on `main`, within a minute or two. The game opens the page from Settings > Privacy > Privacy
+policy; Play Console (App content > Privacy policy) and AdMob's consent form link to the same
+address. Decision 0019 explains why there is no domain of our own.
+
+**The policy and the Data safety form say the same thing,** and both name every library of the
+store build that sends data off the phone. `PrivacyPolicyTest` (part of `:cli:test`) reads the
+store build's libraries from `app/build.gradle.kts` and fails when one is neither Android's or
+Kotlin's own nor named in the policy and in this section. A task that adds a library, an event, a
+sign-in or anything else that leaves the phone changes three things in the same pull request: the
+policy (with a new date at the top), this section, and, once merged, the form in Play Console.
+
+### What the store build sends
+
+| Library | What it sends | Why | Shared |
+| --- | --- | --- | --- |
+| **Firebase Crashlytics** (`firebase-crashlytics`, with Firebase installations) | Crash logs; diagnostics (the app's state, the phone's model, Android version, memory); device or other IDs (the Crashlytics installation UUID and the Firebase installation ID). From the first start, in every country. Kept 90 days. | Analytics | No: Google processes it for us. |
+| **Google Analytics for Firebase** (`firebase-analytics`) | App interactions (the events of [Analytics](#analytics), sessions, time played); purchase history (Firebase logs `in_app_purchase` with the product, price and currency by itself); approximate location (country and region from the masked IP address); device or other IDs (the app instance ID). Only after Google's consent form has its answer or has said none is needed. Kept 2 months. | Analytics | No: Google processes it for us. |
+| **Google AdMob** (`play-services-ads`) and **Google's consent form** (`user-messaging-platform`) | Approximate location (from the IP address); app interactions (ad taps, views); diagnostics (load time, hang rate); device or other IDs (the app set ID; no advertising ID, see [Ads](#ads)). | Advertising or marketing, analytics, fraud prevention | Yes, with Google: Google's page says "collected and shared". |
+| **Google Play Billing** (`billing`) | Nothing to declare. Google Play takes the payment, and the game never sees payment details: Play's FAQ says data a payment service collects itself is not declared. The purchases still reach the form, through Analytics. | | |
+| **In-App Review** (`review`) | Nothing to declare. The rating and review go to the Play Store's own process, which publishes them; the game never sees them. | | |
+| Android's and Kotlin's own (`androidx`, `org.jetbrains`) | Nothing: they work on the phone. | | |
+
+Also not declared, on purpose: Android's backup of the progress file (Android's own service; the
+developer never receives it), and emails the player writes in their own email app, or a game log a
+tester shares (the player sends them through another app, not the game).
+
+Where the answers come from: Google's pages for
+[Firebase](https://firebase.google.com/docs/android/play-data-disclosure),
+[Google Analytics](https://support.google.com/analytics/answer/11582702) and its
+[automatic events](https://support.google.com/analytics/answer/9234069),
+[the Google Mobile Ads SDK](https://developers.google.com/admob/android/privacy/play-data-disclosure),
+[In-App Review](https://developer.android.com/guide/playcore/in-app-review#data-safety),
+[Firebase's retention times](https://firebase.google.com/support/privacy), and Play's guide to
+[the Data safety section](https://support.google.com/googleplay/android-developer/answer/10787469).
+The UMP consent form has no page of its own; its requests are part of AdMob's.
+
+### Filling in the forms
+
+Both are in Play Console > Pinfold > **Policy and programs** > **App content**. The privacy policy
+page must be live first: open
+[pavelya.github.io/dots/privacy/](https://pavelya.github.io/dots/privacy/) and check that it shows.
+
+**1. Privacy policy.** App content > **Privacy policy** > paste
+`https://pavelya.github.io/dots/privacy/` > **Save**.
+
+**2. Data safety.** App content > **Data safety** > **Start** (or **Manage**). Answer page by page:
+
+*Data collection and security*
+
+| Question | Answer |
+| --- | --- |
+| Does your app collect or share any of the required user data types? | **Yes** |
+| Is all of the user data collected by your app encrypted in transit? | **Yes** |
+| Account creation | **My app does not allow users to create an account** (Pinfold has no accounts at launch; Play Games and online play come later, X-16) |
+| Do you provide a way for users to request that their data is deleted? | **No**. Nothing the game sends names the player, so a request could not be matched; the policy says how long each part is kept. |
+
+*Data types*: tick exactly these six, and nothing else.
+
+| Category | Data type |
+| --- | --- |
+| Location | Approximate location |
+| Financial info | Purchase history |
+| App activity | App interactions |
+| App info and performance | Crash logs |
+| App info and performance | Diagnostics |
+| Device or other IDs | Device or other IDs |
+
+*Data usage and handling*: for each type, the same questions. Every one is **not** processed
+ephemerally, and every one is **required** (players can't turn off crash reports, and outside the
+EU and the UK nothing turns off analytics or the ads library).
+
+| Data type | Collected | Shared | Why collected | Why shared |
+| --- | --- | --- | --- | --- |
+| Approximate location | Yes | Yes | Analytics; Advertising or marketing; Fraud prevention, security, and compliance | Analytics; Advertising or marketing; Fraud prevention, security, and compliance |
+| Purchase history | Yes | No | Analytics | |
+| App interactions | Yes | Yes | Analytics; Advertising or marketing; Fraud prevention, security, and compliance | Analytics; Advertising or marketing; Fraud prevention, security, and compliance |
+| Crash logs | Yes | No | Analytics | |
+| Diagnostics | Yes | Yes | Analytics; Advertising or marketing; Fraud prevention, security, and compliance | Analytics; Advertising or marketing; Fraud prevention, security, and compliance |
+| Device or other IDs | Yes | Yes | Analytics; Advertising or marketing; Fraud prevention, security, and compliance | Analytics; Advertising or marketing; Fraud prevention, security, and compliance |
+
+*Store listing preview*: check that it reads: data shared: location, app activity, app info and
+performance, device or other IDs; data collected: the same plus financial info; data is encrypted
+in transit; no way to request deletion. Then **Save**.
+
+**3. Send them for review.** Play Console > **Publishing overview** > **Send changes for review**
+(if Managed publishing is off, the changes go to review by themselves). *Worked when:* App content
+lists Privacy policy and Data safety under **Actioned**, with no message from Play.
 
 ## The money setup
 
@@ -285,7 +377,7 @@ your address when the balance reaches $10. [Part 10](#part-10-payouts-and-taxes)
 | **Payments profile** | Who Google Play pays: your name and address, bank account, US tax form. Opened from Play Console > Settings > Payments profile. | [pay.google.com](https://pay.google.com/) |
 | **AdMob** | The ads, Google's consent form, and AdMob's own payments: identity, address PIN, bank, US tax form. | [admob.google.com](https://admob.google.com/) |
 | **Firebase and Google Analytics** | No money. They appear on the Data safety form. | [console.firebase.google.com](https://console.firebase.google.com/) |
-| **GitHub Pages** | The privacy policy page (R-03) and the `app-ads.txt` file AdMob checks (C-07). | `pavelya.github.io` |
+| **GitHub Pages** | The privacy policy page ([Privacy](#privacy)) and the `app-ads.txt` file AdMob checks (C-07). | `pavelya.github.io` |
 
 Play Console's and AdMob's payment settings are separate: fill in both.
 
@@ -327,8 +419,8 @@ box finds it). Play shows a list of what is missing on the Dashboard.
 
 | | Step | Who, how |
 | --- | --- | --- |
-| ⬜ | **Privacy policy**: a public page naming Crashlytics, Google Analytics, AdMob with Google's consent form, and Google Play Billing; its URL in App content. | R-03 |
-| ⬜ | **Data safety**: what the game and its libraries collect. The lines for each are already written above: [Crash reports](#crash-reports), [Analytics](#analytics), [Ads](#ads). | R-03 |
+| ⬜ | **Privacy policy**: the page is up ([Privacy](#privacy)); its URL goes in App content. | you, [Filling in the forms](#filling-in-the-forms), step 1 |
+| ⬜ | **Data safety**: what the game and its libraries collect, every answer written out. | you, [Filling in the forms](#filling-in-the-forms), step 2 |
 | ⬜ | **Ads**: Yes, the app contains ads. | R-04 |
 | ⬜ | **Content rating**: the IARC questionnaire. It asks about violence, gambling, user chat, purchases; the certificate covers every country. | R-04 |
 | ⬜ | **Target audience and content**: 13–15, 16–17 and 18 and over; not designed for children. | R-04 |
@@ -361,7 +453,8 @@ box finds it). Play shows a list of what is missing on the Dashboard.
 
 ### App content: the short answers
 
-The answers that follow from how Pinfold is built. R-03 and R-04 fill in the longer forms.
+The answers that follow from how Pinfold is built. The longer forms: Data safety in
+[Privacy](#privacy); content rating and target audience in R-04.
 
 | Question | Answer | Why |
 | --- | --- | --- |
@@ -473,6 +566,14 @@ once it is done:
 | One-time products | Six, one per cosmetic of `docs/design/money.md`: `star_chart`, `neon_arcade`, `hearts_and_clubs`, `flame_and_frost`, `lasso`, `rubber_stamp`. Each has one purchase option, `buy`, at the base price ($2.99 for a theme, $0.99 for the others) with the prices of money.md's two lower-price groups set by hand, and is not sold in Russia or Belarus. The game finds them by these IDs (`Cosmetic.productId`). |
 | License testing | The owner's Google account, so its purchases use Google's test cards and cost nothing. |
 
+**Not set up yet: the privacy policy and Data safety.** [Filling in the forms](#filling-in-the-forms)
+adds two rows here once Play has accepted them:
+
+| What | How it will be set |
+| --- | --- |
+| App content: Privacy policy | `https://pavelya.github.io/dots/privacy/`. |
+| App content: Data safety | The answers of [Privacy](#privacy): six data types, all required, encrypted in transit; no accounts; no deletion requests. |
+
 Anything else in Play Console (store listing, app content declarations, closed testing,
 production, Play Games) is set up by the task that needs it, which then adds a row here.
 
@@ -529,7 +630,7 @@ Online play (O-01) uses this project too, and adds rows here.
 | App | **Pinfold**, Android, added as not on an app store yet (no store details), user metrics off. App ID `ca-app-pub-3639439691153326~3889232280`, in `app/build.gradle.kts` for every build. Once Pinfold is public on Google Play, its app settings > **Add app store details** links the listing; until AdMob has reviewed it, few real ads are served. |
 | Ad unit | `Booster`, Rewarded, reward 1 `booster`, no server-side verification. ID `ca-app-pub-3639439691153326/6766356268`, used by store builds; debug builds use Google's test unit. |
 | Blocking controls | Maximum ad content rating PG. |
-| Privacy & messaging | A published European regulations (GDPR) message for Pinfold, in English, with the privacy policy URL `https://pavelya.github.io/dots/privacy/` (R-03 publishes the page). |
+| Privacy & messaging | A published European regulations (GDPR) message for Pinfold, in English, with the privacy policy URL `https://pavelya.github.io/dots/privacy/` ([Privacy](#privacy)). |
 | Links | None: no Firebase or Google Analytics link (decision 0033). |
 | Payments | Not set up yet: [step 51](#part-10-payouts-and-taxes). |
 | Store link and app-ads.txt | Not yet: after the launch, [Part 11](#part-11-after-the-launch-admob-sees-the-store). |
@@ -540,6 +641,7 @@ Online play (O-01) uses this project too, and adds rows here.
 | --- | --- |
 | Workflow | `store release`, `.github/workflows/release.yml`, started by a `v*` tag on `main`. The upload itself: `.github/scripts/play-upload.sh`. |
 | CI check | The `test` workflow's `release-build` job builds the shrunk release on every pull request. |
+| Pages | Settings > Pages, source **GitHub Actions**. The workflow `pages`, `.github/workflows/pages.yml`, publishes the folder `site/` to `https://pavelya.github.io/dots/` when it changes on `main`, or when run by hand from Actions. Today the site holds only the privacy policy, so the address `/dots/` itself shows GitHub's 404 page. |
 | Secrets | `UPLOAD_KEYSTORE_BASE64`, `UPLOAD_KEYSTORE_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON`, and the POC test key's two. See [Keys and secrets](#keys-and-secrets). |
 
 ## If something goes wrong
@@ -1177,8 +1279,8 @@ every ad.
 2. **Apps:** Pinfold. **Languages:** English. **Consent options:** **Consent** and **Manage
    options** (the default). Turn on **Close (do not consent)** if it is offered, so a player can
    say no as easily as yes.
-3. **Privacy policy URL:** `https://pavelya.github.io/dots/privacy/`. The page goes up with R-03;
-   tell Claude if AdMob refuses the address.
+3. **Privacy policy URL:** `https://pavelya.github.io/dots/privacy/`, the page of
+   [Privacy](#privacy).
 4. **Ad partners:** leave Google's commonly used ad technology providers as suggested.
 5. **Publish**.
 6. On the European regulations page, open **Settings** (a gear or a tab). If there is a switch

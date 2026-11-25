@@ -803,6 +803,24 @@ class NavigationTest {
     }
 
     @Test
+    fun `Privacy policy opens the policy's page in the browser, and Privacy stays`() {
+        launch()
+        tap("Settings")
+        at(Routes.SETTINGS)
+        waitFor("Send feedback")
+        compose.onNodeWithText("Privacy").performScrollTo().performClick()
+        at(Routes.SETTINGS_DETAILS)
+        compose.onNodeWithText("Privacy policy").performClick()
+
+        compose.waitUntil(timeoutMillis = 5_000) { shadowOf(app).peekNextStartedActivity() != null }
+        val page = shadowOf(app).nextStartedActivity
+        assertEquals(Intent.ACTION_VIEW, page.action)
+        assertEquals("https://pavelya.github.io/dots/privacy/", page.data.toString())
+        assertTrue(page.hasCategory(Intent.CATEGORY_BROWSABLE))
+        at(Routes.SETTINGS_DETAILS)
+    }
+
+    @Test
     fun `the developer menu holds the test settings and shares the game log`() {
         val finished = GameLogEntry.start(GameSettings.POC, "easy", threatHighlight = false, now = 0).copy(outcome = Outcome.FINISHED)
         app.games.finish(finished)
