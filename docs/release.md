@@ -425,7 +425,7 @@ box finds it). Play shows a list of what is missing on the Dashboard.
 | ⬜ | **Content rating**: the IARC questionnaire. It asks about violence, gambling, user chat, purchases; the certificate covers every country. | R-04 |
 | ⬜ | **Target audience and content**: 13–15, 16–17 and 18 and over; not designed for children. | R-04 |
 | ⬜ | **The short questions**: see [App content: the short answers](#app-content-the-short-answers). | R-04 |
-| ⬜ | **Store listing** in English: name, short and full description, icon, feature graphic, screenshots. Store settings: category Games > Puzzle (or Board), contact email, website `https://pavelya.github.io/dots/` (C-07 needs it). | R-05 |
+| ⬜ | **Store listing** in English: name, short and full description, icon, feature graphic, screenshots, video ([`docs/store/`](store/README.md)). Store settings: category Games > Board, contact email, website `https://pavelya.github.io/dots/` (C-07 needs it). | R-05 |
 | ⬜ | **Your public details and trader status**: your address becomes public once Pinfold sells, and the trader question is separate. Read [Your public details](#your-public-details-and-trader-status) before step 34. | you, Play Console > Developer account > About you |
 
 **4. The closed test** (wave 4)
@@ -574,8 +574,16 @@ adds two rows here once Play has accepted them:
 | App content: Privacy policy | `https://pavelya.github.io/dots/privacy/`. |
 | App content: Data safety | The answers of [Privacy](#privacy): six data types, all required, encrypted in transit; no accounts; no deletion requests. |
 
-Anything else in Play Console (store listing, app content declarations, closed testing,
-production, Play Games) is set up by the task that needs it, which then adds a row here.
+**Not set up yet: the store listing.** R-05 adds these rows once the owner has saved the listing
+([`docs/store/`](store/README.md), "Putting it in Play Console"):
+
+| What | How it will be set |
+| --- | --- |
+| Main store listing | English only. Name, short and full description, icon, feature graphic, eight phone screenshots with alt texts, all from `docs/store/README.md`; the video URL once it exists. |
+| Store settings | App type Game, category Board, tags from `docs/store/README.md`; the owner's contact email; website `https://pavelya.github.io/dots/`. |
+
+Anything else in Play Console (app content declarations, closed testing, production, Play Games)
+is set up by the task that needs it, which then adds a row here.
 
 ### Google Cloud
 
