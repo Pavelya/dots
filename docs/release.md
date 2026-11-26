@@ -440,7 +440,7 @@ box finds it). Play shows a list of what is missing on the Dashboard.
 | | Step | Who, how |
 | --- | --- | --- |
 | ⬜ | Apply for production access (Dashboard), then a staged rollout | R-07 |
-| ⬜ | Link AdMob to the public listing, put up `app-ads.txt`, and wait for AdMob's review (2 to 3 days). Until then few real ads show. | C-07, [Part 11](#part-11-after-the-launch-admob-sees-the-store) |
+| ⬜ | Link AdMob to the public listing, check that it verifies `app-ads.txt`, and wait for AdMob's review (2 to 3 days). Until then few real ads show. | C-07, [Part 11](#part-11-after-the-launch-admob-sees-the-store) |
 
 **6. Every month after the launch**
 
@@ -641,7 +641,8 @@ Online play (O-01) uses this project too, and adds rows here.
 | Privacy & messaging | A published European regulations (GDPR) message for Pinfold, in English, with the privacy policy URL `https://pavelya.github.io/dots/privacy/` ([Privacy](#privacy)). |
 | Links | None: no Firebase or Google Analytics link (decision 0033). |
 | Payments | Not set up yet: [step 51](#part-10-payouts-and-taxes). |
-| Store link and app-ads.txt | Not yet: after the launch, [Part 11](#part-11-after-the-launch-admob-sees-the-store). |
+| app-ads.txt | At `https://pavelya.github.io/app-ads.txt`, from the repository `Pavelya/pavelya.github.io` ([GitHub](#github)). AdMob verifies it once the store listing is linked. |
+| Store link | Not yet: after the launch, [Part 11](#part-11-after-the-launch-admob-sees-the-store). |
 
 ### GitHub
 
@@ -650,6 +651,7 @@ Online play (O-01) uses this project too, and adds rows here.
 | Workflow | `store release`, `.github/workflows/release.yml`, started by a `v*` tag on `main`. The upload itself: `.github/scripts/play-upload.sh`. |
 | CI check | The `test` workflow's `release-build` job builds the shrunk release on every pull request. |
 | Pages | Settings > Pages, source **GitHub Actions**. The workflow `pages`, `.github/workflows/pages.yml`, publishes the folder `site/` to `https://pavelya.github.io/dots/` when it changes on `main`, or when run by hand from Actions. Today the site holds only the privacy policy, so the address `/dots/` itself shows GitHub's 404 page. |
+| Site root | The public repository `Pavelya/pavelya.github.io`, Settings > Pages from the branch `main`, root. It serves the top of the address, `https://pavelya.github.io/`, and holds only `app-ads.txt` (step 54) and a README. Changes go through a pull request there. The `/dots/` site above is separate and unaffected. |
 | Secrets | `UPLOAD_KEYSTORE_BASE64`, `UPLOAD_KEYSTORE_PASSWORD`, `PLAY_SERVICE_ACCOUNT_JSON`, and the POC test key's two. See [Keys and secrets](#keys-and-secrets). |
 
 ## If something goes wrong
@@ -1378,13 +1380,15 @@ Claude adds the payments rows to [What is set up](#what-is-set-up).
 
 AdMob shows a new app only a few real ads until it knows the app's public store listing and has
 reviewed it. This part does that once Pinfold is public on Google Play (R-07). It takes 15 minutes,
-then a few days of waiting. C-07 puts up the file of step 54 before the launch.
+then a few days of waiting. The file of step 54 is in place before the launch; steps 55 and 56 need
+the public listing.
 
 **54. app-ads.txt.** It is a one-line text file that tells advertisers which AdMob account may
 sell ads in Pinfold. AdMob reads it at the root of the website named in Pinfold's store listing
 (Store settings > Website, R-05). For `https://pavelya.github.io/dots/` that is
 `https://pavelya.github.io/app-ads.txt`, not under `/dots/`. GitHub serves that address only from a
-repository named `pavelya.github.io`; C-07 makes it. The line:
+repository named `pavelya.github.io`: that is `Pavelya/pavelya.github.io` ([GitHub](#github)), and
+its `app-ads.txt` holds the line:
 
 ```text
 google.com, pub-3639439691153326, DIRECT, f08c47fec0942fa0
