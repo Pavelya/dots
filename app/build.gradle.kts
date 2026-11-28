@@ -22,7 +22,10 @@ val TEST_REWARDED_AD_UNIT = "ca-app-pub-3940256099942544/5224354917"
 
 android {
     namespace = "io.github.pavelya.dots"
-    compileSdk = 37
+    // Android 37.1: Compose 1.13 needs it to build. Phones still run the app as Android 37 (targetSdk).
+    compileSdk {
+        version = release(37) { minorApiLevel = 1 }
+    }
 
     defaultConfig {
         // The store app's ID (decision 0016); it can never change once the app is on Google Play.
