@@ -520,7 +520,8 @@ class MotionScreenshotTest(private val case: ThemeCase) {
         } else {
             null
         }
-        val moment = BoosterMoment(1, action.booster, Player.RED, result.booster?.pos, result.booster?.removed.orEmpty(), undone)
+        val broke = result.booster?.broken.isNullOrEmpty() == false
+        val moment = BoosterMoment(1, action.booster, Player.RED, result.booster?.pos, result.booster?.removed.orEmpty(), undone, brokenFrom = before.takeIf { broke })
         val lastMove = if (undone != null) state.lastPlaced(Player.BLUE) else Pos(7, 7)
         return ui(result, lastMove).copy(
             booster = moment,
@@ -575,11 +576,17 @@ class MotionScreenshotTest(private val case: ThemeCase) {
         frames("hint_dot", 0, 50)
     }
 
-    /** Bomb (third row): it drops on (8, 7), and at 150 ms the four blue dots round it swell, shrink away, and the specks fly. */
+    /**
+     * Bomb (third row): it drops on (8, 7), and at 150 ms the four blue dots round it swell, shrink
+     * away, and the specks fly. They were the ring of Blue's capture of (8, 7), so from 350 ms the
+     * capture is taken back: by 600 ms its ring and wash are gone, (8, 7) has lost its cut, and the
+     * computer's score is down by one (decision 0042).
+     */
     @Test
     fun bomb() {
+        assertEquals(1, CanvasGame.boosted.state.apply(Action.Bomb(Pos(8, 7))).booster!!.broken.size)
         // Neon arcade: the hits' glow swells and shrinks with them.
-        val at = times(longArrayOf(0, 150, 220, 300, 450), neonArcade = longArrayOf(150, 220, 300))
+        val at = times(longArrayOf(0, 150, 220, 300, 450, 525, 600), neonArcade = longArrayOf(150, 220, 300))
         show { BoostedBoard(used(Action.Bomb(Pos(8, 7)))) }
         frames("bomb", *at)
     }
@@ -630,7 +637,9 @@ class MotionScreenshotTest(private val case: ThemeCase) {
     /**
      * Undo of a turn in which Red had dropped a bomb on (8, 7), then placed (9, 9), and Blue
      * answered (13, 13): the four blue dots the bomb took grow back in from 200 to 450 ms, with
-     * Red's dot rubbed out, and the bomb flies back to its button.
+     * Red's dot rubbed out, and the bomb flies back to its button. They were the ring of Blue's
+     * capture of (8, 7), which the bomb broke: the capture comes back with them, its ring drawing
+     * in and the cut coming back across (8, 7).
      */
     @Test
     fun undoGivesBackABomb() {

@@ -30,9 +30,16 @@ class Capture(val by: Player, val dots: List<Pos>, val region: List<Pos>, val cl
 /**
  * What a booster did, for the app to animate. [pos] is the point it was used on: the wall, the
  * hinted point or the bomb's centre; null for a double dot. [removed] are the opponent's dots a
- * bomb took off the board. Boosters never change the score.
+ * bomb took off the board, and [broken] the captured areas it broke, as they lay before it
+ * ([GameState.bombBreaks]). Only a bomb that breaks a capture changes the score.
  */
-class BoosterEffect(val by: Player, val booster: Booster, val pos: Pos?, val removed: List<Pos> = emptyList())
+class BoosterEffect(
+    val by: Player,
+    val booster: Booster,
+    val pos: Pos?,
+    val removed: List<Pos> = emptyList(),
+    val broken: List<Area> = emptyList(),
+)
 
 /**
  * The position after a move plus every capture that move triggered, in the order they were

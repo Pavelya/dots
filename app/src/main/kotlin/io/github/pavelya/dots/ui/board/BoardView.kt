@@ -9,6 +9,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.PathMeasure
@@ -18,6 +19,7 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -101,7 +103,7 @@ import kotlin.random.Random
  *
  * A [booster] just used plays its effect as [boosterTime] runs from 0 ms (motion.md, "Boosters"):
  * the wall is drawn and hatched, the hint circled twice, the bomb drops and its hits swell and
- * shrink away, and Undo rubs out the turn it took back. A dot placed after a Double dot sparks; one
+ * shrink away, then any capture it broke is taken back, and Undo rubs out the turn it took back. A dot placed after a Double dot sparks; one
  * placed after a Hint makes its circles shrink away.
  */
 @Composable
@@ -128,7 +130,7 @@ fun BoardView(
 ) {
     val areas = remember(state) { state.areas() }
     val regions = remember(areas) { areas.map { it.region.toHashSet() } }
-    val undone = remember(booster, state) { UndoneParts.of(booster, state, regions) }
+    val undone = remember(booster, state) { UndoneParts.of(booster, state, areas, regions) }
     val guided = if (guides) preview ?: marks.point else null
     Canvas(
         modifier = modifier
@@ -209,8 +211,15 @@ private class Frame(
     /** The turn an Undo is rubbing out in this frame, or null. */
     val undoing: UndoneTurn? get() = boosting?.undone
 
-    /** How far Undo has rubbed out what [side] played in the turn: the player's own part comes second. */
-    fun rubbedOut(side: Player): Float = UndoEffect.rubOut(bt, undoFrom(side))
+    /** True while captures go back in this frame: the turn an Undo rubs out, or the captures a bomb broke. */
+    val takingBack: Boolean get() = undoing != null || boosting?.brokenFrom != null
+
+    /**
+     * How far the captures [side] made are taken back: Undo rubs out what [side] played in the
+     * turn, the player's own part second; a bomb takes back what it broke after its hits are gone.
+     */
+    fun rubbedOut(side: Player): Float =
+        if (boosting?.brokenFrom != null) BombEffect.takeBack(bt) else UndoEffect.rubOut(bt, undoFrom(side))
 
     fun undoFrom(side: Player): Float = if (side == booster?.by) UndoEffect.OWN else UndoEffect.ANSWER
 
@@ -218,9 +227,18 @@ private class Frame(
     fun grownBack(x: Int, y: Int): Float =
         if (undoing == null || undone.back.isEmpty() || Pos(x, y) !in undone.back) 1f else UndoEffect.growBack(bt)
 
-    /** How much of the cut across [pos] is left while an Undo takes back the capture that made it; 0 for any other dot. */
+    /**
+     * How much of the cut is drawn across the captured dot on [pos]: as a capture draws it, or
+     * growing back in while an Undo gives back a capture a bomb had broken; else the whole cut.
+     */
+    fun cutOn(pos: Pos): Float = cuts[pos] ?: if (undoing != null && pos in undone.recut) UndoEffect.growBack(bt) else 1f
+
+    /** How far a capture an Undo gives back has come back in: from 0 to 1 while the turn's own part is rubbed out; 1 otherwise. */
+    fun cameBack(area: Int): Float = if (undoing != null && area in undone.returning) UndoEffect.growBack(bt) else 1f
+
+    /** How much of the cut across [pos] is left while an Undo or a bomb takes back the capture that made it; 0 for any other dot. */
     fun cutLeft(pos: Pos): Float {
-        if (undoing == null) return 0f
+        if (!takingBack) return 0f
         val captor = undone.uncut[pos] ?: return 0f
         return 1f - rubbedOut(captor)
     }
@@ -286,25 +304,45 @@ private class Frame(
 }
 
 /**
- * What an Undo takes back that the position after it no longer shows: the captured [areas] of the
- * turn, and the dots they had captured, which are free again, with their captor ([uncut]). The
- * dots a bomb took in that turn are on the board again ([back]): they grow back in.
+ * What an Undo or a bomb takes back that the position after it no longer shows: the captured
+ * [areas] of the turn, or those the bomb broke, and the dots they had captured, which are free
+ * again, with their captor ([uncut]). The dots a bomb took in the turn an Undo takes back are on
+ * the board again ([back]): they grow back in, and so do the captures that bomb broke, by their
+ * index among the board's areas ([returning]), with the cuts across their dots ([recut]).
  */
-private class UndoneParts(val areas: List<Area>, val uncut: Map<Pos, Player>, val back: Set<Pos> = emptySet()) {
+private class UndoneParts(
+    val areas: List<Area>,
+    val uncut: Map<Pos, Player>,
+    val back: Set<Pos> = emptySet(),
+    val returning: Set<Int> = emptySet(),
+    val recut: Set<Pos> = emptySet(),
+) {
     companion object {
         private val NONE = UndoneParts(emptyList(), emptyMap())
 
-        fun of(booster: BoosterMoment?, state: GameState, regions: List<Set<Pos>>): UndoneParts {
-            val before = booster?.undone?.before ?: return NONE
-            val areas = before.areas().filter { area -> regions.none { area.region.first() in it } }
+        fun of(booster: BoosterMoment?, state: GameState, now: List<Area>, regions: List<Set<Pos>>): UndoneParts {
+            if (booster == null) return NONE
+            val before = booster.undone?.before ?: booster.brokenFrom ?: return NONE
+            val undo = booster.undone != null
+            // An area that is still there has a point in an area of the same captor now.
+            val areas = before.areas().filter { area -> now.indices.none { now[it].by == area.by && area.region.first() in regions[it] } }
             val uncut = HashMap<Pos, Player>()
             val back = HashSet<Pos>()
+            val recut = HashSet<Pos>()
             for (y in 0 until state.height) for (x in 0 until state.width) {
                 val owner = state.ownerAt(x, y) ?: continue
                 if (before.isCaptured(x, y) && !state.isCaptured(x, y) && before.ownerAt(x, y) == owner) uncut[Pos(x, y)] = owner.opponent
                 if (before.ownerAt(x, y) == null) back += Pos(x, y)
+                if (undo && state.isCaptured(x, y) && !before.isCaptured(x, y) && before.ownerAt(x, y) == owner) recut += Pos(x, y)
             }
-            return UndoneParts(areas, uncut, back)
+            // Undo only: an area there now that was not before is one a bomb in that turn broke.
+            val returning = if (!undo) {
+                emptySet()
+            } else {
+                val was = before.areas()
+                now.indices.filter { i -> was.none { it.by == now[i].by && now[i].region.first() in it.region } }.toSet()
+            }
+            return UndoneParts(areas, uncut, back, returning, recut)
         }
     }
 }
@@ -320,7 +358,8 @@ private var SemanticsPropertyReceiver.guidesAt by GuidesAt
 /**
  * What a booster adds to the board (A-05). In the booster preview: the [targets] it may be aimed
  * at, the [point] chosen (or under the finger while it drags over a target), a [wall] about to go up, the bomb's [plus] and the pieces it would take away ([gone]: the
- * bomb's hits, or the turn Undo takes back), pale in dashed rings. After a Hint: its [hint] point,
+ * bomb's hits, or the turn Undo takes back), pale in dashed rings, and the captured areas the bomb
+ * would break ([breaks], each by its points), drawn at half strength. After a Hint: its [hint] point,
  * circled twice in the player's ink. In an open-ended game, on Stop's note and after a stop: the
  * [open] dots that can still be captured, each in a dashed Highlighter ring, at [openSize] of its
  * size as the rings grow in or shrink away (read while drawing).
@@ -331,6 +370,7 @@ data class BoardMarks(
     val wall: Pos? = null,
     val plus: List<Pos> = emptyList(),
     val gone: List<Pos> = emptyList(),
+    val breaks: List<Set<Pos>> = emptyList(),
     val hint: Pos? = null,
     val open: List<Pos> = emptyList(),
     val openSize: () -> Float = { 1f },
@@ -402,9 +442,11 @@ private fun DrawScope.drawPosition(
 ) {
     drawRect(style.paper)
     val strokes = areas.map { ringStroke(it, geometry, style.look) }
-    // Undo: the areas of the turn it takes back blend back to paper while their rings undraw.
+    // Undo, or a bomb that broke a ring: the areas taken back blend back to paper while their rings undraw.
     val undoing = frame.undoing
-    val undoneAreas = if (undoing == null) emptyList() else frame.undone.areas
+    val undoneAreas = if (!frame.takingBack) emptyList() else frame.undone.areas
+    // In the bomb's preview, the areas it would break are drawn at half strength.
+    val breaking = areas.map { area -> marks.breaks.any { area.region.first() in it } }
     val undoneStrokes = undoneAreas.map { ringStroke(it, geometry, style.look) }
     undoneAreas.forEachIndexed { i, area ->
         val p = frame.rubbedOut(area.by)
@@ -415,7 +457,11 @@ private fun DrawScope.drawPosition(
         val lit = frame.glow[i] ?: 0f
         val wash = if (lit > 0f) lerp(style.palette.wash(area.by), style.palette.pale(area.by), lit) else style.palette.wash(area.by)
         when {
-            capturing == null -> drawArea(area.by, strokes[i], style, wash)
+            capturing == null -> {
+                // Undo gives back a capture a bomb broke: its wash and hatching blend back in.
+                val gone = 1f - frame.cameBack(i)
+                halfStrength(breaking[i]) { drawArea(area.by, strokes[i], style, fade(wash, style.paper, gone), fade(style.palette.pale(area.by), style.paper, gone)) }
+            }
             // Rubber stamp: the area comes down with the ring, large and pale, and shrinks to its place.
             style.look.ringEffect == RingEffect.STAMP -> {
                 val down = RingEffects.down(frame.timing!!, frame.t)
@@ -468,7 +514,9 @@ private fun DrawScope.drawPosition(
             // Neon arcade: the tube is drawn unlit and lights up as it closes.
             val lit = capturing == null || timing == null || style.look.capture != CaptureMotion.NEON || NeonLight.lit(timing, frame.t)
             if (layer != RingLayer.TUBE && !lit) return@forEachIndexed
-            if (capturing == null || timing == null) return@forEachIndexed drawRingOf(area.by, strokes[i], style, width = width, layer = layer)
+            if (capturing == null || timing == null) {
+                return@forEachIndexed halfStrength(breaking[i]) { drawRingOf(area.by, strokes[i], style, drawn = frame.cameBack(i), width = width, layer = layer) }
+            }
             when (style.look.ringEffect) {
                 RingEffect.THEME -> {
                     val drawn = if (style.look.capture == CaptureMotion.CONSTELLATION) Twinkle.traced(timing, frame.t) else timing.ring(frame.t)
@@ -544,6 +592,14 @@ private fun DrawScope.drawSpreadingArea(area: Area, stroke: RingStroke, capture:
     val reach = area.ring.maxOf { val c = geometry.center(it); hypot(c.x - from.x, c.y - from.y) } + geometry.spacing
     val circle = Path().apply { addOval(Rect(from, reach * spread)) }
     clipPath(circle) { drawArea(area.by, stroke, style, wash) }
+}
+
+/** Draws [draw] at half strength, blended halfway into what lies under it, when [on]; as it is otherwise. */
+private inline fun DrawScope.halfStrength(on: Boolean, draw: DrawScope.() -> Unit) {
+    if (!on) return draw()
+    drawIntoCanvas { it.saveLayer(Rect(Offset.Zero, size), Paint().apply { alpha = 0.5f }) }
+    draw()
+    drawIntoCanvas { it.restore() }
 }
 
 /**
@@ -1011,7 +1067,7 @@ private fun DrawScope.drawGlows(state: GameState, geometry: BoardGeometry, style
     for (y in 0 until state.height) for (x in 0 until state.width) {
         val owner = state.ownerAt(x, y) ?: continue
         val pos = Pos(x, y)
-        val cut = if (state.isCaptured(x, y)) frame.cuts[pos] ?: 1f else frame.cutLeft(pos)
+        val cut = if (state.isCaptured(x, y)) frame.cutOn(pos) else frame.cutLeft(pos)
         if (cut > 0f) continue
         val scale = frame.pieceScale(x, y, style.look)
         val lit = if (newDot == pos) NeonLight.glow(frame.t) else 1f
@@ -1237,7 +1293,7 @@ private fun DrawScope.drawDots(state: GameState, geometry: BoardGeometry, style:
         if (scale <= 0f) continue
         val piece = style.piece(owner).let { if (scale == 1f) it else it.copy(across = it.across * scale) }
         // A dot being captured keeps its ink until its cut is drawn across it; Undo takes the cut back.
-        val cut = if (state.isCaptured(x, y)) frame.cuts[Pos(x, y)] ?: 1f else frame.cutLeft(Pos(x, y))
+        val cut = if (state.isCaptured(x, y)) frame.cutOn(Pos(x, y)) else frame.cutLeft(Pos(x, y))
         drawPiece(piece, center, dot, if (cut > 0f) color.copy(alpha = look.capturedAlpha) else color)
         if (cut > 0f && look.cut > 0f) {
             val captor = owner.opponent

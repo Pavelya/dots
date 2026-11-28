@@ -230,6 +230,182 @@ class BoosterTest {
         assertEquals(0, result.state.score(Player.BLUE))
     }
 
+    // A bomb that breaks a ring (decision 0042)
+
+    /**
+     * Blue's ring round red's d3 and d4 (a bonus point, worth 2), with c3 and e3 empty inside:
+     * red has placed d4 and blue has just closed the ring with d5. Red to move, with one of each
+     * booster.
+     */
+    private fun ringRoundBonus(): GameState {
+        val start = GameState.start(
+            7, 7,
+            dots = mapOf(
+                p("c2") to Player.BLUE, p("d2") to Player.BLUE, p("e2") to Player.BLUE,
+                p("b3") to Player.BLUE, p("f3") to Player.BLUE, p("c4") to Player.BLUE, p("e4") to Player.BLUE,
+                p("d3") to Player.RED,
+            ),
+            boosters = mapOf(Player.RED to one),
+            bonus = setOf(p("d4")),
+        )
+        return start.place("d4", "d5")
+    }
+
+    @Test
+    fun `a bomb on a dot of a ring breaks the capture`() {
+        // The game that found it: the computer's ring round two of the player's dots.
+        val captured = board(
+            """
+            .......
+            ...B...
+            ..BRB..
+            ..BRB..
+            .......
+            """,
+            first = Player.BLUE,
+        ).place("d5")
+        assertEquals(2, captured.score(Player.BLUE))
+        assertTrue(captured.isCaptured(p("d3")))
+
+        val result = captured.apply(Action.Bomb(p("f3")))
+        val bombed = result.state
+
+        assertEquals(listOf(p("e3")), result.booster!!.removed)
+        assertEquals(0, bombed.score(Player.BLUE))
+        for (name in listOf("d3", "d4")) {
+            assertFalse(bombed.isCaptured(p(name)), name)
+            assertFalse(bombed.isDead(p(name)), name)
+            assertEquals(Player.RED, bombed.ownerAt(p(name)), name)
+            assertEquals(null, bombed.enclosedBy(p(name)), name)
+        }
+        assertTrue(bombed.areas().isEmpty())
+        assertEquals(listOf(listOf(p("d3"), p("d4"))), result.booster!!.broken.map { it.region })
+        assertEquals(Player.BLUE, result.booster!!.broken.single().by)
+    }
+
+    @Test
+    fun `a broken capture frees its dots and points and takes off what it scored, bonus points included`() {
+        val captured = ringRoundBonus()
+        assertEquals(3, captured.score(Player.BLUE))
+        assertFalse(captured.isLegal(p("c3")))
+        val area = listOf(p("c3"), p("d3"), p("e3"), p("d4"))
+        assertEquals(listOf(area), captured.bombBreaks(p("f4")).map { it.region })
+
+        // The plus round f4 hits e4 and f3, both next to e3 inside the ring.
+        val bombed = captured.use(Action.Bomb(p("f4")))
+
+        assertEquals(0, bombed.score(Player.BLUE))
+        assertEquals(0, bombed.score(Player.RED))
+        assertFalse(bombed.isCaptured(p("d3")))
+        assertFalse(bombed.isCaptured(p("d4")))
+        for (name in listOf("c3", "e3")) {
+            assertFalse(bombed.isDead(p(name)), name)
+            assertTrue(bombed.isLegal(p(name)), name)
+        }
+        // Red still places their dot this turn, and may place it inside the old ring.
+        val next = bombed.play(p("c3"))
+        assertTrue(next.captures.isEmpty())
+        assertEquals(Player.BLUE, next.state.toMove)
+    }
+
+    @Test
+    fun `a dot that touches the area only at a corner breaks nothing`() {
+        val captured = board(
+            """
+            .......
+            .BBB...
+            .BRB...
+            .B.B...
+            .......
+            """,
+            first = Player.BLUE,
+        ).place("c4")
+        assertEquals(1, captured.score(Player.BLUE))
+
+        // The plus round a2 hits only b2, the ring's corner: c3 has blue on all four sides still.
+        assertEquals(listOf(p("b2")), captured.bombHits(p("a2")))
+        assertTrue(captured.bombBreaks(p("a2")).isEmpty())
+        val result = captured.apply(Action.Bomb(p("a2")))
+
+        assertTrue(result.booster!!.broken.isEmpty())
+        assertEquals(null, result.state.ownerAt(p("b2")))
+        assertEquals(1, result.state.score(Player.BLUE))
+        assertTrue(result.state.isCaptured(p("c3")))
+        assertTrue(result.state.isDead(p("c3")))
+    }
+
+    @Test
+    fun `a capture made earlier inside the broken area stays`() {
+        // Red closes a diamond round blue's e5 with e6; blue then closes a bigger diamond round
+        // red's with e8, taking red's four ring dots.
+        val captured = board(
+            """
+            .........
+            ....B....
+            ...B.B...
+            ..B.R.B..
+            .B.RBR.B.
+            ..B...B..
+            ...B.B...
+            .........
+            .........
+            """,
+        ).place("e6", "e8")
+        assertEquals(1, captured.score(Player.RED))
+        assertEquals(4, captured.score(Player.BLUE))
+        assertEquals(Player.BLUE, captured.enclosedBy(p("e5")))
+        val inside = listOf("e3", "d4", "e4", "f4", "c5", "d5", "e5", "f5", "g5", "d6", "e6", "f6", "e7").map { p(it) }
+        assertEquals(listOf(inside), captured.bombBreaks(p("e9")).map { it.region })
+
+        // The plus round e9 hits only e8, next to e7 inside blue's ring.
+        val bombed = captured.use(Action.Bomb(p("e9")))
+
+        assertEquals(0, bombed.score(Player.BLUE))
+        assertEquals(1, bombed.score(Player.RED))
+        for (name in listOf("e4", "d5", "f5", "e6")) {
+            assertFalse(bombed.isCaptured(p(name)), name)
+            assertFalse(bombed.isDead(p(name)), name)
+        }
+        for (name in listOf("e3", "c5", "e7")) assertTrue(bombed.isLegal(p(name)), name)
+        assertTrue(bombed.isCaptured(p("e5")))
+        assertTrue(bombed.isDead(p("e5")))
+        assertEquals(Player.RED, bombed.enclosedBy(p("e5")))
+        assertEquals(listOf(listOf(p("e5"))), bombed.areas().map { it.region })
+        assertEquals(Player.RED, bombed.areas().single().by)
+    }
+
+    @Test
+    fun `an undo after a bomb that broke a ring gives the capture back`() {
+        val captured = ringRoundBonus()
+        val bombed = captured.use(Action.Bomb(p("f4"))).place("a1", "g7")
+        assertEquals(0, bombed.score(Player.BLUE))
+
+        val back = bombed.use(Action.Undo)
+
+        assertEquals(3, back.score(Player.BLUE))
+        assertTrue(back.isCaptured(p("d3")))
+        assertTrue(back.isCaptured(p("d4")))
+        assertTrue(back.isDead(p("c3")))
+        assertEquals(Player.BLUE, back.ownerAt(p("e4")))
+        assertEquals(1, back.boostersLeft(Player.RED, Booster.BOMB))
+        assertEquals(captured.toAscii(), back.toAscii())
+    }
+
+    @Test
+    fun `the captor can close a broken ring again`() {
+        val captured = ringRoundBonus()
+        // The plus round d6 hits only d5, the dot that closed the ring.
+        val bombed = captured.use(Action.Bomb(p("d6"))).place("a1")
+        assertEquals(0, bombed.score(Player.BLUE))
+
+        val result = bombed.play(p("d5"))
+
+        assertEquals(3, result.state.score(Player.BLUE))
+        assertEquals(listOf(p("d3"), p("d4")), result.captures.single().dots.sortedBy { it.y })
+        assertTrue(result.state.isDead(p("c3")))
+        assertEquals(1, result.state.areas().size)
+    }
+
     // Double dot
 
     @Test

@@ -25,8 +25,8 @@ val BoardMoment.playOut: Float
 /** The whole moment, with the pulses of any new threat. */
 val BoardMoment.length: Float get() = max(playOut, if (freshThreats.isEmpty()) 0f else Threat.LENGTH)
 
-/** How long the booster's effect plays. */
-val BoosterMoment.length: Float get() = BoosterTimes.length(booster)
+/** How long the booster's effect plays: a bomb that broke a capture plays on while it is taken back. */
+val BoosterMoment.length: Float get() = if (brokenFrom != null) BombEffect.BROKE_LENGTH else BoosterTimes.length(booster)
 
 /** The clock of the board's moment: it plays each new dot's moment once. */
 @Composable

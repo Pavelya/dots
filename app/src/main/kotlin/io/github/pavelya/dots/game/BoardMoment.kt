@@ -54,6 +54,8 @@ data class BoardMoment(
  * - [point] is the wall, the hinted point or the bomb's centre; null for Double dot and Undo.
  * - [removed] are the opponent's dots a bomb took off the board: they swell and shrink away.
  * - [undone] is the turn an Undo took back, rubbed out newest first.
+ * - [brokenFrom] is the board before a bomb that broke a capture (decision 0042): the captures it
+ *   no longer holds are taken back after the blast. Null for any other booster.
  */
 data class BoosterMoment(
     val id: Int,
@@ -62,6 +64,7 @@ data class BoosterMoment(
     val point: Pos? = null,
     val removed: List<Pos> = emptyList(),
     val undone: UndoneTurn? = null,
+    val brokenFrom: GameState? = null,
 )
 
 /**

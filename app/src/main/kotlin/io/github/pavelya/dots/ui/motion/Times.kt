@@ -390,13 +390,19 @@ object HintEffect {
     fun shrink(t: Float): Float = 1f - phase(t, 0f, SHRINK, Ease.IN)
 }
 
-/** Bomb: it drops on the centre point, and at [BLAST] the opponent's dots in its plus swell and shrink away. */
+/**
+ * Bomb: it drops on the centre point, and at [BLAST] the opponent's dots in its plus swell and
+ * shrink away. A capture it broke is then taken back from [GONE] to [TAKEN_BACK], as Undo takes
+ * one back, and the effect lasts until then ([BROKE_LENGTH]).
+ */
 object BombEffect {
     const val BLAST = 150f
     const val SHAKE_TO = 300f
     const val SWELLED = 220f
     const val GONE = 350f
     const val LENGTH = 450f
+    const val TAKEN_BACK = GONE + UndoEffect.RUB
+    const val BROKE_LENGTH = TAKEN_BACK
 
     /** Twelve specks fly out from the centre. */
     const val SPECKS = 12
@@ -420,6 +426,9 @@ object BombEffect {
 
     /** How far the specks have flown, from 0 to 1; null outside them. */
     fun specks(t: Float): Float? = if (t < BLAST || t >= LENGTH) null else (t - BLAST) / (LENGTH - BLAST)
+
+    /** How far a capture the bomb broke is taken back: its ring, wash and cuts go as this reaches 1. */
+    fun takeBack(t: Float): Float = phase(t, GONE, TAKEN_BACK, Ease.IN)
 }
 
 /** Double dot: the "×2" chip grows in; each dot then sparks as it lands, and the chip counts down or leaves. */

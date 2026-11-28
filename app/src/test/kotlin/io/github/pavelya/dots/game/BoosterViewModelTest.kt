@@ -50,6 +50,11 @@ private class TopRow : Ai {
     override fun choose(state: GameState): Action = Action.Place(state.legalMoves().first())
 }
 
+/** Plays [point] while it is free, then as [TopRow] does. */
+private class PlaysFirst(private val point: Pos) : Ai {
+    override fun choose(state: GameState): Action = Action.Place(point.takeIf { state.isLegal(it) } ?: state.legalMoves().first())
+}
+
 /** The boosters in a level (A-05): the preview, choosing a point by tap or drag, Confirm and Cancel. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class BoosterViewModelTest {
@@ -77,10 +82,11 @@ class BoosterViewModelTest {
         journal: GameJournal? = null,
         hintFor: (GameState, Level?) -> Action.Hint? = { _, _ -> Action.Hint(hintPoint) },
         level: Level = this.level,
+        computer: Ai = TopRow(),
     ) = GameViewModel(
         start = levelGame(level, threatHighlight = false, now = 0),
         nextGame = { levelGame(level, threatHighlight = false, now = 0) },
-        computerFor = { TopRow() },
+        computerFor = { computer },
         journal = journal,
         computerDispatcher = dispatcher,
         replyDelayMillis = 0,
@@ -186,6 +192,44 @@ class BoosterViewModelTest {
         assertNull(vm.state.ownerAt(Pos(3, 3)))
         assertEquals(Player.BLUE, vm.state.ownerAt(Pos(5, 5)))
         assertEquals(0, vm.left(Booster.BOMB))
+    }
+
+    @Test
+    fun `a Bomb on a dot of the computer's ring breaks the capture, and its preview shows which`() = runTest(dispatcher) {
+        // The computer's ring round the player's (3, 2) closes at (3, 3) (decision 0042).
+        val ring = Level(
+            1, 7, "Broken Ring", Strength.BEGINNER, 6,
+            LevelMap(listOf(".......", "...B...", "..BRB..", ".......", ".......", ".......", ".......")),
+            Mission.Win,
+            boosters = Booster.entries.associateWith { 1 },
+        )
+        val vm = game(level = ring, computer = PlaysFirst(Pos(3, 3)))
+        vm.place(Pos(0, 6))
+        advanceUntilIdle()
+        assertTrue(vm.state.isCaptured(Pos(3, 2)))
+        assertEquals(1, vm.state.score(Player.BLUE))
+
+        vm.chooseBooster(Booster.BOMB)
+        vm.onTap(Pos(4, 3)) // hits (3, 3) and (4, 2), both next to (3, 2)
+        val aim = vm.ui.value.aim!!
+        assertEquals(setOf(Pos(3, 3), Pos(4, 2)), aim.gone.toSet())
+        assertEquals(listOf(setOf(Pos(3, 2))), aim.breaks)
+
+        vm.confirmBooster()
+        assertFalse(vm.state.isCaptured(Pos(3, 2)))
+        assertEquals(0, vm.state.score(Player.BLUE))
+        val bomb = vm.ui.value.booster!!
+        assertEquals("the board before the bomb, to take the capture back from", 1, bomb.brokenFrom?.score(Player.BLUE))
+    }
+
+    @Test
+    fun `a Bomb that breaks no ring has nothing to take back`() {
+        val vm = game()
+        vm.chooseBooster(Booster.BOMB)
+        vm.onTap(Pos(3, 4))
+        assertTrue(vm.ui.value.aim!!.breaks.isEmpty())
+        vm.confirmBooster()
+        assertNull(vm.ui.value.booster!!.brokenFrom)
     }
 
     @Test

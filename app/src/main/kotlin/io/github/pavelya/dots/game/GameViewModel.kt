@@ -168,6 +168,8 @@ data class BoosterAim(
     val plus: List<Pos> = emptyList(),
     /** The pieces it would take away: the bomb's hits, or the turn Undo takes back. */
     val gone: List<Pos> = emptyList(),
+    /** The captured areas the bomb would break (decision 0042), each by its points. */
+    val breaks: List<Set<Pos>> = emptyList(),
 ) {
     /** True once Confirm can apply it: it has its point, or needs none. */
     val ready: Boolean get() = point != null || !needsPoint(booster)
@@ -453,12 +455,16 @@ class GameViewModel(
         val state = game.state
         val point = aim.point
         val shown = when {
-            aim.booster == Booster.BOMB && point != null -> aim.copy(plus = plusAround(state, point), gone = state.bombHits(point))
+            aim.booster == Booster.BOMB && point != null -> aim.copy(
+                plus = plusAround(state, point),
+                gone = state.bombHits(point),
+                breaks = state.bombBreaks(point).map { it.region.toSet() },
+            )
             aim.booster == Booster.UNDO -> {
                 val before = state.useBooster(Action.Undo)
                 aim.copy(gone = state.points().filter { state.ownerAt(it) != null && before.ownerAt(it) == null })
             }
-            else -> aim.copy(plus = emptyList(), gone = emptyList())
+            else -> aim.copy(plus = emptyList(), gone = emptyList(), breaks = emptyList())
         }
         _ui.value = snapshot(lastMove = lastPlaced(), aim = shown)
     }
@@ -518,6 +524,7 @@ class GameViewModel(
             by = before.toMove,
             point = result.booster?.pos,
             removed = result.booster?.removed.orEmpty(),
+            brokenFrom = before.takeIf { result.booster?.broken.isNullOrEmpty() == false },
             undone = if (action == Action.Undo) undoneTurn(before, result.state, record.actions, opponentBefore) else null,
         )
         if (action == Action.Undo) {
