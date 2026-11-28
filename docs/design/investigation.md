@@ -47,7 +47,7 @@ Boosters belong in the solo campaign only, earned by playing and never sold, so 
 
 | Booster | What it does | Strength | Watch out for |
 | --- | --- | --- | --- |
-| Bomb | Removes the computer's dots in a small area (for example a plus shape of 5 points) | Very high | Must not touch captured areas, or it undoes captures. Defined in the engine, shown before use. |
+| Bomb | Removes the computer's dots in a small area (for example a plus shape of 5 points) | Very high | Never touches points inside captured areas; a removed dot of a ring breaks that capture (decision 0042). Defined in the engine, shown before use. |
 | Double dot | Place 2 dots in one turn | High | Lets the player close a ring the computer could not block. Limit to 1 per level. |
 | Recolour | One enemy dot becomes yours | Very high | It can complete a ring and also break one. Probably too strong except as a level's special rule. |
 | Shield | One of your groups cannot be captured for 5 turns | Medium | Clear timer on screen. |

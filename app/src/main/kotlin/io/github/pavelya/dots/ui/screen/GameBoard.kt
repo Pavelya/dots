@@ -168,7 +168,8 @@ import kotlinx.coroutines.delay
  * look until the result note comes.
  *
  * The [boosting] clock plays the booster just used (motion.md, "Boosters"): its count swells, the
- * board plays its effect, and a bomb shakes the board. While Undo rubs out a turn the scores, the
+ * board plays its effect, and a bomb shakes the board; a capture the bomb broke keeps its captor's
+ * points until it is taken back. While Undo rubs out a turn the scores, the
  * dots left and the face stay as they were until that part is gone, and a booster it gives back
  * flies to its button. After a Double dot the chip grows in, counts down and leaves. A touch on the
  * board finishes a bomb and an Undo.
@@ -215,10 +216,13 @@ internal fun GameBoard(
     val answerGone by remember(used, boosting) { derivedStateOf { undone == null || boosting.now >= UndoEffect.ANSWER + UndoEffect.RUB } }
     val ownGone by remember(used, boosting) { derivedStateOf { undone == null || boosting.now >= UndoEffect.SETTLED } }
     val givenBackLanded by remember(used, boosting) { derivedStateOf { undone?.givenBack == null || boosting.now >= UndoEffect.FLIGHT_TO } }
+    // A bomb that broke a capture: the captor keeps its points until the capture is taken back.
+    val brokenFrom = used?.brokenFrom
+    val brokenGone by remember(used, boosting) { derivedStateOf { brokenFrom == null || boosting.now >= BombEffect.TAKEN_BACK } }
     val shownScore = { player: Player ->
         val held = landed?.takeIf { !pointsIn && it.by == player }?.points ?: 0
         val undoing = undone?.takeIf { !(if (player == used?.by) ownGone else answerGone) }
-        undoing?.before?.score(player) ?: (state.score(player) - held)
+        undoing?.before?.score(player) ?: brokenFrom?.takeIf { !brokenGone }?.score(player) ?: (state.score(player) - held)
     }
     val scoreSwell = { player: Player ->
         val captured = if (capture != null && landed?.by == player) capture.scoreScale(moment.now) else 1f
@@ -598,6 +602,7 @@ private fun boardMarks(ui: GameUiState): BoardMarks {
         wall = aim.point.takeIf { aim.booster == Booster.WALL },
         plus = aim.plus,
         gone = aim.gone,
+        breaks = aim.breaks,
         hint = ui.hint,
     )
 }

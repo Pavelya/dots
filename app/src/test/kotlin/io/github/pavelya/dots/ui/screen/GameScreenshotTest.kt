@@ -508,16 +508,22 @@ class GameScreenshotTest(private val case: ThemeCase) {
     @Config(qualifiers = "w320dp-h568dp-xhdpi")
     fun placingByDragOnASmallPhoneDark() = drag("game_drag_small_phone_dark", dark = true)
 
-    /** The Bomb aimed at Red's dot in danger: the plus of 5 points, and the three blue dots it would remove. */
+    /**
+     * The Bomb aimed at Red's dot in danger: the plus of 5 points, and the three blue dots it would
+     * remove. Two of them, (9, 7) and (8, 8), hold Blue's ring round Red's (8, 7), so that capture
+     * is drawn at half strength: the bomb would break it (decision 0042).
+     */
     @Test
     fun bombAimed() {
         val state = CanvasGame.threat.state
         val center = Pos(9, 8)
         val hits = state.bombHits(center)
         assertEquals(3, hits.size)
+        val breaks = state.bombBreaks(center).map { it.region.toSet() }
+        assertEquals(listOf(setOf(Pos(8, 7))), breaks)
         val plus = listOf(center, Pos(9, 7), Pos(8, 8), Pos(10, 8), Pos(9, 9))
         val targets = state.legalMoves().filter { state.bombHits(it).isNotEmpty() }
-        val aim = BoosterAim(Booster.BOMB, point = center, targets = targets, plus = plus, gone = hits)
+        val aim = BoosterAim(Booster.BOMB, point = center, targets = targets, plus = plus, gone = hits, breaks = breaks)
         show { Preview(ui(CanvasGame.threat).copy(aim = aim)) }
         capture("game_bomb_aimed")
     }
@@ -545,7 +551,7 @@ class GameScreenshotTest(private val case: ThemeCase) {
             Booster.WALL -> BoosterAim(Booster.WALL, point = point, targets = targets)
             else -> {
                 val plus = listOf(point, Pos(point.x, point.y - 1), Pos(point.x - 1, point.y), Pos(point.x + 1, point.y), Pos(point.x, point.y + 1))
-                BoosterAim(Booster.BOMB, point = point, targets = targets, plus = plus, gone = state.bombHits(point))
+                BoosterAim(Booster.BOMB, point = point, targets = targets, plus = plus, gone = state.bombHits(point), breaks = state.bombBreaks(point).map { it.region.toSet() })
             }
         }
         show(dark = dark) { Preview(ui(CanvasGame.threat).copy(aim = aim), PlacingMethod.DRAG) }

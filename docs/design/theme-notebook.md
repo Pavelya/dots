@@ -222,7 +222,9 @@ the drag frames, since the booster's mark is larger than a preview and lies most
 dashed outline, and for a bomb the plus: each of its 5 points on a disc of Red wash, 0.92 of the
 spacing across, in a dashed Red ink ring (1.5 dp, 3 dp dashes and gaps). The discs lie under the
 grid, like a captured area's wash; the rings lie with the rings. The pieces stay on top: the
-player's own in full ink, the opponent's dots the bomb would take in their pale colour.
+player's own in full ink, the opponent's dots the bomb would take in their pale colour. A captured
+area the bomb would break (decision 0042) is drawn at half strength, its wash, hatching and ring
+together, like the pale dots: it is going too.
 
 **Contrast.** Pencil is the strongest colour on the board. Against paper it is 12.80 light and
 14.10 dark; against either wash at least 10.43 and 11.83; where it crosses a hatch line (Red pale

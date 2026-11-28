@@ -2,9 +2,11 @@ package io.github.pavelya.dots.ui.motion
 
 import dots.engine.Booster
 import dots.engine.Capture
+import dots.engine.GameState
 import dots.engine.Player
 import dots.engine.Pos
 import io.github.pavelya.dots.game.BoardMoment
+import io.github.pavelya.dots.game.BoosterMoment
 import io.github.pavelya.dots.game.ThreatMark
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -300,6 +302,18 @@ class MotionTimesTest {
         assertNull(BombEffect.specks(149f))
         assertEquals(0f, BombEffect.specks(150f))
         assertNull(BombEffect.specks(450f))
+    }
+
+    @Test
+    fun `a capture a bomb broke is taken back from 350 to 600 ms, and only then does the bomb last 600 ms`() {
+        assertEquals(0f, BombEffect.takeBack(350f))
+        near(350f, starts { BombEffect.takeBack(it) })
+        near(600f, ends { BombEffect.takeBack(it) })
+        assertEquals(1f, BombEffect.takeBack(600f))
+        val before = GameState.start(3, 3)
+        near(600f, BoosterMoment(1, Booster.BOMB, Player.RED, brokenFrom = before).length)
+        near(450f, BoosterMoment(1, Booster.BOMB, Player.RED).length)
+        assertTrue(BombEffect.BROKE_LENGTH < 1_500f)
     }
 
     @Test

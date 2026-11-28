@@ -38,7 +38,8 @@ sealed interface Action {
 
     /**
      * Removes the opponent's dots on [pos] and the four points next to it (up, down, left,
-     * right), except on points out of play. See [GameState.bombHits].
+     * right), except on points out of play, and breaks the captures those dots held closed. See
+     * [GameState.bombHits] and [GameState.bombBreaks].
      */
     data class Bomb(val pos: Pos) : UseBooster {
         override val booster get() = Booster.BOMB

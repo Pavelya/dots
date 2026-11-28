@@ -67,7 +67,7 @@ does while the animation runs.
 | [Dots running out](#dots-running-out) | 5 dots left | 300 ms per dot | 0 | counts as usual | colour, row and "Last dot!" at once |
 | [Wall](#boosters) | Confirm | 400 ms | 0 | counts as usual | the wall at once |
 | [Hint](#boosters) | Confirm | 500 ms | 0 | counts as usual | the circles at once |
-| [Bomb](#boosters) | Confirm | 450 ms | 0 | finishes it | the dots gone at once |
+| [Bomb](#boosters) | Confirm | 450 ms; 600 ms when it breaks a ring | 0 | finishes it | the dots gone and any broken ring taken back at once |
 | [Double dot](#boosters) | Confirm | 300 ms, then 250 ms per dot | 0 | counts as usual | the chip at once |
 | [Undo](#boosters) | Confirm | 600 ms | 0 | finishes it | the turn gone at once |
 | [Stop](#stop-and-done) | the second tap, Stop here, or the computer stops | 550 ms | 0 | counts as usual | chip, circles and Done at once |
@@ -313,7 +313,8 @@ dashed and grey.
 | 0 to 500 | The point is circled twice in the player's ink, 250 ms per loop: the same mark as the next level on the map. | linear |
 | Player's dot lands, 0 to 150 | The circles shrink away. | ease in |
 
-**Bomb** removes the opponent's dots in a plus of 5 points.
+**Bomb** removes the opponent's dots in a plus of 5 points. A hit dot next to a captured area
+holds it closed, so the bomb breaks that capture (decision 0042); the last row plays only then.
 
 | Time | What moves | Easing |
 | --- | --- | --- |
@@ -323,6 +324,7 @@ dashed and grey.
 | 150 to 220 | The hit dots swell to 130%. | ease out |
 | 220 to 350 | They shrink to nothing. | ease in |
 | 150 to 450 | Twelve specks in the opponent's ink fly out from the centre, growing and then shrinking away. | ease out |
+| 350 to 600 | Each capture the bomb broke is taken back the way Undo takes one back: its ring undraws, its wash and hatching blend back to paper, and the cuts across the dots it took go. At 600 the captor's score counts back. | ease in |
 
 **Double dot** lets the player place two dots in one turn. The second dot is extra (decision
 0039): the count of dots left drops by one as the first dot lands, and not again.
@@ -343,7 +345,7 @@ frame "Game: Undo's preview". The turn is rubbed out newest first, like a pencil
 | Time | What moves | Easing |
 | --- | --- | --- |
 | 0 to 250 | The computer's answer is rubbed out: three short Graphite strokes scrub back and forth across it while the piece shrinks to nothing and its links pull back. A capture it made goes with it: the ring undraws, the wash blends back to paper, the cuts go, and its score counts back. | ease in |
-| 200 to 450 | The player's dot is rubbed out the same way, both dots together after a double dot, and any capture it made. A booster used in that turn flies back to its button from where it was used (or from the player's dot), from 200 to 400 ms; its count goes up as it lands and swells to 135% and back in 200 ms. Dots a bomb took in that turn grow back in, from nothing to their size, and their links grow back from their neighbours. | ease in; the flight ease in-out; growing back ease out |
+| 200 to 450 | The player's dot is rubbed out the same way, both dots together after a double dot, and any capture it made. A booster used in that turn flies back to its button from where it was used (or from the player's dot), from 200 to 400 ms; its count goes up as it lands and swells to 135% and back in 200 ms. Dots a bomb took in that turn grow back in, from nothing to their size, and their links grow back from their neighbours. A capture that bomb broke comes back with them: its ring draws back in, its wash and hatching blend in, and the cuts come back across its dots. | ease in; the flight ease in-out; growing back ease out |
 | 450 to 600 | The scrub strokes shrink away. The dots-left count goes up, the pen stroke sits under "You", and the opponent's face goes back to how it looked before its answer. | ease out |
 
 Undo's button waits until there is a turn to take back: before the player's first move it shows
@@ -618,7 +620,7 @@ lit tube, wash, cuts and dark pieces at once. There is no flicker and no sparks.
 - **A big capture is under 1.5 s and can be skipped.** It takes 1400 ms, and a tap shows its end at
   once (second half of the big-capture GIF).
 - **Booster effects are under 1.5 s** (the V-06 check): Wall 400 ms, Hint 500 ms, Bomb 450 ms,
-  Double dot 300 ms and then 250 ms per dot, Undo 600 ms.
+  600 ms when it breaks a ring, Double dot 300 ms and then 250 ms per dot, Undo 600 ms.
 - **The board themes keep these limits.** Star chart and Neon arcade use the same times, so a
   capture still takes 1250 ms and a big capture 1400 ms. A tap finishes their twinkles, flicker
   and sparks with the rest (second half of each theme's big-capture GIF).

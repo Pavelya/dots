@@ -165,7 +165,7 @@ Every moment on the [motion page](motion.md) has a sound or a deliberate silence
 | Dots running out | `sfx_dots_low` at 5 left; the nudge and "Last dot!" silent |
 | Wall | `sfx_ring_draw` |
 | Hint | `sfx_ring_draw` twice at 160% speed |
-| Bomb | `sfx_bomb` |
+| Bomb | `sfx_bomb`; a ring it breaks is taken back in silence |
 | Double dot | `sfx_double_dot`, then `sfx_place_*` with each dot |
 | Undo | `sfx_ring_draw` at 75% speed; a booster flying back silent |
 | Stop and Done | `sfx_place_1` at 70% speed at the stop, for either side; Stop's note, the circles, the chip, the collector's row and Done silent |

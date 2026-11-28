@@ -23,7 +23,8 @@ package dots.engine
  *  - Boosters for the solo campaign ([Booster], [useBooster]): a player may use at most one per
  *    turn, before placing their dot, and only during normal play (not after a [stop]). Undo is one
  *    of them: the state keeps where the player's last turn began, so an undo is an action like any
- *    other and a record with undos replays by applying its actions in order.
+ *    other and a record with undos replays by applying its actions in order. A bomb that removes a
+ *    dot of a ring breaks that capture (decision 0042): the area goes back into play.
  *  - Turn rules for the campaign's bosses ([TurnRule]): a player may place two dots on some of
  *    their turns, on a schedule announced in advance ([doubleMoveIn]).
  *  - When one dot closes several chains the wiki lets players choose; this engine captures every
@@ -90,6 +91,11 @@ class GameState private constructor(
      * back to. Null in a game where nobody has an Undo, so other games pay nothing for it.
      */
     private val turnStarts: Array<GameState?>?,
+    /**
+     * The captures that stand on the board, oldest first, so a bomb can break one exactly. The
+     * list is never changed, only replaced, so states share it.
+     */
+    private var held: List<Held>,
 ) {
     var toMove: Player = toMove
         private set
@@ -295,7 +301,8 @@ class GameState private constructor(
     /**
      * The opponent's dots a [Booster.BOMB] dropped on [center] would remove: those on [center] and
      * the four points next to it, up, down, left and right, that are not out of play. Captured dots
-     * and dots inside a capturing chain are never touched, so a bomb cannot undo a capture.
+     * and dots inside a capturing chain are never touched. A dot of a ring can be hit: the bomb then
+     * breaks that capture ([bombBreaks]).
      */
     fun bombHits(center: Pos): List<Pos> {
         if (!inBounds(center.x, center.y)) return emptyList()
@@ -303,6 +310,22 @@ class GameState private constructor(
         return PLUS.map { (dx, dy) -> Pos(center.x + dx, center.y + dy) }.filter { p ->
             inBounds(p.x, p.y) && owner[p.y * width + p.x] == enemy && !dead[p.y * width + p.x]
         }
+    }
+
+    /**
+     * The captured areas a [Booster.BOMB] dropped on [center] would break, as they lie on the
+     * board now: those of the opponent's captures that one of [bombHits] holds closed (decision
+     * 0042). A dot holds a capture closed when it is next to one of its points, up, down, left or
+     * right; a dot that touches it only at a corner does not.
+     */
+    fun bombBreaks(center: Pos): List<Area> {
+        val broken = breaking(bombHits(center).map { index(it) })
+        if (broken.isEmpty()) return emptyList()
+        val standing = BooleanArray(width * height)
+        for (record in held) if (record !in broken) for (i in record.region) standing[i] = true
+        val freed = HashSet<Pos>()
+        for (record in broken) for (i in record.region) if (!standing[i]) freed += Pos(i % width, i / width)
+        return areas().filter { area -> area.region.any { it in freed } }
     }
 
     /** For a cell inside a capturing chain: the player whose chain closed it most recently. */
@@ -362,7 +385,8 @@ class GameState private constructor(
                 Action.DoubleDot, Action.Undo -> null
             }
             val removed = if (action is Action.Bomb) bombHits(action.pos) else emptyList()
-            MoveResult(useBooster(action), emptyList(), BoosterEffect(toMove, action.booster, pos, removed))
+            val broken = if (action is Action.Bomb) bombBreaks(action.pos) else emptyList()
+            MoveResult(useBooster(action), emptyList(), BoosterEffect(toMove, action.booster, pos, removed, broken))
         }
     }
 
@@ -416,7 +440,11 @@ class GameState private constructor(
      *    that ring there.
      *  - [Action.Hint] changes nothing on the board; [Action.Hint.pos] must be a legal move.
      *  - [Action.Bomb] removes the dots of [bombHits]; there must be at least one. Their points
-     *    become empty and playable. Scores, dots left and dots placed do not change.
+     *    become empty and playable. Each capture one of them held closed breaks ([bombBreaks],
+     *    decision 0042): the dots it took are alive again, its captor's score drops by the points
+     *    it gave, and its points go back into play, except those an earlier capture still holds.
+     *    The bomb captures nothing itself; the captor may close the ring again with a new dot.
+     *    Dots left and dots placed do not change.
      *  - [Action.DoubleDot] gives the player an extra dot this turn: the second, which takes
      *    nothing from their dots left, so 1 left is enough. The turn passes after the second dot,
      *    or after the first if the board leaves no point for another. No pass or stop in between.
@@ -441,11 +469,7 @@ class GameState private constructor(
                 next.playableCells--
             }
             is Action.Hint -> Unit
-            is Action.Bomb -> for (pos in bombHits(action.pos)) {
-                next.owner[index(pos)] = EMPTY
-                next.liveDots[toMove.opponent.ordinal]--
-                next.playableCells++
-            }
+            is Action.Bomb -> next.bomb(bombHits(action.pos).map { index(it) })
             Action.DoubleDot -> next.doubleDots = 2
             Action.Undo -> Unit // returned above
         }
@@ -505,7 +529,7 @@ class GameState private constructor(
         liveDots.clone(), dotsLeft.clone(), placed.clone(), extra.clone(), lastPlaced.clone(), blocked.clone(), hole, bonus, edge, holesAreBorder,
         boosters.clone(), playableCells, toMove,
         passesInRow, moveCount, cleaner, finished, boosterUsed, doubleDots, turnRules, turns.clone(), half,
-        extraSecondDot, turnStarts?.clone(),
+        extraSecondDot, turnStarts?.clone(), held,
     )
 
     private fun index(pos: Pos) = pos.y * width + pos.x
@@ -683,7 +707,57 @@ class GameState private constructor(
             }
         }
         scores[by.ordinal] += points
+        held = held + Held(by, cells.copyOfRange(from, to), IntArray(dots.size) { index(dots[it]) }, points)
         out += Capture(by, dots, region, closing, points)
+    }
+
+    /**
+     * Removes the opponent's dots on the cells [hits] and breaks the captures they held closed:
+     * see [useBooster].
+     */
+    private fun bomb(hits: List<Int>) {
+        val enemy = toMove.opponent
+        val broken = breaking(hits)
+        for (i in hits) {
+            owner[i] = EMPTY
+            liveDots[enemy.ordinal]--
+            playableCells++
+        }
+        if (broken.isEmpty()) return
+        held = held.filter { it !in broken }
+        for (record in broken) {
+            for (i in record.dots) {
+                captured[i] = false
+                liveDots[record.by.opponent.ordinal]++
+            }
+            scores[record.by.ordinal] -= record.points
+        }
+        // A point a standing capture still holds stays out of play, inside its latest captor's ring.
+        val holder = arrayOfNulls<Held>(width * height)
+        for (record in held) for (i in record.region) holder[i] = record
+        for (record in broken) for (i in record.region) {
+            val by = holder[i]?.by
+            enclosedBy[i] = by?.code ?: EMPTY
+            if (dead[i] && by == null && !hole[i] && !blocked[i]) {
+                dead[i] = false
+                if (owner[i] == EMPTY) playableCells++
+            }
+        }
+    }
+
+    /** The opponent's captures that a dot on one of the cells [hits] holds closed: one next to a point of the area. */
+    private fun breaking(hits: List<Int>): List<Held> {
+        if (hits.isEmpty()) return emptyList()
+        val hit = BooleanArray(width * height)
+        for (i in hits) hit[i] = true
+        val captor = toMove.opponent
+        return held.filter { record ->
+            record.by == captor && record.region.any { i ->
+                val x = i % width
+                val y = i / width
+                (x > 0 && hit[i - 1]) || (x < width - 1 && hit[i + 1]) || (y > 0 && hit[i - width]) || (y < height - 1 && hit[i + width])
+            }
+        }
     }
 
     /** True if [player]'s dots already enclose a live enemy dot; used to vet starting positions. */
@@ -719,6 +793,12 @@ class GameState private constructor(
         }
         return (0 until n).any { owner[it] == enemy && !captured[it] && !outside[it] }
     }
+
+    /**
+     * A capture that stands on the board: [by] closed a ring round the cells [region] and took the
+     * dots on the cells [dots], worth [points]. Cells are indexes, y * width + x.
+     */
+    private class Held(val by: Player, val region: IntArray, val dots: IntArray, val points: Int)
 
     companion object {
         private const val EMPTY: Byte = 0
@@ -815,6 +895,7 @@ class GameState private constructor(
                 n - dead.count { it }, first, 0, 0, null, false, false, 0,
                 Array(2) { turnRules[Player.entries[it]] }, IntArray(2), NO_HALF, extraSecondDot,
                 if (Player.entries.any { stock[boosterIndex(it, Booster.UNDO)] > 0 }) arrayOfNulls(4) else null,
+                emptyList(),
             )
             for ((pos, player) in dots) {
                 require(state.inBounds(pos.x, pos.y)) { "Starting dot $pos is off the board" }
